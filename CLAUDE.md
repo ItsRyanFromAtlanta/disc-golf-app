@@ -34,6 +34,13 @@ See `disc_locker_and_layouts_schema.sql` + `migrate_disc_locker_and_layouts.sql`
 - provenance: `external_source`/`external_ref` on `rounds` and `courses` (partial-unique together) make future imports (e.g. UDisc) idempotent. `course_aliases` (insert-open/update-closed) resolves import name variants + search synonyms.
 - Migration is gated: additive schema is safe anytime; the data backfill + destructive column drops run in separate approved steps behind a DB backup (`migrate_*.sql` sections 2 and 3, with `verify_*.sql` between).
 
+See `bags_schema.sql` + `migrate_bag_locker.sql` for bags (Track 1C) — additive/independent of 1B (references `discs.id`, not `discs.status`):
+- `bags` — user-owned (name, description, bag_type, capacity); one default bag per user via a partial unique index. `bag_discs` join (a disc can be in multiple bags; no `user_id` column — ownership via `bag_id` → `bags.user_id`, same pattern as regimen run sets). `rounds.bag_id` nullable FK (which bag was carried).
+- Setting a new default bag is two client-side updates (unset the old default, then set the new one) — required by the partial unique index. Pure selection logic in `src/lib/bags.js` (`bagIdsToUnsetForNewDefault`).
+- Bag views (`/bag`, the switcher) show only `status = 'in_locker'` discs (`bagViewDiscs`); lost/retired/sold discs keep their bag membership rows but drop out of the view. The locker view (`/bag/locker`) intentionally shows everything with a status filter.
+- Flight chart plots effective numbers (`flightChartPoint`/`flightChartPoints` in `src/lib/bags.js`, speed × turn+fade), not stock — always goes through `effectiveFlightNumbers`.
+- `migrate_bag_locker.sql`'s real prerequisite is `discs.status` existing, i.e. 1B's schema + Section 2 (backfill) — not 1B's destructive Section 3.
+
 See `putting_practice_schema.sql` for the putting practice feature:
 - `putt_sessions` — a practice session (user-owned, freeform date/notes)
 - `putt_distance_logs` — session-summary makes/attempts per distance; `zone` (C1/C2/Beyond C2) is a generated column derived automatically from `distance_feet`, so the app only ever needs to submit distance + makes + attempts
@@ -70,15 +77,24 @@ The app uses nested feature trees. Putting practice is the first tree:
 /practice/regimens/:id/run         → active regimen run-through with live scoring
 /practice/history                  → unified session history feed
 /practice/history/:type/:id        → session/run detail view (type = 'freeform' | 'regimen')
+/practice/stats                    → confidence interval map (distance bands, lock-in/coin-flip zones)
+
+/profile                           → sectioned player profile (top-level, sibling of /practice)
+
+/bag                                → default bag view + switcher + flight chart (top-level)
+/bag/locker                         → all disc copies, all statuses, with filters
+/bag/manage                         → bag CRUD + disc-to-bag assignment
+/bag/discs/new                      → add a disc (mold search/create, then customize)
+/bag/discs/:discId                  → edit a disc
 ```
 
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
-Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
-App-level navigation will eventually be a bottom tab bar (Putting / Rounds / Caddie / Stats); not built yet — only one feature area exists.
+Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`). `/profile` and `/bag` are the first such siblings.
+App-level navigation will eventually be a bottom tab bar (Putting / Rounds / Caddie / Stats); not built yet — only one feature area exists. Until then, `/profile`, `/practice/stats`, and `/bag` are reached via header icons on the practice menu.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
-- Header includes a stats shortcut icon (top-right) reserved for a future stats view.
+- Header includes profile, bag, and stats icons (top-right) linking to `/profile`, `/bag`, and `/practice/stats`.
 - Below the cards: a "Recent activity" strip showing the last 2-3 entries pulled from `putt_sessions` and `putting_regimen_runs`.
 - Mobile-first: single-column cards, thumb-friendly tap targets.
 
@@ -113,7 +129,7 @@ Implement as pure functions in a `lib/insights/` module with unit tests — thes
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
 
 ## Current build focus
-Executing DEVELOPMENT_PLAN.md in order: 1A player profile → 2.1 confidence interval map → 1B/1C molds, locker, bags → 2.2 per-putt capture layer → practice-depth features (drills, clutch simulator, miss tendency). Session history v1 is SHIPPED. Native sensor-fusion features are parked on the Native iOS Roadmap in FEATURE_BACKLOG.md.
+Executing DEVELOPMENT_PLAN.md in order: 1A player profile → 2.1 confidence interval map → 1D deploy/PWA baseline → 1B+1.5 molds/locker + round/course groundwork → 1C bags → 2.2 per-putt capture layer → practice-depth features (drills, clutch simulator, miss tendency). Session history v1, 1A player profile, and 2.1 confidence interval map are SHIPPED. 1D is code-ready but not deployed. 1B/1.5 (disc molds, layouts) and 1C (bags/locker/flight chart) are code-complete — schema, migration scripts, UI, and unit tests all written — but the migrations have not been executed against the live database yet, so none of the disc/bag features work end-to-end until that happens; see DEVLOG.md for the exact run order. Native sensor-fusion features are parked on the Native iOS Roadmap in FEATURE_BACKLOG.md.
 
 ## Conventions
 - All user-owned tables use Row Level Security scoped to `auth.uid()`

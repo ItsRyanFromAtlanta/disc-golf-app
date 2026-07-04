@@ -4,6 +4,23 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-04 — Bags + locker + flight chart, Track 1C (code-ready; migration + live verification pending)
+
+**What:** `bags`/`bag_discs` schema (additive, independent of 1B — references `discs.id` which already exists), a membership migration (default bag + in-locker discs), and the full `/bag` UI: `/bag` (default bag, bag switcher, hand-rolled SVG flight chart), `/bag/locker` (all discs/statuses with filter chips), `/bag/manage` (bag CRUD via `EditableSection`, set-default, per-disc membership checkboxes), `/bag/discs/new` + `/bag/discs/:id` (mold search/create via a new `MoldPicker`, then customize nickname/weight/color/overrides/photo/acquired/provenance/status). Bag icon added to the practice menu header.
+**Model:** Sonnet 5, per DEVELOPMENT_PLAN.md.
+**Key decisions:**
+- Confirmed via live PostgREST probe, again, before writing anything: 1B's schema/migration from the prior session has **not** been executed — `discs.mold_id`/`status`, `disc_molds`, `layouts` all still absent. This directly blocks part of 1C (see Gotchas).
+- Split 1C's schema from its data migration, same pattern as 1B: `bags_schema.sql` is safe to run anytime (no backup needed); `migrate_bag_locker.sql` is separate and documents its real prerequisite (`discs.status` must exist — needs 1B's schema + Section 2 backfill, NOT the destructive Section 3).
+- Extracted the three things the plan wants tested into pure functions in `src/lib/bags.js` — `bagIdsToUnsetForNewDefault` (default-bag flip semantics for the partial-unique constraint), `bagViewDiscs` (excludes lost/retired/sold from bag views, preserves membership), `flightChartPoint` (speed × turn+fade "stability", via the already-tested `effectiveFlightNumbers` coalesce). This let all three of the plan's test requirements be satisfied with 8 real unit tests, independent of whether the migration has run.
+- Flight chart is a hand-rolled SVG scatter (no charting library) to match the app's existing pattern (confidence map bands, stat tiles) — dynamic domain from the data with sane fallback ranges.
+**Gotchas:**
+- **1C's UI cannot be fully live-verified yet.** The flight chart, status filtering, and the membership migration all depend on 1B's `discs.status`/`mold_id`/`disc_molds` existing, and that migration still hasn't been run (see last session — still pending user backup + dry-run approval). Drove the built UI against the current DB anyway: every page fails gracefully (clean Supabase error text, zero console errors, no crashes) except `/bag/discs/new`'s initial render, which needs nothing from the missing tables and works today.
+- Caught and fixed a real bug via that verification pass: `MoldPicker`'s "create a new mold" section was a `<form>` nested inside `DiscFormPage`'s own `<form>` — invalid HTML. The browser silently mishandled the nested submit (create-mold UI collapsed with no error shown, even though the insert had failed). Fixed by rendering it as a `<div>` with a `type="button"` + `onClick` instead of relying on form submission.
+- Found and fixed a second latent bug before it shipped (not user-visible, caught in review): `discs.mold` is a legacy text column, and I'd aliased the joined `disc_molds` relation as `mold` too in the same select — same JSON key, guaranteed collision. Renamed the join alias to `moldInfo` everywhere.
+- **To unblock full verification:** run `bags_schema.sql` (safe, anytime) plus 1B's `disc_locker_and_layouts_schema.sql` + `migrate_disc_locker_and_layouts.sql` Section 1 (dry run) + Section 2 (backfill, reversible) — Section 3 (destructive) is still not required for 1C. Then `migrate_bag_locker.sql`.
+
+---
+
 ## 2026-07-04 — Disc locker + layouts schema/migration, Track 1B + 1.5 (schema/scripts done; migration execution pending)
 
 **What:** Delivered the full 1B disc-locker + 1.5 layouts/provenance/aliases schema restructure as scripts (Opus 4.8, per plan). Not yet executed against the live DB — that's gated behind the user's backup + dry-run approval.
