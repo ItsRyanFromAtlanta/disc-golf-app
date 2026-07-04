@@ -33,7 +33,13 @@ export default function BagLockerPage() {
   useEffect(() => {
     fetchUserDiscs(user.id)
       .then(setDiscs)
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        setError(err.message)
+        // The toolbar (search/filter/sort/grid-list toggle) is useful chrome
+        // independent of whether the fetch succeeded — an empty list plus an
+        // inline error banner degrades better than blocking the whole page.
+        setDiscs([])
+      })
   }, [user.id])
 
   useEffect(() => {
