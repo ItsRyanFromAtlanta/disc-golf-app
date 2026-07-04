@@ -27,3 +27,6 @@ dev-dist
 
 # Google Drive sync temp artifacts
 .tmp.driveupload/
+
+# Local DB backups (may contain user data / PII — never commit)
+db_backups/
