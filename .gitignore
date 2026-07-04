@@ -24,3 +24,6 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+
+# Google Drive sync temp artifacts
+.tmp.driveupload/
