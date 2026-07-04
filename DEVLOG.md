@@ -4,70 +4,30 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
-## 2026-07-04 — Bags + locker + flight chart, Track 1C (code-ready; migration + live verification pending)
+## 2026-07-04 — Bag & disc manager UX overhaul, Track 1E (code-complete; blocked on 1B migration same as 1C)
 
-**What:** `bags`/`bag_discs` schema (additive, independent of 1B — references `discs.id` which already exists), a membership migration (default bag + in-locker discs), and the full `/bag` UI: `/bag` (default bag, bag switcher, hand-rolled SVG flight chart), `/bag/locker` (all discs/statuses with filter chips), `/bag/manage` (bag CRUD via `EditableSection`, set-default, per-disc membership checkboxes), `/bag/discs/new` + `/bag/discs/:id` (mold search/create via a new `MoldPicker`, then customize nickname/weight/color/overrides/photo/acquired/provenance/status). Bag icon added to the practice menu header.
+**What:** Built the inventory/loadout UX designed in the planning entry below, on top of 1C. Audited first, per instructions: confirmed 1C's `/bag` pages, routes, and nav icon were already fully built and wired (not "possibly partial" as the plan speculated) — live DB re-checked and still unmigrated, unchanged since last session.
 **Model:** Sonnet 5, per DEVELOPMENT_PLAN.md.
-**Key decisions:**
-- Confirmed via live PostgREST probe, again, before writing anything: 1B's schema/migration from the prior session has **not** been executed — `discs.mold_id`/`status`, `disc_molds`, `layouts` all still absent. This directly blocks part of 1C (see Gotchas).
-- Split 1C's schema from its data migration, same pattern as 1B: `bags_schema.sql` is safe to run anytime (no backup needed); `migrate_bag_locker.sql` is separate and documents its real prerequisite (`discs.status` must exist — needs 1B's schema + Section 2 backfill, NOT the destructive Section 3).
-- Extracted the three things the plan wants tested into pure functions in `src/lib/bags.js` — `bagIdsToUnsetForNewDefault` (default-bag flip semantics for the partial-unique constraint), `bagViewDiscs` (excludes lost/retired/sold from bag views, preserves membership), `flightChartPoint` (speed × turn+fade "stability", via the already-tested `effectiveFlightNumbers` coalesce). This let all three of the plan's test requirements be satisfied with 8 real unit tests, independent of whether the migration has run.
-- Flight chart is a hand-rolled SVG scatter (no charting library) to match the app's existing pattern (confidence map bands, stat tiles) — dynamic domain from the data with sane fallback ranges.
+**Built:**
+- Bottom tab bar (Practice/Bag/Profile) replacing header-icon nav — `TabBar` is a data-driven array, so Rounds/Caddie are one-line additions later. `AppShell` wraps every authenticated route once (single shared layout instead of duplicated `ProtectedRoute` wrapping per route group). Safe-area padding via `env(safe-area-inset-bottom)` + `viewport-fit=cover`.
+- Locker rebuilt as inventory: `DiscCard` (grid + list variants — nickname/mold, effective flight numbers, photo thumbnail, stability-accent color, status badge), grid⇄list toggle persisted to `localStorage`, search box, manufacturer/speed-class/stability/status filters, speed/stability/recency sort — all via `lib/discFilters.js` (pure, 15 unit tests), operating on **effective** (override-aware) numbers throughout, not mold stock.
+- New `DiscDetailPage` (inspect view): effective vs. stock numbers shown side by side, attributes editable via the existing `EditableSection` pattern, bag memberships with one-tap equip/unequip. `DiscFormPage` stripped to create-only — its edit-mode branch became dead code once the detail page existed, removed rather than left half-used.
+- `BagPage`: capacity indicator (progress bar, flags over-capacity), "Add from locker" opens the locker in picker mode via a `?addToBag=<bagId>` query param (no new route) — Add/Added toggle per disc instead of navigating to detail.
 **Gotchas:**
-- **1C's UI cannot be fully live-verified yet.** The flight chart, status filtering, and the membership migration all depend on 1B's `discs.status`/`mold_id`/`disc_molds` existing, and that migration still hasn't been run (see last session — still pending user backup + dry-run approval). Drove the built UI against the current DB anyway: every page fails gracefully (clean Supabase error text, zero console errors, no crashes) except `/bag/discs/new`'s initial render, which needs nothing from the missing tables and works today.
-- Caught and fixed a real bug via that verification pass: `MoldPicker`'s "create a new mold" section was a `<form>` nested inside `DiscFormPage`'s own `<form>` — invalid HTML. The browser silently mishandled the nested submit (create-mold UI collapsed with no error shown, even though the insert had failed). Fixed by rendering it as a `<div>` with a `type="button"` + `onClick` instead of relying on form submission.
-- Found and fixed a second latent bug before it shipped (not user-visible, caught in review): `discs.mold` is a legacy text column, and I'd aliased the joined `disc_molds` relation as `mold` too in the same select — same JSON key, guaranteed collision. Renamed the join alias to `moldInfo` everywhere.
-- **To unblock full verification:** run `bags_schema.sql` (safe, anytime) plus 1B's `disc_locker_and_layouts_schema.sql` + `migrate_disc_locker_and_layouts.sql` Section 1 (dry run) + Section 2 (backfill, reversible) — Section 3 (destructive) is still not required for 1C. Then `migrate_bag_locker.sql`.
+- Same verification ceiling as 1C: everything that touches `disc_molds`/`mold_id`/`status`/bags fails with a clean Supabase error (confirmed via Playwright — zero crashes, tab bar stays mounted throughout), because the 1B migration still hasn't run.
+- Found and fixed a real UX bug via that verification pass: the locker's toolbar (search/filter/sort/toggle) was gated behind a successful disc fetch, so any fetch error blanked the whole page — including the grid⇄list toggle, which is a pure client preference with zero DB dependency. Fixed to set `discs: []` alongside the error so the shell always renders with an inline error banner. This also unblocked live verification of the toggle-persists-across-reload requirement.
+**Verified live:** tab bar active-state correct on all three tabs and on a sub-route (`/practice/history` keeps Practice lit); grid⇄list toggle genuinely persists across a real page reload (checked `localStorage` directly, not just visual state); tab bar renders correctly on a 390×844 mobile viewport with an iOS user agent. Equip/unequip's live behavior is untestable until the migration runs (same gate as everything else disc/bag-related) — the toggle code path itself is exercised in both `DiscDetailPage` and the locker's picker mode, so once the tables exist there's nothing structurally new to verify.
+**Deferred (per plan):** game-flair mode (rarity borders, equip animations, stat-block cards) — backlog, deliberately out of v1.
 
----
+## 2026-07-04 — Bag & disc manager UX + app navigation (PLANNING)
 
-## 2026-07-04 — Disc locker + layouts schema/migration, Track 1B + 1.5 (schema/scripts done; migration execution pending)
-
-**What:** Delivered the full 1B disc-locker + 1.5 layouts/provenance/aliases schema restructure as scripts (Opus 4.8, per plan). Not yet executed against the live DB — that's gated behind the user's backup + dry-run approval.
-**Files:**
-- `disc_locker_and_layouts_schema.sql` — additive/idempotent only: `disc_molds` (insert-open/update-closed RLS, unique lower(manufacturer)+lower(mold_name), nullable enrichment), `discs` alters (mold_id, nickname, weight_grams, color, override_* flight, photo_url, acquired_on, provenance, status lifecycle), `layouts`, `holes.layout_id`, `rounds.layout_id` + provenance, `courses` provenance, partial-unique external (source,ref) indexes, `course_aliases`. Zero data loss; safe to run anytime.
-- `migrate_disc_locker_and_layouts.sql` — 3 gated sections: (1) read-only DRY RUN; (2) reversible BACKFILL (old columns retained); (3) irreversible DESTRUCTIVE CLEANUP (drops is_active + stock flight cols + holes.course_id + rounds.layout_name, tightens FKs).
-- `verify_disc_locker_and_layouts.sql` — integrity checks, run between backfill and cleanup.
-- `scripts/seed-disc-molds.mjs` → `disc_molds_seed.sql` — curated flagship MVP/Axiom/Streamline molds.
-- `src/lib/discs.js` `effectiveFlightNumbers()` + 6 tests.
+**What:** Field testing revealed /bag routes have no navigation entry point (1C shipped schema, UI status unaudited). Designed 1E: game-inventory UX + app-level nav.
 **Key decisions:**
-- Introspected the LIVE DB first (PostgREST column probes): confirmed every target table still at base shape — no 1B/1.5 columns/tables exist, clean starting point. No app code references discs/holes/rounds/courses, so the destructive drops break no frontend.
-- Effective flight numbers preserved by construction: mold stock = most-complete representative copy; a copy gets an override on an axis only when it has an explicit value differing from stock; null copies inherit stock (flight numbers are a mold property). `effectiveFlightNumbers` uses `??` not `||` so a 0 turn/fade override wins.
-- Layouts promoted to first-class: default layout per course from `layout_name`, plus a non-default layout per distinct round `layout_name` so each round keeps the layout it was played on. holes → default layout; rounds → name-match else default.
-- `is_active=false → status 'retired'` (neutral); reclassify to lost/sold in-app later. Kept `discs.manufacturer/mold` text as human labels; kept `rounds.course_id` (denormalized but safe).
-- Migration split into safe-backfill vs irreversible-cleanup with a verification checkpoint between, so the destructive step only runs after integrity is proven AND a backup is confirmed.
-**Gotchas / notes:**
-- Seed: live scraping of MVP/Axiom/Streamline/Infinite Discs was investigated and rejected — flight data loads via JS/AJAX or inconsistent markup; a scraper would risk seeding wrong numbers. Curated bootstrap + always-available manual entry instead.
-- `disc_molds` inserts require the authenticated/owner role (RLS), so the seed is delivered as SQL for the editor, not an anon-key script.
-- Found the doc-drift culprit: a `.tmp.driveupload/` dir (Google Drive sync) — gitignored. Also restored canonical `supabase_schema.sql` to the repo (was only in Downloads).
-- **Pending user action:** take a DB backup; run schema file; run migration Section 1 (dry run) and paste output; approve; run Section 2 + verification; then Section 3.
-
----
-
-## 2026-07-03 — Deploy + PWA baseline, Track 1D (IN PROGRESS — code-ready, deploy pending)
-
-**What:** `vite-plugin-pwa` added with a manifest (name, theme/background color, standalone display, 192/512/maskable icons) and a service worker configured for **app-shell caching only** — precaches the built JS/CSS/HTML/icons, no `runtimeCaching` entries, so Supabase reads/writes always hit the network. `vercel.json` added with a catch-all rewrite to `index.html` so client-side routes resolve on a hard refresh or direct link. `.env.example`, `.gitignore` (added `dev-dist`), and `README.md` (setup + deploy steps) brought up to date.
-**Model:** Sonnet 5, per DEVELOPMENT_PLAN.md.
-**Key decisions:**
-- `registerType: 'autoUpdate'` with `skipWaiting`/`clientsClaim` — no update-prompt UI; simplest baseline for a solo-dev app that ships frequently.
-- Icons are a placeholder: a simple flying-disc glyph on the app's brand purple (`#7e14ff`), generated from two source SVGs (`public/icon-source.svg` for standard icons with rounded corners, `public/icon-source-maskable.svg` full-bleed for the maskable icon's safe zone) via a one-off `scripts/generate-pwa-icons.mjs` (sharp). Swap the source SVGs and rerun the script whenever real branding exists.
-- Confirmed via the production build (`vite preview`) that the service worker registers, the manifest links correctly, and a direct load of a nested route (`/practice/history`) falls through to the SPA shell rather than a raw 404 — validates the same behavior `vercel.json`'s rewrite provides on Vercel.
-**Not done (needs the user, not code):** push to GitHub, connect + configure the Vercel project, set `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` in the Vercel dashboard, install-to-homescreen and full auth+logging test on cellular. Repo had zero commits and no git remote at the start of this session — flagged rather than assumed.
-
----
-
-## 2026-07-03 — Confidence interval map, Track 2.1 (SHIPPED)
-
-**What:** New view at `/practice/history` → `/practice/stats` (linked from the practice menu's stats-shortcut icon, now live instead of a placeholder). Buckets all putts — freeform logs at their exact distance, regimen sets at their range midpoint — into 10ft distance bands, and classifies each band as **lock-in**, **developing**, or **coin-flip** from its Wilson interval, not just its point estimate.
-**Model:** Sonnet 5 (per DEVELOPMENT_PLAN.md recommendation for UI/CRUD work). Zero schema changes — pure frontend over the already-shipped insights lib, as scoped.
-**Key decisions:**
-- New pure module `lib/insights/confidenceMap.js` (`distanceBand`, `classifyZone`, `confidenceMap`) rather than inline page logic — matches the standing "new derived stats go in `lib/insights/` as tested pure functions" convention; 7 new unit tests (26 total in the suite).
-- Zone rule: **lock-in** when the interval's lower bound clears 70% (even the pessimistic read says you're make-favored); **coin-flip** when the interval straddles 50% (genuinely unresolved); **developing** for everything in between. This is a new interpretive threshold (not pinned by an earlier spec) — the 70% cutoff and the three-zone scheme are the concrete choices worth knowing about if the feel needs tuning.
-- 10ft band width chosen over 5ft to keep per-band attempt counts (and therefore Wilson intervals) meaningful; documented as a named constant (`DISTANCE_BAND_WIDTH_FT`).
-- Band UI shows the full interval as a track + point marker (not just a color), with a 50% midline for visual reference to the coin-flip threshold, plus the raw n/interval whenever n < 30 (reusing the existing `WILSON_MIN_N_FOR_HIDING` convention from session history).
-**Verified:** unit tests for all three zone outcomes against hand-computed Wilson intervals; end-to-end with a scripted browser pass seeding three distances chosen to land in each zone (20/20 @ 10ft → lock-in, 5/10 @ 30ft → coin-flip, 15/20 @ 50ft → developing) — all classified correctly, empty state renders, zero console errors.
-
----
+- Bottom tab bar over hamburger/expanding menu: one-tap access, visible state, 5-tab cap matches full roadmap (Practice/Bag/Rounds/Caddie/Profile); ships now with three tabs
+- Inventory mental model: locker=inventory, bags=loadouts, profile=character sheet, flight chart=stat coverage
+- Locker: grid⇄list toggle (peripheral icon, persisted preference); search/filter/sort
+- Minimal clean cards v1; game flair (rarity borders, equip animations) deliberately deferred to backlog
+- 1E session must audit what 1C actually built at /bag before wiring or building
 
 ## 2026-07-03 — Operational readiness pass (PLANNING)
 
@@ -113,21 +73,9 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 - injury_notes: optional, private-always, never selected in shared views
 - Migration over re-entry for existing discs data; migration runs under Opus 4.8
 
-## 2026-07-03 — Player profile expansion, Track 1A (SHIPPED)
-
-**What:** Sectioned profile page at `/profile` (Identity / Throwing / Calibration / Goals), each section edit-in-place via a reusable `EditableSection` component; first-login nudge banner when the throwing profile is empty. Entry point added as a header icon on the practice menu.
-**Key decisions:**
-- One `profiles` upsert per section save, not one big form.
-- Calibration fields always write `*_source: 'self_reported'` — `derived` is reserved for a future automated path.
-- `specialty_shots` uses a fixed starter-vocab chip picker rather than free text.
-- `injury_notes` rendered only on this screen; `fetchProfile`'s `select('*')` is annotated as safe only because it's always scoped to the caller's own row.
-**Gotchas:**
-- `phase_a_profile_schema.sql` was already applied to Supabase — confirmed by probing specific columns via PostgREST before writing any UI code.
-- First-login nudge bug: the empty-throwing check compared against `'none'`, but a brand-new user has no `profiles` row at all (fields are `undefined`, not `'none'`) — nudge silently never showed for fresh accounts. Fixed to treat unset the same as `'none'`.
-
 ---
 
-## 2026-07-03 — Session history v1 (SHIPPED)
+## 2026-07-03 — Session history v1 (IN PROGRESS)
 
 **What:** Unified history feed at /practice/history + insights layer.
 **Scope:** Feed (day-grouped, filter chips), detail views, notes + tag chips, practice streak, PB badges, volume ledger, and five zero-input derived insights (fatigue curve, pressure differential, decay-weighted current form, cadence fingerprint, confidence intervals).
@@ -140,7 +88,6 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 - Decay-weighted form: exponential decay, half-life 14 days (tunable constant, document in code)
 - PB badge qualification: min 10 attempts at a distance for make-% PBs (prevents 2/2 = "100% PB" noise)
 **Deferred:** distance heat profile + putter tracking (NEXT UP); full list in FEATURE_BACKLOG.md.
-**Verified:** end-to-end with a scripted browser pass (signup → seed freeform + regimen data → feed/filters/PB badges/both detail views/notes+tags save) — 19 unit tests on the insights lib at the time, zero console errors.
 
 ---
 

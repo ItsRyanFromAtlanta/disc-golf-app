@@ -85,18 +85,28 @@ The app uses nested feature trees. Putting practice is the first tree:
 /bag/locker                         → all disc copies, all statuses, with filters
 /bag/manage                         → bag CRUD + disc-to-bag assignment
 /bag/discs/new                      → add a disc (mold search/create, then customize)
-/bag/discs/:discId                  → edit a disc
+/bag/discs/:discId                  → disc detail: inspect (effective vs stock numbers), edit attributes, equip/unequip per bag
 ```
 
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
-Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`). `/profile` and `/bag` are the first such siblings.
-App-level navigation will eventually be a bottom tab bar (Putting / Rounds / Caddie / Stats); not built yet — only one feature area exists. Until then, `/profile`, `/practice/stats`, and `/bag` are reached via header icons on the practice menu.
+Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
+
+### App-level navigation (Track 1E)
+A bottom tab bar (`src/components/TabBar.jsx`) is the app shell, not header icons — `src/components/AppShell.jsx` wraps every authenticated route once (auth guard + persistent tab bar) instead of each route group wrapping its own `ProtectedRoute`. Tabs today: Practice / Bag / Profile. `TABS` is a plain data array in `TabBar.jsx`, so Rounds and Caddie are one-line additions when those feature areas exist. Active state matches by path prefix, so nested routes (`/practice/history`) keep their parent tab lit. Safe-area aware: `viewport-fit=cover` in `index.html` + `env(safe-area-inset-bottom)` in the tab bar and the content wrapper's bottom padding, for notched/home-indicator phones.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
-- Header includes profile, bag, and stats icons (top-right) linking to `/profile`, `/bag`, and `/practice/stats`.
+- Header includes a stats icon (top-right) linking to `/practice/stats` — Profile and Bag moved to the tab bar and no longer live here.
 - Below the cards: a "Recent activity" strip showing the last 2-3 entries pulled from `putt_sessions` and `putting_regimen_runs`.
 - Mobile-first: single-column cards, thumb-friendly tap targets.
+
+### Bag & disc manager UX (Track 1E, see lib/discFilters.js)
+Inventory/loadout mental model: the locker is inventory (every owned disc), bags are loadouts (equipped subsets). All filtering/sorting/search operates on **effective** numbers (`effectiveFlightNumbers`, override-aware), never mold stock.
+- Locker (`/bag/locker`): `DiscCard` grid⇄list toggle, persisted to `localStorage` (`src/lib/viewPreference.js`) — survives reload, has zero DB dependency by design. Search (nickname/manufacturer/mold) + filters (manufacturer, speed class, stability, status) + sort (speed, stability, recently added), all in `filterDiscs`/`sortDiscs`. Speed class and stability (understable/stable/overstable, from turn+fade) are named thresholds documented in code — tune there if the feel is off.
+- The locker's toolbar renders even when the disc fetch fails (sets `discs: []` alongside the error) — the grid/list toggle and filter chrome have value independent of whether data loaded; only the result list itself goes empty.
+- Disc detail (`/bag/discs/:discId`): effective vs. stock numbers shown side by side; attributes edit via `EditableSection`; bag memberships are one-tap equip/unequip toggles, immediately reflected (each page re-fetches on mount, so there's no stale-cache risk between locker/detail/bag views).
+- Bag view (`/bag`): capacity indicator (progress bar, flags over-capacity) when `bags.capacity` is set. "Add from locker" reuses the locker page in a picker mode via `?addToBag=<bagId>` (no separate route) — Add/Added toggle per disc instead of navigating to detail.
+- Deliberately deferred (backlog): game-flair mode (rarity borders, equip animations, stat-block cards).
 
 ## Session history feature (see session_history_schema.sql)
 Unified reverse-chronological feed merging `putt_sessions` and `putting_regimen_runs`, grouped by day, with All/Freeform/Regimens filter chips. Client-side merge of two queries (fine at current volume; a Postgres UNION view is the upgrade path if it ever gets slow).
@@ -129,7 +139,7 @@ Implement as pure functions in a `lib/insights/` module with unit tests — thes
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
 
 ## Current build focus
-Executing DEVELOPMENT_PLAN.md in order: 1A player profile → 2.1 confidence interval map → 1D deploy/PWA baseline → 1B+1.5 molds/locker + round/course groundwork → 1C bags → 2.2 per-putt capture layer → practice-depth features (drills, clutch simulator, miss tendency). Session history v1, 1A player profile, and 2.1 confidence interval map are SHIPPED. 1D is code-ready but not deployed. 1B/1.5 (disc molds, layouts) and 1C (bags/locker/flight chart) are code-complete — schema, migration scripts, UI, and unit tests all written — but the migrations have not been executed against the live database yet, so none of the disc/bag features work end-to-end until that happens; see DEVLOG.md for the exact run order. Native sensor-fusion features are parked on the Native iOS Roadmap in FEATURE_BACKLOG.md.
+Executing DEVELOPMENT_PLAN.md in order: 1A player profile → 2.1 confidence interval map → 1D deploy/PWA baseline → 1B+1.5 molds/locker + round/course groundwork → 1C bags → 1E bag/disc manager UX + tab bar → 2.2 per-putt capture layer → practice-depth features (drills, clutch simulator, miss tendency). Session history v1, 1A player profile, and 2.1 confidence interval map are SHIPPED. 1D is code-ready but not deployed. 1B/1.5 (disc molds, layouts), 1C (bags/locker/flight chart), and 1E (inventory UX, bottom tab bar) are all code-complete — schema, migration scripts, UI, and unit tests all written and the app-nav/UX layer is verified live — but the 1B migration has not been executed against the live database yet, so no disc/bag feature actually works end-to-end (all fail gracefully) until that happens; see DEVLOG.md for the exact run order. Native sensor-fusion features are parked on the Native iOS Roadmap in FEATURE_BACKLOG.md.
 
 ## Conventions
 - All user-owned tables use Row Level Security scoped to `auth.uid()`

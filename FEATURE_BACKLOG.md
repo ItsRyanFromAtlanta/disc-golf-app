@@ -6,18 +6,18 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 
 | Feature | Status | Notes |
 |---|---|---|
-| Unified history feed (freeform + regimens interleaved, day-grouped, filter chips) | SHIPPED | v1 history build |
-| Detail views per session/run | SHIPPED | Per-distance / per-set breakdowns |
-| Session notes | SHIPPED | Optional free text, both session types |
-| One-tap tag chips | SHIPPED | Starter vocab: windy, indoor, outdoor, tired, new-putter, pre-tournament, experimenting. Free-text tags allowed, lowercase-kebab |
-| Practice streak counter | SHIPPED | Consecutive days with ≥1 session; shown at top of history |
-| PB badges | SHIPPED | New best score on a regimen; new make-% high at a distance (min 10 attempts to qualify) |
-| Volume ledger | SHIPPED | Putts this week / month / lifetime |
-| Fatigue curve | SHIPPED | Make % by set position across all regimen runs |
-| Pressure differential | SHIPPED | Pressure-putt make % vs regular make % ("clutch factor") |
-| Decay-weighted current form | SHIPPED | Exponentially weighted recent make %; shown beside lifetime for trend gap |
-| Cadence fingerprint | SHIPPED | Performance by time-of-day and by gap-since-last-session |
-| Confidence intervals on make % | SHIPPED | Wilson interval; show band until n ≥ 30 per distance |
+| Unified history feed (freeform + regimens interleaved, day-grouped, filter chips) | IN PROGRESS | v1 history build |
+| Detail views per session/run | IN PROGRESS | Per-distance / per-set breakdowns |
+| Session notes | IN PROGRESS | Optional free text, both session types |
+| One-tap tag chips | IN PROGRESS | Starter vocab: windy, indoor, outdoor, tired, new-putter, pre-tournament, experimenting. Free-text tags allowed, lowercase-kebab |
+| Practice streak counter | IN PROGRESS | Consecutive days with ≥1 session; shown at top of history |
+| PB badges | IN PROGRESS | New best score on a regimen; new make-% high at a distance (min 10 attempts to qualify) |
+| Volume ledger | IN PROGRESS | Putts this week / month / lifetime |
+| Fatigue curve | IN PROGRESS | Make % by set position across all regimen runs |
+| Pressure differential | IN PROGRESS | Pressure-putt make % vs regular make % ("clutch factor") |
+| Decay-weighted current form | IN PROGRESS | Exponentially weighted recent make %; shown beside lifetime for trend gap |
+| Cadence fingerprint | IN PROGRESS | Performance by time-of-day and by gap-since-last-session |
+| Confidence intervals on make % | IN PROGRESS | Wilson interval; show band until n ≥ 30 per distance |
 | Distance heat profile | NEXT UP | Practice volume vs weakness by distance; the gap = blind spot |
 | Putter tracking (link sessions to discs table) | NEXT UP | "Did switching putters help" with data |
 | Experiment markers | BACKLOG | First-class change markers (stance, grip, disc); before/after stat splits with sample-size honesty |
@@ -47,17 +47,19 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 | Course prep views | BACKLOG | |
 | Stats tab (app-level) | BACKLOG | History insights may graduate into it |
 | Bottom tab bar app nav | BACKLOG | Waiting until ≥2 feature areas exist |
-| PWA deploy + on-course testing | IN PROGRESS | Track 1D. Code-ready: `vite-plugin-pwa` (manifest, app-shell-only caching), `vercel.json` SPA rewrite, icon set generated, `.env.example` documents required vars. Remaining (user-side): push to GitHub, connect + configure Vercel project, set env vars in dashboard, install-to-homescreen + cellular test |
+| PWA deploy + on-course testing | BACKLOG | |
 | Capacitor wrap (app stores, native GPS/camera) | LATER (deliberate) | Wider-audience phase |
 
 ## Player & bag profile (planned 2026-07-03)
 
 | Feature | Status | Notes |
 |---|---|---|
-| Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Phase A (Track 1A); sectioned `/profile` page (Identity/Throwing/Calibration/Goals), edit-in-place, first-login nudge, value+source pattern on calibration fields, injury_notes private-only |
-| Disc molds reference table + locker migration | IN PROGRESS | Track 1B. Schema/migration/verification/seed scripts written + flight-number coalesce tested (Opus 4.8). Migration NOT yet executed — gated on user DB backup + dry-run approval. Live scraping rejected (JS/AJAX sources); curated bootstrap seed + manual entry instead. Disc CRUD UI (`/bag/discs/new`, `/bag/discs/:id`) built in the 1C session |
-| Layouts first-class + round/course provenance + course_aliases | IN PROGRESS | Track 1.5. Schema/migration written alongside 1B (layouts table, holes/rounds → layout_id, external_source/ref on rounds+courses, course_aliases). Pending same migration execution. No UI this phase |
-| Multiple bags + membership + flight chart | IN PROGRESS | Track 1C. Schema (`bags`/`bag_discs`/`rounds.bag_id`) is additive/independent of 1B and safe to run now. UI built: `/bag` (switcher + SVG flight chart), `/bag/locker` (status filters), `/bag/manage` (bag CRUD + membership). Membership migration + flight chart + status filtering are code-complete but need 1B's `discs.status`/`mold_id` live to work — not yet executed. Default-bag-flip, status-filter, and override-vs-stock chart logic covered by 8 unit tests (no live DB needed for those) |
+| Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Phase A (Track 1A); sectioned `/profile` page, edit-in-place, first-login nudge, value+source pattern, injury_notes private-only |
+| Disc molds reference table + locker migration | IN PROGRESS | Track 1B. Schema/migration/verification/seed scripts + flight-number coalesce tested (Opus 4.8). Migration NOT yet executed — gated on user DB backup + dry-run approval |
+| Multiple bags + membership + flight chart | IN PROGRESS | Track 1C. Schema (`bags`/`bag_discs`/`rounds.bag_id`) additive/independent of 1B, safe to run now. UI built. Blocked on the same 1B migration for `discs.status`/`mold_id` to actually work end-to-end |
+| Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | IN PROGRESS | Track 1E — built: bottom tab bar (Practice/Bag/Profile, data-driven for easy Rounds/Caddie additions), locker rebuilt as inventory (grid/list toggle persisted, search/filter/sort on effective numbers), disc detail (inspect) page with equip/unequip, bag capacity indicator + add-from-locker picker. Verified live: tab bar active-state + mobile safe-area, toggle persists across reload. Equip/unequip and all disc-data views still blocked on the 1B migration |
+| Game-flair card mode (rarity borders, equip animations, stat-block cards) | BACKLOG | Deliberately deferred from 1E |
+| Disc comparison view (side-by-side stats) | BACKLOG | Natural inventory extension |
 | Disc wear timeline (condition change history) | BACKLOG | Current-state-only in v1 |
 | Slot analysis ("no stable fairway in this bag") | BACKLOG | Derived view over bag + effective flight numbers |
 | Per-disc usage stats | BACKLOG | Needs round data linking discs to holes |
@@ -72,7 +74,7 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 
 | Feature | Status | Notes |
 |---|---|---|
-| Confidence interval map (lock-in vs coin-flip zones) | SHIPPED | Track 2.1; `/practice/stats`, 10ft distance bands, zone classified from the Wilson interval (lock-in/developing/coin-flip) |
+| Confidence interval map (lock-in vs coin-flip zones) | NEXT UP | Pure frontend over shipped Wilson-interval stats |
 | Per-putt capture layer (tap entry, miss zones, timestamps, input_source) | NEXT UP | THE enabler: drills, diagnostics, pacing, voice, and future sensor inputs all feed one table |
 | Gamified drills: JYLY, Around the World | NEXT UP | Regimen engine generalization (drill_type + rules_config jsonb) |
 | Clutch simulator (randomized rest timers) | NEXT UP | Adopts TDD's 2-8min randomization; existing pressure scoring |
@@ -81,6 +83,21 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 | Voice callouts / Match Mode coaching | BACKLOG | Browser SpeechSynthesis; adopts TDD intervention-threshold rule (never coach off single events) |
 | Acoustic make-detection prototype (Web Audio FFT) | BACKLOG | Experimental spike; success gate >90% agreement with manual entry outdoors |
 | Tournament noise overlay (cognitive load training) | BACKLOG | Background audio loops; cheap once drills exist |
+
+## Round management, course catalog & import groundwork (planned 2026-07-03)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Layouts as first-class entities (layouts table; holes/rounds re-pointed) | NEXT UP | Track 1.5 — must land before real round data; mirrors UDisc model |
+| Provenance columns on rounds/courses (external_source, external_ref) | NEXT UP | Track 1.5 — idempotent imports, native vs imported distinguishable |
+| course_aliases table | NEXT UP | Track 1.5 — UDisc name matching + catalog search synonyms; insert-open/update-closed |
+| bag_id on rounds | NEXT UP | Rides with 1C — per-bag performance stats, caddie context |
+| round_hole_id on putt_events | NEXT UP | Rides with 2.2 — tournament vs practice putting in one insights system |
+| UDisc CSV round import | BACKLOG | Score-only data; idempotent via provenance; verify current CSV format at build time |
+| Course catalog UI | BACKLOG | Next planning cycle after current execution order |
+| Round management UI (/rounds tree) | BACKLOG | Next planning cycle; weather auto-capture ships with it |
+| Data export (own-your-data CSV) | BACKLOG | Cheap trust-builder; build as importer rehearsal |
+| Same-day practice↔round linkage | BACKLOG | Derivable by date; insights lib join, no schema |
 
 ## Native iOS Roadmap (parked — requires platform decision)
 
