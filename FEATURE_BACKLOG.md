@@ -55,8 +55,9 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 | Feature | Status | Notes |
 |---|---|---|
 | Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Phase A (Track 1A); sectioned `/profile` page (Identity/Throwing/Calibration/Goals), edit-in-place, first-login nudge, value+source pattern on calibration fields, injury_notes private-only |
-| Disc molds reference table + locker migration | NEXT UP | Phase B; insert-open/update-closed RLS; seed via manufacturer-site import (Infinite Discs fallback); Opus 4.8 for migration |
-| Multiple bags + membership + flight chart | NEXT UP | Phase C; locker/bag split; partial unique index for default bag |
+| Disc molds reference table + locker migration | IN PROGRESS | Track 1B. Schema/migration/verification/seed scripts written + flight-number coalesce tested (Opus 4.8). Migration NOT yet executed — gated on user DB backup + dry-run approval. Live scraping rejected (JS/AJAX sources); curated bootstrap seed + manual entry instead. Locker/disc UI (`/bag/*`) still to build |
+| Layouts first-class + round/course provenance + course_aliases | IN PROGRESS | Track 1.5. Schema/migration written alongside 1B (layouts table, holes/rounds → layout_id, external_source/ref on rounds+courses, course_aliases). Pending same migration execution. No UI this phase |
+| Multiple bags + membership + flight chart | NEXT UP | Phase C / Track 1C; locker/bag split; partial unique index for default bag; `bag_id` FK on rounds |
 | Disc wear timeline (condition change history) | BACKLOG | Current-state-only in v1 |
 | Slot analysis ("no stable fairway in this bag") | BACKLOG | Derived view over bag + effective flight numbers |
 | Per-disc usage stats | BACKLOG | Needs round data linking discs to holes |

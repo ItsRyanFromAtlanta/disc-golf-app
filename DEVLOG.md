@@ -4,6 +4,29 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-04 — Disc locker + layouts schema/migration, Track 1B + 1.5 (schema/scripts done; migration execution pending)
+
+**What:** Delivered the full 1B disc-locker + 1.5 layouts/provenance/aliases schema restructure as scripts (Opus 4.8, per plan). Not yet executed against the live DB — that's gated behind the user's backup + dry-run approval.
+**Files:**
+- `disc_locker_and_layouts_schema.sql` — additive/idempotent only: `disc_molds` (insert-open/update-closed RLS, unique lower(manufacturer)+lower(mold_name), nullable enrichment), `discs` alters (mold_id, nickname, weight_grams, color, override_* flight, photo_url, acquired_on, provenance, status lifecycle), `layouts`, `holes.layout_id`, `rounds.layout_id` + provenance, `courses` provenance, partial-unique external (source,ref) indexes, `course_aliases`. Zero data loss; safe to run anytime.
+- `migrate_disc_locker_and_layouts.sql` — 3 gated sections: (1) read-only DRY RUN; (2) reversible BACKFILL (old columns retained); (3) irreversible DESTRUCTIVE CLEANUP (drops is_active + stock flight cols + holes.course_id + rounds.layout_name, tightens FKs).
+- `verify_disc_locker_and_layouts.sql` — integrity checks, run between backfill and cleanup.
+- `scripts/seed-disc-molds.mjs` → `disc_molds_seed.sql` — curated flagship MVP/Axiom/Streamline molds.
+- `src/lib/discs.js` `effectiveFlightNumbers()` + 6 tests.
+**Key decisions:**
+- Introspected the LIVE DB first (PostgREST column probes): confirmed every target table still at base shape — no 1B/1.5 columns/tables exist, clean starting point. No app code references discs/holes/rounds/courses, so the destructive drops break no frontend.
+- Effective flight numbers preserved by construction: mold stock = most-complete representative copy; a copy gets an override on an axis only when it has an explicit value differing from stock; null copies inherit stock (flight numbers are a mold property). `effectiveFlightNumbers` uses `??` not `||` so a 0 turn/fade override wins.
+- Layouts promoted to first-class: default layout per course from `layout_name`, plus a non-default layout per distinct round `layout_name` so each round keeps the layout it was played on. holes → default layout; rounds → name-match else default.
+- `is_active=false → status 'retired'` (neutral); reclassify to lost/sold in-app later. Kept `discs.manufacturer/mold` text as human labels; kept `rounds.course_id` (denormalized but safe).
+- Migration split into safe-backfill vs irreversible-cleanup with a verification checkpoint between, so the destructive step only runs after integrity is proven AND a backup is confirmed.
+**Gotchas / notes:**
+- Seed: live scraping of MVP/Axiom/Streamline/Infinite Discs was investigated and rejected — flight data loads via JS/AJAX or inconsistent markup; a scraper would risk seeding wrong numbers. Curated bootstrap + always-available manual entry instead.
+- `disc_molds` inserts require the authenticated/owner role (RLS), so the seed is delivered as SQL for the editor, not an anon-key script.
+- Found the doc-drift culprit: a `.tmp.driveupload/` dir (Google Drive sync) — gitignored. Also restored canonical `supabase_schema.sql` to the repo (was only in Downloads).
+- **Pending user action:** take a DB backup; run schema file; run migration Section 1 (dry run) and paste output; approve; run Section 2 + verification; then Section 3.
+
+---
+
 ## 2026-07-03 — Deploy + PWA baseline, Track 1D (IN PROGRESS — code-ready, deploy pending)
 
 **What:** `vite-plugin-pwa` added with a manifest (name, theme/background color, standalone display, 192/512/maskable icons) and a service worker configured for **app-shell caching only** — precaches the built JS/CSS/HTML/icons, no `runtimeCaching` entries, so Supabase reads/writes always hit the network. `vercel.json` added with a catch-all rewrite to `index.html` so client-side routes resolve on a hard refresh or direct link. `.env.example`, `.gitignore` (added `dev-dist`), and `README.md` (setup + deploy steps) brought up to date.
