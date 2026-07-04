@@ -52,6 +52,16 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Needs:** Vercel account + GitHub repo connection (auto-deploy on push to main); env vars (Supabase URL/anon key) set in Vercel dashboard; `vite-plugin-pwa` for manifest + basic service worker (app-shell caching only — NOT offline data, that's 2.2's buffering)
 - **Model:** Sonnet 5 · **Effort:** S · **Test:** install to phone home screen; full auth + logging flow on cellular, not just wifi
 
+### 1E. Bag & Disc Manager UI + app-level navigation
+- **Concept:** game-inventory mental model — **locker = inventory** (all owned discs), **bags = loadouts** (equipped subsets), **profile = character sheet**, **flight chart = stat coverage**. Future round tracking selects a loadout whose disc attributes are all referenceable.
+- **App nav:** bottom tab bar ships now — Practice / Bag / Profile — replacing header-icon navigation. Rounds and Caddie tabs added as those areas are built (5-tab cap matches full roadmap; "More" tab absorbs overflow if ever needed).
+- **Locker UI:** grid ⇄ list toggle via peripheral icon (persist preference). Cards are clean/minimal in v1: name/nickname, flight numbers, photo thumbnail, stability accent, status. Search + filter (manufacturer, speed class, stability, status) + sort (speed, stability, recently added).
+- **Disc detail:** inspect view — full attributes, effective vs stock numbers, condition, bag memberships with one-tap equip/unequip per bag.
+- **Bag view:** loadout screen — disc list + flight chart coverage + capacity indicator if set; bag switcher; add-from-locker flow.
+- **Deferred game flair (backlog):** rarity-style borders, equip animations, full stat-block card mode.
+- **Model:** Sonnet 5 · **Effort:** M · **Test:** grid/list toggle persists; equip/unequip reflects in both locker and bag views; search/filter correct on effective numbers
+- **Note:** 1C shipped schema + possibly partial UI with no navigation entry point — session must first audit what exists at /bag routes and wire or build accordingly.
+
 ---
 
 ## Track 2 — Practice depth (ranked by value : ease)
@@ -121,10 +131,11 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
 3. **1D** deploy + PWA baseline (get it on your phone BEFORE the big schema work; validate on cellular)
 4. **1B + 1.5** molds/locker migration + round/course groundwork (one big schema session, Opus 4.8; MANUAL DB BACKUP FIRST)
 5. **1C** bags (+ bag_id on rounds)
-6. **2.2** per-putt capture (the enabler, + round_hole_id accommodation, + local buffering)
-7. **2.3 → 2.4 → 2.5** drills, clutch, miss tendency (the practice-depth payoff)
-8. **2.6 → 2.7** ghost pacing, voice
-9. **3.1** acoustic spike (anytime after 2.2, as an interest project)
+6. **1E** bag & disc manager UI + bottom tab bar (inventory/loadout experience; audits + completes 1C's UI)
+7. **2.2** per-putt capture (the enabler, + round_hole_id accommodation, + local buffering)
+8. **2.3 → 2.4 → 2.5** drills, clutch, miss tendency (the practice-depth payoff)
+9. **2.6 → 2.7** ghost pacing, voice
+10. **3.1** acoustic spike (anytime after 2.2, as an interest project)
 
 **Confirmed future destination (next planning cycle after the above):** course catalog, round management, and UDisc CSV import — the Track 1.5 groundwork exists specifically so these land on prepared schema. Import design notes: UDisc exports score-only CSVs (per-hole scores + par row per layout, no disc/putt data); importer must be idempotent via external_source/external_ref; course matching via course_aliases; verify exact current CSV format at build time. Related backlog: data export (own-your-data CSV — build as importer rehearsal), weather auto-capture shipping WITH round management v1 (round creation is the natural capture point), same-day practice↔round linkage (derivable, insights lib join).
 
