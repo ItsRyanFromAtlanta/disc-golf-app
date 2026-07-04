@@ -6,7 +6,11 @@
 .history-page,
 .history-detail-page,
 .profile-page,
-.confidence-map-page {
+.confidence-map-page,
+.bag-page,
+.bag-locker-page,
+.bag-manage-page,
+.disc-form-page {
   max-width: 480px;
   margin: 0 auto;
   padding: 32px 20px;
@@ -644,4 +648,149 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+/* Bag / disc locker */
+
+.bag-switcher-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.bag-switcher-row select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 15px;
+}
+
+.flight-chart {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  margin: 16px 0;
+}
+
+.flight-chart-axis {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.flight-chart-zero-line {
+  stroke: var(--text-secondary, #888);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.6;
+}
+
+.flight-chart-label {
+  fill: var(--text-secondary, #888);
+  font-size: 9px;
+}
+
+.flight-chart-point {
+  fill: var(--accent, #4a4a8a);
+  stroke: var(--bg, #fff);
+  stroke-width: 1.5;
+}
+
+.flight-number-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.flight-number-grid label {
+  font-size: 12px;
+  text-transform: capitalize;
+  margin-top: 0;
+}
+
+.flight-number-grid input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mold-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.mold-picker-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.mold-picker-results {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.mold-picker-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.mold-picker-create {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.bag-manage-card {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bag-manage-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 10px 0;
+}
+
+.bag-membership-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.bag-membership-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
 }

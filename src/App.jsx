@@ -10,6 +10,10 @@ import HistoryPage from './pages/HistoryPage'
 import HistoryDetailPage from './pages/HistoryDetailPage'
 import ConfidenceMapPage from './pages/ConfidenceMapPage'
 import ProfilePage from './pages/ProfilePage'
+import BagPage from './pages/BagPage'
+import BagLockerPage from './pages/BagLockerPage'
+import BagManagePage from './pages/BagManagePage'
+import DiscFormPage from './pages/DiscFormPage'
 import './App.css'
 
 function App() {
@@ -48,6 +52,20 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/bag"
+        element={
+          <ProtectedRoute>
+            <Outlet />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<BagPage />} />
+        <Route path="locker" element={<BagLockerPage />} />
+        <Route path="manage" element={<BagManagePage />} />
+        <Route path="discs/new" element={<DiscFormPage />} />
+        <Route path="discs/:discId" element={<DiscFormPage />} />
+      </Route>
       {/* Old flat URLs from the v1/v2 slices */}
       <Route path="/regimens" element={<Navigate to="/practice/regimens" replace />} />
     </Routes>

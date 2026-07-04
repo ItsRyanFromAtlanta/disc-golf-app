@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { IconChartBar, IconHistory, IconListNumbers, IconTargetArrow, IconUserCircle } from '@tabler/icons-react'
+import { IconBriefcase, IconChartBar, IconHistory, IconListNumbers, IconTargetArrow, IconUserCircle } from '@tabler/icons-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import ModeCard from '../components/ModeCard'
@@ -86,6 +86,9 @@ export default function PracticeMenuPage() {
         <span className="header-actions">
           <Link to="/profile" className="stats-shortcut" title="Profile">
             <IconUserCircle size={22} stroke={1.75} />
+          </Link>
+          <Link to="/bag" className="stats-shortcut" title="Bag">
+            <IconBriefcase size={22} stroke={1.75} />
           </Link>
           <Link to="/practice/stats" className="stats-shortcut" title="Confidence map">
             <IconChartBar size={22} stroke={1.75} />

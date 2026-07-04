@@ -1,0 +1,218 @@
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { fetchDisc, upsertDisc } from '../lib/discLocker'
+import MoldPicker from '../components/MoldPicker'
+
+const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
+
+const BLANK_FORM = {
+  nickname: '',
+  weight_grams: '',
+  color: '',
+  override_speed: '',
+  override_glide: '',
+  override_turn: '',
+  override_fade: '',
+  photo_url: '',
+  acquired_on: '',
+  provenance: '',
+  status: 'in_locker',
+  condition: '',
+  plastic: '',
+  notes: '',
+}
+
+export default function DiscFormPage() {
+  const { discId } = useParams()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const isEditing = Boolean(discId)
+
+  const [mold, setMold] = useState(null)
+  const [form, setForm] = useState(BLANK_FORM)
+  const [loading, setLoading] = useState(isEditing)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!isEditing) return
+    fetchDisc(discId)
+      .then((disc) => {
+        setMold(disc.moldInfo)
+        setForm({
+          nickname: disc.nickname ?? '',
+          weight_grams: disc.weight_grams ?? '',
+          color: disc.color ?? '',
+          override_speed: disc.override_speed ?? '',
+          override_glide: disc.override_glide ?? '',
+          override_turn: disc.override_turn ?? '',
+          override_fade: disc.override_fade ?? '',
+          photo_url: disc.photo_url ?? '',
+          acquired_on: disc.acquired_on ?? '',
+          provenance: disc.provenance ?? '',
+          status: disc.status ?? 'in_locker',
+          condition: disc.condition ?? '',
+          plastic: disc.plastic ?? '',
+          notes: disc.notes ?? '',
+        })
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [discId, isEditing])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!mold) {
+      setError('Pick or create a mold first.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+
+    const numOrNull = (v) => (v === '' ? null : Number(v))
+
+    try {
+      const saved = await upsertDisc(user.id, isEditing ? discId : null, {
+        mold_id: mold.id,
+        manufacturer: mold.manufacturer,
+        mold: mold.mold_name,
+        nickname: form.nickname.trim() || null,
+        weight_grams: numOrNull(form.weight_grams),
+        color: form.color.trim() || null,
+        override_speed: numOrNull(form.override_speed),
+        override_glide: numOrNull(form.override_glide),
+        override_turn: numOrNull(form.override_turn),
+        override_fade: numOrNull(form.override_fade),
+        photo_url: form.photo_url.trim() || null,
+        acquired_on: form.acquired_on || null,
+        provenance: form.provenance.trim() || null,
+        status: form.status,
+        condition: form.condition.trim() || null,
+        plastic: form.plastic.trim() || null,
+        notes: form.notes.trim() || null,
+      })
+      navigate(`/bag/discs/${saved.id}`, { replace: true })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <p className="loading">Loading...</p>
+
+  return (
+    <section className="disc-form-page">
+      <header className="practice-header">
+        <h1>{isEditing ? 'Edit Disc' : 'Add Disc'}</h1>
+        <Link to="/bag/locker" className="link-button">
+          Locker
+        </Link>
+      </header>
+
+      <form onSubmit={handleSubmit} className="putt-form">
+        <MoldPicker selectedMold={mold} onSelect={setMold} />
+
+        <label htmlFor="nickname">Nickname</label>
+        <input
+          id="nickname"
+          type="text"
+          value={form.nickname}
+          onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+        />
+
+        <label htmlFor="plastic">Plastic</label>
+        <input
+          id="plastic"
+          type="text"
+          value={form.plastic}
+          onChange={(e) => setForm({ ...form, plastic: e.target.value })}
+        />
+
+        <label htmlFor="weight_grams">Weight (g)</label>
+        <input
+          id="weight_grams"
+          type="number"
+          min="0"
+          value={form.weight_grams}
+          onChange={(e) => setForm({ ...form, weight_grams: e.target.value })}
+        />
+
+        <label htmlFor="color">Color</label>
+        <input id="color" type="text" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+
+        <span className="editor-label">
+          Flight overrides {mold && <span className="log-time">(blank = mold stock: {mold.speed}/{mold.glide}/{mold.turn}/{mold.fade})</span>}
+        </span>
+        <div className="flight-number-grid">
+          {['speed', 'glide', 'turn', 'fade'].map((axis) => (
+            <div key={axis}>
+              <label htmlFor={`override_${axis}`}>{axis}</label>
+              <input
+                id={`override_${axis}`}
+                type="number"
+                step="0.5"
+                placeholder={mold?.[axis] ?? ''}
+                value={form[`override_${axis}`]}
+                onChange={(e) => setForm({ ...form, [`override_${axis}`]: e.target.value })}
+              />
+            </div>
+          ))}
+        </div>
+
+        <label htmlFor="condition">Condition</label>
+        <input
+          id="condition"
+          type="text"
+          placeholder="new, worn, beat-in..."
+          value={form.condition}
+          onChange={(e) => setForm({ ...form, condition: e.target.value })}
+        />
+
+        <label htmlFor="status">Status</label>
+        <select id="status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+
+        <label htmlFor="acquired_on">Acquired on</label>
+        <input
+          id="acquired_on"
+          type="date"
+          value={form.acquired_on}
+          onChange={(e) => setForm({ ...form, acquired_on: e.target.value })}
+        />
+
+        <label htmlFor="provenance">Provenance</label>
+        <input
+          id="provenance"
+          type="text"
+          placeholder="bought new, traded, found..."
+          value={form.provenance}
+          onChange={(e) => setForm({ ...form, provenance: e.target.value })}
+        />
+
+        <label htmlFor="photo_url">Photo URL</label>
+        <input
+          id="photo_url"
+          type="text"
+          value={form.photo_url}
+          onChange={(e) => setForm({ ...form, photo_url: e.target.value })}
+        />
+
+        <label htmlFor="notes">Notes</label>
+        <textarea id="notes" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+
+        {error && <p className="form-error">{error}</p>}
+
+        <button type="submit" disabled={saving}>
+          {saving ? 'Saving...' : isEditing ? 'Save changes' : 'Add disc'}
+        </button>
+      </form>
+    </section>
+  )
+}
