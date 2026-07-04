@@ -40,9 +40,6 @@ export default function BagPage() {
       <section className="bag-page">
         <header className="practice-header">
           <h1>Bag</h1>
-          <Link to="/practice" className="link-button">
-            Practice menu
-          </Link>
         </header>
         <p>You don't have a bag yet.</p>
         <Link to="/bag/manage" className="start-button">
@@ -52,16 +49,15 @@ export default function BagPage() {
     )
   }
 
+  const selectedBag = bags.find((b) => b.id === selectedBagId)
   const discsWithMolds = discs.filter((d) => d.moldInfo).map((disc) => ({ disc, mold: disc.moldInfo }))
   const points = flightChartPoints(discsWithMolds)
+  const overCapacity = selectedBag?.capacity != null && discs.length > selectedBag.capacity
 
   return (
     <section className="bag-page">
       <header className="practice-header">
         <h1>Bag</h1>
-        <Link to="/practice" className="link-button">
-          Practice menu
-        </Link>
       </header>
 
       <div className="bag-switcher-row">
@@ -81,10 +77,30 @@ export default function BagPage() {
         </Link>
       </div>
 
+      {selectedBag?.capacity != null && (
+        <div className="capacity-indicator">
+          <span className={overCapacity ? 'form-error' : 'log-time'}>
+            {discs.length} / {selectedBag.capacity} discs
+          </span>
+          <div className="capacity-bar-track">
+            <div
+              className={`capacity-bar-fill ${overCapacity ? 'capacity-bar-fill-over' : ''}`}
+              style={{ width: `${Math.min(100, (discs.length / selectedBag.capacity) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <p>
+        <Link to={`/bag/locker?addToBag=${selectedBagId}`} className="start-button">
+          Add from locker
+        </Link>
+      </p>
+
       {loadingDiscs ? (
         <p className="loading">Loading...</p>
       ) : discs.length === 0 ? (
-        <p>No discs in this bag yet — add some from your locker in Manage bags.</p>
+        <p>No discs in this bag yet.</p>
       ) : (
         <>
           <FlightChart points={points} />

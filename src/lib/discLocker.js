@@ -99,6 +99,14 @@ export async function fetchBagDiscs(bagId) {
   return data.map((row) => ({ membershipId: row.id, ...row.disc }))
 }
 
+// Which of the user's bags currently contain this disc — RLS already scopes
+// bag_discs to bags the caller owns, so no extra user_id filter is needed.
+export async function fetchDiscBagIds(discId) {
+  const { data, error } = await supabase.from('bag_discs').select('bag_id').eq('disc_id', discId)
+  if (error) throw error
+  return data.map((row) => row.bag_id)
+}
+
 export async function addDiscToBag(bagId, discId) {
   const { error } = await supabase.from('bag_discs').insert({ bag_id: bagId, disc_id: discId })
   if (error) throw error

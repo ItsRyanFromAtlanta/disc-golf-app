@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { fetchDisc, upsertDisc } from '../lib/discLocker'
+import { upsertDisc } from '../lib/discLocker'
 import MoldPicker from '../components/MoldPicker'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
@@ -23,43 +23,16 @@ const BLANK_FORM = {
   notes: '',
 }
 
+// Creation only — editing an existing disc's attributes, overrides, and bag
+// memberships happens on DiscDetailPage.
 export default function DiscFormPage() {
-  const { discId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const isEditing = Boolean(discId)
 
   const [mold, setMold] = useState(null)
   const [form, setForm] = useState(BLANK_FORM)
-  const [loading, setLoading] = useState(isEditing)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
-
-  useEffect(() => {
-    if (!isEditing) return
-    fetchDisc(discId)
-      .then((disc) => {
-        setMold(disc.moldInfo)
-        setForm({
-          nickname: disc.nickname ?? '',
-          weight_grams: disc.weight_grams ?? '',
-          color: disc.color ?? '',
-          override_speed: disc.override_speed ?? '',
-          override_glide: disc.override_glide ?? '',
-          override_turn: disc.override_turn ?? '',
-          override_fade: disc.override_fade ?? '',
-          photo_url: disc.photo_url ?? '',
-          acquired_on: disc.acquired_on ?? '',
-          provenance: disc.provenance ?? '',
-          status: disc.status ?? 'in_locker',
-          condition: disc.condition ?? '',
-          plastic: disc.plastic ?? '',
-          notes: disc.notes ?? '',
-        })
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [discId, isEditing])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -73,7 +46,7 @@ export default function DiscFormPage() {
     const numOrNull = (v) => (v === '' ? null : Number(v))
 
     try {
-      const saved = await upsertDisc(user.id, isEditing ? discId : null, {
+      const saved = await upsertDisc(user.id, null, {
         mold_id: mold.id,
         manufacturer: mold.manufacturer,
         mold: mold.mold_name,
@@ -100,12 +73,10 @@ export default function DiscFormPage() {
     }
   }
 
-  if (loading) return <p className="loading">Loading...</p>
-
   return (
     <section className="disc-form-page">
       <header className="practice-header">
-        <h1>{isEditing ? 'Edit Disc' : 'Add Disc'}</h1>
+        <h1>Add Disc</h1>
         <Link to="/bag/locker" className="link-button">
           Locker
         </Link>
@@ -210,7 +181,7 @@ export default function DiscFormPage() {
         {error && <p className="form-error">{error}</p>}
 
         <button type="submit" disabled={saving}>
-          {saving ? 'Saving...' : isEditing ? 'Save changes' : 'Add disc'}
+          {saving ? 'Saving...' : 'Add disc'}
         </button>
       </form>
     </section>

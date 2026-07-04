@@ -794,3 +794,272 @@
   gap: 8px;
   font-weight: normal;
 }
+
+/* App shell + bottom tab bar */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell-content {
+  flex: 1;
+  /* Leave room for the fixed tab bar (56px) + its own safe-area padding
+     below, so the last bit of scrollable content is never hidden behind it. */
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  border-top: 1px solid var(--border);
+  background: var(--bg, #fff);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 10;
+}
+
+.tab-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 6px;
+  color: var(--text-secondary, #888);
+  text-decoration: none;
+  font-size: 11px;
+}
+
+.tab-bar-item-active {
+  color: var(--accent, #4a4a8a);
+  font-weight: 600;
+}
+
+/* Locker toolbar / filters */
+
+.locker-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+}
+
+.locker-search {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 15px;
+}
+
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+}
+
+.view-toggle-btn-active {
+  background: var(--accent-bg, #eee);
+  color: var(--accent, #4a4a8a);
+}
+
+.locker-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.locker-filters select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  flex: 1 1 auto;
+  min-width: 110px;
+}
+
+/* Disc cards: grid + list variants share a component, styled by parent layout */
+
+.disc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.disc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.disc-card {
+  position: relative;
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  background: none;
+}
+
+.disc-card-grid {
+  flex-direction: column;
+  padding: 10px;
+  gap: 8px;
+}
+
+.disc-card-list {
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 10px;
+  gap: 10px;
+}
+
+.disc-card-thumb {
+  border-radius: 8px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.disc-card-grid .disc-card-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.disc-card-list .disc-card-thumb {
+  width: 40px;
+  height: 40px;
+}
+
+.disc-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.disc-card-thumb-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.25;
+}
+
+.disc-card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.disc-card-title {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disc-card-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+}
+
+.disc-card-numbers {
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+  font-family: var(--mono, monospace);
+}
+
+.disc-card-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.disc-card-list .disc-card-status {
+  position: static;
+  margin-left: auto;
+}
+
+.disc-card-action {
+  margin-left: auto;
+}
+
+/* Disc detail page */
+
+.flight-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 20px;
+  font-size: 14px;
+}
+
+.flight-compare-table th,
+.flight-compare-table td {
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.flight-compare-table th:first-child,
+.flight-compare-table td:first-child {
+  text-align: left;
+}
+
+.disc-detail-photo {
+  width: 100%;
+  max-width: 240px;
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.bag-membership-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+/* Bag view: capacity */
+
+.capacity-indicator {
+  margin: 10px 0;
+}
+
+.capacity-bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--code-bg, #eee);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.capacity-bar-fill {
+  height: 100%;
+  background: var(--accent, #4a4a8a);
+}
+
+.capacity-bar-fill-over {
+  background: #c0392b;
+}
