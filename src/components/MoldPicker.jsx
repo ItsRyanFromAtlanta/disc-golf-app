@@ -26,8 +26,7 @@ export default function MoldPicker({ selectedMold, onSelect }) {
     }
   }
 
-  async function handleCreateMold(e) {
-    e.preventDefault()
+  async function handleCreateMold() {
     setError(null)
     try {
       const mold = await createMold({
@@ -97,7 +96,12 @@ export default function MoldPicker({ selectedMold, onSelect }) {
           Can't find it? Add a new mold
         </button>
       ) : (
-        <form onSubmit={handleCreateMold} className="mold-picker-create">
+        // A <div>, not a <form>: this renders inside DiscFormPage's own
+        // <form>, and nested <form> elements are invalid HTML — the browser
+        // silently mishandles the submit event when one is nested inside
+        // another. "Create mold" is a type="button" wired to an onClick
+        // instead of relying on form submission.
+        <div className="mold-picker-create">
           <label htmlFor="new-mold-manufacturer">Manufacturer</label>
           <input
             id="new-mold-manufacturer"
@@ -129,12 +133,14 @@ export default function MoldPicker({ selectedMold, onSelect }) {
             ))}
           </div>
           <div className="profile-section-actions">
-            <button type="submit">Create mold</button>
+            <button type="button" onClick={handleCreateMold}>
+              Create mold
+            </button>
             <button type="button" className="link-button" onClick={() => setCreating(false)}>
               Cancel
             </button>
           </div>
-        </form>
+        </div>
       )}
     </div>
   )
