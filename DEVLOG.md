@@ -4,6 +4,22 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-04 — INCIDENT + FIX: 1B/1.5/1C schema never applied to prod; applied + seeded (Track 1B/1.5/1C now live)
+
+**What:** Discovered that *no* Track 1B/1.5/1C schema had ever been applied to the live database. The schema/migration/seed files existed in the repo and every prior DEVLOG entry said the work was "blocked on the 1B migration," but the migration was never actually executed. `list_migrations` was empty; `disc_molds`/`layouts`/`course_aliases`/`bags`/`bag_discs` did not exist; `discs` had no `mold_id`/`status` columns. Every disc/bag feature had been failing gracefully for that reason.
+**Model:** Opus 4.8 (migration/schema session, per convention).
+**Root cause of the incident:** the repo treated "schema file committed" as equivalent to "schema applied." It isn't. Nothing verified the live DB state at session close, so the gap persisted across multiple sessions.
+**Done this session:**
+- **Backup first** (per the migration-safety convention): dumped `discs` (0 rows), `profiles` (3), and all putting tables to `db_backups/2026-07-04_pre-1B-migration/backup.json` (gitignored). Confirmed the live DB was genuinely empty of disc/course/round data — the disc/bag UI never worked, so no disc was ever saved.
+- Applied via Supabase MCP `apply_migration` (now tracked in migration history): `track_1b_1_5_disc_locker_and_layouts`, `disc_molds_description_enrichment` (new — adds `description` + `source_url` to `disc_molds` for scraped catalog prose), `track_1c_bags`.
+- Ran the disc-migration dry run (Section 1) — all zeros (no existing discs to map), so Section 2 backfill was a no-op; verification queries all green.
+- **Seed:** captured 17 popular Innova molds from innovadiscs.com (flight numbers + category + the manufacturer's prose description) into `innova_molds_seed.sql` → `disc_molds`. Created 17 physical discs for the `ryan_disc` user (dbdbd430…) with realistic plastic/color/weight; the Destroyer carries an `override_turn=-2` (a "Beat-in Destroyer") to exercise effective-vs-stock display. Built a default **My Bag** (all 17) + a non-default **Test Bag** (4-disc subset: Aviar/Roc3/TeeBird/Destroyer) — the subset lives in both bags, so multi-bag membership, the switcher, and equip/unequip are all exercisable in field testing.
+- **Verified:** 5 new tables present; 17 molds; 17 discs all with `mold_id` (0 orphans); My Bag=17 / Test Bag=4; 4 discs in both bags; 0 orphan `bag_discs`; security advisor clean (only a pre-existing unrelated auth warning).
+**Gotchas / decisions:**
+- Target user: the task named username `itsryanfromatlanta`, which doesn't exist. `profiles` usernames are `ryan_disc`, `ryan_disc_1783122584811`, one null; nearly all 21 auth users are `+…test…@gmail.com` aliases from feature testing. Per user direction, used **`ryan_disc`** (dbdbd430…). Note: bags are RLS-scoped, so these only appear when logged in as that account.
+- **Section 3 (destructive cleanup) NOT run** — dropping `discs.is_active`/stock-flight columns + tightening FKs was explicitly gated behind approval + a dry-run wait, and the auto-mode classifier correctly blocked it without that approval. It is *not required*: the app already reads/writes only the new model (`mold_id`, `status`, `override_*`), so the legacy columns just sit unused. Left as a pending approval item.
+- **Convention added** (CLAUDE.md): a session-close checklist — push + confirm `origin/main..main` empty; confirm schema applied *and verified against the live DB* (a committed file is not proof it ran); DEVLOG + backlog updated. This is the guardrail against a repeat of this exact incident.
+
 ## 2026-07-04 — Bag & disc manager UX overhaul, Track 1E (code-complete; blocked on 1B migration same as 1C)
 
 **What:** Built the inventory/loadout UX designed in the planning entry below, on top of 1C. Audited first, per instructions: confirmed 1C's `/bag` pages, routes, and nav icon were already fully built and wired (not "possibly partial" as the plan speculated) — live DB re-checked and still unmigrated, unchanged since last session.

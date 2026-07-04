@@ -55,9 +55,9 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 | Feature | Status | Notes |
 |---|---|---|
 | Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Phase A (Track 1A); sectioned `/profile` page, edit-in-place, first-login nudge, value+source pattern, injury_notes private-only |
-| Disc molds reference table + locker migration | IN PROGRESS | Track 1B. Schema/migration/verification/seed scripts + flight-number coalesce tested (Opus 4.8). Migration NOT yet executed — gated on user DB backup + dry-run approval |
-| Multiple bags + membership + flight chart | IN PROGRESS | Track 1C. Schema (`bags`/`bag_discs`/`rounds.bag_id`) additive/independent of 1B, safe to run now. UI built. Blocked on the same 1B migration for `discs.status`/`mold_id` to actually work end-to-end |
-| Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | IN PROGRESS | Track 1E — built: bottom tab bar (Practice/Bag/Profile, data-driven for easy Rounds/Caddie additions), locker rebuilt as inventory (grid/list toggle persisted, search/filter/sort on effective numbers), disc detail (inspect) page with equip/unequip, bag capacity indicator + add-from-locker picker. Verified live: tab bar active-state + mobile safe-area, toggle persists across reload. Equip/unequip and all disc-data views still blocked on the 1B migration |
+| Disc molds reference table + locker migration | SHIPPED | Track 1B. Schema applied to prod 2026-07-04 via Supabase MCP (had never actually run before — see DEVLOG incident). `disc_molds` seeded with 17 Innova molds (flight #s + descriptions). Destructive Section 3 (drop legacy `discs` columns) still pending approval — not required, app targets the new model |
+| Multiple bags + membership + flight chart | SHIPPED | Track 1C. Schema (`bags`/`bag_discs`/`rounds.bag_id`) applied to prod 2026-07-04. `ryan_disc` seeded with a default "My Bag" (17 discs) + "Test Bag" (4-disc subset, same discs in both bags) for field testing |
+| Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | SHIPPED | Track 1E — bottom tab bar (Practice/Bag/Profile, data-driven for easy Rounds/Caddie additions), locker rebuilt as inventory (grid/list toggle persisted, search/filter/sort on effective numbers), disc detail (inspect) page with equip/unequip, bag capacity indicator + add-from-locker picker. Now works end-to-end against real seeded data (1B/1C schema live as of 2026-07-04) |
 | Game-flair card mode (rarity borders, equip animations, stat-block cards) | BACKLOG | Deliberately deferred from 1E |
 | Disc comparison view (side-by-side stats) | BACKLOG | Natural inventory extension |
 | Disc wear timeline (condition change history) | BACKLOG | Current-state-only in v1 |
@@ -88,10 +88,10 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 
 | Feature | Status | Notes |
 |---|---|---|
-| Layouts as first-class entities (layouts table; holes/rounds re-pointed) | NEXT UP | Track 1.5 — must land before real round data; mirrors UDisc model |
-| Provenance columns on rounds/courses (external_source, external_ref) | NEXT UP | Track 1.5 — idempotent imports, native vs imported distinguishable |
-| course_aliases table | NEXT UP | Track 1.5 — UDisc name matching + catalog search synonyms; insert-open/update-closed |
-| bag_id on rounds | NEXT UP | Rides with 1C — per-bag performance stats, caddie context |
+| Layouts as first-class entities (layouts table; holes/rounds re-pointed) | IN PROGRESS | Track 1.5 — `layouts` table + `holes.layout_id`/`rounds.layout_id` schema applied to prod 2026-07-04. No data/UI yet (courses/holes/rounds still empty); mirrors UDisc model |
+| Provenance columns on rounds/courses (external_source, external_ref) | IN PROGRESS | Track 1.5 — columns + partial-unique indexes applied to prod 2026-07-04; idempotent imports ready, no importer yet |
+| course_aliases table | IN PROGRESS | Track 1.5 — table applied to prod 2026-07-04; UDisc name matching + catalog search synonyms; insert-open/update-closed |
+| bag_id on rounds | IN PROGRESS | Track 1C — `rounds.bag_id` applied to prod 2026-07-04; per-bag performance stats, caddie context (no round data yet) |
 | round_hole_id on putt_events | NEXT UP | Rides with 2.2 — tournament vs practice putting in one insights system |
 | UDisc CSV round import | BACKLOG | Score-only data; idempotent via provenance; verify current CSV format at build time |
 | Course catalog UI | BACKLOG | Next planning cycle after current execution order |
