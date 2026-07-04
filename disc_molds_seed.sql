@@ -4,25 +4,28 @@
 -- manually-entered molds. Run in the Supabase SQL editor.
 --
 -- 19 molds. Flight numbers are manufacturer-published; edit in-app as needed.
+-- Provenance: source_name + source_url set; scraped_at + image_url left NULL
+-- (curated bootstrap, not a live scrape — see the script header). Requires the
+-- disc_molds_enrichment.sql + disc_molds_provenance.sql columns.
 
-insert into disc_molds (manufacturer, mold_name, speed, glide, turn, fade, category) values
-  ('MVP', 'Wave', 13, 5, -1, 2, 'distance'),
-  ('MVP', 'Photon', 11, 5, -1, 2.5, 'distance'),
-  ('MVP', 'Volt', 8, 5, -0.5, 2, 'fairway'),
-  ('MVP', 'Tesla', 9, 5, -1, 2, 'fairway'),
-  ('MVP', 'Servo', 7, 5, -1, 1.5, 'fairway'),
-  ('MVP', 'Reactor', 5, 5, -1, 1.5, 'midrange'),
-  ('MVP', 'Vector', 5, 4, -0.5, 2.5, 'midrange'),
-  ('MVP', 'Atom', 3, 3, 0, 1, 'putter'),
-  ('MVP', 'Anode', 2.5, 3, 0, 1, 'putter'),
-  ('Axiom', 'Wrath', 9.5, 5, -1.5, 2, 'distance'),
-  ('Axiom', 'Insanity', 8, 5, -2, 1, 'fairway'),
-  ('Axiom', 'Crave', 6.5, 5, -1, 1, 'fairway'),
-  ('Axiom', 'Fireball', 8, 4, 0, 3, 'fairway'),
-  ('Axiom', 'Hex', 5, 5, -1, 0.5, 'midrange'),
-  ('Axiom', 'Envy', 3, 3, 0, 2, 'putter'),
-  ('Axiom', 'Proxy', 4, 3, -1, 0.5, 'putter'),
-  ('Streamline', 'Trace', 7, 5, -2, 1, 'fairway'),
-  ('Streamline', 'Drift', 7, 6, -3, 1, 'fairway'),
-  ('Streamline', 'Pilot', 3, 3, -0.5, 1, 'putter')
+insert into disc_molds (manufacturer, mold_name, speed, glide, turn, fade, category, source_name, source_url) values
+  ('MVP', 'Wave', 13, 5, -1, 2, 'distance', 'MVP', null),
+  ('MVP', 'Photon', 11, 5, -1, 2.5, 'distance', 'MVP', null),
+  ('MVP', 'Volt', 8, 5, -0.5, 2, 'fairway', 'MVP', null),
+  ('MVP', 'Tesla', 9, 5, -1, 2, 'fairway', 'MVP', null),
+  ('MVP', 'Servo', 7, 5, -1, 1.5, 'fairway', 'MVP', null),
+  ('MVP', 'Reactor', 5, 5, -1, 1.5, 'midrange', 'MVP', null),
+  ('MVP', 'Vector', 5, 4, -0.5, 2.5, 'midrange', 'MVP', null),
+  ('MVP', 'Atom', 3, 3, 0, 1, 'putter', 'MVP', null),
+  ('MVP', 'Anode', 2.5, 3, 0, 1, 'putter', 'MVP', null),
+  ('Axiom', 'Wrath', 9.5, 5, -1.5, 2, 'distance', 'Axiom', 'https://www.axiomdiscs.com/'),
+  ('Axiom', 'Insanity', 8, 5, -2, 1, 'fairway', 'Axiom', 'https://www.axiomdiscs.com/'),
+  ('Axiom', 'Crave', 6.5, 5, -1, 1, 'fairway', 'Axiom', 'https://www.axiomdiscs.com/'),
+  ('Axiom', 'Fireball', 8, 4, 0, 3, 'fairway', 'Axiom', 'https://www.axiomdiscs.com/'),
+  ('Axiom', 'Hex', 5, 5, -1, 0.5, 'midrange', 'Axiom', 'https://www.axiomdiscs.com/'),
+  ('Axiom', 'Envy', 3, 3, 0, 2, 'putter', 'Axiom', 'https://www.axiomdiscs.com/'),
+  ('Axiom', 'Proxy', 4, 3, -1, 0.5, 'putter', 'Axiom', 'https://www.axiomdiscs.com/'),
+  ('Streamline', 'Trace', 7, 5, -2, 1, 'fairway', 'Streamline', 'https://www.streamlinediscs.com/'),
+  ('Streamline', 'Drift', 7, 6, -3, 1, 'fairway', 'Streamline', 'https://www.streamlinediscs.com/'),
+  ('Streamline', 'Pilot', 3, 3, -0.5, 1, 'putter', 'Streamline', 'https://www.streamlinediscs.com/')
 on conflict (lower(manufacturer), lower(mold_name)) do nothing;

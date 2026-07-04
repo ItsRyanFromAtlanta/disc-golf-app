@@ -21,9 +21,25 @@
 //
 // Each mold: [mold_name, speed, glide, turn, fade, category]. Numbers are the
 // manufacturers' published flight ratings; spot-check and edit in-app as needed.
+//
+// PROVENANCE (see CLAUDE.md "Seeding disc catalog data"): this is a CURATED
+// bootstrap, not a live scrape, so it emits source_name (the manufacturer) and
+// source_url (the brand site, where live) but deliberately leaves scraped_at
+// and image_url NULL — there is no per-mold page these were pulled from, and
+// null scraped_at is itself honest provenance ("curated, not scraped"). Contrast
+// with innova_molds_seed.sql, which IS a per-mold live scrape and carries
+// scraped_at + image_url. MVP's official domain (mvpdisc.com) is currently
+// parked, so MVP gets no source_url.
 
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+
+// Per-manufacturer provenance for the curated set.
+const SOURCE = {
+  MVP: { source_url: null }, // official domain parked; flight #s manufacturer-published
+  Axiom: { source_url: 'https://www.axiomdiscs.com/' },
+  Streamline: { source_url: 'https://www.streamlinediscs.com/' },
+}
 
 const SEED = {
   MVP: [
@@ -60,12 +76,18 @@ function sqlStr(s) {
   return `'${String(s).replace(/'/g, "''")}'`
 }
 
+function sqlStrOrNull(s) {
+  return s === null || s === undefined ? 'null' : sqlStr(s)
+}
+
 const rows = []
 for (const [manufacturer, molds] of Object.entries(SEED)) {
+  const src = SOURCE[manufacturer] ?? { source_url: null }
   for (const [mold, speed, glide, turn, fade, category] of molds) {
     rows.push(
       `  (${sqlStr(manufacturer)}, ${sqlStr(mold)}, ${sqlNum(speed)}, ${sqlNum(glide)}, ` +
-        `${sqlNum(turn)}, ${sqlNum(fade)}, ${sqlStr(category)})`,
+        `${sqlNum(turn)}, ${sqlNum(fade)}, ${sqlStr(category)}, ${sqlStr(manufacturer)}, ` +
+        `${sqlStrOrNull(src.source_url)})`,
     )
   }
 }
@@ -76,8 +98,11 @@ const sql = `-- disc_molds seed (Track 1B) — curated flagship MVP/Axiom/Stream
 -- manually-entered molds. Run in the Supabase SQL editor.
 --
 -- ${rows.length} molds. Flight numbers are manufacturer-published; edit in-app as needed.
+-- Provenance: source_name + source_url set; scraped_at + image_url left NULL
+-- (curated bootstrap, not a live scrape — see the script header). Requires the
+-- disc_molds_enrichment.sql + disc_molds_provenance.sql columns.
 
-insert into disc_molds (manufacturer, mold_name, speed, glide, turn, fade, category) values
+insert into disc_molds (manufacturer, mold_name, speed, glide, turn, fade, category, source_name, source_url) values
 ${rows.join(',\n')}
 on conflict (lower(manufacturer), lower(mold_name)) do nothing;
 `
