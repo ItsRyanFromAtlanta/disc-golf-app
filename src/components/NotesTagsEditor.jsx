@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { STARTER_TAGS, normalizeTag } from '../lib/insights'
+import ChipGroup from './ChipGroup'
 
 export default function NotesTagsEditor({ initialNotes, initialTags, onSave }) {
   const [notes, setNotes] = useState(initialNotes ?? '')
@@ -54,18 +55,7 @@ export default function NotesTagsEditor({ initialNotes, initialTags, onSave }) {
       />
 
       <span className="editor-label">Tags</span>
-      <div className="chip-row">
-        {chipTags.map((tag) => (
-          <button
-            key={tag}
-            type="button"
-            className={`chip ${tags.includes(tag) ? 'chip-active' : ''}`}
-            onClick={() => toggleTag(tag)}
-          >
-            {tag}
-          </button>
-        ))}
-      </div>
+      <ChipGroup options={chipTags} isActive={(tag) => tags.includes(tag)} onSelect={toggleTag} />
       <div className="custom-tag-row">
         <input
           type="text"

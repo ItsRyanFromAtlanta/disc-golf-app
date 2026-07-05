@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchProfile, upsertProfileFields, isThrowingProfileEmpty } from '../lib/profile'
 import EditableSection from '../components/EditableSection'
+import ChipGroup from '../components/ChipGroup'
 
 const HANDEDNESS_OPTIONS = ['right', 'left', 'ambidextrous']
 const CONFIDENCE_OPTIONS = ['none', 'developing', 'reliable', 'weapon']
@@ -179,25 +180,18 @@ export default function ProfilePage() {
                 ))}
               </select>
               <span className="editor-label">Specialty shots</span>
-              <div className="chip-row">
-                {SPECIALTY_SHOTS.map((shot) => (
-                  <button
-                    key={shot}
-                    type="button"
-                    className={`chip ${draft.specialty_shots.includes(shot) ? 'chip-active' : ''}`}
-                    onClick={() =>
-                      setDraft({
-                        ...draft,
-                        specialty_shots: draft.specialty_shots.includes(shot)
-                          ? draft.specialty_shots.filter((s) => s !== shot)
-                          : [...draft.specialty_shots, shot],
-                      })
-                    }
-                  >
-                    {shot}
-                  </button>
-                ))}
-              </div>
+              <ChipGroup
+                options={SPECIALTY_SHOTS}
+                isActive={(shot) => draft.specialty_shots.includes(shot)}
+                onSelect={(shot) =>
+                  setDraft({
+                    ...draft,
+                    specialty_shots: draft.specialty_shots.includes(shot)
+                      ? draft.specialty_shots.filter((s) => s !== shot)
+                      : [...draft.specialty_shots, shot],
+                  })
+                }
+              />
             </div>
           )}
         />

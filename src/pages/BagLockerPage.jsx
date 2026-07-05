@@ -7,6 +7,7 @@ import { useDiscList } from '../lib/repository/discRepository'
 import { filterDiscs, sortDiscs } from '../lib/discFilters'
 import { getViewMode, setViewMode } from '../lib/viewPreference'
 import DiscCard from '../components/DiscCard'
+import ChipGroup from '../components/ChipGroup'
 
 const STATUS_FILTERS = ['all', 'in_locker', 'lost', 'retired', 'sold']
 
@@ -179,18 +180,12 @@ export default function BagLockerPage() {
         </select>
       </div>
 
-      <div className="chip-row">
-        {STATUS_FILTERS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={`chip ${status === s ? 'chip-active' : ''}`}
-            onClick={() => setStatus(s)}
-          >
-            {s === 'all' ? 'All' : s}
-          </button>
-        ))}
-      </div>
+      <ChipGroup
+        options={STATUS_FILTERS}
+        getLabel={(s) => (s === 'all' ? 'All' : s)}
+        isActive={(s) => status === s}
+        onSelect={setStatus}
+      />
 
       {visible.length === 0 ? (
         <p>No discs match.</p>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchUserDiscs } from '../../lib/discLocker'
 import { effectiveFlightNumbers } from '../../lib/discs'
 import { speedClass } from '../../lib/discFilters'
+import ChipGroup from '../ChipGroup'
 
 // Optional putter selection at session start, persisted by the caller into
 // profileDefaults.favoritePutterDiscId. Renders nothing if the user's locker
@@ -28,18 +29,13 @@ export default function PutterPicker({ userId, selectedId, onSelect }) {
   return (
     <div className="putter-picker">
       <span className="editor-label">Putter</span>
-      <div className="chip-row">
-        {putters.map((disc) => (
-          <button
-            key={disc.id}
-            type="button"
-            className={`chip ${selectedId === disc.id ? 'chip-active' : ''}`}
-            onClick={() => onSelect(disc.id)}
-          >
-            {disc.nickname || disc.moldInfo?.mold_name || disc.mold}
-          </button>
-        ))}
-      </div>
+      <ChipGroup
+        options={putters}
+        getKey={(disc) => disc.id}
+        getLabel={(disc) => disc.nickname || disc.moldInfo?.mold_name || disc.mold}
+        isActive={(disc) => selectedId === disc.id}
+        onSelect={(disc) => onSelect(disc.id)}
+      />
     </div>
   )
 }

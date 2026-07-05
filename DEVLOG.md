@@ -4,6 +4,36 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — Shared ChipGroup primitive (SHIPPED) — Layer 1, phase 3
+
+**What:** Extracted `src/components/ChipGroup.jsx` — the first "shared zero-typing UI primitive"
+from `DEVELOPMENT_PLAN.md` Layer 1 — from five near-identical inline chip-row implementations
+(status/history filters, tag toggles, putter/preset pickers) that had all converged on the same
+chip-row/chip/chip-active markup independently.
+**Model:** Sonnet 5 (UI extraction).
+**Scope call:** did NOT touch the native `<select>` dropdowns (manufacturer/speed/status on
+BagLockerPage, DiscFormPage) even though they violate the blueprint's zero-typing mandate — those
+are one-off usages needing real visual/UX design work per screen, not a mechanical extraction.
+Building a `SegmentedStepper` primitive with no second real caller yet would be designing for a
+hypothetical; extract it once a second genuine use case exists.
+**Live-verified in browser** (created a persistent dev test account — `discgolfapp.devtest@gmail.com`
+— for this and future sessions): History filter chips, Locker status chips (including filtering
+against a real created disc), and Profile's specialty-shots chips all render and toggle correctly
+against the live Supabase project, zero console errors. Also confirmed no regression to
+`DiscFormPage`'s disc-create flow (untouched by the Layer 1 phase 2 repository work).
+**Gotcha caught by `/code-review`:** the original discovery search (`className="chip`) missed two
+more duplicates using template-literal styling (`` className={`chip ${...}`} ``) — `ProfilePage`'s
+specialty-shots row (migrated) and `DiscDetailPage`'s bag-membership Equip toggle (NOT migrated on
+reflection — it's a per-item action button paired with a label inside a `<li>`, not a flat row of
+interchangeable chips; forcing it through `ChipGroup` would mean bolting a label-slot onto the
+primitive for one caller). `isActive` also given a `() => false` default (matching `getKey`/
+`getLabel`'s existing pattern) so a future "plain action chips, no selection state" caller doesn't
+need to pass a throwaway no-op.
+**Next in Layer 1:** TabBar → 4-tab (PLAY/BAGS/STATS/PRO) — the last item before Layer 2 (front-door
+screens).
+
+---
+
 ## 2026-07-05 — Dexie + TanStack Query repository skeleton (SHIPPED) — Layer 1, phase 2
 
 **What:** The offline-first repository layer from `DEVELOPMENT_PLAN.md` Layer 1 — `dexie` +

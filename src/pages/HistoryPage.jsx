@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchHistory, sessionAggregate, allPuttSamples } from '../lib/history'
 import { useAuth } from '../context/AuthContext'
+import ChipGroup from '../components/ChipGroup'
 import {
   fatigueCurve,
   pressureDifferential,
@@ -156,18 +157,7 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      <div className="chip-row">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            className={`chip ${filter === f ? 'chip-active' : ''}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
+      <ChipGroup options={FILTERS} isActive={(f) => filter === f} onSelect={setFilter} />
 
       {visible.length === 0 ? (
         <p>No sessions yet.</p>
