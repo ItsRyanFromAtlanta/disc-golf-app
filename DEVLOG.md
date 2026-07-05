@@ -4,6 +4,50 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — Master Blueprint absorbed: 21-screen plan reconciled onto shipped app (Layer 0)
+
+**What:** User supplied a consolidated "Master Project Blueprint v2.0.0" — 21 fully-wireframed screens,
+logic-governance specs (competition engine, UDisc parser, XP ledger), an 8-table Postgres schema, and a
+7-layer TASKS.md written as a **greenfield Expo/React-Native rebuild**. Ran a plan-mode reconciliation
+(two rounds of AskUserQuestion) against the shipped React+Vite app before touching any code.
+**Model:** Sonnet 5 for this docs-alignment session (Layer 0), per the plan's stated model map.
+**Key decisions (all user-confirmed):**
+- **No rebuild.** Absorb into the existing Vite+React app; Expo/native stays the parked Track-4 decision.
+- **Staged local-first:** Dexie.js + TanStack Query introduced behind a repository interface — new
+  screens first, existing screens as touched, InstantLaunch buffer folds in last. Not a big-bang rewrite.
+- **Append-only schema absorption**, not the blueprint's from-scratch schema. `disc_molds` FK catalog
+  is kept (blueprint's freetext brand/mold columns would be a regression).
+- **Scope this cycle:** Screens 1–10 + Progression module (11 Career Hub, 12 Trophy Room, 13 UDisc
+  ingestion). **Parked:** Social (14, 15, QR Beam, virtual bag tags), Hardware (16, 20), Commerce (17),
+  Utilities (18, 19, 21) — reasoning for each recorded in `SCREEN_SPECS.md`.
+- **4-tab nav** (Play/Bags/Stats/Pro) adopted; **both hard interlocks** adopted (100-putt routine
+  ceiling, 35-disc bag capacity — app-side disable + DB CHECK, not just one).
+- **Auth:** email 6-digit OTP (Supabase native, free) instead of the blueprint's 4-digit SMS; guest
+  mode = Supabase anonymous sign-in (survives device loss), not an Expo-only shadow profile.
+- **Putter roles land on `discs.role`** (enum + partial unique index for one PRIMARY per user) —
+  this **supersedes** the v1 SCREEN_SPECS proposal of profile-side FK columns; the blueprint's model is
+  cleaner and matches the Screen 6 swimlane UI directly.
+- **PDGA:** manual entry v1; the blueprint's scraper Edge Function deferred (no official public API,
+  ToS-gray).
+- **Screen 8 flagged, not yet decided in code:** blueprint's split-screen tap zones vs. the shipped,
+  tested gesture-swipe canvas (Track 2.2c). Recommendation on record in `SCREEN_SPECS.md` (adopt tap as
+  primary, demote gestures to an alt mode) — explicit sign-off required before Layer 4 starts.
+**Shipped this session:** `MASTER_PROJECT_BLUEPRINT.md` (verbatim copy, now the design authority);
+`SCREEN_SPECS.md` rewritten as the integration layer (21-screen status table, standing divergences,
+per-screen REUSE/NET-NEW/divergence for screens 1–13, parked-screen reasoning table) — supersedes the
+prior ideation-only v1 (commit `da62bc5`); `CLAUDE.md` updated (4-tab nav, staged offline architecture,
+gamification pointer, doc hierarchy, interlock rules); `DEVELOPMENT_PLAN.md` updated (new Layers 0–5 as
+the active plan, Tracks 1–4 kept as historical record); `FEATURE_BACKLOG.md` updated (blueprint-scoped
+items, v1 ideation items marked SUPERSEDED with pointers).
+**Process note:** established a standing workflow rule this session — state the recommended model per
+section/layer and verify the active model matches before proceeding (table lives in
+`DEVELOPMENT_PLAN.md`'s Layer summary and `CLAUDE.md`'s documentation-conventions section).
+**Next:** Layer 1 (Opus 4.8) — manual DB backup, then the append-only schema file + Dexie/TanStack
+skeleton + shared primitives + 4-tab bar. Verify Track 1.5 provenance columns actually landed with 1B
+before assuming they're there (open item from planning).
+
+---
+
 ## 2026-07-05 — SCREEN_SPECS.md authored: screens 3–10 (Phase 1 of "updates" plan)
 
 **What:** Wrote `SCREEN_SPECS.md` — full design specs for screens 3–10 of the 10-screen product spec

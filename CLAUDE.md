@@ -57,7 +57,11 @@ The app uses nested feature trees. Putting practice is the first tree:
 
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
 Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
-App-level navigation will eventually be a bottom tab bar (Putting / Rounds / Caddie / Stats); not built yet — only one feature area exists.
+
+**App-level nav is a 4-tab bottom bar: PLAY / BAGS / STATS / PRO** (adopted from
+`MASTER_PROJECT_BLUEPRINT.md`, 2026-07-05). `/practice` becomes the PLAY tab's dashboard hub;
+`/practice/stats` (confidence map + analytics) moves under STATS; profile + settings live under PRO.
+Bags keeps its own tree unchanged. Build order for this migration: see `DEVELOPMENT_PLAN.md` Layer 1.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
@@ -93,23 +97,50 @@ High-luminance warm earth palette, legible in direct sunlight. Typography: Oswal
 Field-use interaction rules: minimum 80pt tap targets on primary actions; one-thumb operability on active-practice screens; TTFP (time-to-first-putt) < 5s from cold start — no network gating before the start button.
 
 ## Data rules for putt capture
-- Batch-ribbon entry writes summary tables ONLY. `putt_events` rows come exclusively from real-time gesture mode. Never synthesize per-putt events from batch totals.
+- Batch-ribbon entry writes summary tables ONLY. `putt_events` rows come exclusively from real-time gesture/tap mode. Never synthesize per-putt events from batch totals.
 - Gesture thresholds (travel px, velocity ms, cone degrees, debounce ms) are named tunable constants, normalized for devicePixelRatio.
+- Hard interlocks (adopted 2026-07-05, from `MASTER_PROJECT_BLUEPRINT.md`): a routine's total planned putts is capped at 100 (builder disables adding stages past the cap; DB CHECK backs it up) and a bag's disc count is capped at 35 (Add-to-bag disables at capacity; DB CHECK backs it up). Both enforced app-side AND at the DB layer — never just one.
+
+## Offline architecture (staged adoption, in progress)
+The InstantLaunch localStorage subsystem (FSM + idempotent outbox, `src/lib/instantLaunch/`) is the
+currently-shipped offline layer, scoped to active-session capture. Per the 2026-07-05 blueprint
+integration, the project is staging in a **Dexie.js (IndexedDB) + TanStack Query** repository layer
+(`networkMode: 'offlineFirst'`) behind a repository interface — new screens read/write through it first,
+existing screens migrate as they're touched, and the InstantLaunch buffer folds in last. This is NOT a
+big-bang rewrite; Supabase-direct calls remain valid until a screen is migrated. See
+`DEVELOPMENT_PLAN.md` Layer 1 for the build session and `MASTER_PROJECT_BLUEPRINT.md`'s
+`TECH_STACK.md`/`DATABASE_SCHEMA.md` sections for the reference architecture (schema is absorbed
+append-only, not adopted verbatim — see below).
+
+## Gamification (planned, Layer 5)
+XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
+`lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
+a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full spec:
+`MASTER_PROJECT_BLUEPRINT.md` § `GAMIFICATION_AND_XP_LEDGER.md`.
 
 ## Documentation conventions (maintain throughout dev)
+- `MASTER_PROJECT_BLUEPRINT.md` — **design authority** for the 21-screen product vision: full wireframes, ergonomic rules, logic-governance specs (competition engine, UDisc parser, XP ledger), and the reference `DATABASE_SCHEMA.md`/`TASKS.md` (written for a greenfield Expo stack — this repo absorbs its screens/rules/schema concepts into the shipped Vite+Supabase stack, it does not execute that TASKS.md literally). Added 2026-07-05.
+- `SCREEN_SPECS.md` — the **integration layer** over the blueprint: per-screen status (in-scope/parked), REUSE vs NET-NEW file mapping, and explicit divergences from the blueprint's literal spec (stack, schema, OTP digit count, PDGA scraping, Screen 8 input model, etc.), with reasoning. Read this before building any of the 21 screens.
 - `CLAUDE.md` (this file) — living architecture doc; update whenever routes, schema, or conventions change
-- `DEVELOPMENT_PLAN.md` — the four-track execution plan with per-feature dev needs and sequencing; consult before starting any new feature
+- `DEVELOPMENT_PLAN.md` — the tracks/layers execution plan with per-feature dev needs and sequencing; consult before starting any new feature
 - `DEVLOG.md` — one entry per meaningful unit of work: what, why, key decisions, gotchas. Newest first. Update at the end of every Claude Code work session.
 - `FEATURE_BACKLOG.md` — all ideated features with status (SHIPPED / IN PROGRESS / NEXT UP / BACKLOG / LATER / REJECTED). Move items as status changes; never delete rejected items — the reasoning is part of the record.
-- Schema files are append-only history; never edit a previously-run schema file, add a new one.
+- Schema files are append-only history; never edit a previously-run schema file, add a new one. New concepts from the blueprint are absorbed as additive columns/tables on the existing schema (e.g. `discs.role`, `discs.wear_score`), never as a wholesale schema replacement.
 - Commit at every working checkpoint within a session; push to GitHub at session end (Vercel auto-deploys from main).
 - **Before any migration or FK-restructuring session: take a manual database backup** (Supabase dashboard backup or pg_dump). Claude Code must confirm the backup exists before running migration SQL.
-- Every task states its recommended model up front: **Sonnet 5** default for UI/CRUD work; **Opus 4.8** for migrations, schema design passes, rules engines, and DSP/algorithmic work.
+- Every task states its recommended model up front: **Sonnet 5** default for UI/CRUD work; **Opus 4.8** for migrations, schema design passes, rules engines, and DSP/algorithmic work. When resuming a plan that spans multiple work sessions, confirm the active model matches the recommendation for the current section before proceeding.
 - Plan-first rule: iterate and agree on designs in conversation BEFORE generating files, schemas, or prompts. Always prompt for approval before file generation.
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
 
 ## Current build focus
-Executing DEVELOPMENT_PLAN.md in order: 1A player profile → 2.1 confidence interval map → 1B/1C molds, locker, bags → 2.2 per-putt capture layer → practice-depth features (drills, clutch simulator, miss tendency). Session history v1 is SHIPPED. Native sensor-fusion features are parked on the Native iOS Roadmap in FEATURE_BACKLOG.md.
+Executing the blueprint integration plan (see `SCREEN_SPECS.md` + `DEVELOPMENT_PLAN.md` Layers 0–5):
+Layer 0 docs alignment (in progress) → Layer 1 foundation (schema absorption, Dexie/TanStack skeleton,
+4-tab bar) → Layer 2 front-door (Splash/Auth/Onboarding) → Layer 3 hubs (Dashboard/Bag/Putter lineup) →
+Layer 4 execution engine (routine builder, scoring canvas, session summary) → Layer 5 analytics +
+progression (analytics tower, career hub, trophy room, UDisc ingestion). Social, hardware, and utility
+screens (14–21 minus what's absorbed into Layer 5) are deliberately parked — see `SCREEN_SPECS.md`.
+Session history v1 is SHIPPED. Native sensor-fusion features remain parked on the Native iOS Roadmap in
+FEATURE_BACKLOG.md.
 
 ## Conventions
 - All user-owned tables use Row Level Security scoped to `auth.uid()`

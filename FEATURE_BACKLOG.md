@@ -93,28 +93,55 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 | Acoustic make-detection prototype (Web Audio FFT) | BACKLOG | Experimental spike; success gate >90% agreement with manual entry outdoors |
 | Tournament noise overlay (cognitive load training) | BACKLOG | Background audio loops; cheap once drills exist |
 
-## Front-door & screen-spec ideation (specced 2026-07-05 — see SCREEN_SPECS.md)
+## Master Blueprint integration (2026-07-05 — see MASTER_PROJECT_BLUEPRINT.md + SCREEN_SPECS.md)
 
-All designs agreed-format specs in `SCREEN_SPECS.md`; approval gate before build. Schema implications
-consolidated in that doc's closing table (all future append-only files).
+Supersedes the earlier "front-door & screen-spec ideation" section below it (v1 SCREEN_SPECS ideation
+for screens 3–10, now folded into the 21-screen blueprint integration). Full per-screen reuse mapping,
+divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMENT_PLAN.md` Layers 0–5.
 
 | Feature | Status | Notes |
 |---|---|---|
-| Splash + auth overhaul (OTP, Apple/Google SSO, guest mode) | NEXT UP | Screens 1–2 (source doc); Phase 2 front-door slice |
-| Zero-typing onboarding (goal chips, putter provisioning, haptic test) | NEXT UP | Screen 3; rides with front-door slice |
-| Play/Putt Hub (smart UP NEXT hero, streak chip, gear strip) | BACKLOG | Screen 4; pure composition of shipped insights functions |
-| Bag 3-tab hub (Bag / Locker / Catalog) + catalog destination | BACKLOG | Screen 5; catalog = first read-only disc_molds browse surface |
-| Putter lineup (primary/backup depth chart) | BACKLOG | Screen 6; needs profiles putter-role columns (schema file later) |
-| Wear slider (numeric, condition freetext retained) | BACKLOG | Screen 6; discs.wear column later |
-| Bézier flight-curve sketch on disc profile | BACKLOG | Screen 6; pure SVG fn, honestly labeled "sketch" |
-| Custom regimen builder (stage stacking, live max-score preview) | LATER (deliberate) | Screen 7; spec-only — blocked on Track 2.3 rules_config/drill_type design pass |
-| Canvas: visual stack-tracker pips | BACKLOG | Screen 8 delta — ADOPT; render-only off existing tally |
-| Canvas: opt-in Tap Mode (accessibility input mapping) | BACKLOG | Screen 8 delta — ADAPT; same classification engine |
-| Canvas: mid-session putter swap drawer | BACKLOG | Screen 8 delta — ADAPT; data value needs putt_events.putter_disc_id |
-| Unified session report (score hero, drop-off curve, RUN IT BACK replay) | BACKLOG | Screen 9; one component, post-session + history entry points |
-| Putter breakdown matrix | BACKLOG | Screen 9; thin (1 row) until putt_events.putter_disc_id lands |
-| Analytics home (form-over-time chart, takeaway-first panels) | BACKLOG | Screen 10; needs trend-windowing fn in lib/insights/ |
-| Settings: sync ledger + clear-local + CSV export | BACKLOG | Screen 10; export doubles as UDisc-importer rehearsal |
+| Dexie.js + TanStack Query staged local-first repository | NEXT UP | Layer 1; behind a repository interface, InstantLaunch folds in last |
+| Discs: role (primary/backup/situational putter), wear_score, total_chain_hits | NEXT UP | Layer 1 schema; supersedes earlier profile-columns putter-role proposal |
+| Bag 35-disc capacity hard interlock | NEXT UP | Layer 1 schema (CHECK) + Layer 3 UI (disabled Add + blue/orange/rust states) |
+| Routine 100-putt hard interlock + rules_config/drill_type | NEXT UP | Layer 1 schema — this IS the Track 2.3 regimen-engine generalization |
+| 4-tab app nav (Play / Bags / Stats / Pro) | NEXT UP | Layer 1 |
+| Splash + auth overhaul (email 6-digit OTP, Apple/Google SSO, anonymous guest) | NEXT UP | Layer 2, Screens 1–2 |
+| Zero-typing onboarding (goal cards, putter provisioning, haptic test) | NEXT UP | Layer 2, Screen 3 |
+| Dashboard hub (instant-replay hero, 3-way STANDARD/CUSTOM/NEW launchpad) | BACKLOG | Layer 3, Screen 4 |
+| Bag manager (My Bags / Putters / Universe + ghost-slot wishlist) | BACKLOG | Layer 3, Screen 5; retail bridge (Ghost Slot → Pro-Shop) parked |
+| Putter lineup (role swimlanes, Bézier flight curve, wear slider + odometer alert) | BACKLOG | Layer 3, Screen 6 |
+| Custom routine builder (stage stacking, live max-score preview, 100-putt totalizer) | BACKLOG | Layer 4, Screen 7 |
+| Scoring canvas: split-screen tap as primary input | BACKLOG | Layer 4, Screen 8 — pending explicit sign-off; shipped gesture engine demoted to alt mode, not removed |
+| Scoring canvas: stack-tracker pips, weather→backup swap suggestion, panic toggle | BACKLOG | Layer 4, Screen 8; swap suggestion needs putt_events.putter_disc_id |
+| Unified session report (putter matrix, drop-off vs 30-day baseline, replay) | BACKLOG | Layer 4, Screen 9 |
+| Analytics tower (equipment-milestone chart markers, sync ledger, CSV export) | BACKLOG | Layer 5, Screen 10 |
+| Player career hub (manual PDGA entry, skill radar, most-trusted-putter) | BACKLOG | Layer 5, Screen 11; PDGA scraper deferred, no official API |
+| Trophy room (XP/levels, badge evaluator, pursuits carousel) | BACKLOG | Layer 5, Screen 12; bag-tag/QR challenge parked with Social |
+| UDisc CSV ingestion (writes existing rounds table via Track 1.5 provenance) | BACKLOG | Layer 5, Screen 13 |
+| Course practice hubs + leaderboards | LATER (deliberate) | Screen 14 — Social module, parked this cycle |
+| Putting league bracket manager + P2P competition engine | LATER (deliberate) | Screen 15 — Social module; depends on 14 |
+| Smartwatch companion + wearables hub | LATER (deliberate) | Screen 16 — needs native companion app (Track 4 decision) |
+| Pro-shop / gear discovery engine | LATER (deliberate) | Screen 17 — needs real retail partnerships first |
+| Offline sync conflict resolution center | LATER (deliberate) | Screen 18 — merge trigger ships in Layer 1; UI once conflicts are actually observed |
+| Privacy & data sovereignty hub (legal accordions, total purge) | LATER (deliberate) | Screen 19 — export already covered by Screen 10; purge waits for real external users |
+| Firmware & BLE sensor diagnostics | LATER (deliberate) | Screen 20 — no sensors exist yet to diagnose |
+| Emergency panic recovery overlay | LATER (deliberate) | Screen 21 — sequenced after Layer 1's Dexie layer exists |
+
+## Front-door & screen-spec ideation v1 (specced 2026-07-05, superseded same day — see above)
+
+Historical record only — screens 3–10 ideation before the 21-screen Master Blueprint arrived. Kept for
+the reasoning trail (some ideas, e.g. instant-replay hero and "one report, two doors," carried forward
+into the blueprint integration and are cross-referenced there).
+
+| Feature | Status | Notes |
+|---|---|---|
+| Play/Putt Hub (smart UP NEXT hero, streak chip, gear strip) | SUPERSEDED | Folded into Screen 4 dashboard hub above |
+| Bag 3-tab hub (Bag / Locker / Catalog) + catalog destination | SUPERSEDED | Folded into Screen 5 (My Bags/Putters/Universe) above |
+| Putter lineup (primary/backup depth chart, profile-column proposal) | SUPERSEDED | Blueprint's discs.role model adopted instead — see Screen 6 in SCREEN_SPECS.md |
+| Canvas: opt-in Tap Mode (accessibility input mapping) | SUPERSEDED | Blueprint inverts this — split-screen tap becomes PRIMARY, gesture becomes the alt mode |
+| Unified session report (score hero, drop-off curve, RUN IT BACK replay) | SUPERSEDED | Folded into Screen 9 above, same design |
+| Analytics home (form-over-time chart, takeaway-first panels) | SUPERSEDED | Folded into Screen 10 above |
 
 ## Round management, course catalog & import groundwork (planned 2026-07-03)
 

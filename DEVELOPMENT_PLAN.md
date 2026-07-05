@@ -1,7 +1,51 @@
 # Development Plan
 
-Last updated: 2026-07-03
-Companion docs: `CLAUDE.md` (architecture), `FEATURE_BACKLOG.md` (full feature status), `DEVLOG.md` (work record)
+Last updated: 2026-07-05
+Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
+`SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
+`FEATURE_BACKLOG.md` (full feature status), `DEVLOG.md` (work record)
+
+## ACTIVE PLAN: Blueprint integration (Layers 0–5)
+
+As of 2026-07-05 this supersedes Tracks 1–2's execution as the primary sequencing (Tracks 1–4 below are
+kept as historical record; most of what they describe is either shipped or absorbed into a Layer).
+Full context, user rulings, and per-screen detail: `SCREEN_SPECS.md`. Model recommendations per layer
+are stated below — **confirm the active model matches before starting a layer.**
+
+- **Layer 0 — Documentation alignment** (Sonnet 5, IN PROGRESS): blueprint into repo, `SCREEN_SPECS.md`
+  rewrite, this doc + `CLAUDE.md` + `FEATURE_BACKLOG.md` + `DEVLOG.md` updated.
+- **Layer 1 — Foundation** (Opus 4.8, manual DB backup first): one append-only schema file (disc
+  role/wear/odometer, bag capacity, profile PDGA/XP/level fields, weather columns, `putt_events.putter_disc_id`,
+  routine `rules_config`/`drill_type`/100-putt CHECK, badges/badge_progress/xp_events tables, disc
+  merge trigger); Dexie.js + TanStack Query repository skeleton (staged local-first, behind a
+  repository interface — InstantLaunch folds in last, not first); shared zero-typing UI primitives;
+  TabBar → 4-tab (PLAY/BAGS/STATS/PRO).
+- **Layer 2 — Front-door slice** (Sonnet 5): Screens 1–3 — Splash, Auth (email 6-digit OTP + Apple/Google
+  SSO + anonymous guest + claim-progress conversion), Onboarding wizard (goal cards → putter
+  provisioning with smart default + Practice Stack bag genesis → units + haptic test).
+- **Layer 3 — Hubs** (Sonnet 5): Screens 4–6 — Dashboard hub (instant-replay hero, 3-way launchpad),
+  Bag manager (MY BAGS/PUTTERS/UNIVERSE + 35-disc interlock + ghost-slot wishlist), Putter lineup
+  (role swimlanes, Bézier flight curve, wear slider + odometer alert).
+- **Layer 4 — Execution engine** (Opus 4.8 for the routine rules engine, Sonnet 5 for UI): Screens 7–9 —
+  Custom Routine Builder (100-putt interlock, live score preview), Scoring Canvas (**input-model
+  decision pending explicit sign-off — see `SCREEN_SPECS.md` Screen 8**: split-screen tap as primary,
+  shipped gesture engine demoted to an alt mode), Session Summary (putter matrix, drop-off curve, replay).
+- **Layer 5 — Analytics + Progression** (Sonnet 5 for UI, Opus 4.8 for the UDisc parser + badge
+  evaluator): Screens 10–13 — Analytics tower (equipment-milestone chart markers, sync ledger, CSV
+  export), Career Hub (manual PDGA entry, skill radar, most-trusted-putter), Trophy Room (XP/levels/
+  badges — bag-tag/QR parked with Social), UDisc CSV ingestion (writes existing `rounds` table via
+  Track 1.5 provenance).
+
+**Parked this cycle** (see `SCREEN_SPECS.md` for full reasoning): Social (Screens 14–15, QR Beam,
+virtual bag tags, competition engine), Hardware (16, 20 — needs native/BLE), Commerce (17 — needs
+retail partnerships), Utilities (18, 19, 21 — natural companions of Layer 1, low urgency solo).
+
+---
+
+## Historical: Tracks 1–4 (pre-blueprint plan, 2026-07-03)
+
+Superseded in sequencing by the Layers above as of 2026-07-05, but most Track 1/2 items are either
+already shipped or directly absorbed into a Layer (noted inline where relevant). Kept for context.
 
 ## Guiding structure
 
