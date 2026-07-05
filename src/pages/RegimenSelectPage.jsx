@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { mostRecentRegimenId } from '../lib/insights'
 
 export default function RegimenSelectPage() {
-  const { signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const [regimens, setRegimens] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [suggestedId, setSuggestedId] = useState(null)
 
   useEffect(() => {
     supabase
@@ -20,6 +22,18 @@ export default function RegimenSelectPage() {
         setLoading(false)
       })
   }, [])
+
+  // Light-touch smart-prediction surface — just enough to highlight "last
+  // time you did this one," not a rebuild of this page. A direct query for
+  // regimen_id/started_at is enough here; the full fetchHistory (sessions +
+  // distance logs too) belongs to the run/log pages that actually use it.
+  useEffect(() => {
+    supabase
+      .from('putting_regimen_runs')
+      .select('regimen_id, started_at')
+      .eq('user_id', user.id)
+      .then(({ data }) => setSuggestedId(mostRecentRegimenId(data ?? [])))
+  }, [user.id])
 
   return (
     <section className="regimen-select-page">
@@ -45,6 +59,7 @@ export default function RegimenSelectPage() {
                 {'★'.repeat(regimen.difficulty)}
               </span>
               <h2>{regimen.name}</h2>
+              {suggestedId === regimen.id && <span className="pb-badge">Last time</span>}
             </div>
             {regimen.description && <p className="regimen-description">{regimen.description}</p>}
             <dl className="regimen-stats">

@@ -8,6 +8,12 @@ import { confidenceMap, distanceBand, classifyZone } from './confidenceMap'
 import { regimenPBRunIds, distancePBSessionIds } from './pbs'
 import { practiceStreak, volumeLedger } from './activity'
 import { normalizeTag } from './tags'
+import {
+  suggestNextSession,
+  mostRecentRegimenId,
+  suggestWarmupDistance,
+  DEFAULT_STARTING_DISTANCE_FT,
+} from './nextSessionSuggestion'
 
 describe('fatigueCurve', () => {
   it('aggregates make % by set order across runs, sorted', () => {
@@ -249,5 +255,75 @@ describe('normalizeTag', () => {
     expect(normalizeTag('  New Putter ')).toBe('new-putter')
     expect(normalizeTag('PRE_TOURNAMENT!')).toBe('pre-tournament')
     expect(normalizeTag('windy')).toBe('windy')
+  })
+})
+
+describe('mostRecentRegimenId', () => {
+  it('picks the regimen from the most recently started run', () => {
+    const runs = [
+      { regimen_id: 'r1', started_at: '2026-06-01T10:00:00' },
+      { regimen_id: 'r2', started_at: '2026-06-05T10:00:00' },
+      { regimen_id: 'r1', started_at: '2026-06-03T10:00:00' },
+    ]
+    expect(mostRecentRegimenId(runs)).toBe('r2')
+  })
+
+  it('returns null with no runs', () => {
+    expect(mostRecentRegimenId([])).toBeNull()
+    expect(mostRecentRegimenId(null)).toBeNull()
+  })
+})
+
+describe('suggestWarmupDistance', () => {
+  // Same three bands as the confidenceMap "known Wilson-interval cases" test:
+  // 10-20ft coin-flip, 20-30ft developing, 30-40ft lock-in.
+  const bands = confidenceMap([
+    { distanceFeet: 12, makes: 5, attempts: 10 },
+    { distanceFeet: 22, makes: 15, attempts: 20 },
+    { distanceFeet: 32, makes: 27, attempts: 30 },
+  ])
+
+  it('prefers the nearest developing band over coin-flip or lock-in', () => {
+    expect(suggestWarmupDistance(bands)).toBe(20)
+  })
+
+  it('falls back to the nearest coin-flip band when nothing is developing', () => {
+    const onlyCoinFlipAndLockIn = bands.filter((b) => b.zone !== 'developing')
+    expect(suggestWarmupDistance(onlyCoinFlipAndLockIn)).toBe(10)
+  })
+
+  it('extends past the farthest lock-in band when everything is already locked in', () => {
+    const onlyLockIn = bands.filter((b) => b.zone === 'lock-in')
+    expect(suggestWarmupDistance(onlyLockIn)).toBe(40)
+  })
+
+  it('returns null with no bands at all', () => {
+    expect(suggestWarmupDistance([])).toBeNull()
+  })
+})
+
+describe('suggestNextSession', () => {
+  const now = new Date('2026-07-03T12:00:00')
+
+  it('composes the most recent regimen, a warmup distance, and current form', () => {
+    const runs = [
+      { regimen_id: 'r1', started_at: '2026-06-01T10:00:00' },
+      { regimen_id: 'r2', started_at: '2026-06-05T10:00:00' },
+    ]
+    const distanceSamples = [{ distanceFeet: 22, makes: 15, attempts: 20 }]
+    const allSamples = [{ makes: 8, attempts: 10, at: '2026-07-03T10:00:00' }]
+
+    const suggestion = suggestNextSession(runs, distanceSamples, allSamples, now)
+    expect(suggestion.lastRegimenId).toBe('r2')
+    expect(suggestion.suggestedDistanceFt).toBe(20) // sole band is developing
+    expect(suggestion.currentFormPct).toBeCloseTo(0.8)
+    expect(suggestion.computedAt).toBe(now.toISOString())
+  })
+
+  it('defaults to a sensible starting distance with zero history', () => {
+    const suggestion = suggestNextSession([], [], [], now)
+    expect(suggestion.lastRegimenId).toBeNull()
+    expect(suggestion.suggestedDistanceFt).toBe(DEFAULT_STARTING_DISTANCE_FT)
+    expect(suggestion.currentFormPct).toBeNull()
   })
 })

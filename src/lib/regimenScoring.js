@@ -38,3 +38,19 @@ export function computeSetScore(regimen, regimenSet, { makes, attempts, longestS
 export function computeCompletionBonus(regimen, allSetsCompleted) {
   return allSetsCompleted ? regimen.completion_bonus : 0
 }
+
+// The scoring canvas only knows per-putt outcomes for gesture-captured
+// attempts — a stage finished (fully or partially) via the batch ribbon has
+// no per-attempt breakdown, so whether the specific final attempt (the
+// pressure putt) landed isn't always knowable. Unambiguous in the same two
+// cases the old manual-entry form auto-locked: a clean set (pressure putt
+// necessarily made) or a total whiff (necessarily missed). Any other mix
+// conservatively assumes missed — a documented simplification, not a bug;
+// revisit with an explicit confirmation prompt in the batch ribbon if this
+// ever matters in practice.
+export function inferPressurePuttMade(makes, attempts) {
+  if (attempts <= 0) return false
+  if (makes === attempts) return true
+  if (makes === 0) return false
+  return false
+}

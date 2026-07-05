@@ -79,12 +79,12 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 |---|---|---|
 | Confidence interval map (lock-in vs coin-flip zones) | SHIPPED | Pure frontend over shipped Wilson-interval stats |
 | Sun-Drenched Topo theme system (app-wide) | SHIPPED | 2.2a — exact tokens in CLAUDE.md; self-hosted Oswald; every screen restyled |
-| Dual-pace scoring canvas (gesture zone + batch ribbon) | NEXT UP | 2.2b/c — 3-gate swipe physics, dynamic zone growth, scrub ribbon w/ auto-fill |
-| Instant-launch FSM + crash recovery (TTFP <5s) | NEXT UP | 2.2b/c — InstantLaunchPayload merged with offline sync buffer |
-| Audio telemetry (pitch ladder, TTS stage announcements, silence pill) | NEXT UP | 2.2c — Web Audio + SpeechSynthesis; pre-builds 2.7 voice infrastructure |
-| Smart prediction card (next drill/distance) | NEXT UP | 2.2c — derived from history + progression rules |
-| Web haptics (capability-detected, Android only) | NEXT UP | 2.2c — Vibration API; simplified patterns |
-| Per-putt capture layer (tap entry, miss zones, timestamps, input_source) | NEXT UP | THE enabler: drills, diagnostics, pacing, voice, and future sensor inputs all feed one table |
+| Dual-pace scoring canvas (gesture zone + batch ribbon) | SHIPPED | 2.2c — 3-gate swipe physics, make-territory growth, grid/carousel batch ribbon w/ auto-fill |
+| Instant-launch FSM + crash recovery (TTFP <5s) | SHIPPED | 2.2c — unified localStorage subsystem, synchronous bootstrap, once-per-load crash-recovery redirect |
+| Audio telemetry (pitch ladder, TTS stage announcements, silence pill) | SHIPPED | 2.2c — Web Audio + SpeechSynthesis; pre-builds 2.7 voice infrastructure |
+| Smart prediction card (next drill/distance) | SHIPPED | 2.2c — suggestNextSession composes existing confidenceMap/decayWeightedForm, zero new queries |
+| Web haptics (capability-detected, Android only) | SHIPPED | 2.2c — Vibration API; simplified patterns; silent no-op on iOS |
+| Per-putt capture layer (tap entry, miss zones, timestamps, input_source) | SHIPPED | 2.2c — putt_events table live; THE enabler: drills, diagnostics, pacing, voice, and future sensor inputs all feed one table |
 | Gamified drills: JYLY, Around the World | NEXT UP | Regimen engine generalization (drill_type + rules_config jsonb) |
 | Clutch simulator (randomized rest timers) | NEXT UP | Adopts TDD's 2-8min randomization; existing pressure scoring |
 | Miss tendency diagnostics (9-zone heat grid) | NEXT UP | Manual-input version of TDD's CV impact clustering; 80% of insight, 2% of cost |

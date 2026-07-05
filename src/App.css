@@ -1133,3 +1133,348 @@
 .capacity-bar-fill-over {
   background: var(--color-negative);
 }
+
+/* Putting canvas — READY_DEFAULT (session launcher / prediction card) */
+
+.session-launcher {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.prediction-card {
+  padding: 20px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-bg-surface);
+}
+
+.prediction-card h2 {
+  margin-bottom: 12px;
+}
+
+.prediction-card-sub {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.putter-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Putting canvas — ACTIVE_SESSION (context bar / gesture zone / batch ribbon) */
+
+.putting-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: calc(100dvh - 200px);
+  margin-top: 12px;
+}
+
+.canvas-context-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.canvas-context-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.canvas-exit-button {
+  display: inline-flex;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+}
+
+.canvas-stage-label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.canvas-sync-pill {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-surface-alt);
+  color: var(--color-text-secondary);
+}
+
+.canvas-sync-synced {
+  background: var(--color-positive-soft);
+  color: var(--color-text-primary);
+}
+
+.canvas-sync-pending,
+.canvas-sync-syncing {
+  background: var(--color-secondary-accent-soft);
+  color: var(--color-secondary-accent);
+}
+
+.canvas-sync-error-retrying {
+  background: var(--color-highlight-soft);
+  color: var(--color-text-primary);
+}
+
+.canvas-sync-failed {
+  background: var(--color-negative-soft);
+  color: var(--color-negative);
+}
+
+.canvas-distance {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.canvas-volume {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.canvas-toggles {
+  gap: 8px;
+}
+
+.putting-canvas-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+}
+
+.gesture-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+  min-height: 260px;
+  /* Required for reliable swipe capture on touch devices — without this the
+     browser's own scroll/pan gesture competes with pointer capture and can
+     cancel the sequence mid-swipe. */
+  touch-action: none;
+  user-select: none;
+}
+
+/* Shockwave on an accepted gesture (make/miss/undo) — a brief inward-then-
+   outward pulse so the zone visibly "receives" the input. */
+@keyframes gesture-zone-shockwave {
+  0% {
+    box-shadow: inset 0 0 0 0 var(--color-highlight);
+  }
+  40% {
+    box-shadow: inset 0 0 0 6px var(--color-highlight);
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+}
+
+.gesture-zone-accept {
+  animation: gesture-zone-shockwave 220ms ease-out;
+}
+
+/* Crimson-border flash on a rejected gesture (real travel, but didn't
+   qualify) — distinct from a silent incidental touch. */
+@keyframes gesture-zone-reject-flash {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+  30% {
+    box-shadow: inset 0 0 0 6px var(--color-negative);
+  }
+}
+
+.gesture-zone-reject {
+  animation: gesture-zone-reject-flash 260ms ease-out;
+}
+
+/* --make-territory is a height percentage computed in GestureZone.jsx —
+   see that file's comment for the raw-streak-value -> on-screen-% mapping. */
+.gesture-zone-make {
+  flex: 0 0 var(--make-territory, 50%);
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-positive);
+  color: var(--color-text-inverse);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.gesture-zone-miss {
+  flex: 1;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-negative);
+  color: var(--color-text-inverse);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.gesture-zone-undo {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  margin: 0;
+  padding: 4px 10px;
+  background: var(--color-bg-surface);
+  border-radius: 999px;
+  color: var(--color-text-primary);
+}
+
+/* Freeform's temporary batch-ribbon stand-in — replaced by the real
+   grid/carousel ribbon component in a later pass. */
+.freeform-next-distance {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.freeform-next-distance label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Batch ribbon — grid (<=10) / carousel (15-20) / confirmation state */
+
+.batch-grid,
+.batch-carousel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.batch-grid-cells {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  gap: 8px;
+}
+
+.batch-grid-cell,
+.batch-carousel-cell {
+  min-height: var(--tap-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.batch-carousel {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* Lets the first/last cell still reach the visual center when scrolled to
+     its extreme — standard technique for a centered scroll-snap carousel. */
+  padding: 0 40%;
+}
+
+.batch-carousel-cell {
+  flex: 0 0 56px;
+  width: 56px;
+  scroll-snap-align: center;
+}
+
+.batch-carousel-cell-edge {
+  border-width: 3px;
+  border-color: var(--color-text-primary);
+}
+
+.batch-carousel-cell-predicted {
+  background: var(--color-secondary-accent-soft);
+  border-color: var(--color-secondary-accent);
+}
+
+.batch-ribbon-confirmed {
+  padding: 16px;
+  text-align: center;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-positive-soft);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Diagnostic-mode 9-zone miss picker — full-screen overlay, only shown when
+   diagnostic mode is on and a miss just fired. */
+
+.diagnostic-zone-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(26, 29, 26, 0.5);
+}
+
+.diagnostic-zone-picker {
+  width: 100%;
+  max-width: 320px;
+  padding: 20px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-bg-surface);
+  text-align: center;
+}
+
+.diagnostic-zone-picker-label {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.diagnostic-zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.diagnostic-zone-cell {
+  min-height: 64px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface-alt);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  text-transform: capitalize;
+}

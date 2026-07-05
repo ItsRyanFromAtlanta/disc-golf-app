@@ -13,3 +13,9 @@ export {
 export { regimenPBRunIds, distancePBSessionIds, DISTANCE_PB_MIN_ATTEMPTS } from './pbs'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
+export {
+  suggestNextSession,
+  mostRecentRegimenId,
+  suggestWarmupDistance,
+  DEFAULT_STARTING_DISTANCE_FT,
+} from './nextSessionSuggestion'
