@@ -71,14 +71,36 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Needs:** pure frontend; new view under `/practice/history` or stats shortcut; zero schema
 - **Model:** Sonnet 5 · **Prereqs:** none (insights lib shipped)
 
-### 2.2 Per-putt capture layer — ratio: ★★★★★ (enabler; M effort)
-- **What:** tap-by-tap putt entry: make/miss + optional one-tap 9-zone miss direction + timestamp per putt
-- **Schema:** new `putt_events` table (session_or_run ref, sequence, outcome, miss_zone nullable, distance_ft, occurred_at, input_source text default 'manual') — input_source future-proofs for 'acoustic'/'cv'
-- **Tandem accommodation:** nullable `round_hole_id` FK on putt_events — real-round putting (tournament C1X conversion vs practice) will use the same event table and same insights lib. One column now vs a parallel system later.
-- **Connection resilience (required, not optional):** practice areas have spotty signal. Buffer putt events locally (in-memory + localStorage), sync in batches with retry + visible sync-status indicator. Not offline-first architecture — just "a dropped connection never loses a set." Matters more once sensor inputs exist (events arrive whether or not you have bars).
-- **UI:** big-button tap entry integrated into regimen run-through (replaces summary entry there); optional in freeform
-- **Design rule:** summary tables stay authoritative for existing stats; putt_events feeds new diagnostics. Backfill nothing.
-- **Model:** Sonnet 5 (schema review with Opus 4.8 before running — this table underpins everything downstream)
+### 2.2 Per-putt capture layer — ratio: ★★★★★ (enabler; expanded to three sessions)
+Absorbs the "Dual-Pace Scoring Canvas" interaction spec (velocity-gated gestures, batch ribbon, audio telemetry, instant-launch FSM) and the Sun-Drenched Topo design system. Sequenced as three sessions:
+
+**2.2a — Theme system (Sonnet 5, runs first)**
+- Sun-Drenched Topo (Oswald edition) design tokens as CSS variables, exact hexes per CLAUDE.md § Design tokens; Oswald via Google Fonts, self-hosted/preloaded for offline shell
+- Restyle ALL existing screens (tab bar, practice menu, locker/bags, profile, history); 2px minimum borders; no pure black/white; no default grays/blues surviving
+- Acceptance: every screen legible in direct sunlight
+
+**2.2b — Design review (Opus 4.8, output = approvable spec, no build)**
+- Original questions: parent reference design (polymorphic vs nullable FKs), batch-retry idempotency (client UUIDs), no-backfill rule confirmation
+- FSM: BOOTSTRAP → READY_DEFAULT / ACTIVE_SESSION (crash-recovery auto-resume from local buffer, <200ms synchronous local read)
+- InstantLaunchPayload merged with the offline sync buffer — one localStorage subsystem, not two (profile defaults, smart-prediction card, quick-mod presets, crash recovery buffer)
+- Gesture engine thresholds normalized for devicePixelRatio; thresholds (120px travel, 350ms velocity gate, 45° cone, 400ms debounce) as named tunable constants
+- Data split rule: batch-ribbon entry writes summary tables ONLY; putt_events rows come exclusively from real-time gesture mode (no synthesized events)
+- Diagnostic-mode toggle: per-session opt-in; when on, quick 9-zone tap after each miss; when off, frictionless swipes only
+
+**2.2c — Build (Sonnet 5, after spec approval)**
+- Zoned canvas: context bar (top 10%) / fluid gesture zone (65%, make territory grows +5% per consecutive make to 60% cap) / batch ribbon (25%)
+- 3-gate swipe physics (up=make, down=miss, left=undo), long-press rapid fire, 400ms debounce lockout, shockwave + rejection-flash visuals
+- Batch ribbon: static grid ≤10 putts; adaptive scrub carousel 15-20 with CSS scroll-snap detents, smart-centering on historical average, 1.25x predictive anchor, edge-pinned [0]/[MAX]; complementary auto-fill (makes entered → misses computed); 3s auto-advance
+- Audio: Web Audio pitch-escalating make ladder (440→493→554Hz, miss thud resets), SpeechSynthesis stage-completion announcements; two-tier silence pill (UI toggle only — hardware override is native-only)
+- Haptics: Vibration API where supported (Android Chrome), capability-detected, simplified patterns; no-op on iOS
+- Session start: optional putter picker from locker, persisted as default in InstantLaunchPayload
+- READY_DEFAULT smart-prediction card (next drill/distance from history + progression rules)
+- Offline buffering + idempotent batch sync + sync-status indicator
+- Acceptance: airplane-mode full set syncs exactly once on reconnect; TTFP <5s measured on true cold start (killed PWA) on-device
+
+**Deferred to Capacitor/native roadmap:** hardware volume-button silence override; full haptic vocabulary (frequency/intensity patterns); any iOS haptics.
+- **Tandem accommodation (unchanged):** nullable `round_hole_id` FK on putt_events
+- **Design rule (unchanged):** summary tables stay authoritative for existing stats; putt_events feeds new diagnostics; backfill nothing
 
 ### 2.3 Gamified drills: JYLY + Around the World — ratio: ★★★★☆ (VH value / M effort)
 - **What:** classic known drills as new structured modes with their real scoring rules, step-back/advance logic

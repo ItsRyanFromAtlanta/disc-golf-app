@@ -20,14 +20,16 @@ export function stabilityClass(turnFadeSum) {
   return 'overstable'
 }
 
+// Swatch-only colors (thumb border / fallback fill, never text) — safe to
+// pull straight from the design tokens without a contrast check.
 export const STABILITY_COLORS = {
-  understable: '#2563eb',
-  stable: '#2e7d32',
-  overstable: '#b8860b',
+  understable: 'var(--color-secondary-accent)',
+  stable: 'var(--color-positive)',
+  overstable: 'var(--color-highlight)',
 }
 
 export function stabilityColor(cls) {
-  return STABILITY_COLORS[cls] ?? '#888'
+  return STABILITY_COLORS[cls] ?? 'var(--color-text-secondary)'
 }
 
 function discEffective(disc) {
