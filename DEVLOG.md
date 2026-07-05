@@ -4,6 +4,32 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — TabBar → 4-tab PLAY/BAGS/STATS/PRO (SHIPPED) — Layer 1, phase 4 (Layer 1 complete)
+
+**What:** Migrated the bottom tab bar from 3 tabs (Practice/Bag/Profile) to the blueprint's 4-tab
+layout — PLAY (`/practice`), BAGS (`/bag`), STATS (`/practice/stats`), PRO (`/profile`) — the last
+item in `DEVELOPMENT_PLAN.md` Layer 1.
+**Model:** Sonnet 5 (UI).
+**No placeholder screens needed:** STATS and PRO route to already-shipped pages (`ConfidenceMapPage`
+at `/practice/stats`, `ProfilePage`) — CLAUDE.md's nav-migration note already scoped both destinations
+to existing screens, not new Layer-5 builds, so this was pure relabel + route reassignment, not a
+"ship half-built tabs" risk.
+**Bug caught before shipping (not by /code-review — traced during design):** STATS's route
+(`/practice/stats`) is nested under PLAY's own route (`/practice`). The original per-tab
+`pathname.startsWith(tab.to)` check, ported naively, would have lit up BOTH tabs simultaneously on
+every `/practice/stats` visit. Fixed with `src/lib/navigation.js`'s `resolveActiveTab` — longest-prefix-match
+across all tabs at once, so the most specific route always wins over its broader ancestor. Unit-tested
+(exact match, plain nested match, nested-collision precedence, no-match case) since this is exactly
+the kind of non-obvious invariant that's easy to silently re-break later (e.g. if PRO ever grows a
+nested sub-route under `/profile`).
+**Live-verified in browser:** confirmed via `preview_inspect`/`preview_eval` (not just unit tests) that
+exactly one tab lights up on `/practice`, `/practice/stats`, and `/practice/history` respectively —
+the three cases that matter for the collision this fix addresses.
+**Layer 1 status: COMPLETE** (schema, Dexie/TanStack repository skeleton, ChipGroup primitive, 4-tab
+nav). Next: Layer 2 — front-door slice (Splash/Auth/Onboarding, Sonnet 5).
+
+---
+
 ## 2026-07-05 — Shared ChipGroup primitive (SHIPPED) — Layer 1, phase 3
 
 **What:** Extracted `src/components/ChipGroup.jsx` — the first "shared zero-typing UI primitive"
