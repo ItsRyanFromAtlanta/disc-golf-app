@@ -4,6 +4,40 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — Layer 1 foundation schema (APPLIED) — first Layer 1 phase
+
+**What:** `layer1_foundation_schema.sql` — the append-only schema pass absorbing blueprint concepts onto
+the shipped tables. Applied live via Supabase MCP (backup confirmed first, per CLAUDE.md gate).
+**Model:** Opus 4.8 (schema design + rules/trigger logic, per the model map).
+**Landed:**
+- `discs`: `role` (putter-lineup, partial-unique "one primary putter per user"), `wear_score` (1–10),
+  `total_chain_hits` odometer (stored counter — NOT a putt_events trigger; batch-ribbon putts create no
+  events, so a trigger would undercount).
+- `profiles`: `pdga_rating`, `xp`, `level` (level = derived cache; `xp_events` ledger = source of truth).
+- `putt_events.putter_disc_id` (Screen 9 putter breakdown); session weather (`weather_condition`+`wind_mph`)
+  on both `putting_regimen_runs` and `putt_sessions`.
+- **Custom routines** = extend `putting_regimens` (not a parallel tree): `user_id` (null = system),
+  `drill_type`, `rules_config`, `archived`. `difficulty` relaxed to nullable + **partial** unique (system
+  rows only). Reuses the whole sets/runs/run_sets/scoring pipeline unchanged.
+- `badges` / `badge_progress` / `xp_events` (gamification tables land now, Layer-5 logic later).
+- Hard interlocks as **triggers** (cross-row aggregates can't be CHECKs): 35-disc bag cap, 100-putt
+  routine cap. `merge_discs(source,target)` SECURITY DEFINER consolidation fn (reassign children + sum
+  odometer + delete source; owner-checked).
+**Key decisions / gotchas:**
+- RLS reshape was mandatory, not optional: old regimen policies were select-open, which would have **leaked
+  every user's custom routine**. Replaced with system-or-own visibility on regimens + sets.
+- **Soft delete** for custom routines (`archived` flag, no DELETE policy) — hard delete would hit the
+  no-cascade `putting_regimen_runs` FK and strand run history the analytics/PB features read.
+- Cap triggers take a `FOR UPDATE` lock on the parent bag/regimen row → the count-then-insert is atomic
+  (closes the concurrent-double-submit bypass). 100-cap skips system regimens (`user_id is null`).
+- Process: `/code-review high` before apply (3 findings, all fixed pre-apply) → apply → `get_advisors`
+  (fixed trigger `search_path` + revoked `anon` execute on `merge_discs` + covered `badge_progress.badge_id`).
+  Residual advisor warnings are intentional (authenticated SECURITY DEFINER) or pre-existing (leaked-pw toggle).
+**Next in Layer 1:** Dexie.js + TanStack Query repository skeleton, shared zero-typing UI primitives,
+TabBar → 4-tab (PLAY/BAGS/STATS/PRO). See `DEVELOPMENT_PLAN.md` Layer 1.
+
+---
+
 ## 2026-07-05 — Master Blueprint absorbed: 21-screen plan reconciled onto shipped app (Layer 0)
 
 **What:** User supplied a consolidated "Master Project Blueprint v2.0.0" — 21 fully-wireframed screens,
