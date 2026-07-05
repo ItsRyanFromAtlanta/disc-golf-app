@@ -93,6 +93,29 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 | Acoustic make-detection prototype (Web Audio FFT) | BACKLOG | Experimental spike; success gate >90% agreement with manual entry outdoors |
 | Tournament noise overlay (cognitive load training) | BACKLOG | Background audio loops; cheap once drills exist |
 
+## Front-door & screen-spec ideation (specced 2026-07-05 — see SCREEN_SPECS.md)
+
+All designs agreed-format specs in `SCREEN_SPECS.md`; approval gate before build. Schema implications
+consolidated in that doc's closing table (all future append-only files).
+
+| Feature | Status | Notes |
+|---|---|---|
+| Splash + auth overhaul (OTP, Apple/Google SSO, guest mode) | NEXT UP | Screens 1–2 (source doc); Phase 2 front-door slice |
+| Zero-typing onboarding (goal chips, putter provisioning, haptic test) | NEXT UP | Screen 3; rides with front-door slice |
+| Play/Putt Hub (smart UP NEXT hero, streak chip, gear strip) | BACKLOG | Screen 4; pure composition of shipped insights functions |
+| Bag 3-tab hub (Bag / Locker / Catalog) + catalog destination | BACKLOG | Screen 5; catalog = first read-only disc_molds browse surface |
+| Putter lineup (primary/backup depth chart) | BACKLOG | Screen 6; needs profiles putter-role columns (schema file later) |
+| Wear slider (numeric, condition freetext retained) | BACKLOG | Screen 6; discs.wear column later |
+| Bézier flight-curve sketch on disc profile | BACKLOG | Screen 6; pure SVG fn, honestly labeled "sketch" |
+| Custom regimen builder (stage stacking, live max-score preview) | LATER (deliberate) | Screen 7; spec-only — blocked on Track 2.3 rules_config/drill_type design pass |
+| Canvas: visual stack-tracker pips | BACKLOG | Screen 8 delta — ADOPT; render-only off existing tally |
+| Canvas: opt-in Tap Mode (accessibility input mapping) | BACKLOG | Screen 8 delta — ADAPT; same classification engine |
+| Canvas: mid-session putter swap drawer | BACKLOG | Screen 8 delta — ADAPT; data value needs putt_events.putter_disc_id |
+| Unified session report (score hero, drop-off curve, RUN IT BACK replay) | BACKLOG | Screen 9; one component, post-session + history entry points |
+| Putter breakdown matrix | BACKLOG | Screen 9; thin (1 row) until putt_events.putter_disc_id lands |
+| Analytics home (form-over-time chart, takeaway-first panels) | BACKLOG | Screen 10; needs trend-windowing fn in lib/insights/ |
+| Settings: sync ledger + clear-local + CSV export | BACKLOG | Screen 10; export doubles as UDisc-importer rehearsal |
+
 ## Round management, course catalog & import groundwork (planned 2026-07-03)
 
 | Feature | Status | Notes |

@@ -4,6 +4,51 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — SCREEN_SPECS.md authored: screens 3–10 (Phase 1 of "updates" plan)
+
+**What:** Wrote `SCREEN_SPECS.md` — full design specs for screens 3–10 of the 10-screen product spec
+(`updates for disc golf app.md` covers 1–2). Format per screen: prose intro → style guide (Sun-Drenched
+Topo tokens only) → ASCII wireframe → Pro Additions (why/how) → **Build Notes** (REUSE vs NET-NEW with
+exact file paths, dependencies, honesty notes). This is the approval gate before Phase 2 builds beyond
+the front-door slice.
+**Model:** Opus 4.8 (design/ideation pass, per convention).
+**Key decisions (user-confirmed in plan mode):**
+- ASCII wireframes only, no per-screen HTML mockups (generated later on request).
+- Every screen is an **ideation pass** — ideal interaction flow using source one-liners + shipped code as
+  starting context, not documentation of the status quo. Screen 8 (shipped canvas) got its source-doc
+  ideas evaluated as deltas: split-screen tap zones → **ADAPT** (opt-in Tap Mode, same engine), visual
+  stack tracker → **ADOPT** (context-bar pips), mid-round swap drawer → **ADAPT** (putter-only,
+  edge-swipe, start-position gated vs the undo cone).
+- **Consolidated schema implications table** (all future append-only files, none built): putter roles as
+  `profiles.primary/backup_putter_disc_id`; `discs.wear` numeric (freetext condition retained);
+  `putt_events.putter_disc_id` (enables Screen 9's putter matrix + swap-drawer data story); Screen 7's
+  demands on the Track 2.3 `rules_config`/`drill_type` design pass, incl. a versioning rule (editing a
+  custom regimen with runs creates a new row, never mutates).
+- Screen 7 (Custom Regimen Builder) remains **spec-only** — deliberately written as the demand signal for
+  the 2.3 schema design; recommendation recorded: typed columns stay authoritative for fixed_sets,
+  rules_config reserved for drill types that don't fit them.
+- Screen 10 honesty ruling: "local database sync controls" = the InstantLaunch localStorage buffer/outbox,
+  not an offline database (which 1D explicitly scoped out); settings live on Profile, analytics stays at
+  /practice/stats.
+**Verified:** all 41 REUSE file paths referenced in the doc exist (scripted check, zero missing).
+Component inventory came from an Explore-agent pass over graphify + source (~50 files).
+**Next:** user reviews SCREEN_SPECS.md (approval gate) → Phase 2 front-door build (Splash → Auth overhaul
+w/ OTP + Apple/Google SSO + guest → Screen 3 onboarding). Suggested post-approval build order recorded at
+the end of SCREEN_SPECS.md.
+
+---
+
+## 2026-07-05 — Token-efficient dev workflow set up (Phase 0 of "updates" plan)
+
+**What:** Stood up the token-optimization tooling before starting the "updates for disc golf app" build (front-door slice: Splash → Auth overhaul + SSO → zero-typing Onboarding, per the approved plan file).
+**Done:**
+- **graphify** — ran `graphify update .` → built `graphify-out/graph.json` (397 nodes, 883 edges, 23 communities). This activated the previously-dormant `PreToolUse` enforcement hooks already in `~/.claude/settings.json` (they gate on `graphify-out/graph.json` existing): grep/read now steered to scoped `graphify query`/`explain`/`path` subgraphs. Re-run `graphify update .` at each session close.
+- **rtk (Rust Token Killer)** — corrected the original assumption: it's **not an MCP server**, it's a Bash-output-compressing CLI + Claude Code hook. Installed the prebuilt Windows binary (`rtk-x86_64-pc-windows-msvc.zip`, v0.43.0) to `~/.local/bin` (already on PATH); ran `rtk init -g`; manually merged its `rtk hook claude` command into the existing `PreToolUse` Bash matcher group in `settings.json` (coexists with the graphify hooks). `RTK.md` + `@RTK.md` reference added to global CLAUDE.md by rtk itself.
+- **composio** (MCP, connected) + **superpowers** (skill) — standing capabilities, not required for the front-door slice.
+**Gotcha:** rtk's hook only loads at Claude Code **startup**, so it does nothing until a restart — restarted here specifically to bank its compression for the token-heavy Phase 1 (author screen specs 3–10) + Phase 2 (build) work. graphify, by contrast, is read per-call and was live immediately.
+
+---
+
 ## 2026-07-05 — Scoring canvas shipped: gesture capture, offline sync, putt_events (Track 2.2b/2.2c)
 
 **What:** The 2.2b design review (approved spec, no build) followed immediately by the full 2.2c build — a real-time, gesture-driven scoring canvas that replaces the plain number-entry active-logging UI in both `RegimenRunPage.jsx` and `FreeformLogPage.jsx` (user's explicit choice, confirmed via plan-mode question — not a new parallel mode).
