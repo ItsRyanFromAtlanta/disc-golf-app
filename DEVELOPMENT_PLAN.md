@@ -14,15 +14,17 @@ are stated below — **confirm the active model matches before starting a layer.
 
 - **Layer 0 — Documentation alignment** (Sonnet 5, IN PROGRESS): blueprint into repo, `SCREEN_SPECS.md`
   rewrite, this doc + `CLAUDE.md` + `FEATURE_BACKLOG.md` + `DEVLOG.md` updated.
-- **Layer 1 — Foundation** (Opus 4.8, manual DB backup first): one append-only schema file (disc
+- **Layer 1 — Foundation** (Opus 4.8, manual DB backup first, COMPLETE): one append-only schema file (disc
   role/wear/odometer, bag capacity, profile PDGA/XP/level fields, weather columns, `putt_events.putter_disc_id`,
   routine `rules_config`/`drill_type`/100-putt CHECK, badges/badge_progress/xp_events tables, disc
   merge trigger); Dexie.js + TanStack Query repository skeleton (staged local-first, behind a
   repository interface — InstantLaunch folds in last, not first); shared zero-typing UI primitives;
   TabBar → 4-tab (PLAY/BAGS/STATS/PRO).
-- **Layer 2 — Front-door slice** (Sonnet 5): Screens 1–3 — Splash, Auth (email 6-digit OTP + Apple/Google
+- **Layer 2 — Front-door slice** (Sonnet 5, COMPLETE): Screens 1–3 — Splash, Auth (email 6-digit OTP + Apple/Google
   SSO + anonymous guest + claim-progress conversion), Onboarding wizard (goal cards → putter
-  provisioning with smart default + Practice Stack bag genesis → units + haptic test).
+  provisioning with smart default + Practice Stack bag genesis → units + haptic test). Apple/Google SSO
+  and anonymous sign-in need enabling in the Supabase dashboard before they work end-to-end — see
+  DEVLOG 2026-07-05.
 - **Layer 3 — Hubs** (Sonnet 5): Screens 4–6 — Dashboard hub (instant-replay hero, 3-way launchpad),
   Bag manager (MY BAGS/PUTTERS/UNIVERSE + 35-disc interlock + ghost-slot wishlist), Putter lineup
   (role swimlanes, Bézier flight curve, wear slider + odometer alert).

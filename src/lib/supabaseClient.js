@@ -9,4 +9,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// persistSession/autoRefreshToken are supabase-js v2 defaults already, but
+// Screen 2's "365-Day Offline Guarantee" checkbox is a UX label over this
+// exact behavior (see AuthContext.jsx) — stated explicitly so that promise
+// stays true even if a future major version changes the default.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+})

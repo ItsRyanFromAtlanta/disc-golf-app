@@ -34,6 +34,20 @@ export async function searchMolds(query) {
   return data
 }
 
+// Zero-typing putter provisioning (Onboarding Step 2): exact brand + category
+// match, no search string — distinct from searchMolds' free-text ilike used
+// by the typed disc-add flow.
+export async function fetchPutterMolds(manufacturer) {
+  const { data, error } = await supabase
+    .from('disc_molds')
+    .select('*')
+    .eq('manufacturer', manufacturer)
+    .eq('category', 'putter')
+    .order('mold_name')
+  if (error) throw error
+  return data
+}
+
 export async function createMold(fields) {
   const { data, error } = await supabase.from('disc_molds').insert(fields).select().single()
   if (error) throw error

@@ -1,7 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import AppShell from './components/AppShell'
+import ProtectedRoute from './components/ProtectedRoute'
+import SplashPage from './pages/SplashPage'
 import AuthPage from './pages/AuthPage'
+import OnboardingPage from './pages/OnboardingPage'
 import PracticeMenuPage from './pages/PracticeMenuPage'
 import FreeformLogPage from './pages/FreeformLogPage'
 import RegimenSelectPage from './pages/RegimenSelectPage'
@@ -24,11 +27,20 @@ function App() {
     <Routes>
       <Route
         path="/"
-        element={
-          loading ? null : <Navigate to={user ? '/practice' : '/login'} replace />
-        }
+        element={loading ? null : user ? <Navigate to="/practice" replace /> : <SplashPage />}
       />
       <Route path="/login" element={<AuthPage />} />
+      {/* Onboarding needs a session (guest or real) but not the tab-barred
+          shell — useOnboardingGate (in AppShell) is what routes a
+          never-onboarded user here in the first place. */}
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Every authenticated route lives under one shell: auth guard + the
           persistent bottom tab bar (Practice / Bag / Profile today; Rounds

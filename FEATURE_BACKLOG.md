@@ -102,12 +102,12 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 | Feature | Status | Notes |
 |---|---|---|
 | Dexie.js + TanStack Query staged local-first repository | NEXT UP | Layer 1; behind a repository interface, InstantLaunch folds in last |
-| Discs: role (primary/backup/situational putter), wear_score, total_chain_hits | NEXT UP | Layer 1 schema; supersedes earlier profile-columns putter-role proposal |
-| Bag 35-disc capacity hard interlock | NEXT UP | Layer 1 schema (CHECK) + Layer 3 UI (disabled Add + blue/orange/rust states) |
-| Routine 100-putt hard interlock + rules_config/drill_type | NEXT UP | Layer 1 schema — this IS the Track 2.3 regimen-engine generalization |
-| 4-tab app nav (Play / Bags / Stats / Pro) | NEXT UP | Layer 1 |
-| Splash + auth overhaul (email 6-digit OTP, Apple/Google SSO, anonymous guest) | NEXT UP | Layer 2, Screens 1–2 |
-| Zero-typing onboarding (goal cards, putter provisioning, haptic test) | NEXT UP | Layer 2, Screen 3 |
+| Discs: role (primary/backup/situational putter), wear_score, total_chain_hits | SHIPPED | Layer 1 schema; supersedes earlier profile-columns putter-role proposal |
+| Bag 35-disc capacity hard interlock | SHIPPED | Layer 1 schema (CHECK) + Layer 3 UI (disabled Add + blue/orange/rust states) |
+| Routine 100-putt hard interlock + rules_config/drill_type | SHIPPED | Layer 1 schema — this IS the Track 2.3 regimen-engine generalization |
+| 4-tab app nav (Play / Bags / Stats / Pro) | SHIPPED | Layer 1 |
+| Splash + auth overhaul (email 6-digit OTP, Apple/Google SSO, anonymous guest) | SHIPPED | Layer 2, Screens 1–2; SSO + anonymous sign-in need enabling in Supabase dashboard — see DEVLOG 2026-07-05 |
+| Zero-typing onboarding (goal cards, putter provisioning, haptic test) | SHIPPED | Layer 2, Screen 3 |
 | Dashboard hub (instant-replay hero, 3-way STANDARD/CUSTOM/NEW launchpad) | BACKLOG | Layer 3, Screen 4 |
 | Bag manager (My Bags / Putters / Universe + ghost-slot wishlist) | BACKLOG | Layer 3, Screen 5; retail bridge (Ghost Slot → Pro-Shop) parked |
 | Putter lineup (role swimlanes, Bézier flight curve, wear slider + odometer alert) | BACKLOG | Layer 3, Screen 6 |

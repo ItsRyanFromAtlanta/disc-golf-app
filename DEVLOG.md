@@ -4,6 +4,48 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — Splash/Auth/Onboarding (SHIPPED) — Layer 2 complete (front-door slice)
+
+**What:** Screens 1–3 per `SCREEN_SPECS.md`/`MASTER_PROJECT_BLUEPRINT.md`: `SplashPage.jsx` (offline
+badge, static social-proof line, GET STARTED / guest escape hatch), `AuthPage.jsx` rewrite (email
+6-digit OTP via `OtpInput.jsx`, password fallback, Apple/Google SSO buttons, guest→account conversion),
+`OnboardingPage.jsx` + 3 step components (goal cards, zero-typing putter provisioning, haptic
+test + units).
+**Model:** Sonnet 5, per Layer 2's recommendation (confirmed active before starting).
+**Decisions (see SCREEN_SPECS.md Screen 3 for the mold one; both were sign-off'd in conversation):**
+- **Default putter mold:** blueprint says "Axiom Cosmic Pilot," which isn't seeded. User picked
+  **Axiom Envy** (real seeded Axiom putter) over the alternative "Axiom Pixel" (not a real
+  manufacturer/mold pairing in the catalog).
+- **Onboarding-complete signal:** no new schema column — `needsOnboarding(bags)` in
+  `src/lib/onboarding.js` treats "zero bags" as "never onboarded," since Step 2 always genesis-creates
+  the Practice Stack bag (even on "Skip setup," to avoid an infinite onboarding loop). Checked once per
+  app load by `useOnboardingGate` (mirrors `useCrashRecoveryRedirect`'s ref-guard pattern), wired into
+  `AppShell`.
+- **Goal-card selection (Step 1):** not persisted anywhere (DB or InstantLaunch) — no consumer exists
+  yet (Layer 3 dashboard). Revisit when the dashboard actually reads it.
+**Bug caught during live verification (not by /code-review):** `.splash-page` needed `display:flex`
+for its hero/bottom-zone vertical layout, but that broke the width-stretch every OTHER page gets for
+free from `#root`'s flex column — measured 313px wide inside a 480px container instead of stretching,
+on BOTH desktop and mobile viewports. Fixed with an explicit `width: 100%` on `.splash-page`. Existing
+plain-block pages (`.auth-page`, etc.) don't have this problem since they're not `display:flex`
+themselves.
+**Live-verified in browser against the real Supabase project:** full onboarding flow (goal → Axiom
+Envy putter provisioning → haptic test/units) end-to-end, confirmed the Practice Stack bag + Envy
+putter actually landed in the DB (checked `/bag`), confirmed the onboarding gate doesn't loop once a
+bag exists, confirmed sign-out routes to `/login` and `/` renders Splash.
+**Dashboard setup still needed (external, not app code) — anonymous sign-in is currently OFF for this
+project (guest tap fails with a 422, and the code's honest fallback correctly bounces to `/login`
+instead of dead-ending):**
+1. Supabase Dashboard → Authentication → Sign In / Providers → enable **Allow anonymous sign-ins**.
+2. Apple: Services ID + Sign-in key in Apple Developer, then Supabase → Authentication → Providers →
+   Apple.
+3. Google: OAuth client in Google Cloud Console, then Supabase → Authentication → Providers → Google.
+4. Confirm the redirect URL registered with each provider matches `<site>/practice` (see
+   `signInWithOAuth`/`linkGuestWithOAuth` in `AuthContext.jsx`).
+**Layer 2 status: COMPLETE.** Next: Layer 3 — Hubs (Dashboard/Bag/Putter lineup), Sonnet 5.
+
+---
+
 ## 2026-07-05 — TabBar → 4-tab PLAY/BAGS/STATS/PRO (SHIPPED) — Layer 1, phase 4 (Layer 1 complete)
 
 **What:** Migrated the bottom tab bar from 3 tabs (Practice/Bag/Profile) to the blueprint's 4-tab
