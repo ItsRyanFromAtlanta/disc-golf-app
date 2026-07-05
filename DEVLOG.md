@@ -4,6 +4,49 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — Dexie + TanStack Query repository skeleton (SHIPPED) — Layer 1, phase 2
+
+**What:** The offline-first repository layer from `DEVELOPMENT_PLAN.md` Layer 1 — `dexie` +
+`@tanstack/react-query` added; `discs` wired through it as the first entity, migrating
+`BagLockerPage` off direct `fetchUserDiscs` calls.
+**Model:** Sonnet 5 (UI/infra, per the model map — Opus was reserved for the prior schema phase).
+**Shipped:**
+- `src/lib/db/dexieDb.js` — local IndexedDB mirror (discs/bags/bagDiscs/regimens/regimenRuns/
+  puttSessions/profile cache tables + an `outbox` for pending mutations).
+- `src/lib/repository/offlineFirstRepository.js` — framework-free primitives (`readThroughCache`,
+  `writeThrough`, `flushOutbox`), unit-tested with in-memory fakes (matches the `lib/insights` /
+  `lib/instantLaunch` testing convention — no real Dexie/React Query needed to test the contract).
+- `src/lib/repository/createRepository.js` — the actual "repository interface": a factory giving
+  any entity `useList`/`useCreate`/`useUpdate`/`useRemove` hooks with offline-first behavior baked in
+  once, not re-derived per entity.
+- `src/lib/repository/discRepository.js` — discs' concrete instance, delegating to the existing
+  `discLocker.js` Supabase functions (kept as the single source of truth for query shape).
+- `BagLockerPage` reads through `useDiscList` now — first existing screen migrated (blueprint's
+  "existing screens migrate as they're touched" clause), not deferred.
+**Key decisions / gotchas (surfaced by `/code-review` before commit, all fixed):**
+- Cache reconciliation must **prune**, not just upsert — `readThroughCache` now deletes cached rows
+  absent from a successful remote result, or a disc removed/changed elsewhere would keep surfacing
+  forever via the offline fallback on this device.
+- **Idempotent creates**: retried/duplicated writes (double-tap offline, or two mounted `useDiscList`
+  instances both flushing on reconnect) could otherwise insert a disc twice. Fixed with a
+  mount-scoped client-generated id (`useCreate`'s `clientIdRef`, reset after success) threaded into
+  `upsertDisc`, which now `upsert`s on `id` when a client id is present instead of a plain `insert` —
+  mirrors the client-UUID + onConflict pattern `putt_events_schema.sql` already established.
+  Updates/removes didn't need this — they already target a known row id, so replaying them is
+  naturally idempotent.
+- Stale-closure bug in the reconnect listener: `queryKey` was captured once at mount (empty effect
+  deps) and never updated, so an id changing without an unmount would invalidate the wrong query on
+  reconnect. Fixed via a ref updated every render.
+- A shared `error` state was almost made to double as both the disc-query error and the picker-flow
+  error — clearing one on the other's resolution would've clobbered it. Split into `displayError`
+  (query error) `||` picker-only `error` instead of routing both through one `setError`.
+**Deferred:** no other existing pages migrated yet (BagManagePage, DiscFormPage, DiscDetailPage,
+regimen/history pages all still call Supabase directly) — migrate as touched, per the staged-adoption
+plan. `useCreateDisc`/`useUpdateDisc` are exposed but not yet wired into a page.
+**Next in Layer 1:** shared zero-typing UI primitives, TabBar → 4-tab (PLAY/BAGS/STATS/PRO).
+
+---
+
 ## 2026-07-05 — Layer 1 foundation schema (APPLIED) — first Layer 1 phase
 
 **What:** `layer1_foundation_schema.sql` — the append-only schema pass absorbing blueprint concepts onto

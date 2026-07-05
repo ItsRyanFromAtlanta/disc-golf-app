@@ -42,9 +42,19 @@ export async function createMold(fields) {
 
 export async function upsertDisc(userId, discId, fields) {
   const payload = { ...fields, user_id: userId }
-  const query = discId
-    ? supabase.from('discs').update(payload).eq('id', discId)
-    : supabase.from('discs').insert(payload)
+  let query
+  if (discId) {
+    query = supabase.from('discs').update(payload).eq('id', discId)
+  } else if (payload.id) {
+    // Client-generated id (offline-first create retries — see
+    // src/lib/repository/createRepository.js): upsert on the primary key so
+    // a duplicate replay (a manual retry, or two concurrent outbox flushes
+    // racing the same queued entry) re-applies the same values instead of
+    // erroring or inserting a second row for the same logical create.
+    query = supabase.from('discs').upsert(payload, { onConflict: 'id' })
+  } else {
+    query = supabase.from('discs').insert(payload)
+  }
   const { data, error } = await query.select(DISC_WITH_MOLD).single()
   if (error) throw error
   return data

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { IconLayoutGrid, IconList } from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
-import { fetchUserDiscs, fetchBags, fetchBagDiscs, addDiscToBag, removeDiscFromBag } from '../lib/discLocker'
+import { fetchBags, fetchBagDiscs, addDiscToBag, removeDiscFromBag } from '../lib/discLocker'
+import { useDiscList } from '../lib/repository/discRepository'
 import { filterDiscs, sortDiscs } from '../lib/discFilters'
 import { getViewMode, setViewMode } from '../lib/viewPreference'
 import DiscCard from '../components/DiscCard'
@@ -14,8 +15,24 @@ export default function BagLockerPage() {
   const [searchParams] = useSearchParams()
   const addToBagId = searchParams.get('addToBag')
 
-  const [discs, setDiscs] = useState(null)
+  // Offline-first read (Dexie cache mirrors the last successful fetch): on a
+  // failed remote fetch with nothing cached, discsQuery.error is set and data
+  // stays undefined — treated the same as the old "fetch failed" path, an
+  // empty list plus an inline error banner rather than blocking the page.
+  const discsQuery = useDiscList(user.id)
+  // Memoized so a stable reference flows into the filterDiscs/sortDiscs
+  // useMemo below — otherwise the `[]` fallback is a new array every render
+  // while an error persists, defeating that memoization entirely.
+  const discs = useMemo(
+    () => discsQuery.data ?? (discsQuery.isError ? [] : null),
+    [discsQuery.data, discsQuery.isError],
+  )
+  // `error` is reserved for picker-flow failures (bag/membership fetches,
+  // add/remove toggles) — kept separate from discsQuery.error rather than
+  // funneled through one shared setError, so a picker error is never wiped
+  // out (or vice versa) by the other source resolving independently.
   const [error, setError] = useState(null)
+  const displayError = error || discsQuery.error?.message || null
   const [viewMode, setViewModeState] = useState(getViewMode)
 
   const [query, setQuery] = useState('')
@@ -29,18 +46,6 @@ export default function BagLockerPage() {
   // Add/Added toggle per disc instead of navigating into disc detail.
   const [pickerBag, setPickerBag] = useState(null)
   const [pickerMemberIds, setPickerMemberIds] = useState(new Set())
-
-  useEffect(() => {
-    fetchUserDiscs(user.id)
-      .then(setDiscs)
-      .catch((err) => {
-        setError(err.message)
-        // The toolbar (search/filter/sort/grid-list toggle) is useful chrome
-        // independent of whether the fetch succeeded — an empty list plus an
-        // inline error banner degrades better than blocking the whole page.
-        setDiscs([])
-      })
-  }, [user.id])
 
   useEffect(() => {
     if (!addToBagId) {
@@ -89,7 +94,7 @@ export default function BagLockerPage() {
     return sortDiscs(filtered, sortKey)
   }, [discs, query, manufacturer, speedFilter, stabilityFilter, status, sortKey])
 
-  if (error && !discs) return <p className="form-error">{error}</p>
+  if (displayError && !discs) return <p className="form-error">{displayError}</p>
   if (!discs) return <p className="loading">Loading...</p>
 
   return (
@@ -107,7 +112,7 @@ export default function BagLockerPage() {
         )}
       </header>
 
-      {error && <p className="form-error">{error}</p>}
+      {displayError && <p className="form-error">{displayError}</p>}
 
       {!pickerBag && (
         <p>
