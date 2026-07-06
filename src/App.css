@@ -253,9 +253,23 @@
   gap: 10px;
 }
 
-.regimen-card-header h2 {
+.regimen-card-header h2,
+.regimen-card-header h3 {
   font-size: 18px;
   margin: 0;
+}
+
+.regimen-launch-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.regimen-launch-actions .start-button {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
 }
 
 .difficulty-badge {
@@ -1147,6 +1161,194 @@
 
 .capacity-bar-fill-over {
   background: var(--color-negative);
+}
+
+.capacity-bar-fill-warn {
+  background: var(--color-highlight);
+}
+
+.capacity-bar-fill-full {
+  background: var(--color-negative);
+}
+
+.start-button[aria-disabled='true'] {
+  background: var(--color-border-default);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+/* Putter lineup (Screen 6) */
+
+.putter-swimlane {
+  margin: 16px 0;
+}
+
+.putter-swimlane h3 {
+  margin-bottom: 8px;
+}
+
+.putter-lineup-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--color-bg-surface);
+}
+
+.putter-lineup-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.flight-curve {
+  width: 90px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.flight-curve-stock {
+  stroke: var(--color-text-secondary);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  opacity: 0.7;
+}
+
+.flight-curve-current {
+  stroke: var(--color-positive);
+  stroke-width: 2.5;
+}
+
+.wear-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.odometer-alert {
+  font-size: 13px;
+  color: var(--color-highlight);
+  margin: 0;
+}
+
+/* Disc universe browser (Screen 5) */
+
+.ghost-slot-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: var(--border-width) dashed var(--color-border-default);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: var(--color-bg-surface);
+}
+
+.universe-accordion-tier {
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.universe-accordion-tier-mold {
+  margin-left: 12px;
+}
+
+.universe-accordion-header {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  font: inherit;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.universe-plastic-list {
+  list-style: none;
+  margin: 0 0 8px 12px;
+  padding: 0;
+}
+
+.universe-plastic-row {
+  display: block;
+  padding: 6px 4px;
+  color: var(--color-secondary-accent);
+}
+
+/* Dashboard hub (Screen 4) */
+
+.streak-badge {
+  font-family: var(--font-display);
+  color: var(--color-highlight);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.dashboard-zone-a {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: var(--tap-target-min);
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.hero-card-resume,
+.hero-card-first {
+  background: var(--color-positive);
+  color: var(--color-text-inverse);
+}
+
+.hero-card-quickstart {
+  background: var(--color-highlight-soft);
+  color: var(--color-text-primary);
+  border: var(--border-width) solid var(--color-highlight);
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-zone-b {
+  margin: 16px 0;
+}
+
+.dashboard-zone-c {
+  margin: 16px 0;
+}
+
+.zone-c-trigger {
+  width: 100%;
+  min-height: var(--tap-target-min);
+  border: var(--border-width) dashed var(--color-border-default);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text-secondary);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.zone-c-trigger[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* Putting canvas — READY_DEFAULT (session launcher / prediction card) */

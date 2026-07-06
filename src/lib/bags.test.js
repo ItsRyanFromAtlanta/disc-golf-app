@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { bagIdsToUnsetForNewDefault, isVisibleInBagView, bagViewDiscs, flightChartPoint, flightChartPoints } from './bags'
+import {
+  bagIdsToUnsetForNewDefault,
+  isVisibleInBagView,
+  bagViewDiscs,
+  flightChartPoint,
+  flightChartPoints,
+  capacityTier,
+} from './bags'
 
 describe('bagIdsToUnsetForNewDefault', () => {
   it('flips the previously-default bag when a new one is promoted', () => {
@@ -61,5 +68,28 @@ describe('flightChartPoint / flightChartPoints', () => {
     ])
     expect(points).toHaveLength(1)
     expect(points[0].x).toBe(9)
+  })
+})
+
+describe('capacityTier', () => {
+  it('is ok below the warning band', () => {
+    expect(capacityTier(0)).toBe('ok')
+    expect(capacityTier(29)).toBe('ok')
+  })
+
+  it('warns in the last 5 slots before the cap', () => {
+    expect(capacityTier(30)).toBe('warn')
+    expect(capacityTier(34)).toBe('warn')
+  })
+
+  it('is full at and beyond the cap', () => {
+    expect(capacityTier(35)).toBe('full')
+    expect(capacityTier(40)).toBe('full')
+  })
+
+  it('scales the warning band off a custom cap', () => {
+    expect(capacityTier(4, 10)).toBe('ok')
+    expect(capacityTier(5, 10)).toBe('warn')
+    expect(capacityTier(10, 10)).toBe('full')
   })
 })

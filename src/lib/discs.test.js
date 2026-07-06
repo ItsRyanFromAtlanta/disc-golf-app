@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { effectiveFlightNumbers } from './discs'
+import {
+  effectiveFlightNumbers,
+  discIdsToUnsetForNewPrimary,
+  situationalRoleCount,
+  SITUATIONAL_ROLE_CAP,
+} from './discs'
 
 const mold = { speed: 9, glide: 5, turn: -1, fade: 2 }
 
@@ -37,5 +42,41 @@ describe('effectiveFlightNumbers', () => {
       turn: null,
       fade: null,
     })
+  })
+})
+
+describe('discIdsToUnsetForNewPrimary', () => {
+  it('flips the previously-primary disc when a new one is promoted', () => {
+    const discs = [
+      { id: 'a', role: 'primary_putter' },
+      { id: 'b', role: 'standard' },
+    ]
+    expect(discIdsToUnsetForNewPrimary(discs, 'b')).toEqual(['a'])
+  })
+
+  it('returns nothing to unset if the target is already primary', () => {
+    const discs = [{ id: 'a', role: 'primary_putter' }]
+    expect(discIdsToUnsetForNewPrimary(discs, 'a')).toEqual([])
+  })
+
+  it('returns nothing to unset on a fresh account with no primary yet', () => {
+    const discs = [{ id: 'a', role: 'standard' }]
+    expect(discIdsToUnsetForNewPrimary(discs, 'a')).toEqual([])
+  })
+})
+
+describe('situationalRoleCount', () => {
+  it('counts situational_weather discs, excluding the target when given', () => {
+    const discs = [
+      { id: 'a', role: 'situational_weather' },
+      { id: 'b', role: 'situational_weather' },
+      { id: 'c', role: 'standard' },
+    ]
+    expect(situationalRoleCount(discs)).toBe(2)
+    expect(situationalRoleCount(discs, 'a')).toBe(1)
+  })
+
+  it('caps at 3 per the blueprint swimlane limit', () => {
+    expect(SITUATIONAL_ROLE_CAP).toBe(3)
   })
 })

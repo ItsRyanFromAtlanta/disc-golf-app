@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { upsertDisc } from '../lib/discLocker'
+import { upsertDisc, fetchMoldById } from '../lib/discLocker'
 import MoldPicker from '../components/MoldPicker'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
@@ -28,11 +28,24 @@ const BLANK_FORM = {
 export default function DiscFormPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const [mold, setMold] = useState(null)
   const [form, setForm] = useState(BLANK_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+
+  // Universe tab hand-off (?mold=<id>&plastic=<name>): prefill the mold and
+  // plastic fields rather than building a separate weight-selection drawer.
+  useEffect(() => {
+    const moldId = searchParams.get('mold')
+    if (!moldId) return
+    fetchMoldById(moldId)
+      .then(setMold)
+      .catch((err) => setError(err.message))
+    const plastic = searchParams.get('plastic')
+    if (plastic) setForm((prev) => ({ ...prev, plastic }))
+  }, [searchParams])
 
   async function handleSubmit(e) {
     e.preventDefault()

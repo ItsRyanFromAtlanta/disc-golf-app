@@ -4,6 +4,46 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-05 — Dashboard/Bag/Putter hubs (SHIPPED) — Layer 3 complete (hubs)
+
+**What:** Screens 4–6 per `SCREEN_SPECS.md`: `PracticeMenuPage.jsx` evolved in place into the Dashboard
+Hub (streak badge, Zone A hero with crash-recovery > resume-last > first-session priority chain +
+persistent Quick Start card, Zone B STANDARD/CUSTOM/NEW `ChipGroup` launchpad over the 5 fixed
+regimens, Zone C disabled planning-drawer stub); `BagPage.jsx` grew a client-side MY BAGS/PUTTERS/
+UNIVERSE segmented header (no new routes — `/bag/locker`, `/bag/manage`, `/bag/discs/:id` unchanged);
+new `PutterLineup.jsx` + `FlightCurve.jsx` (role swimlanes over `discs.role`, wear slider, 300-hit
+odometer alert); new `UniverseBrowser.jsx` (Manufacturer → Mold → Plastic accordion over `searchMolds`,
+ghost-slot wishlist card).
+**Model:** Sonnet 5, per Layer 3's recommendation (confirmed active before starting).
+**New pure functions (all unit-tested):** `flightPath`/`wearAdjustedFlightNumbers`/
+`proposeWearStepDown` (`lib/flightCurve.js`), `discIdsToUnsetForNewPrimary`/`situationalRoleCount`
+(`lib/discs.js`, mirrors `bagIdsToUnsetForNewDefault`'s one-default pattern for the partial-unique-index
+primary_putter constraint), `capacityTier` (`lib/bags.js`), `stabilityGaps` (new `lib/wishlist.js`),
+`heroCardState` (new `lib/dashboardHero.js`).
+**Decisions (confirmed in conversation before building):**
+- **Screen 5 tabs are client-side state, not routes** — one page at `/bag`, matching the existing
+  `ChipGroup`/segmented pattern elsewhere rather than adding `/bag/putters` + `/bag/universe`.
+- **Zone C (custom planning drawer) is a disabled stub this layer** — same treatment as
+  CLONE & TWEAK; the real numeric-stepper sheet waits for Layer 4's routine builder context.
+- **Universe tab's plastic tier hands off to the existing `DiscFormPage`** (`?mold=&plastic=`
+  query params) instead of a bespoke weight-selection drawer — `disc_molds` has no per-run/weight rows
+  to back one, so this reuses the shipped add-disc flow rather than inventing new schema/UI.
+- **Hero card sources "resume last" from `suggestNextSession` (real Supabase history), not the
+  localStorage `smartPredictionCard`** — nothing writes that field yet (`updateSmartPredictionCard`
+  exists in `useInstantLaunchSession` but is never called), so reading it directly would always resolve
+  to null. Real crash-recovery state still reads the live InstantLaunch buffer.
+**Live-verified in browser against the real Supabase project:** created a test account (password
+auth — anonymous sign-in still needs the Supabase dashboard toggle from Layer 2), ran onboarding,
+confirmed the Dashboard's first-session hero + 5 STANDARD regimen cards + disabled Clone & Tweak/Zone C
+render; searched the Universe tab (MVP → Anode → Standard plastic), confirmed the mold/plastic prefill
+lands correctly on `DiscFormPage`, submitted a real disc; on the Putters tab, set that disc's role to
+Primary (confirmed the swimlane move + a PATCH to `discs` in network) and moved its wear slider
+(confirmed a second PATCH) — both against live data, not mocked.
+**Layer 3 status: COMPLETE.** Next: Layer 4 — Execution engine (routine builder, scoring canvas input-
+model decision, session summary), Opus 4.8 for the rules engine / Sonnet 5 for UI.
+
+---
+
 ## 2026-07-05 — Splash/Auth/Onboarding (SHIPPED) — Layer 2 complete (front-door slice)
 
 **What:** Screens 1–3 per `SCREEN_SPECS.md`/`MASTER_PROJECT_BLUEPRINT.md`: `SplashPage.jsx` (offline

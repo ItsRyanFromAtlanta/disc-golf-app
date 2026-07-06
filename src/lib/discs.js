@@ -16,3 +16,19 @@ export function effectiveFlightNumbers(disc, mold) {
   }
   return result
 }
+
+// discs.role enforces "one primary_putter per user" via a partial unique
+// index (mirrors bags' one-default-per-user rule), so promoting a new primary
+// requires unsetting the old one first. Pure selection logic, same shape as
+// bagIdsToUnsetForNewDefault.
+export function discIdsToUnsetForNewPrimary(discs, targetDiscId) {
+  return discs.filter((d) => d.role === 'primary_putter' && d.id !== targetDiscId).map((d) => d.id)
+}
+
+// situational_weather has no DB constraint (unlike primary_putter) -- capped
+// app-side at 3 per the Screen 6 blueprint's swimlane limit.
+export const SITUATIONAL_ROLE_CAP = 3
+
+export function situationalRoleCount(discs, excludeDiscId = null) {
+  return discs.filter((d) => d.role === 'situational_weather' && d.id !== excludeDiscId).length
+}

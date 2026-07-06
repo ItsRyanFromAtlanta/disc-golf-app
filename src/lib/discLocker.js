@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import { bagIdsToUnsetForNewDefault } from './bags'
+import { discIdsToUnsetForNewPrimary, situationalRoleCount, SITUATIONAL_ROLE_CAP } from './discs'
 
 // `discs.mold` is a legacy text column (kept as a human label after
 // migration); the joined disc_molds record must be aliased to something
@@ -18,6 +19,14 @@ export async function fetchUserDiscs(userId) {
 
 export async function fetchDisc(discId) {
   const { data, error } = await supabase.from('discs').select(DISC_WITH_MOLD).eq('id', discId).single()
+  if (error) throw error
+  return data
+}
+
+// Universe tab -> DiscFormPage handoff (Screen 5): resolve the mold picked
+// from the catalog accordion into MoldPicker's selectedMold shape.
+export async function fetchMoldById(moldId) {
+  const { data, error } = await supabase.from('disc_molds').select('*').eq('id', moldId).single()
   if (error) throw error
   return data
 }
@@ -70,6 +79,44 @@ export async function upsertDisc(userId, discId, fields) {
     query = supabase.from('discs').insert(payload)
   }
   const { data, error } = await query.select(DISC_WITH_MOLD).single()
+  if (error) throw error
+  return data
+}
+
+// Mirrors setDefaultBag's one-default pattern: discs.role enforces a single
+// primary_putter per user via a partial unique index, so promoting a new
+// primary requires unsetting the old one first (see discIdsToUnsetForNewPrimary).
+// situational_weather has no DB constraint -- capped app-side at
+// SITUATIONAL_ROLE_CAP, since the swimlane limit is a UI/blueprint rule, not
+// a data-integrity one.
+export async function updateDiscRole(discs, discId, role) {
+  if (role === 'situational_weather' && situationalRoleCount(discs, discId) >= SITUATIONAL_ROLE_CAP) {
+    throw new Error(`Only ${SITUATIONAL_ROLE_CAP} situational putters allowed`)
+  }
+  if (role === 'primary_putter') {
+    const idsToUnset = discIdsToUnsetForNewPrimary(discs, discId)
+    if (idsToUnset.length > 0) {
+      const { error } = await supabase.from('discs').update({ role: 'standard' }).in('id', idsToUnset)
+      if (error) throw error
+    }
+  }
+  const { data, error } = await supabase
+    .from('discs')
+    .update({ role })
+    .eq('id', discId)
+    .select(DISC_WITH_MOLD)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateDiscWear(discId, wearScore) {
+  const { data, error } = await supabase
+    .from('discs')
+    .update({ wear_score: wearScore })
+    .eq('id', discId)
+    .select(DISC_WITH_MOLD)
+    .single()
   if (error) throw error
   return data
 }

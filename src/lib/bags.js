@@ -39,3 +39,14 @@ export function flightChartPoints(discsWithMolds) {
     .map(({ disc, mold }) => flightChartPoint(disc, mold))
     .filter((point) => point !== null)
 }
+
+// 35-disc capacity interlock (blueprint Screen 5): blue/ok below the last 5
+// slots, sunburst-orange/warn for those, deep-rust/full at the hard cap --
+// [+ Add to Bag] disables at 'full'. Thresholds scale off `cap` so a bag with
+// a lower custom capacity still gets a 5-slot warning band.
+export function capacityTier(discCount, cap = 35) {
+  const warnAt = Math.max(0, cap - 5)
+  if (discCount >= cap) return 'full'
+  if (discCount >= warnAt) return 'warn'
+  return 'ok'
+}

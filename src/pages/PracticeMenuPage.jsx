@@ -1,29 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { IconChartBar, IconHistory, IconListNumbers, IconTargetArrow } from '@tabler/icons-react'
+import { IconChartBar, IconTargetArrow } from '@tabler/icons-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
-import ModeCard from '../components/ModeCard'
+import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
+import { practiceStreak, volumeLedger, suggestNextSession } from '../lib/insights'
+import { heroCardState } from '../lib/dashboardHero'
+import { readInstantLaunchState } from '../lib/instantLaunch/storage'
+import ChipGroup from '../components/ChipGroup'
 
-const MODES = [
-  {
-    to: '/practice/freeform',
-    icon: IconTargetArrow,
-    title: 'Freeform Log',
-    description: 'Log makes and attempts at any distance',
-  },
-  {
-    to: '/practice/regimens',
-    icon: IconListNumbers,
-    title: 'Regimens',
-    description: 'Structured sets with scoring and streak bonuses',
-  },
-  {
-    to: '/practice/history',
-    icon: IconHistory,
-    title: 'History',
-    description: 'Every session and run, with streaks and insights',
-  },
+const ZONE_B_TABS = [
+  { key: 'standard', label: '★ Standard' },
+  { key: 'custom', label: '🛠️ Custom' },
+  { key: 'new', label: '➕ New' },
 ]
 
 function activityDate(value) {
@@ -33,57 +22,124 @@ function activityDate(value) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
+function RegimenLaunchCard({ regimen }) {
+  return (
+    <div className="regimen-card">
+      <div className="regimen-card-header">
+        <span className={`difficulty-badge difficulty-${regimen.difficulty}`}>{'★'.repeat(regimen.difficulty)}</span>
+        <h3>{regimen.name}</h3>
+      </div>
+      {regimen.description && <p className="regimen-description">{regimen.description}</p>}
+      <div className="regimen-launch-actions">
+        <Link to={`/practice/regimens/${regimen.id}/run`} className="start-button">
+          Launch
+        </Link>
+        <button
+          type="button"
+          className="link-button"
+          disabled
+          aria-disabled="true"
+          title="Coming with the routine builder"
+        >
+          👯 Clone &amp; Tweak
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function PracticeMenuPage() {
   const { user, signOut } = useAuth()
-  const [recent, setRecent] = useState([])
-  const [loadingRecent, setLoadingRecent] = useState(true)
+  const [historyData, setHistoryData] = useState(null)
+  const [regimens, setRegimens] = useState(null)
+  const [zoneBTab, setZoneBTab] = useState('standard')
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    async function loadRecent() {
-      const [{ data: sessions }, { data: runs }] = await Promise.all([
-        supabase
-          .from('putt_sessions')
-          .select('id, session_date, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(3),
-        supabase
-          .from('putting_regimen_runs')
-          .select('id, started_at, completed, total_score, putting_regimens(name)')
-          .eq('user_id', user.id)
-          .order('started_at', { ascending: false })
-          .limit(3),
-      ])
-
-      const merged = [
-        ...(sessions ?? []).map((s) => ({
-          id: `session-${s.id}`,
-          at: s.created_at,
-          label: 'Freeform session',
-          detail: null,
-        })),
-        ...(runs ?? []).map((r) => ({
-          id: `run-${r.id}`,
-          at: r.started_at,
-          label: r.putting_regimens?.name ?? 'Regimen run',
-          detail: r.completed ? `${r.total_score} pts` : 'In progress',
-        })),
-      ]
-        .sort((a, b) => new Date(b.at) - new Date(a.at))
-        .slice(0, 3)
-
-      setRecent(merged)
-      setLoadingRecent(false)
-    }
-
-    loadRecent()
+    fetchHistory(user.id)
+      .then(setHistoryData)
+      .catch((err) => setError(err.message))
   }, [user.id])
+
+  useEffect(() => {
+    supabase
+      .from('putting_regimens')
+      .select('*')
+      .order('difficulty', { ascending: true })
+      .then(({ data, error: fetchError }) => {
+        if (fetchError) setError(fetchError.message)
+        else setRegimens(data)
+      })
+  }, [])
+
+  const hasHistory = historyData ? historyData.sessions.length > 0 || historyData.runs.length > 0 : false
+
+  // Sourced from suggestNextSession (real Supabase history), not the
+  // localStorage smartPredictionCard directly -- nothing writes that field
+  // yet, so it would always read null. Real crash-recovery state still comes
+  // from the actual InstantLaunch buffer.
+  const hero = useMemo(() => {
+    if (!historyData) return null
+    const now = new Date()
+    const suggestion = suggestNextSession(historyData.runs, distanceSamples(historyData), allPuttSamples(historyData), now)
+    const launchState = readInstantLaunchState()
+    return heroCardState(
+      {
+        ...launchState,
+        smartPredictionCard: {
+          lastRegimenId: suggestion.lastRegimenId,
+          suggestedDistanceFt: suggestion.suggestedDistanceFt,
+          computedAt: suggestion.computedAt,
+        },
+      },
+      hasHistory,
+    )
+  }, [historyData, hasHistory])
+
+  const streak = useMemo(() => {
+    if (!historyData) return 0
+    const dates = [...historyData.sessions.map((s) => s.created_at), ...historyData.runs.map((r) => r.started_at)]
+    return practiceStreak(dates, new Date())
+  }, [historyData])
+
+  const volume = useMemo(() => {
+    if (!historyData) return null
+    return volumeLedger(allPuttSamples(historyData), new Date())
+  }, [historyData])
+
+  const recent = useMemo(() => {
+    if (!historyData) return []
+    const merged = [
+      ...historyData.sessions.map((s) => ({
+        id: `session-${s.id}`,
+        at: s.created_at,
+        label: 'Freeform session',
+        detail: null,
+      })),
+      ...historyData.runs.map((r) => ({
+        id: `run-${r.id}`,
+        at: r.started_at,
+        label: r.putting_regimens?.name ?? 'Regimen run',
+        detail: r.completed ? `${r.total_score} pts` : 'In progress',
+      })),
+    ]
+    return merged.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 3)
+  }, [historyData])
+
+  const heroRegimenName =
+    hero?.kind === 'resume-last' && regimens ? regimens.find((r) => r.id === hero.regimenId)?.name : null
+
+  const standardRegimens = regimens?.filter((r) => !r.created_by) ?? []
+  const customRegimens = regimens?.filter((r) => r.created_by === user.id) ?? []
+
+  if (error) return <p className="form-error">{error}</p>
 
   return (
     <section className="practice-menu-page">
       <header className="practice-header">
-        <h1>Putting</h1>
+        <h1>Putt Hub</h1>
         <span className="header-actions">
+          {streak > 0 && <span className="streak-badge">🔥 {streak}-day streak</span>}
           <Link to="/practice/stats" className="stats-shortcut" title="Confidence map">
             <IconChartBar size={22} stroke={1.75} />
           </Link>
@@ -93,29 +149,88 @@ export default function PracticeMenuPage() {
         </span>
       </header>
 
-      <nav className="mode-card-list">
-        {MODES.map((mode) => (
-          <ModeCard key={mode.to} {...mode} />
-        ))}
-      </nav>
+      <section className="dashboard-zone-a">
+        {!hero ? (
+          <p className="loading">Loading...</p>
+        ) : hero.kind === 'crash-recovery' ? (
+          <Link
+            to={hero.sessionType === 'regimen' ? `/practice/regimens/${hero.parentIds.regimenId}/run` : '/practice/freeform'}
+            className="hero-card hero-card-resume"
+          >
+            ▶️ Resume session in progress
+          </Link>
+        ) : hero.kind === 'resume-last' ? (
+          <Link to={`/practice/regimens/${hero.regimenId}/run`} className="hero-card hero-card-resume">
+            ▶️ Resume: {heroRegimenName ?? 'last routine'}
+            <span className="log-time">{hero.suggestedDistanceFt} ft target</span>
+          </Link>
+        ) : (
+          <Link to="/practice/regimens" className="hero-card hero-card-first">
+            {hero.kind === 'first-session' ? 'Start your first session' : 'Pick a routine to get going'}
+          </Link>
+        )}
 
-      <h2>Recent activity</h2>
-      {loadingRecent ? (
+        <Link to="/practice/freeform" className="hero-card hero-card-quickstart">
+          <IconTargetArrow size={20} stroke={1.75} /> Quick Start: Free Play
+          <span className="log-time">Continuous scoring, no limits</span>
+        </Link>
+      </section>
+
+      <section className="dashboard-zone-b">
+        <ChipGroup
+          options={ZONE_B_TABS}
+          getKey={(t) => t.key}
+          getLabel={(t) => t.label}
+          isActive={(t) => zoneBTab === t.key}
+          onSelect={(t) => setZoneBTab(t.key)}
+        />
+
+        {!regimens ? (
+          <p className="loading">Loading...</p>
+        ) : zoneBTab === 'standard' ? (
+          standardRegimens.map((regimen) => <RegimenLaunchCard key={regimen.id} regimen={regimen} />)
+        ) : zoneBTab === 'custom' ? (
+          customRegimens.length === 0 ? (
+            <p>No custom routines yet — the routine builder is coming in a future update.</p>
+          ) : (
+            customRegimens.map((regimen) => <RegimenLaunchCard key={regimen.id} regimen={regimen} />)
+          )
+        ) : (
+          <p>Custom routine creation is coming in a future update.</p>
+        )}
+      </section>
+
+      <section className="dashboard-zone-c">
+        <button type="button" className="zone-c-trigger" disabled aria-disabled="true">
+          ➕ Build Custom Routine Ladder
+        </button>
+      </section>
+
+      <h2>
+        Recent activity{' '}
+        <Link to="/practice/history" className="link-button">
+          View all
+        </Link>
+      </h2>
+      {!historyData ? (
         <p className="loading">Loading...</p>
       ) : recent.length === 0 ? (
         <p>No practice logged yet — pick a mode above to get started.</p>
       ) : (
-        <ul className="putt-log-list">
-          {recent.map((entry) => (
-            <li key={entry.id} className="putt-log-row">
-              <span>{entry.label}</span>
-              <span className="log-time">
-                {entry.detail ? `${entry.detail} · ` : ''}
-                {activityDate(entry.at)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {volume && <p className="log-time">This week: {volume.week} putts</p>}
+          <ul className="putt-log-list">
+            {recent.map((entry) => (
+              <li key={entry.id} className="putt-log-row">
+                <span>{entry.label}</span>
+                <span className="log-time">
+                  {entry.detail ? `${entry.detail} · ` : ''}
+                  {activityDate(entry.at)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   )

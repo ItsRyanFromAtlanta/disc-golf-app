@@ -25,7 +25,7 @@ are stated below — **confirm the active model matches before starting a layer.
   provisioning with smart default + Practice Stack bag genesis → units + haptic test). Apple/Google SSO
   and anonymous sign-in need enabling in the Supabase dashboard before they work end-to-end — see
   DEVLOG 2026-07-05.
-- **Layer 3 — Hubs** (Sonnet 5): Screens 4–6 — Dashboard hub (instant-replay hero, 3-way launchpad),
+- **Layer 3 — Hubs** (Sonnet 5, COMPLETE): Screens 4–6 — Dashboard hub (instant-replay hero, 3-way launchpad),
   Bag manager (MY BAGS/PUTTERS/UNIVERSE + 35-disc interlock + ghost-slot wishlist), Putter lineup
   (role swimlanes, Bézier flight curve, wear slider + odometer alert).
 - **Layer 4 — Execution engine** (Opus 4.8 for the routine rules engine, Sonnet 5 for UI): Screens 7–9 —
