@@ -69,7 +69,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
   // sessionType/parentIds fresh off the persisted blob rather than closing
   // over React state, since gestureMake/gestureMiss are memoized once and
   // would otherwise see a stale sessionType/parentIds after startSession.
-  function buildPuttEventRow({ id, outcome, missZone, distanceFt, occurredAt, sequence }) {
+  function buildPuttEventRow({ id, outcome, missZone, distanceFt, occurredAt, sequence, putterDiscId }) {
     const { sessionType, parentIds } = readInstantLaunchState().crashRecoveryBuffer
     const parentFk =
       sessionType === 'regimen'
@@ -86,6 +86,10 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       miss_zone: missZone,
       distance_ft: distanceFt,
       occurred_at: occurredAt,
+      // Screen 8: which physical disc was active when this putt was logged —
+      // lets the Session Summary's putter-performance breakdown (and an
+      // ad-hoc mid-round SWAP) attribute makes/misses to the right disc.
+      putter_disc_id: putterDiscId ?? null,
     }
   }
 
@@ -161,12 +165,20 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     schedulerRef.current?.notifyOutboxChanged()
   }, [])
 
-  const gestureMake = useCallback((occurredAt, distanceFt) => {
+  const gestureMake = useCallback((occurredAt, distanceFt, putterDiscId = null) => {
     const id = crypto.randomUUID()
     const next = sessionReducer(sessionStateRef.current, { type: 'GESTURE_MAKE', id, occurredAt })
     setSession(next)
     const state = updateInstantLaunchState((s) => {
-      const row = buildPuttEventRow({ id, outcome: 'make', missZone: null, distanceFt, occurredAt, sequence: next.nextSequence - 1 })
+      const row = buildPuttEventRow({
+        id,
+        outcome: 'make',
+        missZone: null,
+        distanceFt,
+        occurredAt,
+        sequence: next.nextSequence - 1,
+        putterDiscId,
+      })
       const withEvent = applyEnqueuePuttEvent(s, row)
       return applySetCrashRecoveryBuffer(withEvent, nowStageSnapshot(next.stage, next.nextSequence - 1))
     })
@@ -174,12 +186,20 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     schedulerRef.current?.notifyOutboxChanged()
   }, [])
 
-  const gestureMiss = useCallback((occurredAt, distanceFt, missZone = null) => {
+  const gestureMiss = useCallback((occurredAt, distanceFt, missZone = null, putterDiscId = null) => {
     const id = crypto.randomUUID()
     const next = sessionReducer(sessionStateRef.current, { type: 'GESTURE_MISS', id, occurredAt, missZone })
     setSession(next)
     const state = updateInstantLaunchState((s) => {
-      const row = buildPuttEventRow({ id, outcome: 'miss', missZone, distanceFt, occurredAt, sequence: next.nextSequence - 1 })
+      const row = buildPuttEventRow({
+        id,
+        outcome: 'miss',
+        missZone,
+        distanceFt,
+        occurredAt,
+        sequence: next.nextSequence - 1,
+        putterDiscId,
+      })
       const withEvent = applyEnqueuePuttEvent(s, row)
       return applySetCrashRecoveryBuffer(withEvent, nowStageSnapshot(next.stage, next.nextSequence - 1))
     })

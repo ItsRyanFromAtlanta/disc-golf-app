@@ -4,6 +4,57 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-08 — Scoring Canvas (SHIPPED) — Layer 4, Screen 8
+
+**What:** Screen 8 per `SCREEN_SPECS.md` — split-screen tap becomes the primary scoring input (signed
+off last session), with gesture and panic as alt modes. New `TapZone.jsx` (fixed 50/50 MADE/MISSED,
+no streak-driven growth — unlike `GestureZone`, tap targets don't need bigger hit-zones), `PanicZone.jsx`
+(tap=make/hold=miss, single high-contrast zone), `StackTracker.jsx` (pip row from gesture events + batch
+tally, diamond marker on a pressure-putt slot), `CanvasToolbar.jsx` (active-putter chip + ad-hoc SWAP via
+the existing `PutterPicker`, weather picker, weather→backup swap-suggestion banner, EDIT trigger),
+`EditTallyDrawer.jsx` (manual makes/attempts correction via a tally delta). `lib/scoringCanvas.js`:
+`suggestBackupSwap` (>15mph wind or rain → backup_putter suggestion, matching
+`MASTER_PROJECT_BLUEPRINT.md` task 4.6's documented threshold) and `stackPips`. `PuttingCanvas.jsx`
+gained optional `toolbar`/`stackTracker` slots (backward compatible); `CanvasContextBar.jsx` gained a
+Tap/Gesture/Panic mode `ChipGroup`. Wired symmetrically into both `RegimenRunPage.jsx` and
+`FreeformLogPage.jsx` (mirrors this repo's existing duplication convention between the two run-modes,
+not a new abstraction).
+**Model:** Sonnet 5, per Layer 4's recommendation for Screen 8's UI work (Screen 7's rules engine was
+Opus 4.8 last session; the input-model decision was already signed off, so this session was pure UI).
+**putter_disc_id now actually gets written:** `useInstantLaunchSession.js`'s `gestureMake`/`gestureMiss`
+gained an optional `putterDiscId` param threaded into `buildPuttEventRow` — Layer 1 added
+`putt_events.putter_disc_id` months ago but nothing wrote it until now. `stateReducer.js` gained
+`profileDefaults.inputModeDefault` (defaults `'tap'`), mirroring `diagnosticModeDefault`'s existing
+pattern.
+**Bug found and fixed during live verification (real, pre-existing — not introduced by Screen 8):**
+`syncScheduler.js`'s `attemptFlush` no-ops `notifyOutboxChanged()` while a flush is already in-flight
+(by design, to avoid overlapping flushes). But `endSession` calls `finalizeCurrentStageSummary` (which
+enqueues a summary write and immediately triggers a flush) followed by enqueuing the parent update
+(`completed`/`total_score`, or now `weather_condition`/`wind_mph`) and *another* `notifyOutboxChanged()`
+— which lands while the first flush is still SYNCING and gets silently dropped. The parent update sat
+in the outbox until the next `online`/`visibilitychange` event or unrelated action triggered a fresh
+flush (confirmed via live repro: weather fields stayed null in Supabase until a page reload). This
+exact "finalize summary → enqueue parent update" shape already existed in `RegimenRunPage`'s original
+`handleFinishStage`, so `completed`/`total_score` could have silently lagged the same way — Screen 8
+just exercised it first because I was checking a new field. **Fix:** `attemptFlush`'s success path now
+re-invokes itself immediately when the resolved flush still finds `hasPending` true, instead of settling
+for PENDING and waiting for an external trigger. Converges naturally (each retry only re-fires while the
+outbox actually still has items). No unit test added — `syncScheduler.js`'s own header comment documents
+it as browser-only (window/document APIs), verified live instead (see below).
+**Live-verified in browser against the real Supabase project:** tap-scored makes/misses (confirmed
+`putt_events.putter_disc_id` matches the active disc via a direct query), stack tracker pips update
+correctly (make/miss/pending), streak display, Undo; ad-hoc SWAP via the toolbar drawer; Gesture and
+Panic mode toggles both score correctly; EDIT drawer corrects a stage's tally via delta; weather
+selection + swap-suggestion logic (correctly suppressed — this test account has no `backup_putter`
+disc yet, matching `suggestBackupSwap`'s unit-tested behavior); reproduced the sync-scheduler race live,
+applied the fix, then re-ran the identical scenario and confirmed `weather_condition`/`wind_mph` land in
+Supabase immediately with no reload needed.
+**Layer 4 status: Screens 7–8 COMPLETE.** Next: Screen 9 (Session Summary — unified `SessionReport`,
+putter-performance breakdown now has real `putter_disc_id` data to key off, distance drop-off matrix),
+Sonnet 5.
+
+---
+
 ## 2026-07-07 — Custom Routine Builder (SHIPPED) — Layer 4, Screen 7
 
 **What:** Screen 7 per `SCREEN_SPECS.md` — a custom routine builder at `/practice/regimens/new`.

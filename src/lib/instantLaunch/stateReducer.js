@@ -12,6 +12,10 @@ export function defaultInstantLaunchState() {
       favoritePutterDiscId: null,
       quickModPresets: [],
       diagnosticModeDefault: false,
+      // Scoring Canvas (Screen 8): tap is primary per the signed-off input
+      // model; gesture/panic are opt-in alt modes, same pattern as
+      // diagnosticModeDefault.
+      inputModeDefault: 'tap',
     },
     smartPredictionCard: {
       lastRegimenId: null,

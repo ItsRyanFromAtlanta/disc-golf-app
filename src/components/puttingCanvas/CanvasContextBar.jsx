@@ -1,4 +1,11 @@
 import { IconX } from '@tabler/icons-react'
+import ChipGroup from '../ChipGroup'
+
+const INPUT_MODES = [
+  { key: 'tap', label: 'Tap' },
+  { key: 'gesture', label: 'Gesture' },
+  { key: 'panic', label: 'Panic' },
+]
 
 function syncStatusLabel(status) {
   switch (status) {
@@ -32,6 +39,8 @@ export default function CanvasContextBar({
   onToggleSilence,
   diagnosticMode,
   onToggleDiagnostic,
+  inputMode,
+  onChangeInputMode,
   syncStatus,
   onExit,
 }) {
@@ -60,6 +69,17 @@ export default function CanvasContextBar({
           Diagnostic
         </button>
       </div>
+      {inputMode && onChangeInputMode && (
+        <div className="canvas-context-bar-row">
+          <ChipGroup
+            options={INPUT_MODES}
+            getKey={(m) => m.key}
+            getLabel={(m) => m.label}
+            isActive={(m) => inputMode === m.key}
+            onSelect={(m) => onChangeInputMode(m.key)}
+          />
+        </div>
+      )}
     </div>
   )
 }

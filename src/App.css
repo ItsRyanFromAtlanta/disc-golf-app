@@ -1665,6 +1665,206 @@
   color: var(--color-text-primary);
 }
 
+/* Tap Zone (Screen 8 primary input) — fixed 50/50 split, no streak-driven growth */
+
+.tap-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+  min-height: 260px;
+}
+
+.tap-zone-accept {
+  animation: gesture-zone-shockwave 220ms ease-out;
+}
+
+.tap-zone-make {
+  flex: 1;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-positive);
+  color: var(--color-text-inverse);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.tap-zone-miss {
+  flex: 1;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-negative);
+  color: var(--color-text-inverse);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.tap-zone-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tap-zone-undo {
+  color: var(--color-text-primary);
+}
+
+.tap-zone-streak {
+  font-family: var(--font-display);
+  color: var(--color-highlight);
+  font-size: 14px;
+}
+
+/* Panic zone — single high-contrast tap=make / hold=miss surface */
+
+.panic-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 260px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-secondary-accent);
+  color: var(--color-text-inverse);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 18px;
+  touch-action: none;
+  user-select: none;
+}
+
+.panic-zone-accept {
+  animation: gesture-zone-shockwave 220ms ease-out;
+}
+
+/* Stack tracker — pips reflecting planned putts for the current stage */
+
+.stack-tracker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  padding: 8px;
+}
+
+.stack-pip {
+  font-size: 18px;
+  color: var(--color-border-default);
+}
+
+.stack-pip-make {
+  color: var(--color-positive);
+}
+
+.stack-pip-miss {
+  color: var(--color-negative);
+}
+
+.stack-pip-filled {
+  color: var(--color-secondary-accent);
+}
+
+.stack-pip-pending {
+  color: var(--color-border-default);
+}
+
+/* Canvas toolbar — active putter/swap, weather picker, edit, swap-suggestion banner */
+
+.canvas-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.canvas-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.canvas-toolbar-chip {
+  font-size: 13px;
+}
+
+.canvas-toolbar-drawer {
+  padding: 10px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.canvas-toolbar-wind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.canvas-swap-banner {
+  padding: 10px 12px;
+  border: var(--border-width) solid var(--color-negative);
+  border-radius: 8px;
+  background: var(--color-negative-soft);
+}
+
+.canvas-swap-banner p {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.canvas-swap-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.canvas-swap-banner-actions .start-button {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
+}
+
+/* Edit-tally drawer — ad-hoc stage correction */
+
+.edit-tally-drawer {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 72px;
+  max-width: 448px;
+  margin: 0 auto;
+  padding: 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-card);
+  z-index: 20;
+}
+
+.edit-tally-fields {
+  display: flex;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.edit-tally-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  flex: 1;
+}
+
 /* Freeform's temporary batch-ribbon stand-in — replaced by the real
    grid/carousel ribbon component in a later pass. */
 .freeform-next-distance {

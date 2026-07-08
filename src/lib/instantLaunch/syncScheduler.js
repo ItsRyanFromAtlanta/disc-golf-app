@@ -54,7 +54,21 @@ export function createSyncScheduler({ flush, onStatusChange }) {
         return
       }
       attempt = 0
-      setStatus(result.hasPending ? SYNC_STATUS.PENDING : SYNC_STATUS.SYNCED)
+      if (result.hasPending) {
+        // A flush that completes with more work already queued (e.g. two
+        // notifyOutboxChanged calls land back-to-back — endSession enqueues a
+        // summary write, triggers a flush, then enqueues a parent update
+        // before that flush resolves) must not go quiet: without this, the
+        // second write is invisible to the in-flight flush's outbox snapshot,
+        // and notifyOutboxChanged no-ops while status is SYNCING, stranding
+        // it in PENDING until the next online/visibilitychange event. Retry
+        // immediately instead — this converges (each retry only re-fires if
+        // the outbox actually still has items) rather than looping forever.
+        setStatus(SYNC_STATUS.PENDING)
+        attemptFlush()
+        return
+      }
+      setStatus(SYNC_STATUS.SYNCED)
     } catch {
       // network-level throw (fetch rejected, offline) — treated as transient
       attempt += 1

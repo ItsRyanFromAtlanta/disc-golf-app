@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { fetchHistory, distanceSamples, allPuttSamples } from '../lib/history'
 import { suggestNextSession } from '../lib/insights'
+import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
 import { usePuttHaptics } from '../hooks/usePuttHaptics'
@@ -11,10 +12,16 @@ import { syncRows, deleteRowById } from '../lib/instantLaunch/supabaseSync'
 import { makeTerritoryPct } from '../lib/instantLaunch/sessionReducer'
 import { GESTURE_CONFIG } from '../lib/gestureEngine/config'
 import { FSM_STATES } from '../lib/instantLaunch/fsm'
+import { fetchUserDiscs } from '../lib/discLocker'
 import SessionLauncher from '../components/puttingCanvas/SessionLauncher'
 import PuttingCanvas from '../components/puttingCanvas/PuttingCanvas'
 import CanvasContextBar from '../components/puttingCanvas/CanvasContextBar'
+import CanvasToolbar from '../components/puttingCanvas/CanvasToolbar'
+import StackTracker from '../components/puttingCanvas/StackTracker'
+import TapZone from '../components/puttingCanvas/TapZone'
 import GestureZone from '../components/puttingCanvas/GestureZone'
+import PanicZone from '../components/puttingCanvas/PanicZone'
+import EditTallyDrawer from '../components/puttingCanvas/EditTallyDrawer'
 import BatchRibbon from '../components/puttingCanvas/BatchRibbon'
 import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePicker'
 
@@ -35,6 +42,11 @@ function stageAt(distanceFt, volumePlanned) {
   return { label: `${distanceFt} ft`, distanceFt, volumePlanned, historicalAvgMakePct: null }
 }
 
+function discLabel(disc) {
+  if (!disc) return null
+  return disc.nickname || disc.moldInfo?.mold_name || disc.mold
+}
+
 export default function FreeformLogPage() {
   const { user } = useAuth()
   const [logs, setLogs] = useState([])
@@ -45,6 +57,7 @@ export default function FreeformLogPage() {
   const [starting, setStarting] = useState(false)
   const [silenced, setSilenced] = useState(false)
   const [diagnosticMode, setDiagnosticMode] = useState(false)
+  const [inputMode, setInputMode] = useState('tap')
   const [pendingMiss, setPendingMiss] = useState(null)
   // See RegimenRunPage's identical comment: a batch tap always finishes the
   // whole remaining volume in one shot, so without this the ribbon would be
@@ -52,6 +65,14 @@ export default function FreeformLogPage() {
   const [batchRibbonConfirming, setBatchRibbonConfirming] = useState(false)
   const [nextDistanceInput, setNextDistanceInput] = useState('')
   const [freeformSessionId, setFreeformSessionId] = useState(null)
+
+  // Screen 8: mid-round adjustments — see RegimenRunPage's identical comment.
+  const [allDiscs, setAllDiscs] = useState([])
+  const [activePutterDiscId, setActivePutterDiscId] = useState(null)
+  const [weatherCondition, setWeatherCondition] = useState(null)
+  const [windMph, setWindMph] = useState(null)
+  const [swapSuggestionDismissed, setSwapSuggestionDismissed] = useState(false)
+  const [showEditDrawer, setShowEditDrawer] = useState(false)
 
   const writeAdapter = useMemo(
     () => ({
@@ -72,8 +93,24 @@ export default function FreeformLogPage() {
   }, [session.profileDefaults.diagnosticModeDefault])
 
   useEffect(() => {
+    setInputMode(session.profileDefaults.inputModeDefault)
+  }, [session.profileDefaults.inputModeDefault])
+
+  useEffect(() => {
     audio.setSilenced(silenced)
   }, [silenced, audio])
+
+  useEffect(() => {
+    fetchUserDiscs(user.id)
+      .then(setAllDiscs)
+      .catch(() => {}) // non-critical — swap suggestion/label just stay unavailable
+  }, [user.id])
+
+  useEffect(() => {
+    if (session.fsmStatus === FSM_STATES.ACTIVE_SESSION && activePutterDiscId === null) {
+      setActivePutterDiscId(session.profileDefaults.favoritePutterDiscId ?? null)
+    }
+  }, [session.fsmStatus, session.profileDefaults.favoritePutterDiscId, activePutterDiscId])
 
   useEffect(() => {
     if (session.fsmStatus === FSM_STATES.ACTIVE_SESSION) {
@@ -161,7 +198,7 @@ export default function FreeformLogPage() {
   function handleGestureMake() {
     audio.playMake()
     haptics.vibrateMake()
-    session.gestureMake(new Date().toISOString(), session.sessionState?.stage.distanceFt)
+    session.gestureMake(new Date().toISOString(), session.sessionState?.stage.distanceFt, activePutterDiscId)
   }
 
   // See RegimenRunPage's identical comment: feedback is immediate, but the
@@ -174,18 +211,34 @@ export default function FreeformLogPage() {
     if (diagnosticMode) {
       setPendingMiss({ occurredAt, distanceFt })
     } else {
-      session.gestureMiss(occurredAt, distanceFt, null)
+      session.gestureMiss(occurredAt, distanceFt, null, activePutterDiscId)
     }
   }
 
   function handleResolveMissZone(missZone) {
-    if (pendingMiss) session.gestureMiss(pendingMiss.occurredAt, pendingMiss.distanceFt, missZone)
+    if (pendingMiss) session.gestureMiss(pendingMiss.occurredAt, pendingMiss.distanceFt, missZone, activePutterDiscId)
     setPendingMiss(null)
   }
 
   function handleUndo() {
     haptics.vibrateUndo()
     session.undo()
+  }
+
+  function handleSetWeather({ condition, windMph: nextWindMph }) {
+    setWeatherCondition(condition)
+    setWindMph(nextWindMph)
+    setSwapSuggestionDismissed(false)
+  }
+
+  function handleAcceptSwap() {
+    if (suggestedSwapDisc) setActivePutterDiscId(suggestedSwapDisc.id)
+    setSwapSuggestionDismissed(true)
+  }
+
+  function handleEditApply(deltaMakes, deltaAttempts) {
+    session.batchComplete(deltaMakes, deltaAttempts)
+    setShowEditDrawer(false)
   }
 
   // Returns null (finalize nothing) when nothing was actually logged at this
@@ -215,9 +268,18 @@ export default function FreeformLogPage() {
 
   function handleEndSession() {
     setBatchRibbonConfirming(false)
-    session.endSession(buildDistanceLogRow, null)
+    const weatherUpdate =
+      weatherCondition != null
+        ? { id: freeformSessionId, _op: 'update', weather_condition: weatherCondition, wind_mph: windMph }
+        : null
+    session.endSession(buildDistanceLogRow, weatherUpdate)
     loadTodaysLogs()
   }
+
+  const activePutter = allDiscs.find((d) => d.id === activePutterDiscId) ?? null
+  const suggestedSwapDisc = swapSuggestionDismissed
+    ? null
+    : suggestBackupSwap({ weatherCondition, windMph, discs: allDiscs, activePutterDiscId })
 
   return (
     <section className="practice-page">
@@ -262,18 +324,54 @@ export default function FreeformLogPage() {
               onToggleSilence={() => setSilenced((v) => !v)}
               diagnosticMode={diagnosticMode}
               onToggleDiagnostic={() => setDiagnosticMode((v) => !v)}
+              inputMode={inputMode}
+              onChangeInputMode={setInputMode}
               syncStatus={session.syncStatus}
               onExit={handleEndSession}
             />
           }
-          gestureZone={
-            <GestureZone
-              onMake={handleGestureMake}
-              onMiss={handleGestureMiss}
-              onUndo={handleUndo}
-              makeTerritoryPct={makeTerritoryPct(session.sessionState.consecutiveMakes)}
-              growthCap={GESTURE_CONFIG.ZONE_GROWTH_CAP_PCT}
+          toolbar={
+            <CanvasToolbar
+              userId={user.id}
+              activePutterDiscId={activePutterDiscId}
+              activePutterLabel={discLabel(activePutter)}
+              onSelectPutter={setActivePutterDiscId}
+              weatherCondition={weatherCondition}
+              windMph={windMph}
+              onSetWeather={handleSetWeather}
+              suggestedSwapDisc={suggestedSwapDisc}
+              onAcceptSwap={handleAcceptSwap}
+              onDismissSwap={() => setSwapSuggestionDismissed(true)}
+              onEdit={() => setShowEditDrawer(true)}
             />
+          }
+          stackTracker={
+            <StackTracker
+              volumePlanned={session.sessionState.stage.volumePlanned}
+              events={session.sessionState.events}
+              attemptsTotal={session.sessionState.tally.attempts}
+              hasPressureLast={false}
+            />
+          }
+          gestureZone={
+            inputMode === 'panic' ? (
+              <PanicZone onMake={handleGestureMake} onMiss={handleGestureMiss} />
+            ) : inputMode === 'gesture' ? (
+              <GestureZone
+                onMake={handleGestureMake}
+                onMiss={handleGestureMiss}
+                onUndo={handleUndo}
+                makeTerritoryPct={makeTerritoryPct(session.sessionState.consecutiveMakes)}
+                growthCap={GESTURE_CONFIG.ZONE_GROWTH_CAP_PCT}
+              />
+            ) : (
+              <TapZone
+                onMake={handleGestureMake}
+                onMiss={handleGestureMiss}
+                onUndo={handleUndo}
+                consecutiveMakes={session.sessionState.consecutiveMakes}
+              />
+            )
           }
           batchRibbon={
             <>
@@ -316,6 +414,15 @@ export default function FreeformLogPage() {
         <DiagnosticZonePicker
           onSelectZone={handleResolveMissZone}
           onDismiss={() => handleResolveMissZone(null)}
+        />
+      )}
+
+      {showEditDrawer && session.sessionState && (
+        <EditTallyDrawer
+          currentMakes={session.sessionState.tally.makes}
+          currentAttempts={session.sessionState.tally.attempts}
+          onApply={handleEditApply}
+          onCancel={() => setShowEditDrawer(false)}
         />
       )}
 

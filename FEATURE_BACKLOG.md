@@ -112,8 +112,8 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 | Bag manager (My Bags / Putters / Universe + ghost-slot wishlist) | SHIPPED | Layer 3, Screen 5; client-side tabs at `/bag`, no new routes; retail bridge (Ghost Slot → Pro-Shop) parked |
 | Putter lineup (role swimlanes, Bézier flight curve, wear slider + odometer alert) | SHIPPED | Layer 3, Screen 6 |
 | Custom routine builder (stage stacking, live max-score preview, 100-putt totalizer) | SHIPPED | Layer 4, Screen 7 — reuses regimenScoring.js engine unmodified; blueprint per-stage First bonus omitted (no engine column) |
-| Scoring canvas: split-screen tap as primary input | NEXT UP | Layer 4, Screen 8 — SIGNED OFF: split-screen tap primary, shipped gesture engine demoted to opt-in alt mode (TapZone drop-in slot in PuttingCanvas) |
-| Scoring canvas: stack-tracker pips, weather→backup swap suggestion, panic toggle | BACKLOG | Layer 4, Screen 8; swap suggestion needs putt_events.putter_disc_id |
+| Scoring canvas: split-screen tap as primary input | SHIPPED | Layer 4, Screen 8 — TapZone primary, gesture/panic are opt-in alt modes via CanvasContextBar toggle |
+| Scoring canvas: stack-tracker pips, weather→backup swap suggestion, panic toggle | SHIPPED | Layer 4, Screen 8 — swap suggestion uses putt_events.putter_disc_id (now actually written) + discs.role backup_putter |
 | Unified session report (putter matrix, drop-off vs 30-day baseline, replay) | BACKLOG | Layer 4, Screen 9 |
 | Analytics tower (equipment-milestone chart markers, sync ledger, CSV export) | BACKLOG | Layer 5, Screen 10 |
 | Player career hub (manual PDGA entry, skill radar, most-trusted-putter) | BACKLOG | Layer 5, Screen 11; PDGA scraper deferred, no official API |
