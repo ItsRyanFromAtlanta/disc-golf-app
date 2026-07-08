@@ -28,12 +28,14 @@ are stated below — **confirm the active model matches before starting a layer.
 - **Layer 3 — Hubs** (Sonnet 5, COMPLETE): Screens 4–6 — Dashboard hub (instant-replay hero, 3-way launchpad),
   Bag manager (MY BAGS/PUTTERS/UNIVERSE + 35-disc interlock + ghost-slot wishlist), Putter lineup
   (role swimlanes, Bézier flight curve, wear slider + odometer alert).
-- **Layer 4 — Execution engine** (Opus 4.8 for the routine rules engine, Sonnet 5 for UI): Screens 7–9 —
-  Custom Routine Builder (**SHIPPED** 2026-07-07, Opus 4.8: 100-putt interlock, live score preview
-  reusing `regimenScoring.js` unmodified), Scoring Canvas (**SHIPPED** 2026-07-08, Sonnet 5: split-screen
-  tap primary, gesture/panic alt modes, stack tracker, weather→backup swap suggestion, ad-hoc swap/edit;
-  also fixed a pre-existing sync-scheduler race that could strand a parent-row update — see DEVLOG),
-  Session Summary (putter matrix, drop-off curve, replay — build next, Sonnet 5).
+- **Layer 4 — Execution engine** (Opus 4.8 for the routine rules engine, Sonnet 5 for UI, **COMPLETE**):
+  Screens 7–9 — Custom Routine Builder (**SHIPPED** 2026-07-07, Opus 4.8: 100-putt interlock, live score
+  preview reusing `regimenScoring.js` unmodified), Scoring Canvas (**SHIPPED** 2026-07-08, Sonnet 5:
+  split-screen tap primary, gesture/panic alt modes, stack tracker, weather→backup swap suggestion,
+  ad-hoc swap/edit; also fixed a pre-existing sync-scheduler race that could strand a parent-row update
+  — see DEVLOG), Session Summary (**SHIPPED** 2026-07-08, Sonnet 5: one `SessionReport` component across
+  History detail + regimen summary + a new freeform summary phase, putter breakdown, distance drop-off
+  vs 30-day baseline, replay).
 - **Layer 5 — Analytics + Progression** (Sonnet 5 for UI, Opus 4.8 for the UDisc parser + badge
   evaluator): Screens 10–13 — Analytics tower (equipment-milestone chart markers, sync ledger, CSV
   export), Career Hub (manual PDGA entry, skill radar, most-trusted-putter), Trophy Room (XP/levels/

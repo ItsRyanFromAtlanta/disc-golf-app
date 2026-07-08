@@ -39,6 +39,19 @@ export function sessionAggregate(session) {
   }
 }
 
+// Regimen-run counterpart to sessionAggregate — Session Summary's hero
+// scoreboard needs the same {makes, attempts} shape plus streak peak and
+// clean-set count, which only regimen runs track (freeform's putt_distance_logs
+// has no per-row streak column, so freeform has no equivalent streak stat).
+export function regimenRunAggregate(run) {
+  const sets = run.putting_regimen_run_sets ?? []
+  const makes = sets.reduce((sum, s) => sum + s.makes, 0)
+  const attempts = sets.reduce((sum, s) => sum + s.attempts, 0)
+  const cleanSets = sets.filter((s) => s.clean_set).length
+  const longestStreak = sets.reduce((max, s) => Math.max(max, s.longest_streak ?? 0), 0)
+  return { makes, attempts, cleanSets, totalSets: sets.length, longestStreak }
+}
+
 // Flat {makes, attempts, at} samples from both entry types, for insights.
 export function allPuttSamples({ sessions, runs }) {
   return [

@@ -114,7 +114,7 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 | Custom routine builder (stage stacking, live max-score preview, 100-putt totalizer) | SHIPPED | Layer 4, Screen 7 — reuses regimenScoring.js engine unmodified; blueprint per-stage First bonus omitted (no engine column) |
 | Scoring canvas: split-screen tap as primary input | SHIPPED | Layer 4, Screen 8 — TapZone primary, gesture/panic are opt-in alt modes via CanvasContextBar toggle |
 | Scoring canvas: stack-tracker pips, weather→backup swap suggestion, panic toggle | SHIPPED | Layer 4, Screen 8 — swap suggestion uses putt_events.putter_disc_id (now actually written) + discs.role backup_putter |
-| Unified session report (putter matrix, drop-off vs 30-day baseline, replay) | BACKLOG | Layer 4, Screen 9 |
+| Unified session report (putter matrix, drop-off vs 30-day baseline, replay) | SHIPPED | Layer 4, Screen 9 — one SessionReport component, 3 entry points (History detail, regimen summary, new freeform summary) |
 | Analytics tower (equipment-milestone chart markers, sync ledger, CSV export) | BACKLOG | Layer 5, Screen 10 |
 | Player career hub (manual PDGA entry, skill radar, most-trusted-putter) | BACKLOG | Layer 5, Screen 11; PDGA scraper deferred, no official API |
 | Trophy room (XP/levels, badge evaluator, pursuits carousel) | BACKLOG | Layer 5, Screen 12; bag-tag/QR challenge parked with Social |

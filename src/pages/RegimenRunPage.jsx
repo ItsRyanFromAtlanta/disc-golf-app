@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
-import { fetchHistory, allPuttSamples } from '../lib/history'
-import { decayWeightedForm } from '../lib/insights'
+import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
+import { decayWeightedForm, distanceDropOff, putterBreakdown } from '../lib/insights'
 import { computeSetScore, computeCompletionBonus, inferPressurePuttMade } from '../lib/regimenScoring'
 import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
@@ -25,6 +25,9 @@ import PanicZone from '../components/puttingCanvas/PanicZone'
 import EditTallyDrawer from '../components/puttingCanvas/EditTallyDrawer'
 import BatchRibbon from '../components/puttingCanvas/BatchRibbon'
 import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePicker'
+import SessionReport from '../components/sessionReport/SessionReport'
+
+const BASELINE_WINDOW_DAYS = 30
 
 function distanceLabel(set) {
   return set.distance_feet_min === set.distance_feet_max
@@ -58,6 +61,7 @@ function discLabel(disc) {
 export default function RegimenRunPage() {
   const { regimenId } = useParams()
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   const [regimen, setRegimen] = useState(null)
   const [sets, setSets] = useState([])
@@ -77,6 +81,7 @@ export default function RegimenRunPage() {
   // a new stage starts.
   const [batchRibbonConfirming, setBatchRibbonConfirming] = useState(false)
   const [phase, setPhase] = useState('running')
+  const [runCompleted, setRunCompleted] = useState(true)
   const [completedSets, setCompletedSets] = useState([])
   const [runningTotal, setRunningTotal] = useState(0)
   const [regimenRunId, setRegimenRunId] = useState(null)
@@ -91,6 +96,10 @@ export default function RegimenRunPage() {
   const [windMph, setWindMph] = useState(null)
   const [swapSuggestionDismissed, setSwapSuggestionDismissed] = useState(false)
   const [showEditDrawer, setShowEditDrawer] = useState(false)
+
+  // Session Summary (Screen 9) — populated once the run reaches 'summary'.
+  const [reportPutterRows, setReportPutterRows] = useState([])
+  const [reportDropOffRows, setReportDropOffRows] = useState([])
 
   const writeAdapter = useMemo(
     () => ({
@@ -177,6 +186,41 @@ export default function RegimenRunPage() {
       .catch(() => {}) // non-critical — the card just omits the form line on failure
   }, [session.fsmStatus, user.id])
 
+  // Session Summary data: putter breakdown needs this run's putt_events
+  // (gesture-captured only, per the data-split rule — may still be mid-sync
+  // for an offline finish, in which case this simply under-counts until the
+  // outbox flushes and the same run is later viewed via History). The
+  // baseline is everything else within 30 days of "now" (this run's own
+  // started_at isn't known here without a re-fetch, and "just finished" is
+  // near enough to "now" that the difference is immaterial).
+  useEffect(() => {
+    if (phase !== 'summary' || !regimenRunId) return
+    const nowMs = Date.now()
+    const windowMs = BASELINE_WINDOW_DAYS * 24 * 60 * 60 * 1000
+
+    Promise.all([
+      supabase.from('putt_events').select('outcome, putter_disc_id').eq('regimen_run_id', regimenRunId),
+      fetchHistory(user.id),
+    ])
+      .then(([{ data: events }, history]) => {
+        setReportPutterRows(putterBreakdown(events ?? []))
+        const baselineSessions = history.sessions.filter((s) => nowMs - new Date(s.created_at).getTime() <= windowMs)
+        const baselineRuns = history.runs.filter(
+          (r) => r.id !== regimenRunId && nowMs - new Date(r.started_at).getTime() <= windowMs,
+        )
+        const baseline = distanceSamples({ sessions: baselineSessions, runs: baselineRuns })
+        const today = distanceSamples({
+          sessions: [],
+          runs: [{ putting_regimen_run_sets: completedSets.map((e) => ({ makes: e.makes, attempts: e.attempts, putting_regimen_sets: e.set })) }],
+        })
+        setReportDropOffRows(distanceDropOff(today, baseline))
+      })
+      .catch(() => {}) // non-critical — the report just omits these sections on failure
+    // completedSets is intentionally excluded: it's only read once, synchronously
+    // stable by the time phase flips to 'summary' (the run has already ended).
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, regimenRunId, user.id])
+
   if (loading) return <p className="loading">Loading...</p>
   if (error) return <p className="form-error">{error}</p>
 
@@ -191,6 +235,8 @@ export default function RegimenRunPage() {
   function handleStart() {
     setStarting(true)
     setBatchRibbonConfirming(false)
+    setRunCompleted(true)
+    setPhase('running')
     const newRunId = crypto.randomUUID()
     setRegimenRunId(newRunId)
     setRunningTotal(0)
@@ -292,7 +338,14 @@ export default function RegimenRunPage() {
 
     setCompletedSets((prev) => [
       ...prev,
-      { set: currentSet, makes: stageState.tally.makes, attempts: stageState.tally.attempts, points, cleanSet },
+      {
+        set: currentSet,
+        makes: stageState.tally.makes,
+        attempts: stageState.tally.attempts,
+        points,
+        cleanSet,
+        longestStreak: stageState.longestStreak,
+      },
     ])
 
     if (isLastSet) {
@@ -323,6 +376,7 @@ export default function RegimenRunPage() {
   // rather than completed.
   function handleAbandon() {
     setBatchRibbonConfirming(false)
+    setRunCompleted(false)
     const stageState = session.sessionState
     if (stageState.tally.attempts === 0) {
       session.endSession(null, {
@@ -334,6 +388,7 @@ export default function RegimenRunPage() {
         weather_condition: weatherCondition,
         wind_mph: windMph,
       })
+      setPhase('summary')
       return
     }
     const pressurePuttMade = inferPressurePuttMade(stageState.tally.makes, stageState.tally.attempts)
@@ -356,6 +411,11 @@ export default function RegimenRunPage() {
       points_earned: points,
     }
     const finalTotal = runningTotal + points
+    setCompletedSets((prev) => [
+      ...prev,
+      { set: currentSet, makes: stageState.tally.makes, attempts: stageState.tally.attempts, points, cleanSet, longestStreak: stageState.longestStreak },
+    ])
+    setRunningTotal(finalTotal)
     session.endSession(() => summaryRow, {
       id: regimenRunId,
       _op: 'update',
@@ -365,30 +425,48 @@ export default function RegimenRunPage() {
       weather_condition: weatherCondition,
       wind_mph: windMph,
     })
+    setPhase('summary')
   }
 
   if (phase === 'summary') {
+    const hero = {
+      makes: completedSets.reduce((sum, e) => sum + e.makes, 0),
+      attempts: completedSets.reduce((sum, e) => sum + e.attempts, 0),
+      longestStreak: completedSets.reduce((max, e) => Math.max(max, e.longestStreak ?? 0), 0),
+    }
+    const rows = completedSets.map((entry, i) => ({
+      label: `Set ${i + 1}`,
+      detail: distanceLabel(entry.set),
+      makes: entry.makes,
+      attempts: entry.attempts,
+      cleanSet: entry.cleanSet,
+      pointsEarned: entry.points,
+    }))
+    const putterRows = reportPutterRows.map((p) => ({
+      ...p,
+      label: discLabel(allDiscs.find((d) => d.id === p.putterDiscId)) ?? 'Unknown disc',
+    }))
+
     return (
-      <section className="regimen-run-page">
-        <h1>{regimen.name} complete!</h1>
-        <p className="run-total">Total score: {runningTotal}</p>
-        <ul className="run-summary-list">
-          {completedSets.map((entry, i) => (
-            <li key={entry.set.id} className="putt-log-row">
-              <span>Set {i + 1}</span>
-              <span>{distanceLabel(entry.set)}</span>
-              <span>
-                {entry.makes}/{entry.attempts}
-              </span>
-              {entry.cleanSet && <span className="zone-badge">Clean</span>}
-              <span className="log-time">{entry.points} pts</span>
-            </li>
-          ))}
-        </ul>
-        <Link to="/practice/regimens" className="start-button">
-          Back to regimens
-        </Link>
-      </section>
+      <SessionReport
+        title={`${regimen.name} complete!`}
+        at={new Date().toISOString()}
+        completed={runCompleted}
+        totalScore={runningTotal}
+        hero={hero}
+        rows={rows}
+        putterRows={putterRows}
+        dropOffRows={reportDropOffRows}
+        onSaveNotesTags={async ({ notes, tags }) => {
+          const { error: saveError } = await supabase
+            .from('putting_regimen_runs')
+            .update({ notes, tags })
+            .eq('id', regimenRunId)
+          if (saveError) throw saveError
+        }}
+        onReplay={handleStart}
+        onDashboard={() => navigate('/practice')}
+      />
     )
   }
 

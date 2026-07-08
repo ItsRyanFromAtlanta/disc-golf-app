@@ -4,6 +4,50 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-08 — Session Summary (SHIPPED) — Layer 4, Screen 9 (Layer 4 complete)
+
+**What:** Screen 9 per `SCREEN_SPECS.md` — one `SessionReport.jsx` component (hero scoreboard, putter
+performance breakdown, distance-vs-30-day-baseline matrix with a ⚠️ at >10-point dips, per-set/
+per-distance breakdown, notes/tags, Replay/Dashboard footer) rendered from **three** entry points:
+`HistoryDetailPage.jsx` (rewritten, now a thin fetch-and-normalize wrapper), `RegimenRunPage.jsx`'s
+post-run summary phase, and a **new** post-session summary phase on `FreeformLogPage.jsx` (freeform
+previously had none — ending a session silently dropped back to the launcher with no recap). New pure
+functions `distanceDropOff` and `putterBreakdown` (`lib/insights/dropOff.js` / `putterBreakdown.js`,
+registered in `insights/index.js`), plus `regimenRunAggregate` alongside the existing `sessionAggregate`
+in `lib/history.js`. `CelebrationOverlay.jsx` is a real (but inert) component — renders nothing until
+Layer 5's XP/level-up events exist to feed it.
+**Model:** Sonnet 5, per Layer 4's recommendation for Screen 9 UI (no model switch needed after Screen 8).
+**Key decisions:**
+- **Putter breakdown only reflects gesture-captured putts** — batch-ribbon fills never create
+  `putt_events` (data-split rule), so a session that used the batch ribbon shows fewer attempts here
+  than its true total. Documented, not a bug.
+- **Baseline window is relative to the entry's own timestamp**, not "now" — an old History entry
+  compares against its own contemporaneous 30 days, not today's; the post-session views (which *are*
+  "now") use `Date.now()` directly since there's no meaningfully different reference point available.
+- **Freeform has no streak-peak stat** — `putt_distance_logs` has no per-row streak column (only
+  regimen sets track `longest_streak`), so `SessionReport`'s streak line is an optional prop, present
+  for regimen entries and omitted for freeform rather than fabricated.
+- **Milestone/bonus recap section dropped** from the blueprint's wireframe — the per-row Clean badges
+  already communicate clean-set info, and there's no "First Putt" bonus in the engine (Screen 7's
+  scoring-model mapping), so a separate recap section would be redundant UI for data that doesn't exist.
+- **Abandoning a regimen run now also shows the summary** (previously it silently returned to the
+  launcher with nothing) — parity with "every session, however it ends, gets a recap," matching
+  freeform's new behavior and the blueprint's intent.
+**Live-verified in browser against the real Supabase project:** finished a freeform session (tap-scored
+2/3, active putter Anode) — summary showed putter breakdown (Anode 2/3, 67%), a correctly-triggered ⚠️
+distance warning (today 67% vs. a 100% baseline from earlier test sessions), saved notes/tags (confirmed
+via direct query after initially misreading a same-tick race in my own test script, not a real bug), and
+Dashboard nav; opened the same session from History — identical report, same tags shown active,
+confirming the "one component, two entry points" goal. Started and abandoned a regimen run (2/2 makes,
+streak peak 2) — summary correctly showed "Abandoned," 3.5 pts, a clean-set badge, and a *non*-triggered
+baseline comparison (today's 100% beat the 86% baseline, so no warning); confirmed `completed: false`/
+`total_score: 3.5` in Supabase; Replay correctly launched a fresh run.
+**Layer 4 status: COMPLETE (Screens 7, 8, 9 all shipped).** Next: Layer 5 — Analytics + Progression
+(Screens 10–13: Analytics tower, Career Hub, Trophy Room/XP ledger, UDisc ingestion), Sonnet 5 for UI /
+Opus 4.8 for the UDisc parser + badge evaluator.
+
+---
+
 ## 2026-07-08 — Scoring Canvas (SHIPPED) — Layer 4, Screen 8
 
 **What:** Screen 8 per `SCREEN_SPECS.md` — split-screen tap becomes the primary scoring input (signed

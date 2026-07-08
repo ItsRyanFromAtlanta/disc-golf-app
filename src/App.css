@@ -2223,3 +2223,81 @@
   font-size: 16px;
   font-weight: 700;
 }
+
+/* Session Report (Screen 9) */
+
+.session-report {
+  padding-bottom: 24px;
+}
+
+.hero-scoreboard {
+  padding: 16px;
+  margin: 12px 0 20px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.hero-scoreboard-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-scoreboard-score {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.hero-scoreboard-total {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--color-positive);
+}
+
+.hero-scoreboard-streak {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--color-highlight);
+}
+
+.hero-scoreboard-bar-track {
+  height: 10px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--color-bg-surface-alt);
+  overflow: hidden;
+}
+
+.hero-scoreboard-bar-fill {
+  height: 100%;
+  background: var(--color-positive);
+}
+
+.celebration-overlay {
+  margin-bottom: 12px;
+}
+
+.celebration-banner {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--color-highlight-soft);
+  color: var(--color-text-primary);
+  font-family: var(--font-display);
+  text-align: center;
+}
+
+.session-report-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.session-report-dashboard {
+  text-align: center;
+}

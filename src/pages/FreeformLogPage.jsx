@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { fetchHistory, distanceSamples, allPuttSamples } from '../lib/history'
-import { suggestNextSession } from '../lib/insights'
+import { suggestNextSession, distanceDropOff, putterBreakdown } from '../lib/insights'
 import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
@@ -24,8 +24,10 @@ import PanicZone from '../components/puttingCanvas/PanicZone'
 import EditTallyDrawer from '../components/puttingCanvas/EditTallyDrawer'
 import BatchRibbon from '../components/puttingCanvas/BatchRibbon'
 import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePicker'
+import SessionReport from '../components/sessionReport/SessionReport'
 
 const DEFAULT_VOLUME = 10
+const BASELINE_WINDOW_DAYS = 30
 const QUICK_DISTANCE_PRESETS = [
   { label: '10 ft', distanceFt: 10 },
   { label: '20 ft', distanceFt: 20 },
@@ -49,6 +51,7 @@ function discLabel(disc) {
 
 export default function FreeformLogPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [logs, setLogs] = useState([])
   const [loadingLogs, setLoadingLogs] = useState(true)
   const [error, setError] = useState(null)
@@ -73,6 +76,14 @@ export default function FreeformLogPage() {
   const [windMph, setWindMph] = useState(null)
   const [swapSuggestionDismissed, setSwapSuggestionDismissed] = useState(false)
   const [showEditDrawer, setShowEditDrawer] = useState(false)
+
+  // Session Summary (Screen 9) — freeform previously had no post-session
+  // report at all; completedDistances mirrors RegimenRunPage's completedSets
+  // (local, since putt_distance_logs rows only exist once synced).
+  const [phase, setPhase] = useState('running')
+  const [completedDistances, setCompletedDistances] = useState([])
+  const [reportPutterRows, setReportPutterRows] = useState([])
+  const [reportDropOffRows, setReportDropOffRows] = useState([])
 
   const writeAdapter = useMemo(
     () => ({
@@ -137,6 +148,38 @@ export default function FreeformLogPage() {
       .catch(() => {}) // non-critical — the card just shows a plain start with no suggestion
   }, [session.fsmStatus, user.id])
 
+  // Session Summary data — see RegimenRunPage's identical comment on the lag
+  // this can have for an offline finish (under-counts until the outbox
+  // flushes; the same session viewed later via History shows the full picture).
+  useEffect(() => {
+    if (phase !== 'summary' || !freeformSessionId) return
+    const nowMs = Date.now()
+    const windowMs = BASELINE_WINDOW_DAYS * 24 * 60 * 60 * 1000
+
+    Promise.all([
+      supabase.from('putt_events').select('outcome, putter_disc_id').eq('freeform_session_id', freeformSessionId),
+      fetchHistory(user.id),
+    ])
+      .then(([{ data: events }, history]) => {
+        setReportPutterRows(putterBreakdown(events ?? []))
+        const baselineSessions = history.sessions.filter(
+          (s) => s.id !== freeformSessionId && nowMs - new Date(s.created_at).getTime() <= windowMs,
+        )
+        const baselineRuns = history.runs.filter((r) => nowMs - new Date(r.started_at).getTime() <= windowMs)
+        const baseline = distanceSamples({ sessions: baselineSessions, runs: baselineRuns })
+        const today = completedDistances.map((d) => ({
+          distanceFeet: d.distanceFt,
+          makes: d.makes,
+          attempts: d.attempts,
+        }))
+        setReportDropOffRows(distanceDropOff(today, baseline))
+      })
+      .catch(() => {}) // non-critical — the report just omits these sections on failure
+    // completedDistances is read once, synchronously stable by the time phase
+    // flips to 'summary' (the session has already ended).
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, freeformSessionId, user.id])
+
   async function loadTodaysLogs() {
     setLoadingLogs(true)
     setError(null)
@@ -179,6 +222,8 @@ export default function FreeformLogPage() {
   function handleStart() {
     setStarting(true)
     setBatchRibbonConfirming(false)
+    setPhase('running')
+    setCompletedDistances([])
     const newSessionId = crypto.randomUUID()
     setFreeformSessionId(newSessionId)
     session.startSession({
@@ -257,10 +302,20 @@ export default function FreeformLogPage() {
     }
   }
 
+  function captureCompletedDistance() {
+    const stageState = session.sessionState
+    if (stageState.tally.attempts === 0) return
+    setCompletedDistances((prev) => [
+      ...prev,
+      { distanceFt: stageState.stage.distanceFt, makes: stageState.tally.makes, attempts: stageState.tally.attempts },
+    ])
+  }
+
   function handleNewDistance() {
     const nextDistanceFt = Number(nextDistanceInput)
     if (!nextDistanceFt || nextDistanceFt <= 0) return
     setBatchRibbonConfirming(false)
+    captureCompletedDistance()
     audio.announceStage(1, 1, nextDistanceFt)
     session.advanceStage(stageAt(nextDistanceFt, DEFAULT_VOLUME), buildDistanceLogRow)
     setNextDistanceInput('')
@@ -268,18 +323,59 @@ export default function FreeformLogPage() {
 
   function handleEndSession() {
     setBatchRibbonConfirming(false)
+    captureCompletedDistance()
     const weatherUpdate =
       weatherCondition != null
         ? { id: freeformSessionId, _op: 'update', weather_condition: weatherCondition, wind_mph: windMph }
         : null
     session.endSession(buildDistanceLogRow, weatherUpdate)
     loadTodaysLogs()
+    setPhase('summary')
   }
 
   const activePutter = allDiscs.find((d) => d.id === activePutterDiscId) ?? null
   const suggestedSwapDisc = swapSuggestionDismissed
     ? null
     : suggestBackupSwap({ weatherCondition, windMph, discs: allDiscs, activePutterDiscId })
+
+  if (phase === 'summary') {
+    const hero = {
+      makes: completedDistances.reduce((sum, d) => sum + d.makes, 0),
+      attempts: completedDistances.reduce((sum, d) => sum + d.attempts, 0),
+    }
+    const rows = completedDistances.map((d) => ({
+      label: `${d.distanceFt} ft`,
+      detail: '',
+      makes: d.makes,
+      attempts: d.attempts,
+    }))
+    const putterRows = reportPutterRows.map((p) => ({
+      ...p,
+      label: discLabel(allDiscs.find((d) => d.id === p.putterDiscId)) ?? 'Unknown disc',
+    }))
+
+    return (
+      <SessionReport
+        title="Freeform session complete!"
+        at={new Date().toISOString()}
+        completed={null}
+        totalScore={null}
+        hero={hero}
+        rows={rows}
+        putterRows={putterRows}
+        dropOffRows={reportDropOffRows}
+        onSaveNotesTags={async ({ notes, tags }) => {
+          const { error: saveError } = await supabase
+            .from('putt_sessions')
+            .update({ notes, tags })
+            .eq('id', freeformSessionId)
+          if (saveError) throw saveError
+        }}
+        onReplay={handleStart}
+        onDashboard={() => navigate('/practice')}
+      />
+    )
+  }
 
   return (
     <section className="practice-page">

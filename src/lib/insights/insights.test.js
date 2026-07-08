@@ -14,6 +14,8 @@ import {
   suggestWarmupDistance,
   DEFAULT_STARTING_DISTANCE_FT,
 } from './nextSessionSuggestion'
+import { distanceDropOff } from './dropOff'
+import { putterBreakdown } from './putterBreakdown'
 
 describe('fatigueCurve', () => {
   it('aggregates make % by set order across runs, sorted', () => {
@@ -325,5 +327,79 @@ describe('suggestNextSession', () => {
     expect(suggestion.lastRegimenId).toBeNull()
     expect(suggestion.suggestedDistanceFt).toBe(DEFAULT_STARTING_DISTANCE_FT)
     expect(suggestion.currentFormPct).toBeNull()
+  })
+})
+
+describe('distanceDropOff', () => {
+  it('flags a band where today dips more than 10 points below baseline', () => {
+    const today = [{ distanceFeet: 22, makes: 5, attempts: 10 }] // 50%
+    const baseline = [{ distanceFeet: 21, makes: 18, attempts: 20 }] // 90%
+    const rows = distanceDropOff(today, baseline)
+    expect(rows).toEqual([
+      {
+        label: '20-30ft',
+        todayMakes: 5,
+        todayAttempts: 10,
+        todayPct: 0.5,
+        baselinePct: 0.9,
+        dropPct: 40,
+        warn: true,
+      },
+    ])
+  })
+
+  it('does not warn for a dip at or below the threshold', () => {
+    const today = [{ distanceFeet: 22, makes: 8, attempts: 10 }] // 80%
+    const baseline = [{ distanceFeet: 21, makes: 9, attempts: 10 }] // 90%
+    expect(distanceDropOff(today, baseline)[0].warn).toBe(false)
+  })
+
+  it('reports no baseline (and never warns) for a band with no prior history', () => {
+    const today = [{ distanceFeet: 22, makes: 5, attempts: 10 }]
+    const rows = distanceDropOff(today, [])
+    expect(rows[0].baselinePct).toBeNull()
+    expect(rows[0].warn).toBe(false)
+  })
+
+  it('only reports bands actually played today, not every baseline band', () => {
+    const today = [{ distanceFeet: 12, makes: 5, attempts: 10 }]
+    const baseline = [
+      { distanceFeet: 12, makes: 5, attempts: 10 },
+      { distanceFeet: 42, makes: 5, attempts: 10 },
+    ]
+    expect(distanceDropOff(today, baseline).map((r) => r.label)).toEqual(['10-20ft'])
+  })
+})
+
+describe('putterBreakdown', () => {
+  it('groups putt_events by putter_disc_id and computes make %', () => {
+    const events = [
+      { outcome: 'make', putter_disc_id: 'p1' },
+      { outcome: 'miss', putter_disc_id: 'p1' },
+      { outcome: 'make', putter_disc_id: 'p2' },
+    ]
+    expect(putterBreakdown(events)).toEqual([
+      { putterDiscId: 'p1', makes: 1, attempts: 2, pct: 0.5 },
+      { putterDiscId: 'p2', makes: 1, attempts: 1, pct: 1 },
+    ])
+  })
+
+  it('sorts by attempts descending', () => {
+    const events = [
+      { outcome: 'make', putter_disc_id: 'low' },
+      { outcome: 'make', putter_disc_id: 'high' },
+      { outcome: 'miss', putter_disc_id: 'high' },
+      { outcome: 'miss', putter_disc_id: 'high' },
+    ]
+    expect(putterBreakdown(events).map((b) => b.putterDiscId)).toEqual(['high', 'low'])
+  })
+
+  it('ignores events with no putter recorded', () => {
+    const events = [{ outcome: 'make', putter_disc_id: null }, { outcome: 'make', putter_disc_id: 'p1' }]
+    expect(putterBreakdown(events)).toEqual([{ putterDiscId: 'p1', makes: 1, attempts: 1, pct: 1 }])
+  })
+
+  it('returns an empty list for no events', () => {
+    expect(putterBreakdown([])).toEqual([])
   })
 })
