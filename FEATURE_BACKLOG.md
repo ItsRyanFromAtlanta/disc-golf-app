@@ -111,8 +111,8 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 | Dashboard hub (instant-replay hero, 3-way STANDARD/CUSTOM/NEW launchpad) | SHIPPED | Layer 3, Screen 4 — CLONE & TWEAK and the planning drawer are disabled stubs pending Layer 4's builder |
 | Bag manager (My Bags / Putters / Universe + ghost-slot wishlist) | SHIPPED | Layer 3, Screen 5; client-side tabs at `/bag`, no new routes; retail bridge (Ghost Slot → Pro-Shop) parked |
 | Putter lineup (role swimlanes, Bézier flight curve, wear slider + odometer alert) | SHIPPED | Layer 3, Screen 6 |
-| Custom routine builder (stage stacking, live max-score preview, 100-putt totalizer) | BACKLOG | Layer 4, Screen 7 |
-| Scoring canvas: split-screen tap as primary input | BACKLOG | Layer 4, Screen 8 — pending explicit sign-off; shipped gesture engine demoted to alt mode, not removed |
+| Custom routine builder (stage stacking, live max-score preview, 100-putt totalizer) | SHIPPED | Layer 4, Screen 7 — reuses regimenScoring.js engine unmodified; blueprint per-stage First bonus omitted (no engine column) |
+| Scoring canvas: split-screen tap as primary input | NEXT UP | Layer 4, Screen 8 — SIGNED OFF: split-screen tap primary, shipped gesture engine demoted to opt-in alt mode (TapZone drop-in slot in PuttingCanvas) |
 | Scoring canvas: stack-tracker pips, weather→backup swap suggestion, panic toggle | BACKLOG | Layer 4, Screen 8; swap suggestion needs putt_events.putter_disc_id |
 | Unified session report (putter matrix, drop-off vs 30-day baseline, replay) | BACKLOG | Layer 4, Screen 9 |
 | Analytics tower (equipment-milestone chart markers, sync ledger, CSV export) | BACKLOG | Layer 5, Screen 10 |

@@ -1335,6 +1335,9 @@
 }
 
 .zone-c-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-height: var(--tap-target-min);
   border: var(--border-width) dashed var(--color-border-default);
@@ -1344,11 +1347,106 @@
   font-family: var(--font-display);
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  text-decoration: none;
 }
 
 .zone-c-trigger[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+/* Custom routine builder (Screen 7) */
+
+.routine-builder-page {
+  padding-bottom: 140px; /* clear the sticky totalizer footer */
+}
+
+.stage-card {
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  background: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stage-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stage-card-delete {
+  color: var(--color-negative);
+}
+
+.stage-card-field-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.stage-pressure-toggle {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.add-stage-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 56px;
+  margin-top: 8px;
+  border: var(--border-width) dashed var(--color-border-default);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-secondary-accent);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.add-stage-button:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.routine-totalizer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 56px; /* above the tab bar */
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  background: var(--color-bg-surface-alt);
+  border-top: var(--border-width) solid var(--color-border-default);
+}
+
+.routine-totalizer-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+
+.routine-totalizer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.routine-totalizer-actions .start-button {
+  flex: 1;
+  margin-top: 0;
 }
 
 /* Putting canvas — READY_DEFAULT (session launcher / prediction card) */

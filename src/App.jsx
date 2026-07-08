@@ -9,6 +9,7 @@ import PracticeMenuPage from './pages/PracticeMenuPage'
 import FreeformLogPage from './pages/FreeformLogPage'
 import RegimenSelectPage from './pages/RegimenSelectPage'
 import RegimenRunPage from './pages/RegimenRunPage'
+import RoutineBuilderPage from './pages/RoutineBuilderPage'
 import HistoryPage from './pages/HistoryPage'
 import HistoryDetailPage from './pages/HistoryDetailPage'
 import ConfidenceMapPage from './pages/ConfidenceMapPage'
@@ -50,6 +51,7 @@ function App() {
           <Route index element={<PracticeMenuPage />} />
           <Route path="freeform" element={<FreeformLogPage />} />
           <Route path="regimens" element={<RegimenSelectPage />} />
+          <Route path="regimens/new" element={<RoutineBuilderPage />} />
           <Route path="regimens/:regimenId/run" element={<RegimenRunPage />} />
           <Route path="history" element={<HistoryPage />} />
           <Route path="history/:type/:id" element={<HistoryDetailPage />} />

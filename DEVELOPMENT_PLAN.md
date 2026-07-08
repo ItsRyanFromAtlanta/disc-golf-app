@@ -29,9 +29,10 @@ are stated below — **confirm the active model matches before starting a layer.
   Bag manager (MY BAGS/PUTTERS/UNIVERSE + 35-disc interlock + ghost-slot wishlist), Putter lineup
   (role swimlanes, Bézier flight curve, wear slider + odometer alert).
 - **Layer 4 — Execution engine** (Opus 4.8 for the routine rules engine, Sonnet 5 for UI): Screens 7–9 —
-  Custom Routine Builder (100-putt interlock, live score preview), Scoring Canvas (**input-model
-  decision pending explicit sign-off — see `SCREEN_SPECS.md` Screen 8**: split-screen tap as primary,
-  shipped gesture engine demoted to an alt mode), Session Summary (putter matrix, drop-off curve, replay).
+  Custom Routine Builder (**SHIPPED** 2026-07-07, Opus 4.8: 100-putt interlock, live score preview
+  reusing `regimenScoring.js` unmodified), Scoring Canvas (**input-model SIGNED OFF**: split-screen tap
+  as primary, shipped gesture engine demoted to an opt-in alt mode — build next, Sonnet 5), Session
+  Summary (putter matrix, drop-off curve, replay — Sonnet 5).
 - **Layer 5 — Analytics + Progression** (Sonnet 5 for UI, Opus 4.8 for the UDisc parser + badge
   evaluator): Screens 10–13 — Analytics tower (equipment-milestone chart markers, sync ledger, CSV
   export), Career Hub (manual PDGA entry, skill radar, most-trusted-putter), Trophy Room (XP/levels/

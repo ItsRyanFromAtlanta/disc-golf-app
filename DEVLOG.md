@@ -4,6 +4,50 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-07 — Custom Routine Builder (SHIPPED) — Layer 4, Screen 7
+
+**What:** Screen 7 per `SCREEN_SPECS.md` — a custom routine builder at `/practice/regimens/new`.
+`src/lib/routineBuilder.js` (pure rules-engine core: `blankStage`, `totalPutts`, `canAddStage`,
+`estimateDifficulty`, `buildRegimenPayload`, `maxScorePreview`), `src/lib/regimens.js` (data layer:
+`createCustomRegimen`, `fetchCustomRegimens`, `fetchRegimenWithSets`), `RoutineBuilderPage.jsx` +
+`StageCard.jsx`. Wired into Screen 4's Zone B NEW segment, Zone C trigger, and Clone & Tweak on every
+regimen card.
+**Model:** Opus 4.8, per Layer 4's recommendation for the rules-engine work (confirmed active before
+starting). Screens 8–9 (Sonnet-5 UI) deferred to a later session — see checkpoint below.
+**Zero schema work:** Layer 1 already shipped every dependency — `putting_regimens.user_id`/`drill_type`/
+`rules_config`/`archived`, nullable `difficulty`, system-or-own RLS, and the DB-side 100-putt interlock
+(`enforce_routine_putt_cap` trigger on `putting_regimen_sets`). A custom routine is just a
+`putting_regimens` row (user_id set) + `putting_regimen_sets` rows that run through the SHIPPED
+`RegimenRunPage` + `regimenScoring.js` engine unmodified.
+**Key decisions:**
+- **Scoring-model mapping (the rules-engine call):** the blueprint's per-stage `[First][Last][Streak]
+  [Clean]` toggles don't map to the shipped engine (which scores streak/clean/completion at the ROUTINE
+  level and pressure per-set). Per the "reuse engine unmodified" mandate, the builder exposes the knobs
+  the engine actually reads — routine-level Streak/Clean/Completion bonus toggles + a per-stage
+  "Pressure last putt" toggle (→ `pressure_multiplier`). The blueprint's per-stage `First` bonus is
+  **not built** (no engine column; adding one would violate the mandate). Documented divergence.
+- **`maxScorePreview` IS the shipped engine:** the live totalizer score composes `computeSetScore` +
+  `computeCompletionBonus` over a hypothetical perfect run, so the preview can never drift from what the
+  run page actually scores. Unit test asserts it equals a hand-computed 221 for a known config.
+- **Screen 8 input model (decided this session, built next):** split-screen MADE|MISSED tap becomes the
+  primary scoring input; the shipped swipe-cone `GestureZone` demotes to an opt-in "gesture mode."
+  `PuttingCanvas` is slot-based so `TapZone` is a drop-in sibling — nothing tested gets deleted.
+**Bug caught & fixed (from Layer 3):** Screen 4's Zone B STANDARD/CUSTOM filters tested `r.created_by`,
+a column that doesn't exist (schema uses `user_id`). Latent because no custom routines existed until
+now — the first saved routine would have mis-filed under STANDARD and never appeared in CUSTOM. Fixed to
+`r.user_id == null` (standard) and `r.user_id === user.id && !r.archived` (custom).
+**Live-verified in browser against the real Supabase project:** built a 2-stage routine, watched the
+totalizer + max-score preview update live (confirmed ≈161 and ≈210 against hand math), confirmed the
+Add-Stage 100-putt disable + over-cap red count; Save & Launch inserted `putting_regimens` (201) +
+`putting_regimen_sets` (201) and landed on the shipped run page running the custom routine; confirmed it
+then appeared under the CUSTOM tab (validates the `user_id` fix); Clone & Tweak from the "Foundation"
+system regimen prefilled name/stages/bonuses/pressure correctly. (One test routine, "Layer 4 Test
+Ladder," remains in the dev account's DB — harmless, a valid custom routine.)
+**Layer 4 status: Screen 7 COMPLETE.** Next: Screens 8 (Scoring Canvas — split-screen tap primary) + 9
+(Session Summary), both Sonnet-5-recommended UI — switch model before resuming.
+
+---
+
 ## 2026-07-05 — Dashboard/Bag/Putter hubs (SHIPPED) — Layer 3 complete (hubs)
 
 **What:** Screens 4–6 per `SCREEN_SPECS.md`: `PracticeMenuPage.jsx` evolved in place into the Dashboard

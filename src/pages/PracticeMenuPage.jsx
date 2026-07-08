@@ -34,15 +34,9 @@ function RegimenLaunchCard({ regimen }) {
         <Link to={`/practice/regimens/${regimen.id}/run`} className="start-button">
           Launch
         </Link>
-        <button
-          type="button"
-          className="link-button"
-          disabled
-          aria-disabled="true"
-          title="Coming with the routine builder"
-        >
+        <Link to={`/practice/regimens/new?clone=${regimen.id}`} className="link-button">
           👯 Clone &amp; Tweak
-        </button>
+        </Link>
       </div>
     </div>
   )
@@ -129,8 +123,10 @@ export default function PracticeMenuPage() {
   const heroRegimenName =
     hero?.kind === 'resume-last' && regimens ? regimens.find((r) => r.id === hero.regimenId)?.name : null
 
-  const standardRegimens = regimens?.filter((r) => !r.created_by) ?? []
-  const customRegimens = regimens?.filter((r) => r.created_by === user.id) ?? []
+  // System regimens have user_id null; custom routines are the user's own,
+  // non-archived rows (RLS already scopes the query to system + own).
+  const standardRegimens = regimens?.filter((r) => r.user_id == null) ?? []
+  const customRegimens = regimens?.filter((r) => r.user_id === user.id && !r.archived) ?? []
 
   if (error) return <p className="form-error">{error}</p>
 
@@ -191,19 +187,24 @@ export default function PracticeMenuPage() {
           standardRegimens.map((regimen) => <RegimenLaunchCard key={regimen.id} regimen={regimen} />)
         ) : zoneBTab === 'custom' ? (
           customRegimens.length === 0 ? (
-            <p>No custom routines yet — the routine builder is coming in a future update.</p>
+            <p>
+              No custom routines yet.{' '}
+              <Link to="/practice/regimens/new">Build one →</Link>
+            </p>
           ) : (
             customRegimens.map((regimen) => <RegimenLaunchCard key={regimen.id} regimen={regimen} />)
           )
         ) : (
-          <p>Custom routine creation is coming in a future update.</p>
+          <Link to="/practice/regimens/new" className="start-button">
+            ➕ Build a custom routine
+          </Link>
         )}
       </section>
 
       <section className="dashboard-zone-c">
-        <button type="button" className="zone-c-trigger" disabled aria-disabled="true">
+        <Link to="/practice/regimens/new" className="zone-c-trigger">
           ➕ Build Custom Routine Ladder
-        </button>
+        </Link>
       </section>
 
       <h2>
