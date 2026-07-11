@@ -148,6 +148,11 @@ FEATURE_BACKLOG.md.
 - Never commit Supabase keys or Anthropic API keys — use environment variables
 - Prefer small, composable React components over large page files
 - Distance in feet, scores relative to par unless stated otherwise
+- When adding a new data table: state the ideal column format (types, constraints, indexes) in
+  the schema file's header comment before writing DDL, and seed representative test data where
+  feasible — assigned to the project's actively-exercised test account (the one with real
+  session/round history, not just a signed-up profile; check which account has real activity
+  before assuming) rather than a placeholder with nothing to render against.
 
 ## Not yet decided / open questions
 - Exact UI/UX flow for live round mode (chat interface vs structured prompts)
