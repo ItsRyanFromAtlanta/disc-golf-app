@@ -13,6 +13,9 @@ import { makeTerritoryPct } from '../lib/instantLaunch/sessionReducer'
 import { GESTURE_CONFIG } from '../lib/gestureEngine/config'
 import { FSM_STATES } from '../lib/instantLaunch/fsm'
 import { fetchUserDiscs } from '../lib/discLocker'
+import { awardPostSession } from '../lib/gamification/badgeEvaluatorService'
+import { celebrationEventsFor } from '../lib/gamification/celebration'
+import { XP_SOURCE } from '../lib/gamification/constants'
 import SessionLauncher from '../components/puttingCanvas/SessionLauncher'
 import PuttingCanvas from '../components/puttingCanvas/PuttingCanvas'
 import CanvasContextBar from '../components/puttingCanvas/CanvasContextBar'
@@ -84,6 +87,8 @@ export default function FreeformLogPage() {
   const [completedDistances, setCompletedDistances] = useState([])
   const [reportPutterRows, setReportPutterRows] = useState([])
   const [reportDropOffRows, setReportDropOffRows] = useState([])
+  // Layer 5 gamification: XP/badge banners for the celebration overlay.
+  const [celebrationEvents, setCelebrationEvents] = useState([])
 
   const writeAdapter = useMemo(
     () => ({
@@ -177,6 +182,26 @@ export default function FreeformLogPage() {
       .catch(() => {}) // non-critical — the report just omits these sections on failure
     // completedDistances is read once, synchronously stable by the time phase
     // flips to 'summary' (the session has already ended).
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, freeformSessionId, user.id])
+
+  // Layer 5: award XP + evaluate badges once the session ends. Freeform has no
+  // clean-stage concept (that's a regimen construct), so only per-make XP
+  // accrues here. Best-effort + idempotent — see RegimenRunPage's identical
+  // comment for the offline/double-invoke reasoning.
+  useEffect(() => {
+    if (phase !== 'summary' || !freeformSessionId) return
+    const makes = completedDistances.reduce((sum, d) => sum + d.makes, 0)
+    awardPostSession({
+      userId: user.id,
+      sourceType: XP_SOURCE.FREEFORM_SESSION,
+      sourceRef: freeformSessionId,
+      makes,
+      cleanStages: 0,
+    })
+      .then((result) => setCelebrationEvents(celebrationEventsFor(result)))
+      .catch(() => {}) // non-critical — reconciles on the Trophy Room's next load
+    // completedDistances excluded for the same reason as the effect above.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, freeformSessionId, user.id])
 
@@ -364,6 +389,7 @@ export default function FreeformLogPage() {
         rows={rows}
         putterRows={putterRows}
         dropOffRows={reportDropOffRows}
+        celebrationEvents={celebrationEvents}
         onSaveNotesTags={async ({ notes, tags }) => {
           const { error: saveError } = await supabase
             .from('putt_sessions')

@@ -14,6 +14,9 @@ import { makeTerritoryPct } from '../lib/instantLaunch/sessionReducer'
 import { GESTURE_CONFIG } from '../lib/gestureEngine/config'
 import { FSM_STATES } from '../lib/instantLaunch/fsm'
 import { fetchUserDiscs } from '../lib/discLocker'
+import { awardPostSession } from '../lib/gamification/badgeEvaluatorService'
+import { celebrationEventsFor } from '../lib/gamification/celebration'
+import { XP_SOURCE } from '../lib/gamification/constants'
 import SessionLauncher from '../components/puttingCanvas/SessionLauncher'
 import PuttingCanvas from '../components/puttingCanvas/PuttingCanvas'
 import CanvasContextBar from '../components/puttingCanvas/CanvasContextBar'
@@ -100,6 +103,9 @@ export default function RegimenRunPage() {
   // Session Summary (Screen 9) — populated once the run reaches 'summary'.
   const [reportPutterRows, setReportPutterRows] = useState([])
   const [reportDropOffRows, setReportDropOffRows] = useState([])
+  // Layer 5 gamification: XP/badge banners for the celebration overlay, filled
+  // in by the best-effort post-session award below.
+  const [celebrationEvents, setCelebrationEvents] = useState([])
 
   const writeAdapter = useMemo(
     () => ({
@@ -218,6 +224,28 @@ export default function RegimenRunPage() {
       .catch(() => {}) // non-critical — the report just omits these sections on failure
     // completedSets is intentionally excluded: it's only read once, synchronously
     // stable by the time phase flips to 'summary' (the run has already ended).
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, regimenRunId, user.id])
+
+  // Layer 5: award XP + evaluate badges once the run ends. Best-effort and
+  // idempotent (session XP keyed by the run id, badge unlocks by earned_at) —
+  // an offline finish or a strict-mode double-invoke can't double-count, and a
+  // failed award just means no banner now; the Trophy Room's own on-load
+  // evaluation reconciles later. Mirrors the summary-data effect's shape.
+  useEffect(() => {
+    if (phase !== 'summary' || !regimenRunId) return
+    const makes = completedSets.reduce((sum, e) => sum + e.makes, 0)
+    const cleanStages = completedSets.filter((e) => e.cleanSet).length
+    awardPostSession({
+      userId: user.id,
+      sourceType: XP_SOURCE.REGIMEN_RUN,
+      sourceRef: regimenRunId,
+      makes,
+      cleanStages,
+    })
+      .then((result) => setCelebrationEvents(celebrationEventsFor(result)))
+      .catch(() => {}) // non-critical — XP/badges reconcile on the Trophy Room's next load
+    // completedSets excluded for the same reason as the effect above.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, regimenRunId, user.id])
 
@@ -457,6 +485,7 @@ export default function RegimenRunPage() {
         rows={rows}
         putterRows={putterRows}
         dropOffRows={reportDropOffRows}
+        celebrationEvents={celebrationEvents}
         onSaveNotesTags={async ({ notes, tags }) => {
           const { error: saveError } = await supabase
             .from('putting_regimen_runs')
