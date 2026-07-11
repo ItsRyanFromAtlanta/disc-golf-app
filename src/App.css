@@ -2301,3 +2301,291 @@
 .session-report-dashboard {
   text-align: center;
 }
+
+/* ============================================================
+   Trophy Room (Screen 12) — XP bar, pursuits, trophy wall
+   ============================================================ */
+
+.trophy-room-page {
+  padding-bottom: 24px;
+}
+
+/* --- XP / level card --- */
+.xp-card {
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  padding: 16px;
+  margin: 16px 0 24px;
+}
+
+.xp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.xp-card-level {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--color-text-primary);
+}
+
+.xp-ledger-button {
+  flex-shrink: 0;
+}
+
+.xp-bar-track {
+  height: 14px;
+  border-radius: 7px;
+  background: var(--color-bg-surface-alt);
+  border: var(--border-width) solid var(--color-border-default);
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: var(--color-positive);
+  transition: width 0.4s ease;
+}
+
+.xp-card-caption {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* --- shared slide-up modal (ledger + badge inspect) --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 29, 26, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-sheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--color-bg-primary);
+  border: var(--border-width) solid var(--color-border-focus);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 16px 20px 32px;
+}
+
+.xp-guide {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  background: var(--color-highlight-soft);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 4px 0 16px;
+}
+
+/* --- Active Pursuits carousel --- */
+.pursuit-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+}
+
+.pursuit-card {
+  scroll-snap-align: start;
+  flex: 0 0 82%;
+  max-width: 320px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pursuit-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pursuit-card-icon {
+  font-size: 22px;
+}
+
+.pursuit-card-name {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-weight: 600;
+}
+
+.pursuit-card-pct {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--color-positive);
+}
+
+.pursuit-card-desc {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.pursuit-bar-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--color-bg-surface-alt);
+  border: var(--border-width) solid var(--color-border-default);
+  overflow: hidden;
+}
+
+.pursuit-bar-fill {
+  height: 100%;
+  background: var(--color-positive);
+}
+
+.pursuit-launch {
+  margin-top: 4px;
+}
+
+.pursuit-launch-dist {
+  opacity: 0.85;
+}
+
+/* --- Trophy wall --- */
+.trophy-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.trophy-filter-chip-active {
+  background: var(--color-secondary-accent);
+  color: var(--color-text-inverse);
+  border-color: var(--color-secondary-accent);
+}
+
+.trophy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.trophy-square {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  min-height: 110px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+}
+
+.trophy-square-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.trophy-square-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Tier accents on the top border of each square. */
+.trophy-tier-gold {
+  border-top-color: var(--color-highlight);
+  border-top-width: 4px;
+}
+
+.trophy-tier-silver {
+  border-top-color: var(--color-secondary-accent);
+  border-top-width: 4px;
+}
+
+.trophy-tier-bronze {
+  border-top-color: var(--color-positive);
+  border-top-width: 4px;
+}
+
+.trophy-square-locked {
+  opacity: 0.5;
+  filter: grayscale(0.6);
+}
+
+.trophy-square-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-bg-surface-alt);
+  overflow: hidden;
+  margin-top: auto;
+}
+
+.trophy-square-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-positive);
+}
+
+.trophy-square-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--color-positive);
+  font-weight: 700;
+}
+
+.trophy-empty {
+  color: var(--color-text-secondary);
+}
+
+/* --- Badge inspect drawer --- */
+.trophy-tier-label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.trophy-tier-label.trophy-tier-gold {
+  color: var(--color-highlight);
+}
+.trophy-tier-label.trophy-tier-silver {
+  color: var(--color-secondary-accent);
+}
+.trophy-tier-label.trophy-tier-bronze {
+  color: var(--color-positive);
+}
+
+.badge-inspect-desc {
+  color: var(--color-text-secondary);
+}
+
+.badge-inspect-earned {
+  font-weight: 600;
+  color: var(--color-positive);
+}
+
+.badge-inspect-progress {
+  margin: 8px 0 12px;
+  color: var(--color-text-secondary);
+}

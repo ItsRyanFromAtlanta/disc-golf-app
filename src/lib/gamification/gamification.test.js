@@ -12,6 +12,13 @@ import { badgeXpForTier } from './constants'
 import { BADGE_CATALOG, BADGE_ICONS } from './badgeCatalog'
 import { buildPlayerStats } from './playerStats'
 import { celebrationEventsFor } from './celebration'
+import {
+  buildBadgeViewModels,
+  activePursuits,
+  filterCounts,
+  applyFilter,
+  pursuitDistanceFor,
+} from './trophyRoom'
 
 describe('xp leveling math', () => {
   it('calculateXpForLevel follows 1000 * 1.15^(n-1)', () => {
@@ -296,6 +303,52 @@ describe('celebrationEventsFor', () => {
 
   it('returns nothing to celebrate when neither a level nor a badge changed', () => {
     expect(celebrationEventsFor({ leveledUp: false, newLevel: 3, newlyEarned: [] })).toEqual([])
+  })
+})
+
+describe('trophyRoom view models', () => {
+  const badges = [
+    { id: 'b1', code: 'first_makes', name: 'First Steps', description: 'x', tier: 'bronze', criteria: { metric: 'total_makes', threshold: 10 } },
+    { id: 'b2', code: 'c1_100', name: 'C1 Automatic', description: 'x', tier: 'bronze', criteria: { metric: 'makes_in_zone', threshold: 100, params: { zone: 'C1' } } },
+    { id: 'b3', code: 'sniper', name: 'Sniper Rifle', description: 'x', tier: 'gold', criteria: { metric: 'longest_made_distance', threshold: 66 } },
+  ]
+
+  it('classifies each badge as unlocked / in_progress / locked', () => {
+    const vms = buildBadgeViewModels(badges, [
+      { badge_id: 'b1', progress: 1, earned_at: '2026-07-01T00:00:00Z' },
+      { badge_id: 'b2', progress: 0.4, earned_at: null },
+    ])
+    expect(vms.find((v) => v.id === 'b1').status).toBe('unlocked')
+    expect(vms.find((v) => v.id === 'b2').status).toBe('in_progress')
+    expect(vms.find((v) => v.id === 'b3').status).toBe('locked') // no progress row
+  })
+
+  it('activePursuits returns in-progress badges, most complete first', () => {
+    const vms = buildBadgeViewModels(badges, [
+      { badge_id: 'b1', progress: 1, earned_at: '2026-07-01T00:00:00Z' }, // unlocked — excluded
+      { badge_id: 'b2', progress: 0.4, earned_at: null },
+      { badge_id: 'b3', progress: 0.8, earned_at: null },
+    ])
+    expect(activePursuits(vms).map((b) => b.id)).toEqual(['b3', 'b2'])
+  })
+
+  it('filterCounts and applyFilter agree', () => {
+    const vms = buildBadgeViewModels(badges, [
+      { badge_id: 'b1', progress: 1, earned_at: '2026-07-01T00:00:00Z' },
+      { badge_id: 'b2', progress: 0.4, earned_at: null },
+    ])
+    const counts = filterCounts(vms)
+    expect(counts).toEqual({ all: 3, unlocked: 1, in_progress: 1, locked: 1 })
+    expect(applyFilter(vms, 'locked').map((b) => b.id)).toEqual(['b3'])
+    expect(applyFilter(vms, 'all')).toHaveLength(3)
+  })
+
+  it('pursuitDistanceFor derives a distance only for distance-shaped criteria', () => {
+    expect(pursuitDistanceFor({ metric: 'makes_beyond_ft', threshold: 25, params: { min_ft: 40 } })).toBe(40)
+    expect(pursuitDistanceFor({ metric: 'longest_made_distance', threshold: 66 })).toBe(66)
+    expect(pursuitDistanceFor({ metric: 'makes_in_zone', threshold: 100, params: { zone: 'C2' } })).toBe(50)
+    expect(pursuitDistanceFor({ metric: 'total_makes', threshold: 10 })).toBeNull()
+    expect(pursuitDistanceFor({ metric: 'practice_day_streak', threshold: 7 })).toBeNull()
   })
 })
 

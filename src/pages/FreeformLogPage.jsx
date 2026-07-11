@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { fetchHistory, distanceSamples, allPuttSamples } from '../lib/history'
@@ -55,11 +55,16 @@ function discLabel(disc) {
 export default function FreeformLogPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // A Trophy Room "Launch pursuit drill" can deep-link a target distance
+  // (?distance=NN) to preconfigure the launcher. Seeds pendingDistance below so
+  // it wins over the auto-suggested warm-up distance.
+  const pursuitDistance = Number(searchParams.get('distance')) || null
   const [logs, setLogs] = useState([])
   const [loadingLogs, setLoadingLogs] = useState(true)
   const [error, setError] = useState(null)
   const [suggestion, setSuggestion] = useState(null)
-  const [pendingDistance, setPendingDistance] = useState(null)
+  const [pendingDistance, setPendingDistance] = useState(pursuitDistance)
   const [starting, setStarting] = useState(false)
   const [silenced, setSilenced] = useState(false)
   const [diagnosticMode, setDiagnosticMode] = useState(false)
@@ -148,7 +153,8 @@ export default function FreeformLogPage() {
       .then((data) => {
         const s = suggestNextSession(data.runs, distanceSamples(data), allPuttSamples(data), new Date())
         setSuggestion(s)
-        setPendingDistance(s.suggestedDistanceFt)
+        // Defer to a pursuit-drill distance if one deep-linked us here.
+        setPendingDistance((prev) => prev ?? s.suggestedDistanceFt)
       })
       .catch(() => {}) // non-critical — the card just shows a plain start with no suggestion
   }, [session.fsmStatus, user.id])
@@ -363,6 +369,12 @@ export default function FreeformLogPage() {
     ? null
     : suggestBackupSwap({ weatherCondition, windMph, discs: allDiscs, activePutterDiscId })
 
+  // When a pursuit drill deep-linked a distance, show THAT as the launcher's
+  // suggested distance (not the algorithmic warm-up) so the label matches the
+  // distance the session actually starts at.
+  const launcherSuggestion =
+    pursuitDistance != null ? { ...(suggestion ?? {}), suggestedDistanceFt: pursuitDistance } : suggestion
+
   if (phase === 'summary') {
     const hero = {
       makes: completedDistances.reduce((sum, d) => sum + d.makes, 0),
@@ -418,7 +430,7 @@ export default function FreeformLogPage() {
         <SessionLauncher
           userId={user.id}
           title="Ready when you are"
-          suggestion={suggestion}
+          suggestion={launcherSuggestion}
           presets={QUICK_DISTANCE_PRESETS.map((p) => ({ label: p.label }))}
           favoritePutterId={session.profileDefaults.favoritePutterDiscId}
           onSelectPutter={(discId) => session.updateProfileDefaults({ favoritePutterDiscId: discId })}

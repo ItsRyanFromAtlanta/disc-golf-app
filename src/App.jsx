@@ -14,6 +14,7 @@ import HistoryPage from './pages/HistoryPage'
 import HistoryDetailPage from './pages/HistoryDetailPage'
 import ConfidenceMapPage from './pages/ConfidenceMapPage'
 import ProfilePage from './pages/ProfilePage'
+import TrophyRoomPage from './pages/TrophyRoomPage'
 import BagPage from './pages/BagPage'
 import BagLockerPage from './pages/BagLockerPage'
 import BagManagePage from './pages/BagManagePage'
@@ -57,7 +58,10 @@ function App() {
           <Route path="history/:type/:id" element={<HistoryDetailPage />} />
           <Route path="stats" element={<ConfidenceMapPage />} />
         </Route>
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile">
+          <Route index element={<ProfilePage />} />
+          <Route path="trophies" element={<TrophyRoomPage />} />
+        </Route>
         <Route path="/bag">
           <Route index element={<BagPage />} />
           <Route path="locker" element={<BagLockerPage />} />

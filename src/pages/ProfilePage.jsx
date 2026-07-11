@@ -45,6 +45,19 @@ export default function ProfilePage() {
         </Link>
       </header>
 
+      <Link to="/profile/trophies" className="mode-card">
+        <span className="mode-card-icon" aria-hidden="true">
+          🏆
+        </span>
+        <span className="mode-card-body">
+          <span className="mode-card-title">Trophy Room</span>
+          <span className="mode-card-description">XP, levels, and achievement badges</span>
+        </span>
+        <span className="mode-card-chevron" aria-hidden="true">
+          ›
+        </span>
+      </Link>
+
       {nudgeVisible && (
         <div className="nudge-banner">
           <p>Add your throwing profile so future features (like caddie recommendations) can use it.</p>
