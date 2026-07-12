@@ -43,8 +43,9 @@ reviewable checkpoint, not permission to perform later sessions early.
    transactional repository with the single-active invariant and atomic replacement, lossless
    InstantLaunch v1→v2 migration, and an unwired recovery bridge that preserves proven capture.
    Real IndexedDB upgrade/concurrency/rollback/retry tests use `fake-indexeddb`.
-5. **A5 — live schema audit and migration design** (`GPT-5.6`, high): confirm manual backup; audit live
-   schema/RLS/indexes/test data; draft append-only migration and recovery notes; review before apply.
+5. **A5 — live schema audit and migration design** (`GPT-5.6`, high, COMPLETE 2026-07-12): confirmed
+   the manual backup; audited live schema/RLS/indexes/test data; drafted the unapplied append-only
+   activity migration and recovery packet. No remote SQL was applied.
 6. **A6 — server lifecycle and RLS** (`GPT-5.6`, high): activities/events/audit, additive FKs, partial
    unique constraint, idempotent serialized RPCs, ownership/forgery/concurrency/retry tests, advisors.
    Update handoff/docs, commit, push, and clear context.

@@ -4,6 +4,20 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A5 live schema audit and migration draft
+
+**What:** Confirmed a fresh manual Supabase backup; audited the live project’s tables, ownership,
+RLS, grants, indexes, advisor findings, practice/round relationships, and historical test data. Added
+the unapplied `activities`, `activity_state_events`, and `audit_events` migration draft plus the A6
+review/recovery packet.
+**Decisions:** Reuse specialized domain UUIDs as activity IDs and enforce owner-consistent composite
+foreign keys. Backfill only authoritative facts, classify empty legacy rows as drafts, and fabricate no
+pause/resume history. New lifecycle tables expose authenticated reads only; A6 must add hardened,
+serialized RPC writes. Existing unrelated advisor warnings remain baseline debt.
+**Verified:** No ownership mismatches, exclusive-parent violations, or cross-table UUID collisions were
+found. No remote migration or data change was performed. The local Supabase CLI scaffold was generated
+and the migration was created through the CLI as required.
+
 ## 2026-07-12 — Phase A A4 transactional local activity repository
 
 **What:** Upgraded the local database to Dexie v2 with `activities` and append-only
