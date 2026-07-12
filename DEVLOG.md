@@ -1,5 +1,23 @@
 # Dev Log
 
+## 2026-07-12 — Phase B B1.6 repository and manufacturer-adapter contracts
+
+**What:** Added framework-free catalog repository and manufacturer-adapter contracts over the applied
+B1.5 schema. Canonical catalog entities are read-only through the client boundary with cache fallback;
+private configurations and draft/needs-changes submissions/evidence use owner-scoped payloads, stable
+client IDs, and the existing durable outbox. Canonical, import-batch, and review writes are intentionally
+not exposed.
+**Adapter boundary:** A versioned pure adapter registry normalizes manufacturer payloads into staged
+candidates with deterministic identity keys, supported-field declarations, evidence snapshots, source
+references, confidence, capture time, and SHA-256 checksums. Adapters have no Supabase/network dependency
+and cannot write canonical rows.
+**Verified:** 13 focused contract tests; 346 total unit tests; production build passes; lint retains the
+four pre-existing warnings. No migration or canonical catalog write was added. Graphify AST refresh was
+attempted but its incremental run requested semantic extraction for changed docs/images and stopped because
+no graphify API key is configured.
+**Handoff:** Stop at the B1.6 contract checkpoint. Remote adapter/server-ingestion wiring requires a new
+design review before implementation.
+
 ## 2026-07-12 — Phase B B1.5 catalog foundation applied
 
 **What:** Applied and recorded the reviewed catalog foundation plus two append-only advisor index
