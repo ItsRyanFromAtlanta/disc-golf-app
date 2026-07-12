@@ -4,6 +4,20 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A7 practice lifecycle integration
+
+**What:** Wired freeform and regimen InstantLaunch sessions into the A4 activity repository using the
+existing parent UUID as the activity identity. Added a stable installation ID, ordered lifecycle RPC
+sync, local completion/incomplete transitions, route-aware pause/resume, and active shell/PLAY resume
+surfaces.
+**Decisions:** Lifecycle rows flush before typed parent/summary/gesture queues to satisfy A6 owner FKs;
+InstantLaunch remains authoritative for batch summaries and real gesture events, with no synthesized
+`putt_events`. Regimen metadata carries its route identity for resume links. No schema or Supabase
+migration was needed.
+**Verified:** 310 unit tests pass, including Dexie lifecycle sync ordering and RPC argument mapping;
+production build passes; lint retains only the four pre-existing warnings. A8 owns history correction,
+hidden/restore, and metric treatment.
+
 ## 2026-07-12 — Phase A A6 server lifecycle applied and verified
 
 **What:** Applied the A5 activity envelope/backfill, A6 lifecycle RPCs, and the FK-index advisor

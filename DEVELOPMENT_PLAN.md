@@ -51,9 +51,10 @@ reviewable checkpoint, not permission to perform later sessions early.
    replacement/concurrency contract. Live ownership/forgery/concurrency/retry tests and advisors pass;
    unrelated historical advisor findings remain baseline debt.
    Update handoff/docs, commit, push, and clear context.
-7. **A7 — practice integration** (`GPT-5.3-Codex`, medium): freeform first, then regimen after its full
-   pause/resume/finalize/offline flow passes; preserve gesture-event versus batch-summary capture rules;
-   add active pill and PLAY resume card.
+7. **A7 — practice integration** (`GPT-5.3-Codex`, medium, COMPLETE 2026-07-12): freeform and regimen
+   now mirror stable parent UUIDs into Dexie, finalize/mark incomplete offline-first, and flush lifecycle
+   RPCs before typed parent/summary/gesture rows. Gesture-event versus batch-summary ownership remains
+   unchanged; route pause/resume, stable installation IDs, active pill, and PLAY resume card are shipped.
 8. **A8 — history and recovery** (`GPT-5.6` high audit/metric review; medium UI): unified activities,
    incomplete/hidden/sync states, correction provenance, metric exclusion/recalculation, restore. Then
    update handoff/docs, commit, push, and clear context.

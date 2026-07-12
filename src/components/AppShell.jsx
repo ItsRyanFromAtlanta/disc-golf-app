@@ -8,11 +8,17 @@ import SheetHost from './SheetHost'
 import ToastHost from './ToastHost'
 import { useCrashRecoveryRedirect } from '../hooks/useCrashRecoveryRedirect'
 import { useOnboardingGate } from '../hooks/useOnboardingGate'
+import { useActiveActivity } from '../hooks/useActiveActivity'
+import { useActivityNavigationLifecycle } from '../hooks/useActivityNavigationLifecycle'
+import { useAuth } from '../context/AuthContext'
 import { resolveRouteMetadata, resolveSectionRoot, SHELL_TYPES } from '../lib/routeMetadata'
 
 export default function AppShell() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const activeActivity = useActiveActivity(user?.id)
+  useActivityNavigationLifecycle(user?.id, activeActivity)
   const scrollRegionRef = useRef(null)
   const scrollPositionsRef = useRef({})
   const requestedTopRef = useRef(false)
@@ -29,6 +35,12 @@ export default function AppShell() {
   const route = resolveRouteMetadata(pathname)
   const isActiveShell = route?.shell === SHELL_TYPES.ACTIVE
   const isRoot = route && resolveSectionRoot(route.section) === pathname
+  const activeHref =
+    activeActivity?.type === 'putting_regimen' && activeActivity.metadata?.regimenId
+      ? `/practice/regimens/${activeActivity.metadata.regimenId}/run`
+      : activeActivity?.type === 'putting_freeform'
+        ? '/practice/freeform'
+        : null
 
   useLayoutEffect(() => {
     if (isActiveShell) return
@@ -72,6 +84,9 @@ export default function AppShell() {
               title={route?.title ?? 'Disc Golf'}
               showBack={Boolean(route && !isRoot)}
               onBack={handleBack}
+              showActivityPill={route?.showActivityPill}
+              activeActivity={activeActivity}
+              activeHref={activeHref}
               onNotifications={() =>
                 setSheet({
                   title: 'Notifications',

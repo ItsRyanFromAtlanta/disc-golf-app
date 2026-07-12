@@ -140,6 +140,17 @@ Service-role verification is performed separately and must not be exposed to the
 - Advisors: no new public `SECURITY DEFINER` warnings and no remaining unindexed FK warnings for the
   A5 owner links. Existing unrelated security/performance baseline findings remain documented debt.
 
+## A7 client integration
+
+The practice screens now mirror the existing freeform-session or regimen-run UUID into the local
+`activities` repository before notifying the InstantLaunch sync scheduler. Lifecycle outbox operations
+are replayed in dependency order through the authenticated `activity_create_draft` and
+`activity_transition` RPCs; typed parent, summary, and real gesture-event queues remain separate and
+are held until the activity row is remotely acknowledged. Completion and regimen abandon enqueue the
+corresponding terminal transition locally, so airplane-mode capture remains usable and reconnect is
+idempotent. Navigation away records a real pause/resume boundary, while the shell pill and PLAY card
+read the Dexie active mirror. No per-putt events are synthesized from batch totals.
+
 ## Recovery posture
 
 Before client rollout, recovery is a database restore from the confirmed backup.

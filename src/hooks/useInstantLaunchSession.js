@@ -14,6 +14,11 @@ import {
 } from '../lib/instantLaunch/stateReducer'
 import { readInstantLaunchState, updateInstantLaunchState } from '../lib/instantLaunch/storage'
 import { createSyncScheduler, SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
+import { ACTIVITY_SOURCES, ACTIVITY_STATE_REASONS, ACTIVITY_STATES } from '../lib/activityLifecycle'
+import { activityRepository } from '../lib/repository/activityRepository'
+import { createActivitySyncAdapter } from '../lib/repository/activitySync'
+import { getInstallationId } from '../lib/instantLaunch/installationId'
+import { activityIdForCrashRecoveryBuffer, mirrorInstantLaunchActivity } from '../lib/instantLaunch/activityBridge'
 
 // Orchestrates the FSM + unified localStorage subsystem + sync scheduler for
 // one page (RegimenRunPage or FreeformLogPage) — generic across both session
@@ -59,10 +64,52 @@ export function useInstantLaunchSession(writeAdapter, userId) {
 
   const sessionStateRef = useRef(sessionState)
   const schedulerRef = useRef(null)
+  const activitySyncRef = useRef(null)
+  const mirrorPromiseRef = useRef(null)
   const writeAdapterRef = useRef(writeAdapter)
   writeAdapterRef.current = writeAdapter
   const userIdRef = useRef(userId)
   userIdRef.current = userId
+  if (!activitySyncRef.current) activitySyncRef.current = createActivitySyncAdapter()
+
+  const mirrorActiveActivity = useCallback(async (state = readInstantLaunchState()) => {
+    if (!userIdRef.current || !state.crashRecoveryBuffer?.hasActiveSession) return null
+    const occurredAt = new Date().toISOString()
+    const result = await mirrorInstantLaunchActivity({
+      repository: activityRepository,
+      instantLaunchState: state,
+      userId: userIdRef.current,
+      occurredAt,
+      recordedAt: occurredAt,
+      installationId: getInstallationId(),
+      source: ACTIVITY_SOURCES.LIVE_CAPTURE,
+    })
+    if (result.activity?.id) {
+      const current = readInstantLaunchState()
+      if (
+        current.crashRecoveryBuffer.hasActiveSession &&
+        activityIdForCrashRecoveryBuffer(current.crashRecoveryBuffer) ===
+          activityIdForCrashRecoveryBuffer(state.crashRecoveryBuffer)
+      ) {
+        setLaunchState(updateInstantLaunchState(applySetCrashRecoveryBuffer, { activityId: result.activity.id }))
+      }
+    }
+    return result
+  }, [])
+
+  // A resumed PWA may have a live InstantLaunch buffer but no React page
+  // state. Mirror that buffer once on mount before any capture rows are
+  // allowed to flush; all work remains local-first and offline-safe.
+  const bootstrapMirrorRef = useRef(false)
+  useEffect(() => {
+    const state = readInstantLaunchState()
+    if (!bootstrapMirrorRef.current && state.crashRecoveryBuffer.hasActiveSession) {
+      bootstrapMirrorRef.current = true
+      mirrorPromiseRef.current = mirrorActiveActivity(state).finally(() => {
+        schedulerRef.current?.notifyOutboxChanged()
+      })
+    }
+  }, [mirrorActiveActivity])
 
   // Builds a real, DB-shaped putt_events row (snake_case columns, the
   // correct exclusive-arc parent FK, user_id) from a gesture event — reads
@@ -106,6 +153,32 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     const adapter = writeAdapterRef.current
     const state = readInstantLaunchState()
     const { parentWrites, summaryWrites, puttEvents } = state.outbox
+
+    // A gesture or batch tap can arrive immediately after Start. Do not let
+    // that early scheduler nudge race the Dexie mirror and violate the A6
+    // parent foreign key; retry the mirror locally before any remote fact.
+    if (state.crashRecoveryBuffer.hasActiveSession) {
+      try {
+        if (mirrorPromiseRef.current) await mirrorPromiseRef.current
+        const mirroredState = readInstantLaunchState()
+        if (!mirroredState.crashRecoveryBuffer.activityId) {
+          mirrorPromiseRef.current = mirrorActiveActivity(mirroredState)
+          await mirrorPromiseRef.current
+        }
+      } catch {
+        return { hasPending: true, error: { permanent: false } }
+      }
+    }
+
+    // A6 added composite foreign keys from typed practice parents to their
+    // activity. Drain the lifecycle outbox first, and hold all capture facts
+    // until the corresponding remote activity exists. InstantLaunch's three
+    // capture queues remain otherwise untouched and authoritative.
+    const lifecycleResult = await activitySyncRef.current.flush()
+    if (lifecycleResult.error || lifecycleResult.hasPending) {
+      return { hasPending: true, error: lifecycleResult.error ?? { permanent: false } }
+    }
+
     if (!adapter || (parentWrites.length === 0 && summaryWrites.length === 0 && puttEvents.length === 0)) {
       return { hasPending: false, error: null }
     }
@@ -138,7 +211,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       eventsResult.succeededIds.length + eventsResult.permanentFailureIds.length < puttEvents.length
 
     return anyTransientFailure ? { hasPending: stillPending, error: { permanent: false } } : { hasPending: stillPending, error: null }
-  }, [])
+  }, [mirrorActiveActivity])
 
   useEffect(() => {
     const scheduler = createSyncScheduler({ flush, onStatusChange: setSyncStatus })
@@ -153,6 +226,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
         hasActiveSession: true,
         sessionType,
         parentIds,
+        activityId: null,
         activeRegimenSnapshot: activeRegimenSnapshot ?? null,
         ...nowStageSnapshot(initialStage, 0),
       })
@@ -162,8 +236,10 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     setLaunchState(state)
     setSession(initialSessionState(initialStage))
     setFsm({ status: FSM_STATES.ACTIVE_SESSION })
-    schedulerRef.current?.notifyOutboxChanged()
-  }, [])
+    // Mirror locally before notifying the scheduler so the A6 parent FK can
+    // never race ahead of its activity row during the first online flush.
+    mirrorPromiseRef.current = mirrorActiveActivity(state).finally(() => schedulerRef.current?.notifyOutboxChanged())
+  }, [mirrorActiveActivity])
 
   const gestureMake = useCallback((occurredAt, distanceFt, putterDiscId = null) => {
     const id = crypto.randomUUID()
@@ -264,6 +340,34 @@ export function useInstantLaunchSession(writeAdapter, userId) {
   const endSession = useCallback(
     (summaryRowBuilder, parentUpdateRow) => {
       finalizeCurrentStageSummary(summaryRowBuilder)
+      const endingState = readInstantLaunchState()
+      const activityId = endingState.crashRecoveryBuffer.activityId
+      const terminalState = parentUpdateRow?.completed === false ? ACTIVITY_STATES.INCOMPLETE : ACTIVITY_STATES.COMPLETED
+      const terminalReason =
+        terminalState === ACTIVITY_STATES.INCOMPLETE
+          ? ACTIVITY_STATE_REASONS.USER_SAVE_INCOMPLETE
+          : ACTIVITY_STATE_REASONS.USER_FINALIZE
+      const finalizeActivity = async () => {
+        if (mirrorPromiseRef.current) await mirrorPromiseRef.current.catch(() => null)
+        if (!activityId || !userIdRef.current) return
+        const activity = await activityRepository.getById(activityId)
+        if (!activity || ![ACTIVITY_STATES.ACTIVE, ACTIVITY_STATES.PAUSED].includes(activity.state)) return
+        const mutation = {
+          expectedState: activity.state,
+          expectedVersion: activity.version,
+          occurredAt: new Date().toISOString(),
+          recordedAt: new Date().toISOString(),
+          source: ACTIVITY_SOURCES.LIVE_CAPTURE,
+          installationId: getInstallationId(),
+          reason: terminalReason,
+          idempotencyKey: `instant-launch:${activityId}:${terminalState}`,
+        }
+        if (terminalState === ACTIVITY_STATES.INCOMPLETE) {
+          await activityRepository.markIncomplete(activityId, mutation)
+        } else {
+          await activityRepository.finalize(activityId, mutation)
+        }
+      }
       const state = updateInstantLaunchState((s) => {
         const withUpdate = parentUpdateRow ? applyEnqueueParentWrite(s, parentUpdateRow) : s
         return applyClearCrashRecoveryBuffer(withUpdate)
@@ -271,7 +375,9 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       setLaunchState(state)
       setSession(null)
       setFsm({ status: FSM_STATES.READY_DEFAULT })
-      schedulerRef.current?.notifyOutboxChanged()
+      void finalizeActivity()
+        .catch(() => null)
+        .finally(() => schedulerRef.current?.notifyOutboxChanged())
     },
     [finalizeCurrentStageSummary],
   )

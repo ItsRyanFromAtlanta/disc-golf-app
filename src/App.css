@@ -952,6 +952,29 @@
   background: transparent;
 }
 
+.active-activity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: var(--border-width) solid var(--color-positive);
+  border-radius: 999px;
+  color: var(--color-positive);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.active-activity-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-positive);
+}
+
 .tab-bar {
   position: fixed;
   left: 0;

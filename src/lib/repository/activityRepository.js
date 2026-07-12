@@ -343,6 +343,10 @@ export function createActivityRepository({
       const started = await applyTransition(replacement, {
         ...mutation,
         type: LIFECYCLE_COMMANDS.START,
+        // Preserve the confirmation decision in the lifecycle envelope so
+        // the ordered remote outbox can replay the same round-replacement
+        // command after an offline restart.
+        confirmRoundReplacement: Boolean(confirmRoundReplacement),
       })
       return {
         ...started,

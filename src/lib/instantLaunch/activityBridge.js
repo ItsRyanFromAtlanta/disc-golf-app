@@ -73,7 +73,10 @@ export async function mirrorInstantLaunchActivity({
     recordedAt,
     source,
     installationId,
-    metadata: { instantLaunchSessionType: buffer.sessionType },
+    metadata: {
+      instantLaunchSessionType: buffer.sessionType,
+      ...(buffer.parentIds?.regimenId ? { regimenId: buffer.parentIds.regimenId } : {}),
+    },
   }
 
   let activity = await repository.getById(activityId)
@@ -88,7 +91,10 @@ export async function mirrorInstantLaunchActivity({
         expectedVersion: null,
         idempotencyKey: `instant-launch:${activityId}:create`,
       },
-      metadata: { mirroredFrom: 'instant_launch' },
+      metadata: {
+        mirroredFrom: 'instant_launch',
+        ...(buffer.parentIds?.regimenId ? { regimenId: buffer.parentIds.regimenId } : {}),
+      },
     })
     activity = created.activity
   }

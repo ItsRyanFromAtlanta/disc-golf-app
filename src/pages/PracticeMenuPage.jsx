@@ -7,6 +7,7 @@ import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
 import { practiceStreak, volumeLedger, suggestNextSession } from '../lib/insights'
 import { heroCardState } from '../lib/dashboardHero'
 import { readInstantLaunchState } from '../lib/instantLaunch/storage'
+import { useActiveActivity } from '../hooks/useActiveActivity'
 import ChipGroup from '../components/ChipGroup'
 
 const ZONE_B_TABS = [
@@ -44,6 +45,7 @@ function RegimenLaunchCard({ regimen }) {
 
 export default function PracticeMenuPage() {
   const { user, signOut } = useAuth()
+  const activeActivity = useActiveActivity(user?.id)
   const [historyData, setHistoryData] = useState(null)
   const [regimens, setRegimens] = useState(null)
   const [zoneBTab, setZoneBTab] = useState('standard')
@@ -87,8 +89,9 @@ export default function PracticeMenuPage() {
         },
       },
       hasHistory,
+      activeActivity,
     )
-  }, [historyData, hasHistory])
+  }, [activeActivity, historyData, hasHistory])
 
   const streak = useMemo(() => {
     if (!historyData) return 0
@@ -154,6 +157,14 @@ export default function PracticeMenuPage() {
             className="hero-card hero-card-resume"
           >
             ▶️ Resume session in progress
+          </Link>
+        ) : hero.kind === 'active-activity' ? (
+          <Link
+            to={hero.activityType === 'putting_regimen' && hero.regimenId ? `/practice/regimens/${hero.regimenId}/run` : '/practice/freeform'}
+            className="hero-card hero-card-resume"
+          >
+            ▶️ Resume active practice
+            <span className="log-time">{hero.state === 'paused' ? 'Paused safely for later' : 'In progress'}</span>
           </Link>
         ) : hero.kind === 'resume-last' ? (
           <Link to={`/practice/regimens/${hero.regimenId}/run`} className="hero-card hero-card-resume">

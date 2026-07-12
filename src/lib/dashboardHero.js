@@ -1,7 +1,7 @@
 // Zone A hero card priority chain (Screen 4): crash-recovery beats resuming
 // the last session config, which beats a plain first-session/no-target
 // prompt. Pure so the chain itself is unit-testable without mounting the page.
-export function heroCardState(instantLaunchState, hasHistory) {
+export function heroCardState(instantLaunchState, hasHistory, activeActivity = null) {
   const { crashRecoveryBuffer, smartPredictionCard } = instantLaunchState
 
   if (crashRecoveryBuffer?.hasActiveSession) {
@@ -9,6 +9,16 @@ export function heroCardState(instantLaunchState, hasHistory) {
       kind: 'crash-recovery',
       sessionType: crashRecoveryBuffer.sessionType,
       parentIds: crashRecoveryBuffer.parentIds,
+    }
+  }
+
+  if (activeActivity) {
+    return {
+      kind: 'active-activity',
+      activityId: activeActivity.id,
+      activityType: activeActivity.type,
+      regimenId: activeActivity.metadata?.regimenId ?? null,
+      state: activeActivity.state,
     }
   }
 
