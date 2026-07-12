@@ -4,6 +4,22 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A8 server and metric contracts
+
+**What:** After fresh backup confirmation, added and applied the A8 history/recovery RPC migration.
+Authenticated public invoker wrappers call private owner/version/idempotency-validating functions for
+hide/restore and audited practice notes/tags correction. Added a versioned pure-JavaScript metric
+registry that declares sources, windows, exclusions, confidence, inputs, and capture requirements.
+**Decisions:** Typed tables remain authoritative; corrections atomically update the current notes/tags
+and append previous/new audit values. Valid incomplete practice facts remain metric-eligible; hidden or
+nonterminal/empty activities do not. Ordered-event metrics reject batch summaries. Legacy typed-table
+grants remain until A10 because InstantLaunch still uses the staged direct parent writer.
+**Verified:** Live rollback tests passed positive, retry, stale, invalid-state/source, cross-user,
+idempotency-reuse, and audit-ID collision cases for freeform and regimen paths, with zero residue.
+Anonymous RPC and direct authenticated activity/audit writes are denied; advisors have no new A8
+findings. All 315 tests, lint (four pre-existing warnings), and production build pass. Switch to Terra
+medium for the A8 client/history UI slice.
+
 ## 2026-07-12 — Phase A A7 practice lifecycle integration
 
 **What:** Wired freeform and regimen InstantLaunch sessions into the A4 activity repository using the

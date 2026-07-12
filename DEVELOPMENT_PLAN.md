@@ -55,9 +55,11 @@ reviewable checkpoint, not permission to perform later sessions early.
    now mirror stable parent UUIDs into Dexie, finalize/mark incomplete offline-first, and flush lifecycle
    RPCs before typed parent/summary/gesture rows. Gesture-event versus batch-summary ownership remains
    unchanged; route pause/resume, stable installation IDs, active pill, and PLAY resume card are shipped.
-8. **A8 — history and recovery** (`GPT-5.6` high audit/metric review; medium UI): unified activities,
-   incomplete/hidden/sync states, correction provenance, metric exclusion/recalculation, restore. Then
-   update handoff/docs, commit, push, and clear context.
+8. **A8 — history and recovery** (`GPT-5.6` Sol high audit/metric review; Terra medium UI,
+   IN PROGRESS 2026-07-12): Sol checkpoint complete — audited visibility/correction RPCs are applied and
+   live-verified, and the metric registry fixes eligibility/capture contracts. Next: switch to Terra for
+   unified activities, incomplete/hidden/sync states, offline mutations, Recently Deleted, and restore.
+   Then update handoff/docs, commit, push, and clear context.
 9. **A9 — notifications** (`GPT-5.3-Codex`, medium): actionable notification persistence, bell/badge/
    overlay/dedup/deep links; activity-review and sync categories first; deterministic weekly-report hook.
 10. **A10 — offline equivalence and release candidate** (`GPT-5.6`, high): crash/reload/reconnect and

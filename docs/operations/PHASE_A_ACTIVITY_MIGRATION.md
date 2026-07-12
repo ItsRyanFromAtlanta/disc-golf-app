@@ -7,6 +7,7 @@ Migrations:
 - `supabase/migrations/20260712193922_phase_a_activity_lifecycle.sql` (A5 envelope/backfill)
 - `supabase/migrations/20260712195448_phase_a_activity_lifecycle_rpc.sql` (A6 RPCs)
 - `supabase/migrations/20260712201203_phase_a_activity_lifecycle_fk_indexes.sql` (A6 advisor remediation)
+- `supabase/migrations/20260712205102_phase_a_history_recovery_rpc.sql` (A8 visibility/correction RPCs)
 
 This packet records the live audit, the A5 migration boundary, and the recovery
 steps A6 must review before applying SQL. The connected Supabase project is
@@ -150,6 +151,28 @@ are held until the activity row is remotely acknowledged. Completion and regimen
 corresponding terminal transition locally, so airplane-mode capture remains usable and reconnect is
 idempotent. Navigation away records a real pause/resume boundary, while the shell pill and PLAY card
 read the Dexie active mirror. No per-putt events are synthesized from batch totals.
+
+## A8 server and metric-contract checkpoint
+
+After fresh backup confirmation, the additive `phase_a_history_recovery_rpc` migration was applied
+remotely as version `20260712205838`. It adds authenticated public invoker wrappers over private,
+owner-validating security-definer implementations for hide/restore and practice notes/tags correction.
+Both operations require optimistic activity versions and idempotency keys; envelope/domain updates and
+append-only audit rows commit atomically. Existing broad typed-table grants remain temporarily for the
+staged InstantLaunch writer; the app routes finalized user edits through the audited RPC, and A10 owns
+final grant tightening after write-path equivalence.
+
+Live rollback tests passed for hide/restore, freeform and regimen correction, same-key retry, stale
+versions, draft-state rejection, invalid correction source, cross-user denial, idempotency reuse, and
+supplied audit-ID collision. Postchecks found zero hidden rows, zero audit rows, zero changed activity
+versions, and unchanged test metadata. Anonymous execution is denied; authenticated direct writes to
+`activities` and `audit_events` remain denied. Advisors show no new public security-definer or schema
+findings; historical unrelated advisor debt is unchanged.
+
+The version-one JavaScript metric registry now declares subjects, sources, windows, sample floors,
+confidence behavior, exclusions, required inputs, formatting, and whether summaries are adequate.
+Meaningful completed and incomplete activities are eligible; hidden, draft, active, paused, and empty
+activities are excluded. Ordered-event-only metrics explicitly reject batch summaries.
 
 ## Recovery posture
 
