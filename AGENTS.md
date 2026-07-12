@@ -1,9 +1,5 @@
 # Disc Golf Manager & Caddie App
 
-> Compatibility note (2026-07-11): Codex is the active development environment. `AGENTS.md`,
-> `PRODUCT_ROADMAP.md`, `PHASE_A_ARCHITECTURE.md`, and `CODEX_WORKFLOW.md` are authoritative for
-> current work. Historical Claude-specific language below is superseded where it conflicts.
-
 ## What this is
 A mobile-first web app (React + Vite, Capacitor-ready) with three core pillars:
 1. **Live round mode** — active caddie assistance during a round (club/shot picks, hole strategy)
@@ -18,8 +14,8 @@ Built multi-tenant from day one (Supabase auth + RLS) to avoid a rebuild later.
 - **Frontend:** React + Vite, mobile-first responsive CSS, structured to add Capacitor later for App/Play Store distribution
 - **Backend:** Supabase (Postgres, auth, storage, RLS)
 - **AI:** OpenAI Responses API called server-side only (never client-side — protects API keys)
-  - Live-round chat: **GPT-5.6 Luna, low reasoning**
-  - Background jobs: **GPT-5.6 Sol, high reasoning**
+  - Live-round chat: **GPT-5.6 Luna, low reasoning** — prioritize responsiveness and cost
+  - Background jobs (course data prep, post-round analysis): **GPT-5.6 Sol, high reasoning**
 - **Dev tool:** Codex desktop/CLI
 
 ## Data model
@@ -62,8 +58,10 @@ The app uses nested feature trees. Putting practice is the first tree:
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
 Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
 
-**App-level nav targets PLAY / DISCS / ME**, adding COURSES when the course directory ships.
-Statistics live with their subject and ME provides the career-wide summary; no standalone Stats tab.
+**App-level nav is a 4-tab bottom bar: PLAY / BAGS / STATS / PRO** (adopted from
+`MASTER_PROJECT_BLUEPRINT.md`, 2026-07-05). `/practice` becomes the PLAY tab's dashboard hub;
+`/practice/stats` (confidence map + analytics) moves under STATS; profile + settings live under PRO.
+Bags keeps its own tree unchanged. Build order for this migration: see `DEVELOPMENT_PLAN.md` Layer 1.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
@@ -122,30 +120,29 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 
 ## Documentation conventions (maintain throughout dev)
 - `MASTER_PROJECT_BLUEPRINT.md` — **design authority** for the 21-screen product vision: full wireframes, ergonomic rules, logic-governance specs (competition engine, UDisc parser, XP ledger), and the reference `DATABASE_SCHEMA.md`/`TASKS.md` (written for a greenfield Expo stack — this repo absorbs its screens/rules/schema concepts into the shipped Vite+Supabase stack, it does not execute that TASKS.md literally). Added 2026-07-05.
+- `PRODUCT_ROADMAP.md` — **current sequencing and feature-disposition authority** after the 2026-07-11 whole-product reconciliation; read before starting any feature or reviving a parked item.
+- `PHASE_A_ARCHITECTURE.md` — approved lifecycle/event/metric/shell/offline/E2E contracts for the current phase.
+- `CODEX_WORKFLOW.md` — current OpenAI model policy, token-efficient workflow, commands, and plugin/MCP setup.
 - `SCREEN_SPECS.md` — the **integration layer** over the blueprint: per-screen status (in-scope/parked), REUSE vs NET-NEW file mapping, and explicit divergences from the blueprint's literal spec (stack, schema, OTP digit count, PDGA scraping, Screen 8 input model, etc.), with reasoning. Read this before building any of the 21 screens.
-- `AGENTS.md` — living architecture and Codex instruction authority
-- `PRODUCT_ROADMAP.md` — current sequencing/disposition authority
-- `PHASE_A_ARCHITECTURE.md` — current phase contracts
-- `CODEX_WORKFLOW.md` — model, token-efficiency, command, and plugin/MCP guidance
+- `AGENTS.md` (this file) — living architecture doc; update whenever routes, schema, or conventions change
 - `DEVELOPMENT_PLAN.md` — the tracks/layers execution plan with per-feature dev needs and sequencing; consult before starting any new feature
-- `DEVLOG.md` — one entry per meaningful unit of work: what, why, key decisions, gotchas. Newest first.
+- `DEVLOG.md` — one entry per meaningful unit of work: what, why, key decisions, gotchas. Newest first. Update at the end of every Codex work session.
 - `FEATURE_BACKLOG.md` — all ideated features with status (SHIPPED / IN PROGRESS / NEXT UP / BACKLOG / LATER / REJECTED). Move items as status changes; never delete rejected items — the reasoning is part of the record.
 - Schema files are append-only history; never edit a previously-run schema file, add a new one. New concepts from the blueprint are absorbed as additive columns/tables on the existing schema (e.g. `discs.role`, `discs.wear_score`), never as a wholesale schema replacement.
-- Commit at every working checkpoint within a session; push to GitHub at session end (Vercel auto-deploys from main).
+- Commit at every working checkpoint. Push coherent green stages to a feature branch and use a reviewed
+  pull request for `main` because `main` auto-deploys; direct production pushes require explicit approval.
 - **Before any migration or FK-restructuring session: take a manual database backup** (Supabase dashboard backup or pg_dump). Codex must confirm the backup exists before running migration SQL.
-- Every task states its recommended OpenAI model/reasoning level up front; see `CODEX_WORKFLOW.md`.
+- Every task states its recommended model up front: **GPT-5.3-Codex medium** for normal UI/CRUD/test work; **GPT-5.6 high** for architecture, migrations, RLS/security, rules engines, synchronization, and complex algorithms. Use **GPT-5.4 mini low** only for bounded mechanical work with normal verification. Confirm the active model/reasoning level before starting a section.
 - Plan-first rule: iterate and agree on designs in conversation BEFORE generating files, schemas, or prompts. Always prompt for approval before file generation.
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
 
 ## Current build focus
-Executing the blueprint integration plan (see `SCREEN_SPECS.md` + `DEVELOPMENT_PLAN.md` Layers 0–5):
-Layer 0 docs alignment (in progress) → Layer 1 foundation (schema absorption, Dexie/TanStack skeleton,
-4-tab bar) → Layer 2 front-door (Splash/Auth/Onboarding) → Layer 3 hubs (Dashboard/Bag/Putter lineup) →
-Layer 4 execution engine (routine builder, scoring canvas, session summary) → Layer 5 analytics +
-progression (analytics tower, career hub, trophy room, UDisc ingestion). Social, hardware, and utility
-screens (14–21 minus what's absorbed into Layer 5) are deliberately parked — see `SCREEN_SPECS.md`.
-Session history v1 is SHIPPED. Native sensor-fusion features remain parked on the Native iOS Roadmap in
-FEATURE_BACKLOG.md.
+Executing `PRODUCT_ROADMAP.md`: production/shared contracts → DISCS data foundation → DISCS
+experience/intelligence → PLAY/ME/reports → courses/rounds/interoperability. Bottom navigation is
+PLAY / DISCS / ME, with COURSES added when its directory ships; no standalone Stats tab. Existing
+Layers 1–4 and Trophy Room are shipped foundations to extend, not rebuild. Social, commerce,
+native/hardware, experimental capture, AI narrative, advanced sync UI, and PDGA automation remain
+parked only until their documented revisit triggers are satisfied.
 
 ## Conventions
 - All user-owned tables use Row Level Security scoped to `auth.uid()`
@@ -163,3 +160,16 @@ FEATURE_BACKLOG.md.
 - Exact UI/UX flow for live round mode (chat interface vs structured prompts)
 - Whether group/league features are a v1 or v2 concern
 - Native GPS/camera integration timeline (Capacitor addition)
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

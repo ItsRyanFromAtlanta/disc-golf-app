@@ -4,6 +4,46 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-11 — Production documentation and development-operations baseline
+
+**What:** Rebuilt the repository entry-point and added production-grade contribution, security,
+changelog, review, context-efficiency, integration, testing, environment, release, backup/restore,
+incident, iOS-readiness, field-testing, and ADR documentation.
+**Tooling:** Verified Graphify 0.9.6 and RTK 0.43.0 are installed. Graphify remains the generated code
+map; RTK remains Claude-hook/manual-only; Composio is optional and least-privilege rather than a Codex
+dependency. Generated Graphify/native build output is ignored.
+**Workflow:** Small reviewed branches, checkpoint commits, pushes after green major stages, protected
+`main`, risk-based review gates, and explicit fresh-task/handoff points replace context-heavy long
+threads. No application or schema code changed.
+
+## 2026-07-11 — Phase A contracts + Codex/OpenAI workflow migration
+
+**What:** Documented the approved activity lifecycle, audit/provenance, metric registry, shared shell,
+notification, offline-transition, browser-E2E, and PWA contracts in `PHASE_A_ARCHITECTURE.md`; added
+`CODEX_WORKFLOW.md` and token-efficient project Codex defaults.
+**Model policy:** GPT-5.3-Codex medium for normal implementation; GPT-5.6 high for architecture,
+migrations, security/RLS, synchronization, and complex engines; GPT-5.4 mini low only for bounded
+mechanical tasks with normal verification.
+**Setup:** Supabase MCP was already configured. Official OpenAI Docs MCP installation was attempted but
+Windows blocked launching `codex.exe`; the one-time manual command is recorded in `CODEX_WORKFLOW.md`.
+No application or schema code changed.
+
+## 2026-07-11 — Whole-product roadmap reconciliation
+
+**What:** Added `PRODUCT_ROADMAP.md` as the current sequencing/disposition authority and reconciled
+the expansion bundle, original blueprint, shipped implementation, and backlog.
+**Decisions:** PLAY / DISCS / ME replaces PLAY / BAGS / STATS / PRO; statistics become contextual with
+ME as the career summary; existing `disc_molds`/`discs` are extended instead of adding a parallel
+Universe/Warehouse tree; postponed work now has explicit revisit triggers.
+**Docs:** Updated `DEVELOPMENT_PLAN.md`, `SCREEN_SPECS.md`, `AGENTS.md`, and `FEATURE_BACKLOG.md` while
+preserving superseded/rejected history. No application or schema code changed.
+
+## 2026-07-11 — Expansion planning: community mold statistics backlog
+
+**What:** Added opt-in, anonymized community mold statistics as a deliberate later feature.
+**Decision:** Personal physical-disc performance stays private by default; community aggregates require explicit consent and minimum-sample/privacy thresholds, and remain separate from personal coaching metrics.
+**Scope:** Documentation only; no application or schema code changed.
+
 ## 2026-07-11 — Screen 12 code review + fix pass (Trophy Room hardening)
 
 **What:** `/code-review high` on the full Screen 12 diff (8-angle parallel finder pass, 10 one-vote

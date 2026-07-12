@@ -1,26 +1,41 @@
 # Disc Golf Manager & Caddie
 
-React + Vite SPA. See `CLAUDE.md` for architecture, `DEVELOPMENT_PLAN.md` for the execution plan, `DEVLOG.md` for build history, `FEATURE_BACKLOG.md` for feature status.
+Mobile-first disc golf practice, inventory, analytics, and future round/caddie application. The shipped
+client is React + Vite with Supabase, an offline-first repository transition, PWA installation, and a
+Capacitor-ready path to iOS and Android.
 
-## Local development
+## Start here
 
-```bash
+```powershell
 npm install
-cp .env.example .env   # fill in your Supabase project URL + anon key
+Copy-Item .env.example .env
 npm run dev
 ```
 
-Other scripts: `npm run build`, `npm run preview`, `npm run lint`, `npm test`.
+Required local variables: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Never commit `.env` or
+service-role/API secrets.
 
-## Deploying (Vercel)
+## Documentation map
 
-1. Push this repo to GitHub and connect it in the Vercel dashboard (auto-deploy on push to `main`).
-2. Framework preset: **Vite**. Build command `npm run build`, output directory `dist` (Vercel's Vite preset sets these automatically).
-3. In **Project Settings → Environment Variables**, set for Production/Preview/Development:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
+- [AGENTS.md](AGENTS.md) — mandatory architecture and Codex working rules.
+- [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) — current product sequence and deferrals.
+- [PHASE_A_ARCHITECTURE.md](PHASE_A_ARCHITECTURE.md) — approved shared contracts.
+- [SCREEN_SPECS.md](SCREEN_SPECS.md) — screen integration authority.
+- [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) — implementation tracks and dependencies.
+- [FEATURE_BACKLOG.md](FEATURE_BACKLOG.md) — status ledger; rejected ideas remain recorded.
+- [docs/README.md](docs/README.md) — engineering, operations, mobile, and decision records.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — branch, review, verification, and release workflow.
+- [SECURITY.md](SECURITY.md) — security and vulnerability handling.
+- [DEVLOG.md](DEVLOG.md) — detailed engineering history; newest first.
 
-   Same values as your local `.env` — the Supabase anon key is meant to be public client-side (protected by RLS), so this is safe to set directly in the dashboard.
-4. `vercel.json` already rewrites all paths to `index.html` so client-side routes (e.g. `/practice/history`) work on a hard refresh or direct link.
+## Verification
 
-The app is a PWA (`vite-plugin-pwa`): manifest + a service worker that precaches the built app shell only. It installs to a phone home screen, but does not cache Supabase data — that's still fully live/online (offline data buffering is a separate, later feature).
+```powershell
+npm test
+npm run lint
+npm run build
+git diff --check
+```
+
+Vercel deploys the Vite `dist` output. Production pushes are gated by the workflow in
+`CONTRIBUTING.md`; direct pushes to `main` are reserved for explicitly approved low-risk maintenance.

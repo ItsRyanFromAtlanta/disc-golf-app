@@ -11,6 +11,12 @@ Authored 2026-07-05, superseding the v1 `SCREEN_SPECS.md` (ideation specs for sc
 folded into this doc; its Screen 6 "putter role on `profiles`" proposal is **superseded** by the
 blueprint's `discs.role` model (see Screen 6 below).
 
+**2026-07-11 reconciliation:** `PRODUCT_ROADMAP.md` is now the current sequencing authority. Screens
+10 and 11 no longer ship as overlapping standalone destinations: their analytics/career content is
+distributed contextually, with ME as the career-wide summary. Expansion Screens 22–25 are adapted into
+DISCS Collection/Rich Profile/Lost & Found and the shared notification sheet rather than creating a
+parallel application tree.
+
 ## Status legend
 
 - **IN SCOPE** — building this cycle, per the execution layers below
@@ -60,7 +66,9 @@ per-screen re-justification needed:
 4. **Auth:** OTP is **email, 6-digit** (Supabase native, free) — UI renders 6 blocks, not the
    blueprint's 4. Guest mode is **Supabase anonymous sign-in** (survives device loss, converts via
    `linkIdentity`), not an Expo/Dexie-only shadow profile.
-5. **Navigation:** 4-tab bar — **PLAY / BAGS / STATS / PRO** — adopted as specified.
+5. **Navigation:** **PLAY / DISCS / ME**, adding **COURSES** when the course directory ships. The
+   standalone Stats tab is obsolete: player-wide summaries live in ME and disc/bag/routine/session/
+   course statistics live with their subject.
 6. **Interlocks:** both hard, as specified — 100-putt routine ceiling and 35-disc bag capacity, each
    with app-side disabling AND a DB `CHECK` constraint.
 7. **PDGA:** manual entry (zero-typing numeric keypad) — the blueprint's `fetch-pdga-profile` scraper

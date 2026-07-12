@@ -1,11 +1,27 @@
 # Development Plan
 
-Last updated: 2026-07-05
+Last updated: 2026-07-11
 Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
-`FEATURE_BACKLOG.md` (full feature status), `DEVLOG.md` (work record)
+`PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
+status), `DEVLOG.md` (work record)
 
-## ACTIVE PLAN: Blueprint integration (Layers 0–5)
+## ACTIVE PLAN: 2026-07-11 product-wide reconciliation
+
+`PRODUCT_ROADMAP.md` supersedes the execution order in the 2026-07-05 Layers below. Layers 1–4 are
+shipped history; Layer 5's standalone Analytics/Career screens are replaced by contextual statistics
+and the ME career dashboard. Current sequence: production/shared contracts → DISCS data foundation →
+DISCS experience/intelligence → PLAY/ME/report integration → courses/rounds/interoperability. Every
+parked item has an explicit revisit trigger in `PRODUCT_ROADMAP.md`.
+
+The approved bottom navigation is **PLAY / DISCS / ME**; add **COURSES** when the course directory
+ships. Do not build a standalone Stats tab.
+
+Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GPT-5.6 high** for
+architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
+Sonnet/Opus labels below are preserved only as historical records of completed work.
+
+## Historical active plan: Blueprint integration (Layers 0–5)
 
 As of 2026-07-05 this supersedes Tracks 1–2's execution as the primary sequencing (Tracks 1–4 below are
 kept as historical record; most of what they describe is either shipped or absorbed into a Layer).
@@ -214,7 +230,7 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
 **Confirmed future destination (next planning cycle after the above):** course catalog, round management, and UDisc CSV import — the Track 1.5 groundwork exists specifically so these land on prepared schema. Import design notes: UDisc exports score-only CSVs (per-hole scores + par row per layout, no disc/putt data); importer must be idempotent via external_source/external_ref; course matching via course_aliases; verify exact current CSV format at build time. Related backlog: data export (own-your-data CSV — build as importer rehearsal), weather auto-capture shipping WITH round management v1 (round creation is the natural capture point), same-day practice↔round linkage (derivable, insights lib join).
 
 ## Standing conventions (apply to every work session)
-- State recommended model at task start: **Sonnet 5** default for UI/CRUD; **Opus 4.8** for migrations, schema design passes, rules engines, DSP
-- End every Claude Code session updating `DEVLOG.md` and `FEATURE_BACKLOG.md` statuses
+- State the current OpenAI model/reasoning recommendation at task start; see `CODEX_WORKFLOW.md`.
+- End every Codex session updating `DEVLOG.md` and `FEATURE_BACKLOG.md` statuses when work changes them.
 - Schema files are append-only; new file per change
 - New derived stats go in `lib/insights/` as tested pure functions
