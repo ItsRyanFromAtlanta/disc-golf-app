@@ -13,7 +13,9 @@ order-sensitive Dexie assertion to test the contract rather than iteration order
 `notifications(activity_id, user_id)` index; live verification confirms the index exists and the notification
 foreign-key advisor finding is cleared.
 **Verified:** 333 tests pass, build passes, browser landing/protected-route smoke passes, and lint retains
-only the four pre-existing warnings. Authenticated browser/device coverage remains blocked on the OTP/link mismatch.
+only the four pre-existing warnings. A signed-in browser smoke also completes a freeform session and opens
+the notification sheet in its expected empty state. Independent cross-device coverage remains deferred because
+this task has one signed-in browser session.
 
 ---
 
