@@ -38,8 +38,10 @@ are stated below — **confirm the active model matches before starting a layer.
   vs 30-day baseline, replay).
 - **Layer 5 — Analytics + Progression** (Sonnet 5 for UI, Opus 4.8 for the UDisc parser + badge
   evaluator): Screens 10–13 — Analytics tower (equipment-milestone chart markers, sync ledger, CSV
-  export), Career Hub (manual PDGA entry, skill radar, most-trusted-putter), Trophy Room (XP/levels/
-  badges — bag-tag/QR parked with Social), UDisc CSV ingestion (writes existing `rounds` table via
+  export), Career Hub (manual PDGA entry, skill radar, most-trusted-putter), Trophy Room (**SHIPPED**
+  2026-07-11, Opus 4.8: XP ledger + 25-badge evaluator + Trophy Room UI, all writes hardened behind
+  SECURITY DEFINER RPCs after a code-review pass — see DEVLOG), UDisc CSV ingestion (writes existing
+  `rounds` table via
   Track 1.5 provenance).
 
 **Parked this cycle** (see `SCREEN_SPECS.md` for full reasoning): Social (Screens 14–15, QR Beam,

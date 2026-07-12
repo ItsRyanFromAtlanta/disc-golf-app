@@ -117,7 +117,7 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 | Unified session report (putter matrix, drop-off vs 30-day baseline, replay) | SHIPPED | Layer 4, Screen 9 — one SessionReport component, 3 entry points (History detail, regimen summary, new freeform summary) |
 | Analytics tower (equipment-milestone chart markers, sync ledger, CSV export) | BACKLOG | Layer 5, Screen 10 |
 | Player career hub (manual PDGA entry, skill radar, most-trusted-putter) | BACKLOG | Layer 5, Screen 11; PDGA scraper deferred, no official API |
-| Trophy room (XP/levels, badge evaluator, pursuits carousel) | BACKLOG | Layer 5, Screen 12; bag-tag/QR challenge parked with Social |
+| Trophy room (XP/levels, badge evaluator, pursuits carousel) | SHIPPED | Layer 5, Screen 12 — XP ledger + 25-badge evaluator + filtered trophy wall, writes hardened behind SECURITY DEFINER RPCs post-review; bag-tag/QR challenge parked with Social |
 | UDisc CSV ingestion (writes existing rounds table via Track 1.5 provenance) | BACKLOG | Layer 5, Screen 13 |
 | Course practice hubs + leaderboards | LATER (deliberate) | Screen 14 — Social module, parked this cycle |
 | Putting league bracket manager + P2P competition engine | LATER (deliberate) | Screen 15 — Social module; depends on 14 |
