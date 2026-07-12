@@ -34,8 +34,10 @@ reviewable checkpoint, not permission to perform later sessions early.
    safe-area layout, per-route scroll restoration, and current-tab scroll/root behavior. Existing URLs
    and feature pages remain compatible. Local browser smoke check passed; authenticated mobile/device
    verification remains required because anonymous auth is disabled in the connected environment.
-3. **A3 — pure local lifecycle engine** (`GPT-5.6` high design; `GPT-5.3-Codex` medium build): types,
-   transition table/reducer, policy constants, exhaustive valid/invalid/idempotency tests. No migration.
+3. **A3 — pure local lifecycle engine** (`GPT-5.6` high design; `GPT-5.3-Codex` medium build,
+   COMPLETE 2026-07-12): added lifecycle/type/source/reason constants, named policies, an
+   optimistic-concurrency-aware transition table/reducer, practice-replacement/round-confirmation
+   planning, and exhaustive valid/invalid/idempotency tests. No migration or persistence work.
 4. **A4 — Dexie repository and InstantLaunch bridge** (`GPT-5.6`, high): transactional local activity,
    state event, and dependent outbox storage; single-active invariant; crash/retry tests; keep proven
    capture. Then update handoff/docs, commit, push, and clear context.

@@ -4,6 +4,19 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A3 pure local lifecycle engine
+
+**What:** Added the framework-free `src/lib/activityLifecycle/` contract: canonical lifecycle/type/
+source/reason constants, named timing and retention policies, a complete transition table, an
+optimistic-concurrency-aware pure reducer, append-only state-event payload construction, and a pure
+start planner that distinguishes atomic practice replacement from required round confirmation.
+**Decisions:** `hidden_at` remains visibility rather than lifecycle state; old `incomplete` activities
+remain terminal; drafts can only become active through `start` (the first meaningful sporting fact);
+already-satisfied commands do not increment versions or emit duplicate state events. Repository-level
+idempotency-key storage, Dexie atomicity, and the InstantLaunch bridge remain A4 scope.
+**Verified:** 32 focused lifecycle tests and 280 full tests pass; production build passes; lint reports
+only the four pre-existing warnings. No migration, persistence, Supabase, or UI changes.
+
 ## 2026-07-12 — Phase A A2 shared application shell
 
 **What:** Replaced the implicit document scroll/four-tab framing with the shared A2 shell: route-aware
