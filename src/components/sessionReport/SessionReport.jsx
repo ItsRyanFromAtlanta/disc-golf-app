@@ -10,6 +10,8 @@ export default function SessionReport({
   title,
   headerAction,
   at,
+  lifecycleState,
+  syncState,
   completed,
   totalScore,
   hero,
@@ -20,6 +22,8 @@ export default function SessionReport({
   notes,
   tags,
   onSaveNotesTags,
+  onHide,
+  onRetrySync,
   onReplay,
   onDashboard,
 }) {
@@ -45,6 +49,24 @@ export default function SessionReport({
           </>
         )}
       </p>
+
+      {(lifecycleState || syncState) && (
+        <div className="activity-detail-status" aria-label="Activity status">
+          {lifecycleState && (
+            <span className={lifecycleState === 'completed' ? 'zone-badge' : 'abandoned-badge'}>
+              {lifecycleState === 'completed' ? 'Completed' : 'Incomplete'}
+            </span>
+          )}
+          {syncState === 'pending' && <span className="history-sync-badge history-sync-pending">Saved on device</span>}
+          {syncState === 'needs_attention' && (
+            <span className="history-sync-badge history-sync-attention">Needs attention</span>
+          )}
+          {syncState === 'synced' && <span className="history-sync-badge">Synced</span>}
+          {onRetrySync && (
+            <button type="button" className="link-button" onClick={onRetrySync}>Retry sync</button>
+          )}
+        </div>
+      )}
 
       <div className="hero-scoreboard">
         <div className="hero-scoreboard-row">
@@ -134,6 +156,12 @@ export default function SessionReport({
             </button>
           )}
         </div>
+      )}
+
+      {onHide && (
+        <button type="button" className="history-hide-button" onClick={onHide}>
+          Hide from History
+        </button>
       )}
     </section>
   )

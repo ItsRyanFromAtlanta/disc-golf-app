@@ -4,6 +4,21 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A8 history and recovery client
+
+**What:** Completed A8 with a Dexie v3 audit store and ordered recovery outbox, canonical activity-led
+history, offline-first hide/restore and practice-detail correction, sync/incomplete status badges, and a
+30-day Recently Deleted restore surface. Detail edits now use the audited recovery path instead of
+direct typed-table updates.
+**Decisions:** Activities own visibility and lifecycle presentation while typed practice tables remain
+the sporting-fact authority. Hidden activities are removed before metric inputs are assembled; restore
+therefore recalculates them naturally. Pending local state wins over remote hydration, and local-only
+activities render without synthesized attempts, makes, or events.
+**Verified:** 324 tests pass, including atomic rollback, ordered RPC mapping, optimistic hydration,
+canonical history, and route metadata. Lint retains only four pre-existing warnings and the production
+build passes. Vite starts cleanly; the optional browser CLI check could not run because `agent-browser`
+is not installed on PATH. A9 is next; switch to GPT-5.6 Terra medium for that normal UI/persistence slice.
+
 ## 2026-07-12 — Phase A A8 server and metric contracts
 
 **What:** After fresh backup confirmation, added and applied the A8 history/recovery RPC migration.

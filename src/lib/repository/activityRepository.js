@@ -3,6 +3,7 @@ import {
   ACTIVITY_SOURCES,
   ACTIVITY_STATE_REASONS,
   ACTIVITY_STATES,
+  ACTIVITY_TYPES,
   LIFECYCLE_COMMANDS,
   createDraftLifecycle,
   isCurrentActivityState,
@@ -12,6 +13,7 @@ import {
 } from '../activityLifecycle'
 import { db as defaultDb } from '../db/dexieDb'
 import { ACTIVITY_OUTBOX_TABLE } from './activityOutbox'
+import { HISTORY_RECOVERY_OUTBOX_TABLE } from './historyRecoveryOutbox'
 
 export { ACTIVITY_OUTBOX_TABLE } from './activityOutbox'
 
@@ -20,6 +22,7 @@ export const ACTIVITY_REPOSITORY_ERROR_CODES = Object.freeze({
   ACTIVITY_ID_CONFLICT: 'activity_id_conflict',
   IDEMPOTENCY_KEY_CONFLICT: 'idempotency_key_conflict',
   INVALID_MUTATION: 'invalid_mutation',
+  INVALID_ACTIVITY_STATE: 'invalid_activity_state',
   SINGLE_ACTIVE_INVARIANT: 'single_active_invariant',
 })
 
@@ -95,12 +98,50 @@ function outboxRow({ op, payload, mutation, dependencyKey = null }) {
   }
 }
 
+function auditRow({ id, activity, action, mutation, previousValues, newValues }) {
+  return {
+    id,
+    user_id: activity.user_id,
+    entity_type: 'activity',
+    entity_id: activity.id,
+    action,
+    occurred_at: mutation.occurredAt,
+    recorded_at: mutation.recordedAt,
+    source: mutation.source,
+    source_reference: mutation.sourceReference ?? null,
+    installation_id: mutation.installationId,
+    previous_values: previousValues,
+    new_values: newValues,
+    reason: mutation.reason ?? null,
+    schema_version: 1,
+    idempotency_key: mutation.idempotencyKey,
+    metadata: mutation.metadata ?? {},
+  }
+}
+
+function historyOutboxRow({ op, payload, mutation, dependencyKey }) {
+  return {
+    table: HISTORY_RECOVERY_OUTBOX_TABLE,
+    op,
+    payload,
+    createdAt: Date.parse(mutation.recordedAt),
+    idempotencyKey: mutation.idempotencyKey,
+    dependencyKey,
+    attemptCount: 0,
+    lastErrorClass: null,
+    nextRetryAt: null,
+    poison: false,
+  }
+}
+
 export function createActivityRepository({
   database = defaultDb,
   eventIdFactory = () => crypto.randomUUID(),
+  auditIdFactory = () => crypto.randomUUID(),
   faultInjector = null,
 } = {}) {
   const tables = [database.activities, database.activityStateEvents, database.outbox]
+  const historyTables = [database.activities, database.auditEvents, database.outbox]
 
   function injectFault(stage, context) {
     faultInjector?.(stage, context)
@@ -369,6 +410,220 @@ export function createActivityRepository({
     })
   }
 
+  function validateHistoryMutation(mutation, { correction = false } = {}) {
+    validateMutationEnvelope(mutation)
+    if (!Number.isInteger(mutation.expectedVersion) || mutation.expectedVersion < 0) {
+      fail(ACTIVITY_REPOSITORY_ERROR_CODES.INVALID_MUTATION, 'History mutation requires expectedVersion.')
+    }
+    if (correction && mutation.source !== ACTIVITY_SOURCES.MANUAL_CORRECTION) {
+      fail(
+        ACTIVITY_REPOSITORY_ERROR_CODES.INVALID_MUTATION,
+        'Finalized practice correction requires manual_correction source.',
+      )
+    }
+  }
+
+  async function historyIdempotentResult(activityId, action, mutation, newValues) {
+    const audit = await database.auditEvents.where('idempotency_key').equals(mutation.idempotencyKey).first()
+    if (!audit) return null
+    if (
+      audit.entity_id !== activityId ||
+      audit.action !== action ||
+      JSON.stringify(audit.new_values) !== JSON.stringify(newValues)
+    ) {
+      fail(
+        ACTIVITY_REPOSITORY_ERROR_CODES.IDEMPOTENCY_KEY_CONFLICT,
+        'Idempotency key was already used for another history operation.',
+        { activityId, action, key: mutation.idempotencyKey },
+      )
+    }
+    const pending = await database.outbox
+      .where('[table+idempotencyKey]')
+      .equals([HISTORY_RECOVERY_OUTBOX_TABLE, mutation.idempotencyKey])
+      .first()
+    return {
+      outcome: 'idempotent',
+      activity: await database.activities.get(activityId),
+      auditEvent: audit,
+      syncState: pending ? (pending.poison ? 'needs_attention' : 'pending') : 'synced',
+      warnings: [],
+    }
+  }
+
+  async function requireHistoryActivity(activityId, mutation, { allowHidden = true } = {}) {
+    const activity = await database.activities.get(activityId)
+    if (!activity) {
+      fail(ACTIVITY_REPOSITORY_ERROR_CODES.ACTIVITY_NOT_FOUND, 'Activity was not found.', { activityId })
+    }
+    if (!isTerminalActivityState(activity.state) || (!allowHidden && activity.hidden_at)) {
+      fail(
+        ACTIVITY_REPOSITORY_ERROR_CODES.INVALID_ACTIVITY_STATE,
+        'History mutation requires a visible completed or incomplete activity.',
+        { activityId, state: activity.state, hiddenAt: activity.hidden_at },
+      )
+    }
+    if (activity.version !== mutation.expectedVersion) {
+      fail(ACTIVITY_REPOSITORY_ERROR_CODES.INVALID_MUTATION, 'Activity version is stale.', {
+        activityId,
+        expectedVersion: mutation.expectedVersion,
+        actualVersion: activity.version,
+      })
+    }
+    return activity
+  }
+
+  async function applyHistoryMutation({ activity, action, op, mutation, previousValues, newValues, patch, payload }) {
+    const event = auditRow({
+      id: auditIdFactory(),
+      activity,
+      action,
+      mutation,
+      previousValues,
+      newValues,
+    })
+    const nextActivity = {
+      ...activity,
+      ...patch,
+      version: activity.version + 1,
+      updated_at: mutation.recordedAt,
+      last_history_idempotency_key: mutation.idempotencyKey,
+    }
+    const dependencyKey =
+      activity.last_history_idempotency_key ??
+      activity.last_lifecycle_idempotency_key ??
+      activity.create_idempotency_key ??
+      null
+
+    await database.activities.put(nextActivity)
+    injectFault('after_history_activity_write', { activity: nextActivity, mutation, action })
+    await database.auditEvents.add(event)
+    injectFault('after_audit_write', { activity: nextActivity, auditEvent: event, mutation, action })
+    await database.outbox.add(
+      historyOutboxRow({
+        op,
+        payload: { activity: nextActivity, auditEvent: event, mutation, ...payload },
+        mutation,
+        dependencyKey,
+      }),
+    )
+    injectFault('after_history_outbox_write', { activity: nextActivity, auditEvent: event, mutation, action })
+
+    return {
+      outcome: 'applied',
+      activity: nextActivity,
+      auditEvent: event,
+      syncState: 'pending',
+      warnings: [],
+    }
+  }
+
+  async function setHidden(activityId, hidden, mutation) {
+    validateHistoryMutation(mutation)
+    const action = hidden ? 'hide' : 'restore'
+    const hiddenAt = hidden ? mutation.recordedAt : null
+    const newValues = { hidden_at: hiddenAt }
+    return database.transaction('rw', ...historyTables, async () => {
+      const replay = await historyIdempotentResult(activityId, action, mutation, newValues)
+      if (replay) return replay
+      const activity = await requireHistoryActivity(activityId, mutation)
+      if (Boolean(activity.hidden_at) === hidden) {
+        return {
+          outcome: 'idempotent',
+          activity,
+          auditEvent: null,
+          syncState: 'local',
+          warnings: [],
+        }
+      }
+      return applyHistoryMutation({
+        activity,
+        action,
+        op: 'set_visibility',
+        mutation,
+        previousValues: { hidden_at: activity.hidden_at ?? null },
+        newValues,
+        patch: { hidden_at: hiddenAt },
+        payload: { hidden },
+      })
+    })
+  }
+
+  async function correctPracticeDetails(activityId, { previousNotes, previousTags, notes, tags }, mutation) {
+    validateHistoryMutation(mutation, { correction: true })
+    if (!Array.isArray(tags) || tags.some((tag) => typeof tag !== 'string' || !tag)) {
+      fail(ACTIVITY_REPOSITORY_ERROR_CODES.INVALID_MUTATION, 'Correction tags must be non-empty strings.')
+    }
+    const previousValues = { notes: previousNotes ?? null, tags: previousTags ?? [] }
+    const newValues = { notes: notes ?? null, tags }
+    return database.transaction('rw', ...historyTables, async () => {
+      const replay = await historyIdempotentResult(
+        activityId,
+        'correct_practice_details',
+        mutation,
+        newValues,
+      )
+      if (replay) return replay
+      const activity = await requireHistoryActivity(activityId, mutation, { allowHidden: false })
+      if (![ACTIVITY_TYPES.PUTTING_FREEFORM, ACTIVITY_TYPES.PUTTING_REGIMEN].includes(activity.type)) {
+        fail(
+          ACTIVITY_REPOSITORY_ERROR_CODES.INVALID_ACTIVITY_STATE,
+          'Only finalized practice details can be corrected.',
+          { activityId, type: activity.type },
+        )
+      }
+      if (JSON.stringify(previousValues) === JSON.stringify(newValues)) {
+        return {
+          outcome: 'idempotent',
+          activity,
+          auditEvent: null,
+          syncState: 'local',
+          warnings: [],
+        }
+      }
+      return applyHistoryMutation({
+        activity,
+        action: 'correct_practice_details',
+        op: 'correct_practice_details',
+        mutation,
+        previousValues,
+        newValues,
+        patch: {},
+        payload: { notes: notes ?? null, tags },
+      })
+    })
+  }
+
+  async function hydrateActivities(remoteRows) {
+    return database.transaction('rw', database.activities, database.outbox, async () => {
+      const pending = await database.outbox.toArray()
+      for (const remote of remoteRows) {
+        const hasPending = pending.some((row) => row.payload?.activity?.id === remote.id)
+        const local = await database.activities.get(remote.id)
+        if (!hasPending && (!local || remote.version >= local.version)) {
+          await database.activities.put(remote)
+        }
+      }
+    })
+  }
+
+  async function listHistoryWithSync(userId, { includeHidden = false } = {}) {
+    const [rows, pending] = await Promise.all([
+      listHistory(userId, { includeHidden }),
+      database.outbox.toArray(),
+    ])
+    return rows.map((row) => {
+      const operations = pending.filter((operation) => operation.payload?.activity?.id === row.id)
+      return {
+        ...row,
+        sync_state: operations.some((operation) => operation.poison)
+          ? 'needs_attention'
+          : operations.length
+            ? 'pending'
+            : 'synced',
+      }
+    })
+  }
+
   async function getActive(userId) {
     return requireSingleCurrent(userId)
   }
@@ -397,9 +652,14 @@ export function createActivityRepository({
       transition(activityId, LIFECYCLE_COMMANDS.FINALIZE_COMPLETED, mutation),
     markIncomplete: (activityId, mutation) =>
       transition(activityId, LIFECYCLE_COMMANDS.MARK_INCOMPLETE, mutation),
+    hide: (activityId, mutation) => setHidden(activityId, true, mutation),
+    restore: (activityId, mutation) => setHidden(activityId, false, mutation),
+    correctPracticeDetails,
+    hydrateActivities,
     getActive,
     getById,
     listHistory,
+    listHistoryWithSync,
     subscribeToActive,
   }
 }

@@ -40,6 +40,16 @@ const APP_ROUTES = [
     scrollKey: 'play-routine-builder',
   },
   {
+    id: 'practice-history-deleted',
+    match: /^\/practice\/history\/deleted$/,
+    section: 'play',
+    shell: SHELL_TYPES.STANDARD,
+    title: 'Recently Deleted',
+    showActivityPill: true,
+    preserveNestedState: false,
+    scrollKey: 'play-history-deleted',
+  },
+  {
     id: 'practice-history-detail',
     match: /^\/practice\/history\/[^/]+\/[^/]+$/,
     section: 'play',

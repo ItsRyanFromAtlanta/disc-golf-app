@@ -352,4 +352,122 @@ describe('activityRepository', () => {
     await expect(observed).resolves.toMatchObject({ id: 'activity-1', state: ACTIVITY_STATES.ACTIVE })
     subscription.unsubscribe()
   })
+
+  it('hides and restores terminal activity with atomic local audit and outbox rows', async () => {
+    await createDraft('activity-1')
+    await startDraft('activity-1')
+    const completed = await repository.finalize(
+      'activity-1',
+      mutation('finish-1', ACTIVITY_STATES.ACTIVE, 1),
+    )
+
+    const hidden = await repository.hide(
+      'activity-1',
+      mutation('hide-1', null, completed.activity.version, {
+        source: ACTIVITY_SOURCES.MANUAL_CORRECTION,
+      }),
+    )
+    expect(hidden).toMatchObject({ outcome: 'applied', syncState: 'pending' })
+    expect(hidden.activity).toMatchObject({ hidden_at: TIME, version: 3 })
+    expect(hidden.auditEvent).toMatchObject({ action: 'hide', new_values: { hidden_at: TIME } })
+    expect(await repository.listHistory(USER_ID)).toEqual([])
+
+    const restored = await repository.restore(
+      'activity-1',
+      mutation('restore-1', null, hidden.activity.version, {
+        source: ACTIVITY_SOURCES.MANUAL_CORRECTION,
+      }),
+    )
+    expect(restored.activity).toMatchObject({ hidden_at: null, version: 4 })
+    expect((await database.auditEvents.toArray()).map((row) => row.action)).toEqual(['hide', 'restore'])
+    expect(
+      (await database.outbox.where('table').equals('activity_history').toArray()).map((row) => row.op),
+    ).toEqual(['set_visibility', 'set_visibility'])
+  })
+
+  it('queues finalized practice detail correction without changing sporting facts', async () => {
+    await createDraft('activity-1')
+    await startDraft('activity-1')
+    const completed = await repository.finalize(
+      'activity-1',
+      mutation('finish-1', ACTIVITY_STATES.ACTIVE, 1),
+    )
+
+    const corrected = await repository.correctPracticeDetails(
+      'activity-1',
+      {
+        previousNotes: null,
+        previousTags: [],
+        notes: 'windy finish',
+        tags: ['windy'],
+      },
+      mutation('correct-1', null, completed.activity.version, {
+        source: ACTIVITY_SOURCES.MANUAL_CORRECTION,
+      }),
+    )
+
+    expect(corrected.activity).toMatchObject({ version: 3, state: ACTIVITY_STATES.COMPLETED })
+    expect(corrected.auditEvent).toMatchObject({
+      action: 'correct_practice_details',
+      previous_values: { notes: null, tags: [] },
+      new_values: { notes: 'windy finish', tags: ['windy'] },
+    })
+    expect(await database.outbox.where('table').equals('activity_history').first()).toMatchObject({
+      op: 'correct_practice_details',
+      payload: expect.objectContaining({ notes: 'windy finish', tags: ['windy'] }),
+    })
+    expect(await database.activityStateEvents.count()).toBe(2)
+  })
+
+  it('preserves optimistic local history state while its outbox operation is pending', async () => {
+    await createDraft('activity-1')
+    await startDraft('activity-1')
+    const completed = await repository.finalize(
+      'activity-1',
+      mutation('finish-1', ACTIVITY_STATES.ACTIVE, 1),
+    )
+    await repository.hide(
+      'activity-1',
+      mutation('hide-1', null, completed.activity.version, {
+        source: ACTIVITY_SOURCES.MANUAL_CORRECTION,
+      }),
+    )
+
+    await repository.hydrateActivities([
+      { ...completed.activity, hidden_at: null, updated_at: TIME },
+    ])
+
+    expect(await repository.getById('activity-1')).toMatchObject({ hidden_at: TIME, version: 3 })
+    expect(await repository.listHistoryWithSync(USER_ID, { includeHidden: true })).toEqual([
+      expect.objectContaining({ id: 'activity-1', sync_state: 'pending' }),
+    ])
+  })
+
+  it('rolls back history activity, audit, and outbox writes together', async () => {
+    await createDraft('activity-1')
+    await startDraft('activity-1')
+    const completed = await repository.finalize(
+      'activity-1',
+      mutation('finish-1', ACTIVITY_STATES.ACTIVE, 1),
+    )
+    const faulting = createActivityRepository({
+      database,
+      faultInjector: (stage) => {
+        if (stage === 'after_audit_write') throw new Error('audit write interrupted')
+      },
+    })
+
+    await expect(
+      faulting.hide(
+        'activity-1',
+        mutation('hide-with-fault', null, completed.activity.version, {
+          source: ACTIVITY_SOURCES.MANUAL_CORRECTION,
+        }),
+      ),
+    ).rejects.toThrow('audit write interrupted')
+
+    expect(await repository.getById('activity-1')).toMatchObject({ hidden_at: null, version: 2 })
+    expect(await database.auditEvents.count()).toBe(0)
+    expect(await database.outbox.where('table').equals('activity_history').count()).toBe(0)
+  })
 })

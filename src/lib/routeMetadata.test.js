@@ -24,6 +24,11 @@ describe('route metadata contract', () => {
     expect(resolveRouteMetadata('/bag/manage').preserveNestedState).toBe(true)
     expect(resolveRouteMetadata('/bag/discs/new').preserveNestedState).toBe(true)
     expect(resolveRouteMetadata('/practice/history').preserveNestedState).toBe(false)
+    expect(resolveRouteMetadata('/practice/history/deleted')).toMatchObject({
+      id: 'practice-history-deleted',
+      title: 'Recently Deleted',
+      scrollKey: 'play-history-deleted',
+    })
     expect(resolveRouteMetadata('/bag/discs/disc-1').preserveNestedState).toBe(false)
   })
 

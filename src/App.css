@@ -391,6 +391,57 @@
   text-decoration: none;
 }
 
+.history-toolbar,
+.activity-detail-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-deleted-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.history-row-ghost {
+  position: relative;
+  border: var(--border-width) dashed var(--color-border-default);
+  opacity: 0.72;
+}
+
+.history-row-ghost::before {
+  content: '◌ Hidden';
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.history-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 8px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.history-sync-pending {
+  border-color: var(--color-secondary-accent);
+  color: var(--color-secondary-accent);
+}
+
+.history-sync-attention {
+  border-color: var(--color-negative);
+  color: var(--color-negative);
+}
+
 /* Personal-best badge: sunburst orange only works here as a solid fill with
    dark text on top (~5.9:1) — as plain foreground text/icon color it fails
    contrast against every background token (see confidence-band-zone below
@@ -2438,6 +2489,23 @@
 
 .session-report-dashboard {
   text-align: center;
+}
+
+.activity-detail-status {
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.history-hide-button {
+  min-height: 44px;
+  margin-top: 28px;
+  border: var(--border-width) solid var(--color-negative);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-negative);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 /* ============================================================

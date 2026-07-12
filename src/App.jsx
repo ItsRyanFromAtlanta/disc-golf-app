@@ -55,6 +55,7 @@ function App() {
           <Route path="regimens/new" element={<RoutineBuilderPage />} />
           <Route path="regimens/:regimenId/run" element={<RegimenRunPage />} />
           <Route path="history" element={<HistoryPage />} />
+          <Route path="history/deleted" element={<HistoryPage deleted />} />
           <Route path="history/:type/:id" element={<HistoryDetailPage />} />
           <Route path="stats" element={<ConfidenceMapPage />} />
         </Route>

@@ -40,6 +40,24 @@ export class AppDatabase extends Dexie {
       outbox:
         '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
     })
+
+    // Phase A A8: user-facing hide/restore and finalized practice metadata
+    // corrections append a local audit row in the same transaction as the
+    // optimistic activity version update and diagnostic outbox operation.
+    this.version(3).stores({
+      discs: 'id, user_id, mold_id, status',
+      bags: 'id, user_id',
+      bagDiscs: 'id, bag_id, disc_id',
+      regimens: 'id, user_id, difficulty',
+      regimenRuns: 'id, user_id, regimen_id',
+      puttSessions: 'id, user_id',
+      profile: 'id',
+      activities: 'id, user_id, type, state, [user_id+state], hidden_at, updated_at',
+      activityStateEvents: 'id, activity_id, user_id, idempotency_key, [activity_id+recorded_at]',
+      auditEvents: 'id, user_id, entity_type, entity_id, action, idempotency_key, [entity_id+recorded_at]',
+      outbox:
+        '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
+    })
   }
 }
 
