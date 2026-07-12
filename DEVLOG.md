@@ -4,6 +4,17 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A10 release candidate closed
+
+**What:** Closed A10 after the automated equivalence, RLS, build/lint, browser, accessibility,
+authenticated notification-route, and reload-persistence gates passed. The user also reported that
+the independent authenticated-session/real-device check passed.
+**Evidence boundary:** The second-session/device result is explicitly user-reported; Codex did not
+directly observe that session or collect its device/OS metadata. The two-tab same-session limitation
+therefore remains documented rather than silently reclassified as independent evidence.
+**Handoff:** Phase A is complete. Stop at the Phase B DISCS data-foundation planning boundary; confirm
+a fresh manual Supabase backup before any migration or FK-restructuring work.
+
 ## 2026-07-12 — Phase A A10 equivalence and release gates (in progress)
 
 **What:** Added five deterministic equivalence tests covering Dexie reload durability, exactly-once replay,

@@ -52,6 +52,12 @@ Recommended model: GPT-5.6 high for architecture/contracts; GPT-5.3-Codex medium
 5. Expand Dexie/TanStack repositories and outbox diagnostics incrementally; preserve InstantLaunch
    until each replacement path is proven.
 
+Phase A status: COMPLETE (2026-07-12). Automated equivalence, RLS, build/lint, browser, accessibility,
+reload, and authenticated notification-route checks passed. The independent authenticated-session/
+real-device gate was reported passed by the user; Codex did not directly observe that session or collect
+device metadata. Phase B planning is the next checkpoint, and migration SQL remains blocked until a fresh
+manual Supabase backup is confirmed.
+
 ## Phase B — DISCS data foundation
 
 Recommended model: GPT-5.6 high. Manual Supabase backup is mandatory before migration SQL.
