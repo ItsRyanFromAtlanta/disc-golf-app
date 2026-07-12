@@ -16,8 +16,10 @@ therefore recalculates them naturally. Pending local state wins over remote hydr
 activities render without synthesized attempts, makes, or events.
 **Verified:** 324 tests pass, including atomic rollback, ordered RPC mapping, optimistic hydration,
 canonical history, and route metadata. Lint retains only four pre-existing warnings and the production
-build passes. Vite starts cleanly; the optional browser CLI check could not run because `agent-browser`
-is not installed on PATH. A9 is next; switch to GPT-5.6 Terra medium for that normal UI/persistence slice.
+build passes. `agent-browser` is installed globally and verifies non-blank, error-overlay-free landing
+and history-route navigation; unauthenticated routes correctly redirect to login. Local Supabase rejects
+anonymous sign-in, so a valid test session is still needed for authenticated history interaction. A9 is
+next; switch to GPT-5.6 Terra medium for that normal UI/persistence slice.
 
 ## 2026-07-12 — Phase A A8 server and metric contracts
 

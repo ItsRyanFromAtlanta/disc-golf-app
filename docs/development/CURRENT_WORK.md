@@ -17,8 +17,10 @@ Last updated: 2026-07-12
 - **Verification for this checkpoint:** 324 unit tests pass; live rollback tests cover positive,
   idempotent, stale, invalid, cross-user, and collision cases with zero residue. Anonymous RPC execution
   and authenticated direct activity/audit DML are denied. Advisors have no new A8 findings; lint retains
-  only four pre-existing warnings and the production build passes. The local Vite server starts cleanly;
-  automated visual verification was unavailable because `agent-browser` is not installed on PATH.
+  only four pre-existing warnings and the production build passes. Browser verification now runs with
+  `agent-browser`: the landing page and both A8 history URLs are non-blank and error-overlay-free, and
+  unauthenticated history navigation correctly redirects to login. This local Supabase project rejects
+  anonymous sign-in, so authenticated history-content interaction still needs a valid test session.
 - **Context recommendation:** start A9 with `AGENTS.md`, this file, `PHASE_A_ARCHITECTURE.md`, and the
   notification contracts identified in the Phase A plan.
 
