@@ -4,6 +4,19 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A6 server lifecycle RPC draft
+
+**What:** Rechecked the live Supabase project and added the CLI-generated
+`20260712195448_phase_a_activity_lifecycle_rpc.sql` draft. It exposes authenticated invoker wrappers
+for draft creation and lifecycle transitions while keeping the privileged implementation in a
+non-exposed schema.
+**Decisions:** Per-user advisory transaction locks serialize starts and replacement closes. RPCs enforce
+auth ownership, expected state/version, canonical commands/sources, supplied event IDs, idempotency, and
+atomic activity/event writes. Practice replacement auto-closes; round replacement requires confirmation.
+Client RPCs reject `admin_repair`; hide/restore/correction remain A8 scope.
+**Boundary:** The A5 and A6 migrations are both unapplied. Fresh backup confirmation, remote apply,
+authenticated negative/concurrency/retry tests, and advisor verification remain before A6 completion.
+
 ## 2026-07-12 — Phase A A5 live schema audit and migration draft
 
 **What:** Confirmed a fresh manual Supabase backup; audited the live project’s tables, ownership,

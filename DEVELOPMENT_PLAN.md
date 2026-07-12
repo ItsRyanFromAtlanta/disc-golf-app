@@ -46,8 +46,9 @@ reviewable checkpoint, not permission to perform later sessions early.
 5. **A5 — live schema audit and migration design** (`GPT-5.6`, high, COMPLETE 2026-07-12): confirmed
    the manual backup; audited live schema/RLS/indexes/test data; drafted the unapplied append-only
    activity migration and recovery packet. No remote SQL was applied.
-6. **A6 — server lifecycle and RLS** (`GPT-5.6`, high): activities/events/audit, additive FKs, partial
-   unique constraint, idempotent serialized RPCs, ownership/forgery/concurrency/retry tests, advisors.
+6. **A6 — server lifecycle and RLS** (`GPT-5.6`, high, IN PROGRESS 2026-07-12): drafted the hardened
+   serialized RPCs, public invoker wrappers, and replacement/concurrency contract. Apply both migrations,
+   run ownership/forgery/concurrency/retry tests and advisors only after the fresh-backup gate.
    Update handoff/docs, commit, push, and clear context.
 7. **A7 — practice integration** (`GPT-5.3-Codex`, medium): freeform first, then regimen after its full
    pause/resume/finalize/offline flow passes; preserve gesture-event versus batch-summary capture rules;

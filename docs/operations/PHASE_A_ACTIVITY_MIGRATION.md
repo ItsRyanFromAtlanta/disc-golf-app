@@ -2,7 +2,10 @@
 
 Status: **drafted, unapplied** (2026-07-12)
 
-Migration: `supabase/migrations/20260712193922_phase_a_activity_lifecycle.sql`
+Migrations:
+
+- `supabase/migrations/20260712193922_phase_a_activity_lifecycle.sql` (A5 envelope/backfill)
+- `supabase/migrations/20260712195448_phase_a_activity_lifecycle_rpc.sql` (A6 RPC draft)
 
 This packet records the live audit, the A5 migration boundary, and the recovery
 steps A6 must review before applying SQL. The connected Supabase project is
@@ -41,9 +44,20 @@ Historical rows are classified without fabricating pause/resume events:
 - completed round → `completed`; an unfinished round with scored holes → `incomplete`;
   an empty unfinished round → `draft`.
 
-The draft intentionally contains no lifecycle RPCs. A6 must add and review
-serialized, idempotent, owner-checked `SECURITY DEFINER` functions before any
-client can mutate lifecycle rows.
+The A5 draft intentionally contains no lifecycle RPCs. The A6 draft adds
+serialized, idempotent, owner-checked operations through public `SECURITY
+INVOKER` wrappers around non-exposed, hardened `SECURITY DEFINER` implementations:
+
+- `activity_create_draft` creates a version-zero draft and is idempotent by the
+  create key.
+- `activity_transition` implements start, pause, resume, finalize, and mark
+  incomplete; it validates expected state/version, appends exactly one event,
+  and returns the A4 result envelope.
+- Per-user transaction advisory locks serialize starts and replacement closes.
+  Practice replacement auto-closes the prior practice; round replacement requires
+  explicit confirmation.
+- `admin_repair` is not accepted by the authenticated client RPCs. A later
+  maintenance path must own that provenance.
 
 ## A6 preflight and apply gate
 
@@ -56,6 +70,23 @@ client can mutate lifecycle rows.
    A6 should still monitor locks and verify the composite foreign keys before opening
    lifecycle writes.
 5. Add the A6 RPCs only after the table grants and RLS policies are verified.
+
+## A6 negative and concurrency test gate
+
+Run these with a disposable authenticated test session after the migrations are
+applied and before practice screens call the RPCs:
+
+- direct authenticated insert/update/delete on all three lifecycle tables fails;
+- anonymous RPC calls fail, while the public wrappers succeed only for the caller's
+  own activity;
+- cross-user activity IDs, forged user IDs, invalid source/type/command, stale
+  expected state/version, and reused idempotency keys are rejected;
+- retrying a create or transition with the same key returns the original result
+  without a second row/event;
+- two concurrent starts leave at most one active/paused row and preserve the
+  documented replacement/round-confirmation behavior;
+- a supplied state-event UUID is preserved, and a conflicting UUID is rejected;
+- advisor output has no new public `SECURITY DEFINER` warning for the wrappers.
 
 ## Post-apply verification
 
