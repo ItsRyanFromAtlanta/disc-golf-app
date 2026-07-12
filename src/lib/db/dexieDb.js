@@ -58,6 +58,25 @@ export class AppDatabase extends Dexie {
       outbox:
         '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
     })
+
+    // Phase A A9: durable, actionable notification mirror. Notification
+    // producers dedupe before they surface through the bell; the remote
+    // notification RPCs remain the cross-device source of truth.
+    this.version(4).stores({
+      discs: 'id, user_id, mold_id, status',
+      bags: 'id, user_id',
+      bagDiscs: 'id, bag_id, disc_id',
+      regimens: 'id, user_id, difficulty',
+      regimenRuns: 'id, user_id, regimen_id',
+      puttSessions: 'id, user_id',
+      profile: 'id',
+      activities: 'id, user_id, type, state, [user_id+state], hidden_at, updated_at',
+      activityStateEvents: 'id, activity_id, user_id, idempotency_key, [activity_id+recorded_at]',
+      auditEvents: 'id, user_id, entity_type, entity_id, action, idempotency_key, [entity_id+recorded_at]',
+      notifications: 'id, user_id, category, priority, read_at, resolved_at, expires_at, dedupe_key, [user_id+resolved_at], [user_id+read_at], [user_id+dedupe_key]',
+      outbox:
+        '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
+    })
   }
 }
 

@@ -1,7 +1,7 @@
 import { IconArrowLeft, IconBell } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 
-export default function GlobalHeader({ title, showBack, onBack, onNotifications, showActivityPill, activeActivity, activeHref }) {
+export default function GlobalHeader({ title, showBack, onBack, onNotifications, notificationCount = 0, showActivityPill, activeActivity, activeHref }) {
   return (
     <header className="global-header">
       <div className="global-header-leading">
@@ -21,11 +21,12 @@ export default function GlobalHeader({ title, showBack, onBack, onNotifications,
         ) : null}
         <button
           type="button"
-          className="global-header-icon-button"
+          className="global-header-icon-button notification-bell-button"
           onClick={onNotifications}
-          aria-label="Notifications"
+          aria-label={notificationCount ? `Notifications, ${notificationCount} needs attention` : 'Notifications'}
         >
           <IconBell size={23} aria-hidden="true" />
+          {notificationCount ? <span className="notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span> : null}
         </button>
       </div>
     </header>

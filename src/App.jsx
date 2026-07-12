@@ -20,6 +20,7 @@ import BagLockerPage from './pages/BagLockerPage'
 import BagManagePage from './pages/BagManagePage'
 import DiscFormPage from './pages/DiscFormPage'
 import DiscDetailPage from './pages/DiscDetailPage'
+import NotificationsPage from './pages/NotificationsPage'
 import './App.css'
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
           persistent bottom tab bar (Practice / Bag / Profile today; Rounds
           and Caddie slot in here as sibling top-level routes later). */}
       <Route element={<AppShell />}>
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/practice">
           <Route index element={<PracticeMenuPage />} />
           <Route path="freeform" element={<FreeformLogPage />} />

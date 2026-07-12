@@ -4,6 +4,18 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A9 notification foundation (in progress)
+
+**What:** Added the durable notification migration/RPC contract, Dexie v4 mirror and local outbox adapter,
+deterministic activity/sync notification producers, and the shared-header bell badge with accessible sheet/deep-link UI.
+**Decisions:** The first surface is deliberately limited to actionable activity review and poisoned-sync attention.
+Unresolved dedupe keys update the existing row while preserving its read state, preventing badge noise.
+**Verified:** Migration applied to the backed-up project; RLS, table grants, and public/private RPC ACLs were
+checked live. 328 tests pass; lint retains only the four pre-existing warnings; production build passes.
+Authenticated cross-device/browser verification remains because the project lacks a valid test session.
+
+---
+
 ## 2026-07-12 — Phase A A8 history and recovery client
 
 **What:** Completed A8 with a Dexie v3 audit store and ordered recovery outbox, canonical activity-led

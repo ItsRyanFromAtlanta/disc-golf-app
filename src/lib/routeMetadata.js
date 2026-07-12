@@ -10,6 +10,16 @@ export const SHELL_TYPES = Object.freeze({
 
 const APP_ROUTES = [
   {
+    id: 'notifications',
+    match: /^\/notifications$/,
+    section: 'play',
+    shell: SHELL_TYPES.STANDARD,
+    title: 'Notifications',
+    showActivityPill: true,
+    preserveNestedState: false,
+    scrollKey: 'notifications',
+  },
+  {
     id: 'freeform-active',
     match: /^\/practice\/freeform$/,
     section: 'play',

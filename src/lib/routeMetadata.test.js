@@ -19,6 +19,14 @@ describe('route metadata contract', () => {
     expect(resolveRouteMetadata('/profile')).toMatchObject({ id: 'me-root', section: 'me', scrollKey: 'me-root' })
   })
 
+  it('keeps the global notification fallback inside the standard shell', () => {
+    expect(resolveRouteMetadata('/notifications')).toMatchObject({
+      id: 'notifications',
+      shell: SHELL_TYPES.STANDARD,
+      scrollKey: 'notifications',
+    })
+  })
+
   it('preserves only expected resumable or editing workflows', () => {
     expect(resolveRouteMetadata('/practice/regimens/new').preserveNestedState).toBe(true)
     expect(resolveRouteMetadata('/bag/manage').preserveNestedState).toBe(true)

@@ -442,6 +442,84 @@
   color: var(--color-negative);
 }
 
+.notification-bell-button {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: var(--border-width) solid var(--color-bg-primary);
+  border-radius: 999px;
+  background: var(--color-negative);
+  color: var(--color-text-inverse);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+}
+
+.notification-row-unread {
+  border-color: var(--color-secondary-accent);
+  color: var(--color-text-primary);
+  background: var(--color-secondary-accent-soft);
+}
+
+.notification-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notification-copy span {
+  font-size: 14px;
+}
+
+.notification-action {
+  margin-top: 0;
+}
+
+.notification-resolve {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  color: var(--color-secondary-accent);
+}
+
+.notifications-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
 /* Personal-best badge: sunburst orange only works here as a solid fill with
    dark text on top (~5.9:1) — as plain foreground text/icon color it fails
    contrast against every background token (see confidence-band-zone below
