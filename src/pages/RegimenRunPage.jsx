@@ -269,6 +269,7 @@ export default function RegimenRunPage() {
     setRegimenRunId(newRunId)
     setRunningTotal(0)
     setCompletedSets([])
+    setCelebrationEvents([]) // clear the previous session's banner before this one starts
     session.startSession({
       sessionType: 'regimen',
       parentIds: { regimenRunId: newRunId, regimenId },

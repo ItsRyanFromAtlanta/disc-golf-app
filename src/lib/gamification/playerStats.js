@@ -1,6 +1,9 @@
 import { distanceSamples } from '../history'
 import { practiceStreak } from '../insights/activity'
 import { regimenPBRunIds } from '../insights/pbs'
+import { isCleanSet } from '../regimenScoring'
+
+const PUTTER_ROLES = new Set(['primary_putter', 'backup_putter'])
 
 // Pure: fetched practice + inventory rows -> a PlayerStats snapshot (see
 // metrics.js for per-field docs). Kept in its own supabase-free module so it can
@@ -36,13 +39,15 @@ export function buildPlayerStats({ sessions, runs, discs }, now) {
     })),
   ]
 
-  // A flawless run: completed, actually threw something, and never missed.
+  // A flawless run: completed, and the run's total makes/attempts pass the
+  // same clean-set predicate regimenScoring.js already uses per-set — reused
+  // rather than reimplemented so the two can't silently drift apart.
   const noMissRegimenRuns = runs.filter((r) => {
     if (!r.completed) return false
     const sets = r.putting_regimen_run_sets ?? []
     const m = sets.reduce((sum, s) => sum + s.makes, 0)
     const a = sets.reduce((sum, s) => sum + s.attempts, 0)
-    return a > 0 && m === a
+    return isCleanSet(m, a)
   }).length
 
   const practiceDates = [
@@ -72,6 +77,10 @@ export function buildPlayerStats({ sessions, runs, discs }, now) {
       })),
     ).size,
     discsOwned: discs.length,
-    putterChainHitsMax: discs.reduce((max, d) => Math.max(max, d.total_chain_hits ?? 0), 0),
+    // "Iron Arm" is putter-specific (see badgeCatalog.js) — scope the max to
+    // discs actually in a putter role, not the account's whole locker.
+    putterChainHitsMax: discs
+      .filter((d) => PUTTER_ROLES.has(d.role))
+      .reduce((max, d) => Math.max(max, d.total_chain_hits ?? 0), 0),
   }
 }

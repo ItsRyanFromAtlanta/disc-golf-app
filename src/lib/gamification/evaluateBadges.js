@@ -22,10 +22,15 @@ import { badgeXpForTier } from './constants'
 //   xpEvents         [{ amount, source_type: 'badge', source_ref: badgeId }]  the
 //                    ledger rows for each new unlock (idempotency is enforced by
 //                    the service, which won't re-insert an existing source_ref).
+//   errors           [{ badgeId, code, error }]  badges whose criteria couldn't
+//                    be evaluated (e.g. an unrecognized metric — a DB/catalog
+//                    drift). Isolated per-badge so one malformed row can't halt
+//                    evaluation for every other badge; the caller logs these.
 export function evaluateBadges({ stats, badges, progressByBadgeId, now }) {
   const progressUpdates = []
   const newlyEarned = []
   const xpEvents = []
+  const errors = []
 
   for (const badge of badges) {
     const current = progressByBadgeId.get(badge.id) ?? { progress: 0, earned_at: null }
@@ -35,8 +40,19 @@ export function evaluateBadges({ stats, badges, progressByBadgeId, now }) {
     // no-op for earned badges, so the pass is safe to run as often as we like.
     if (current.earned_at) continue
 
+    let value
+    try {
+      value = metricValue(stats, badge.criteria)
+    } catch (error) {
+      // Isolated: a single bad criteria.metric (typo, renamed metric) must not
+      // abort the loop for every other badge — see the collision this caused
+      // before this fix (all evaluation silently stopped, forever, on one
+      // malformed row, since callers wrap this in a swallowed .catch).
+      errors.push({ badgeId: badge.id, code: badge.code, error })
+      continue
+    }
+
     const threshold = badge.criteria.threshold
-    const value = metricValue(stats, badge.criteria)
     const progress = threshold > 0 ? Math.min(value / threshold, 1) : 0
     const earned = value >= threshold
 
@@ -60,5 +76,5 @@ export function evaluateBadges({ stats, badges, progressByBadgeId, now }) {
     }
   }
 
-  return { progressUpdates, newlyEarned, xpEvents }
+  return { progressUpdates, newlyEarned, xpEvents, errors }
 }

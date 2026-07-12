@@ -258,6 +258,7 @@ export default function FreeformLogPage() {
     setBatchRibbonConfirming(false)
     setPhase('running')
     setCompletedDistances([])
+    setCelebrationEvents([]) // clear the previous session's banner before this one starts
     const newSessionId = crypto.randomUUID()
     setFreeformSessionId(newSessionId)
     session.startSession({

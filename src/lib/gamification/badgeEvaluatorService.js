@@ -7,13 +7,18 @@ import { XP_PER_MAKE, XP_PER_CLEAN_STAGE } from './constants'
 // BadgeEvaluatorService — the only impure member of lib/gamification. It fetches
 // a user's full practice + inventory picture, hands a pure snapshot to
 // evaluateBadges, and persists the diffs (badge_progress, xp_events, profile
-// cache). Designed to be run post-scoring / post-inventory / post-ingestion and
-// to be safely RE-runnable: every write is idempotent, so a retry after a
-// partial failure (or a stale offline finish syncing late) converges rather than
-// double-counts.
+// cache) through the append_xp_event/upsert_badge_progress/set_profile_level
+// RPCs (layer5_gamification_hardening.sql) — the client has no direct write
+// access to these tables/columns, so amount bounds, source_type, and the
+// (user_id, source_type, source_ref) uniqueness are enforced by the DB, not
+// re-implemented app-side. Designed to be run post-scoring / post-inventory /
+// post-ingestion and to be safely RE-runnable: append_xp_event's ON CONFLICT DO
+// NOTHING makes a retry after a partial failure (or a stale offline finish
+// syncing late) converge rather than double-count.
 
 // Mirrors fetchHistory's nested shape (so history.js's distanceSamples works
-// unchanged) but adds the weather columns badges need on both session parents.
+// unchanged) but adds the weather columns badges need on both session parents,
+// and discs.role (so putter-scoped metrics can filter to putter discs).
 export async function fetchGamificationData(userId) {
   const [sessionsResult, runsResult, discsResult] = await Promise.all([
     supabase
@@ -28,7 +33,7 @@ export async function fetchGamificationData(userId) {
         'id, regimen_id, started_at, completed, total_score, weather_condition, wind_mph, putting_regimen_run_sets(makes, attempts, longest_streak, clean_set, pressure_putt_made, putting_regimen_sets(distance_feet_min, distance_feet_max))',
       )
       .eq('user_id', userId),
-    supabase.from('discs').select('total_chain_hits').eq('user_id', userId),
+    supabase.from('discs').select('role, total_chain_hits').eq('user_id', userId),
   ])
   if (sessionsResult.error) throw sessionsResult.error
   if (runsResult.error) throw runsResult.error
@@ -36,47 +41,32 @@ export async function fetchGamificationData(userId) {
   return { sessions: sessionsResult.data, runs: runsResult.data, discs: discsResult.data }
 }
 
-// Append xp_events rows that don't already exist for their (source_type,
-// source_ref) — the idempotency guard that makes the whole service retry-safe.
-// Rows without a source_ref (shouldn't happen here) are always inserted.
-async function appendXpEventsIdempotent(userId, events) {
-  if (events.length === 0) return
-  const refs = events.map((e) => e.source_ref).filter(Boolean)
-  const existing = new Set()
-  if (refs.length > 0) {
-    const { data, error } = await supabase
-      .from('xp_events')
-      .select('source_type, source_ref')
-      .eq('user_id', userId)
-      .in('source_ref', refs)
-    if (error) throw error
-    for (const row of data) existing.add(`${row.source_type}:${row.source_ref}`)
-  }
-  const toInsert = events
-    .filter((e) => !existing.has(`${e.source_type}:${e.source_ref}`))
-    .map((e) => ({ user_id: userId, amount: e.amount, source_type: e.source_type, source_ref: e.source_ref }))
-  if (toInsert.length === 0) return
-  const { error } = await supabase.from('xp_events').insert(toInsert)
+// Append one xp_events row via the append_xp_event RPC (the only insert path —
+// see layer5_gamification_hardening.sql). Returns the fresh lifetime xp total;
+// the RPC itself resolves idempotency via its unique constraint, so a retried
+// call for the same source_ref is a no-op that still returns the current total.
+async function appendXpEvent(amount, sourceType, sourceRef) {
+  const { data, error } = await supabase.rpc('append_xp_event', {
+    p_amount: amount,
+    p_source_type: sourceType,
+    p_source_ref: sourceRef,
+  })
   if (error) throw error
+  return data
 }
 
-// Recompute profiles.xp/level from the ledger (source of truth) rather than
-// incrementing a possibly-stale cache. Returns the fresh total.
-async function recomputeProfileXp(userId) {
-  const { data, error } = await supabase.from('xp_events').select('amount').eq('user_id', userId)
+async function currentProfileXp(userId) {
+  const { data, error } = await supabase.from('profiles').select('xp').eq('id', userId).maybeSingle()
   if (error) throw error
-  const total = data.reduce((sum, e) => sum + e.amount, 0)
-  const level = levelForXp(total)
-  const { error: updateError } = await supabase.from('profiles').update({ xp: total, level }).eq('id', userId)
-  if (updateError) throw updateError
-  return total
+  return data?.xp ?? 0
 }
 
 // Run the badge pass against the user's current data and persist everything
-// (progress, badge XP, and the profile XP/level cache). Returns
-// { newlyEarned, xpAfter } so the caller can drive the celebration overlay and
-// detect level-ups. Self-consistent for standalone callers (post-inventory /
-// post-ingestion) as well as awardPostSession below.
+// (progress, badge XP, and the profile XP/level cache) through the hardened
+// RPCs. Returns { newlyEarned, xpAfter } so the caller can drive the
+// celebration overlay and detect level-ups. Self-consistent for standalone
+// callers (post-inventory / post-ingestion) as well as awardPostSession below,
+// and for the Trophy Room's own on-load reconciliation.
 export async function evaluateAndPersistBadges(userId, now = new Date()) {
   const [data, badgesResult, progressResult] = await Promise.all([
     fetchGamificationData(userId),
@@ -91,33 +81,45 @@ export async function evaluateAndPersistBadges(userId, now = new Date()) {
     progressResult.data.map((r) => [r.badge_id, { progress: Number(r.progress), earned_at: r.earned_at }]),
   )
 
-  const { progressUpdates, newlyEarned, xpEvents } = evaluateBadges({
+  const { progressUpdates, newlyEarned, xpEvents, errors } = evaluateBadges({
     stats,
     badges: badgesResult.data,
     progressByBadgeId,
     now: now.toISOString(),
   })
 
-  if (progressUpdates.length > 0) {
-    const rows = progressUpdates.map((u) => ({
-      user_id: userId,
-      badge_id: u.badge_id,
-      progress: u.progress,
-      earned_at: u.earned_at,
-      updated_at: now.toISOString(),
-    }))
-    const { error } = await supabase.from('badge_progress').upsert(rows, { onConflict: 'user_id,badge_id' })
-    if (error) throw error
+  // Surfaced, not swallowed: a malformed badge is isolated (evaluateBadges
+  // skips just that one row) but still needs to be visible somewhere, since
+  // both call sites wrap this whole function in a non-critical .catch(()=>{}).
+  for (const e of errors) {
+    console.error(`Badge evaluation failed for "${e.code}" (${e.badgeId}):`, e.error)
   }
 
-  await appendXpEventsIdempotent(userId, xpEvents)
+  await Promise.all(
+    progressUpdates.map(async (u) => {
+      const { error } = await supabase.rpc('upsert_badge_progress', {
+        p_badge_id: u.badge_id,
+        p_progress: u.progress,
+        p_earned: u.earned_at != null,
+      })
+      if (error) throw error
+    }),
+  )
 
-  // Recompute the profile XP/level cache here (not only in awardPostSession) so
-  // this function is self-consistent for EVERY caller — including the standalone
-  // post-inventory / post-ingestion evaluations CLAUDE.md anticipates, which
-  // award badge XP without a session-XP step. Returns the fresh total so callers
-  // can detect level-ups without a second query.
-  const xpAfter = await recomputeProfileXp(userId)
+  // Badge XP events must append sequentially (each RPC call reads-then-writes
+  // profiles.xp), but there are at most a couple per pass, so this isn't the
+  // full-table scan the old recompute-from-ledger approach was.
+  let xpAfter = null
+  for (const event of xpEvents) {
+    xpAfter = await appendXpEvent(event.amount, event.source_type, event.source_ref)
+  }
+  if (xpAfter == null) {
+    xpAfter = await currentProfileXp(userId)
+  }
+
+  const { error: levelError } = await supabase.rpc('set_profile_level', { p_level: levelForXp(xpAfter) })
+  if (levelError) throw levelError
+
   return { newlyEarned, xpAfter }
 }
 
@@ -131,15 +133,11 @@ export async function evaluateAndPersistBadges(userId, now = new Date()) {
 //   makes      : total makes this session   (-> XP_PER_MAKE each)
 //   cleanStages: clean stages this session   (-> XP_PER_CLEAN_STAGE each)
 export async function awardPostSession({ userId, sourceType, sourceRef, makes, cleanStages, now = new Date() }) {
-  const beforeResult = await supabase.from('xp_events').select('amount').eq('user_id', userId)
-  if (beforeResult.error) throw beforeResult.error
-  const xpBefore = beforeResult.data.reduce((sum, e) => sum + e.amount, 0)
+  const xpBefore = await currentProfileXp(userId)
 
   const sessionXp = makes * XP_PER_MAKE + cleanStages * XP_PER_CLEAN_STAGE
   if (sessionXp > 0) {
-    await appendXpEventsIdempotent(userId, [
-      { amount: sessionXp, source_type: sourceType, source_ref: sourceRef },
-    ])
+    await appendXpEvent(sessionXp, sourceType, sourceRef)
   }
 
   // evaluateAndPersistBadges recomputes and returns the fresh XP total (it owns

@@ -4,6 +4,53 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-11 — Screen 12 code review + fix pass (Trophy Room hardening)
+
+**What:** `/code-review high` on the full Screen 12 diff (8-angle parallel finder pass, 10 one-vote
+verifiers) found 9 confirmed issues; fixed all 9, re-verified live against the test account.
+**Key fixes:**
+- **Security (most severe):** `xp_events`/`badge_progress` had ownership-only RLS with no value
+  validation, and `profiles`' row-level UPDATE policy meant `xp`/`level` were ALSO directly writable —
+  any authenticated client could forge arbitrary XP/levels/badge unlocks from the browser console.
+  Fixed via `layer5_gamification_hardening.sql`: bound CHECK constraints, a real unique constraint on
+  `xp_events (user_id, source_type, source_ref)`, and three new SECURITY DEFINER RPCs
+  (`append_xp_event`, `set_profile_level`, `upsert_badge_progress` — mirrors the existing `merge_discs`
+  pattern) with direct table/column writes revoked. **Gotcha:** a plain column-level `REVOKE UPDATE
+  (xp, level) ... FROM authenticated` was a no-op — Supabase's default table-wide grant supersedes it;
+  the real fix is revoking the table-wide UPDATE grant and re-granting only the safe columns. Verified
+  with `has_column_privilege` and a live forged-write attempt from the browser (all three vectors now
+  correctly rejected).
+- **Idempotency race → now atomic:** `append_xp_event`'s `ON CONFLICT DO NOTHING` on the new unique
+  constraint replaces the old client-side check-then-insert, closing the double-XP race for real
+  (confirmed by 4 independent review angles).
+- **One bad badge metric no longer kills all evaluation:** `evaluateBadges` now isolates each badge in
+  its own try/catch; a criteria/metric mismatch is skipped and logged, not fatal to the whole pass.
+- **Badge catalog/seed/DB drift closed:** new `scripts/generate-badge-seed.mjs` derives
+  `layer5_gamification_seed.sql` mechanically from `badgeCatalog.js`, so the SQL can no longer silently
+  diverge from the JS catalog via hand-transcription.
+- **Trophy Room now actually reconciles on load** (it previously only read existing data, contradicting
+  the save-path comments that promised reconciliation) — calls `evaluateAndPersistBadges` before
+  rendering, best-effort.
+- **Stale celebration banner fixed:** `celebrationEvents` now clears in `handleStart`, so replaying
+  immediately after an unlock can't leak the old banner onto the new session's summary.
+- **"Iron Arm" now actually scoped to putters:** `putterChainHitsMax` filters to
+  `primary_putter`/`backup_putter` discs before taking the max (previously any disc role qualified).
+- **Efficiency:** `awardPostSession` no longer double-scans the full `xp_events` table (once for
+  "before," once inside the old recompute) — `append_xp_event` returns the atomically-updated total
+  directly, so profile XP tracking is now O(1) reads instead of O(lifetime event count).
+- **Reuse:** `noMissRegimenRuns` now calls the existing `isCleanSet` from `regimenScoring.js` instead of
+  a reimplemented copy of the same predicate.
+**Live-verified against the real Supabase project (test account, `layer3test@example.com`):** completed
+a second Foundation run (28/30, one imperfect set) — XP/badge_progress updated via the new RPCs with
+exact correct values (1550→1930 XP, badge progress recalculated correctly, no incorrect Flawless
+re-trigger); Trophy Room reconciliation ran silently as a no-op when nothing needed catching up; direct
+forged writes to `xp_events`/`profiles`/`badge_progress` all correctly rejected; legitimate profile
+field edits (division) still work post-lockdown.
+**Not fixed (deliberately out of scope):** full server-side re-implementation of badge/scoring criteria
+in SQL — would require duplicating the JS metric registry in Postgres, disproportionate for a
+solo/small-group app with no competitive leaderboard yet. The bounds/constraints/RPC lockdown closes
+the "instant max level" attack without that scope expansion.
+
 ## 2026-07-08 — Session Summary (SHIPPED) — Layer 4, Screen 9 (Layer 4 complete)
 
 **What:** Screen 9 per `SCREEN_SPECS.md` — one `SessionReport.jsx` component (hero scoreboard, putter

@@ -247,7 +247,10 @@ describe('buildPlayerStats', () => {
           ],
         },
       ],
-      discs: [{ total_chain_hits: 1200 }, { total_chain_hits: 300 }],
+      discs: [
+        { role: 'primary_putter', total_chain_hits: 1200 },
+        { role: 'standard', total_chain_hits: 300 },
+      ],
     }
     const stats = buildPlayerStats(data, now)
     expect(stats.totalMakes).toBe(13) // 6+2+5
@@ -286,6 +289,19 @@ describe('buildPlayerStats', () => {
     const stats = buildPlayerStats(data, now)
     expect(stats.noMissRegimenRuns).toBe(0)
     expect(stats.regimenRunsCompleted).toBe(0)
+  })
+
+  it('putterChainHitsMax ignores non-putter discs even if they have more chain hits', () => {
+    const data = {
+      sessions: [],
+      runs: [],
+      discs: [
+        { role: 'standard', total_chain_hits: 5000 }, // a driver, not a putter — must not win
+        { role: 'primary_putter', total_chain_hits: 200 },
+        { role: null, total_chain_hits: 9999 }, // no role assigned yet — also excluded
+      ],
+    }
+    expect(buildPlayerStats(data, now).putterChainHitsMax).toBe(200)
   })
 })
 

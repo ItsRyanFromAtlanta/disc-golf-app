@@ -8,6 +8,7 @@ import {
   filterCounts,
   applyFilter,
 } from '../lib/gamification/trophyRoom'
+import { evaluateAndPersistBadges } from '../lib/gamification/badgeEvaluatorService'
 import XpLevelBar from '../components/trophyRoom/XpLevelBar'
 import XpLedgerModal from '../components/trophyRoom/XpLedgerModal'
 import ActivePursuits from '../components/trophyRoom/ActivePursuits'
@@ -27,7 +28,13 @@ export default function TrophyRoomPage() {
   const [inspecting, setInspecting] = useState(null)
 
   useEffect(() => {
-    fetchTrophyRoomData(user.id)
+    // Reconcile first: catches up any award that failed or hasn't run yet (an
+    // offline finish, a dropped network call) before rendering, so this page
+    // is the actual reconciliation point the save-path comments promise it is
+    // — not just a plain read of whatever's already persisted.
+    evaluateAndPersistBadges(user.id)
+      .catch(() => {}) // best-effort — fall through to display existing data either way
+      .then(() => fetchTrophyRoomData(user.id))
       .then(setData)
       .catch((err) => setError(err.message))
   }, [user.id])
