@@ -13,6 +13,9 @@ Unresolved dedupe keys update the existing row while preserving its read state, 
 **Verified:** Migration applied to the backed-up project; RLS, table grants, and public/private RPC ACLs were
 checked live. 328 tests pass; lint retains only the four pre-existing warnings; production build passes.
 Authenticated cross-device/browser verification remains because the project lacks a valid test session.
+**Browser:** Local Vite verification confirms the landing page renders without a Vite error overlay and
+unauthenticated `/notifications` redirects to login. The authenticated list and cross-device cases remain
+blocked on a valid test session.
 
 ---
 
