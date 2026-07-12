@@ -9,7 +9,8 @@ Last updated: 2026-07-12
   applied migration, Dexie v4 mirror, durable local outbox adapter, deterministic activity/sync producers,
   and bell sheet/deep-link UI. Browser verification confirms the non-blank landing shell and protected
   `/notifications` redirect to login without an error overlay. The signed-in PLAY shell, practice session
-  completion, notification bell, and notification sheet have now been exercised successfully. Live rollback
+  completion, notification bell, notification sheet, direct `/notifications` route, and reload persistence
+  have now been exercised successfully. Live rollback
   checks also confirm anon RPC denial and authenticated-without-JWT rejection with zero residue. True
   cross-device identity verification remains deferred because this task has one signed-in browser session.
   A8 remains complete: the live-verified recovery RPCs and versioned metric registry are
@@ -29,7 +30,8 @@ Last updated: 2026-07-12
   full suite now passes 333 tests. Browser verification now runs with
   `agent-browser`: the landing page and both A8 history URLs are non-blank and error-overlay-free, and
   unauthenticated history navigation correctly redirects to login. The signed-in browser smoke also covers
-  the PLAY shell, freeform completion, and notification sheet. Cross-device authenticated history/content
+  the PLAY shell, freeform completion, notification sheet, direct `/notifications` route, and reload/session
+  persistence. Cross-device authenticated history/content
   interaction still needs a second independent session; do not treat one browser session as that proof.
 - **Context recommendation:** continue A10 with `AGENTS.md`, this file, `PHASE_A_ARCHITECTURE.md`, and
   the release checklist. The next gate is the remaining independent-session/release review, not more UI work.

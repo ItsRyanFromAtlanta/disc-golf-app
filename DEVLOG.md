@@ -14,8 +14,9 @@ order-sensitive Dexie assertion to test the contract rather than iteration order
 foreign-key advisor finding is cleared.
 **Verified:** 333 tests pass, build passes, browser landing/protected-route smoke passes, and lint retains
 only the four pre-existing warnings. A signed-in browser smoke also completes a freeform session and opens
-the notification sheet in its expected empty state. Independent cross-device coverage remains deferred because
-this task has one signed-in browser session.
+the notification sheet in its expected empty state; direct `/notifications` navigation and reload/session
+persistence also pass. Independent cross-device coverage remains deferred because this task has one signed-in
+browser session.
 
 ---
 
