@@ -8,8 +8,9 @@ Last updated: 2026-07-12
 - **Current checkpoint:** A9 implementation in progress. The notification contract now has an append-only
   applied migration, Dexie v4 mirror, durable local outbox adapter, deterministic activity/sync producers,
   and bell sheet/deep-link UI. Browser verification confirms the non-blank landing shell and protected
-  `/notifications` redirect to login without an error overlay. Authenticated list/cross-device verification
-  remains because the local project still has no valid test session.
+  `/notifications` redirect to login without an error overlay. Live rollback checks also confirm anon RPC
+  denial and authenticated-without-JWT rejection with zero residue. Authenticated list/cross-device
+  verification remains because the local project still has no valid test session.
   A8 remains complete: the live-verified recovery RPCs and versioned metric registry are
   connected to a Dexie v3 audited recovery outbox, canonical activity history, sync/incomplete badges,
   Recently Deleted restore, hidden-row metric exclusion, and audited detail correction. Typed sporting

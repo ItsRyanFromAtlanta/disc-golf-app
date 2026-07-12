@@ -16,6 +16,8 @@ Authenticated cross-device/browser verification remains because the project lack
 **Browser:** Local Vite verification confirms the landing page renders without a Vite error overlay and
 unauthenticated `/notifications` redirects to login. The authenticated list and cross-device cases remain
 blocked on a valid test session.
+**Negative DB verification:** Live rollback checks confirm `anon` cannot execute the notification RPC and
+the `authenticated` role without a JWT is rejected as unauthenticated, both with zero data residue.
 
 ---
 
