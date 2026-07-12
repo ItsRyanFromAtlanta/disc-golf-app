@@ -61,9 +61,9 @@ reviewable checkpoint, not permission to perform later sessions early.
    hide/restore/correction, incomplete and sync states, Recently Deleted, and metric exclusion/recovery.
 9. **A9 — notifications** (`GPT-5.6 Terra`, medium, IN PROGRESS 2026-07-12): actionable notification persistence, bell/badge/
    overlay/dedup/deep links; activity-review and sync categories first; deterministic weekly-report hook.
-10. **A10 — offline equivalence and release candidate** (`GPT-5.6`, high): crash/reload/reconnect and
-    concurrent-device tests; remove only proven duplicate ownership; full unit/lint/build/RLS/browser/
-    accessibility/device gates; final high-risk review and release documentation.
+10. **A10 — offline equivalence and release candidate** (`GPT-5.6 Sol`, high, IN PROGRESS 2026-07-12):
+    crash/reload/reconnect and concurrent-device tests; remove only proven duplicate ownership; full
+    unit/lint/build/RLS/browser/accessibility/device gates; final high-risk review and release documentation.
 
 Mandatory reviews: route contract before A2; transition table before A4; migration before and after
 A6; the first practice mode before integrating the second; audit/statistics before closing A8; full

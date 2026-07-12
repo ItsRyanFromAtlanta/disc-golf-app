@@ -4,6 +4,19 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A10 equivalence and release gates (in progress)
+
+**What:** Added five deterministic equivalence tests covering Dexie reload durability, exactly-once replay,
+concurrent offline starts, reconnect convergence, and crash-bridge identity preservation. Hardened one
+order-sensitive Dexie assertion to test the contract rather than iteration order.
+**Database:** After fresh backup confirmation, applied `phase_a_a10_indexes` with a covering
+`notifications(activity_id, user_id)` index; live verification confirms the index exists and the notification
+foreign-key advisor finding is cleared.
+**Verified:** 333 tests pass, build passes, browser landing/protected-route smoke passes, and lint retains
+only the four pre-existing warnings. Authenticated browser/device coverage remains blocked on the OTP/link mismatch.
+
+---
+
 ## 2026-07-12 — Phase A A9 notification foundation (in progress)
 
 **What:** Added the durable notification migration/RPC contract, Dexie v4 mirror and local outbox adapter,

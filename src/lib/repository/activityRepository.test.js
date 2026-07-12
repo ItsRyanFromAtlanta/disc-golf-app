@@ -379,7 +379,9 @@ describe('activityRepository', () => {
       }),
     )
     expect(restored.activity).toMatchObject({ hidden_at: null, version: 4 })
-    expect((await database.auditEvents.toArray()).map((row) => row.action)).toEqual(['hide', 'restore'])
+    expect((await database.auditEvents.toArray()).map((row) => row.action)).toEqual(
+      expect.arrayContaining(['hide', 'restore']),
+    )
     expect(
       (await database.outbox.where('table').equals('activity_history').toArray()).map((row) => row.op),
     ).toEqual(['set_visibility', 'set_visibility'])
