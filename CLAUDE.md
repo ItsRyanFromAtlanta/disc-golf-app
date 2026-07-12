@@ -131,21 +131,20 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 - `DEVLOG.md` — one entry per meaningful unit of work: what, why, key decisions, gotchas. Newest first.
 - `FEATURE_BACKLOG.md` — all ideated features with status (SHIPPED / IN PROGRESS / NEXT UP / BACKLOG / LATER / REJECTED). Move items as status changes; never delete rejected items — the reasoning is part of the record.
 - Schema files are append-only history; never edit a previously-run schema file, add a new one. New concepts from the blueprint are absorbed as additive columns/tables on the existing schema (e.g. `discs.role`, `discs.wear_score`), never as a wholesale schema replacement.
-- Commit at every working checkpoint within a session; push to GitHub at session end (Vercel auto-deploys from main).
+- Commit at every working checkpoint; push green major stages to a feature branch and merge through the
+  reviewed production workflow because `main` auto-deploys.
 - **Before any migration or FK-restructuring session: take a manual database backup** (Supabase dashboard backup or pg_dump). Codex must confirm the backup exists before running migration SQL.
 - Every task states its recommended OpenAI model/reasoning level up front; see `CODEX_WORKFLOW.md`.
 - Plan-first rule: iterate and agree on designs in conversation BEFORE generating files, schemas, or prompts. Always prompt for approval before file generation.
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
 
 ## Current build focus
-Executing the blueprint integration plan (see `SCREEN_SPECS.md` + `DEVELOPMENT_PLAN.md` Layers 0–5):
-Layer 0 docs alignment (in progress) → Layer 1 foundation (schema absorption, Dexie/TanStack skeleton,
-4-tab bar) → Layer 2 front-door (Splash/Auth/Onboarding) → Layer 3 hubs (Dashboard/Bag/Putter lineup) →
-Layer 4 execution engine (routine builder, scoring canvas, session summary) → Layer 5 analytics +
-progression (analytics tower, career hub, trophy room, UDisc ingestion). Social, hardware, and utility
-screens (14–21 minus what's absorbed into Layer 5) are deliberately parked — see `SCREEN_SPECS.md`.
-Session history v1 is SHIPPED. Native sensor-fusion features remain parked on the Native iOS Roadmap in
-FEATURE_BACKLOG.md.
+Execute Phase A from `PHASE_A_ARCHITECTURE.md` and `DEVELOPMENT_PLAN.md` A1–A10: shell/route contract →
+shared shell → local lifecycle → Dexie/InstantLaunch bridge → reviewed database lifecycle → practice →
+history/recovery → notifications → offline release gate. Navigation is PLAY / DISCS / ME; COURSES is
+added with its directory and statistics remain contextual. Earlier blueprint Layers 1–4 are shipped
+history, not the current execution sequence. Social, hardware, native sensors, and other parked work
+remain governed by `PRODUCT_ROADMAP.md` and `FEATURE_BACKLOG.md`.
 
 ## Conventions
 - All user-owned tables use Row Level Security scoped to `auth.uid()`

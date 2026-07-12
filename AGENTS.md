@@ -58,14 +58,15 @@ The app uses nested feature trees. Putting practice is the first tree:
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
 Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
 
-**App-level nav is a 4-tab bottom bar: PLAY / BAGS / STATS / PRO** (adopted from
-`MASTER_PROJECT_BLUEPRINT.md`, 2026-07-05). `/practice` becomes the PLAY tab's dashboard hub;
-`/practice/stats` (confidence map + analytics) moves under STATS; profile + settings live under PRO.
-Bags keeps its own tree unchanged. Build order for this migration: see `DEVELOPMENT_PLAN.md` Layer 1.
+**App-level nav is PLAY / DISCS / ME** (approved 2026-07-11 and detailed in
+`PHASE_A_ARCHITECTURE.md`). Add COURSES only when the directory ships. `/practice` remains compatible
+while PLAY routes are introduced; statistics live with their subject and ME provides the career-wide
+summary. The earlier PLAY/BAGS/STATS/PRO blueprint navigation is historical, not current.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
-- Header includes a stats shortcut icon (top-right) reserved for a future stats view.
+- Header uses the shared activity pill and notification bell; contextual analytics links live with
+  their subject rather than in a standalone Stats destination.
 - Below the cards: a "Recent activity" strip showing the last 2-3 entries pulled from `putt_sessions` and `putting_regimen_runs`.
 - Mobile-first: single-column cards, thumb-friendly tap targets.
 

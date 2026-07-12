@@ -1,6 +1,6 @@
 # Development Plan
 
-Last updated: 2026-07-11
+Last updated: 2026-07-12
 Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
 `PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
@@ -20,6 +20,43 @@ ships. Do not build a standalone Stats tab.
 Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GPT-5.6 high** for
 architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
 Sonnet/Opus labels below are preserved only as historical records of completed work.
+
+## Phase A execution sessions — approved 2026-07-12
+
+Authoritative behavior: `PHASE_A_ARCHITECTURE.md`. Implement in this order; each numbered session is a
+reviewable checkpoint, not permission to perform later sessions early.
+
+1. **A1 — shell audit and route contract** (`GPT-5.3-Codex`, medium): map current routes and shell/
+   scroll/recovery behavior; define route metadata, compatibility aliases, and tests. No database work.
+2. **A2 — shared shell implementation** (`GPT-5.3-Codex`, medium): GlobalHeader, ScreenScrollRegion,
+   SheetHost, ToastHost, revised PLAY/DISCS/ME TabBar, ActiveActivityShell, safe areas, scroll/root,
+   320px/keyboard/focus/large-text verification. Preserve existing pages via wrappers.
+3. **A3 — pure local lifecycle engine** (`GPT-5.6` high design; `GPT-5.3-Codex` medium build): types,
+   transition table/reducer, policy constants, exhaustive valid/invalid/idempotency tests. No migration.
+4. **A4 — Dexie repository and InstantLaunch bridge** (`GPT-5.6`, high): transactional local activity,
+   state event, and dependent outbox storage; single-active invariant; crash/retry tests; keep proven
+   capture. Then update handoff/docs, commit, push, and clear context.
+5. **A5 — live schema audit and migration design** (`GPT-5.6`, high): confirm manual backup; audit live
+   schema/RLS/indexes/test data; draft append-only migration and recovery notes; review before apply.
+6. **A6 — server lifecycle and RLS** (`GPT-5.6`, high): activities/events/audit, additive FKs, partial
+   unique constraint, idempotent serialized RPCs, ownership/forgery/concurrency/retry tests, advisors.
+   Update handoff/docs, commit, push, and clear context.
+7. **A7 — practice integration** (`GPT-5.3-Codex`, medium): freeform first, then regimen after its full
+   pause/resume/finalize/offline flow passes; preserve gesture-event versus batch-summary capture rules;
+   add active pill and PLAY resume card.
+8. **A8 — history and recovery** (`GPT-5.6` high audit/metric review; medium UI): unified activities,
+   incomplete/hidden/sync states, correction provenance, metric exclusion/recalculation, restore. Then
+   update handoff/docs, commit, push, and clear context.
+9. **A9 — notifications** (`GPT-5.3-Codex`, medium): actionable notification persistence, bell/badge/
+   overlay/dedup/deep links; activity-review and sync categories first; deterministic weekly-report hook.
+10. **A10 — offline equivalence and release candidate** (`GPT-5.6`, high): crash/reload/reconnect and
+    concurrent-device tests; remove only proven duplicate ownership; full unit/lint/build/RLS/browser/
+    accessibility/device gates; final high-risk review and release documentation.
+
+Mandatory reviews: route contract before A2; transition table before A4; migration before and after
+A6; the first practice mode before integrating the second; audit/statistics before closing A8; full
+offline/security review before release. Push green branches after major checkpoints; merge only through
+the reviewed production workflow.
 
 ## Historical active plan: Blueprint integration (Layers 0–5)
 

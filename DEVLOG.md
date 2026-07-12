@@ -4,6 +4,18 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A shell and lifecycle walkthrough approved
+
+**What:** Completed and consolidated the pre-code walkthrough for PLAY/DISCS/ME shell behavior,
+active-activity pill, notification overlay, tab scroll/root rules, activity lifecycle, interruption and
+offline behavior, scrolling/sheets/safe areas, accessibility, repository and transaction boundaries,
+conflict policy, migration ordering, tests, reviews, and A1–A10 implementation sessions.
+**Decisions:** First meaningful fact activates a draft; navigation pauses; backgrounding has a tunable
+60-second grace; new practice atomically closes the previous practice with constrained Undo; rounds
+require confirmation; old incomplete activities are correctable but not reactivated; local finalization
+never waits for the network; UI never writes lifecycle state directly.
+**Scope:** Documentation only. No application code or database migration changed.
+
 ## 2026-07-11 — Production documentation and development-operations baseline
 
 **What:** Rebuilt the repository entry-point and added production-grade contribution, security,
