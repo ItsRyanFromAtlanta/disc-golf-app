@@ -1,11 +1,12 @@
 # Phase A activity migration — A5 review packet
 
-Status: **drafted, unapplied** (2026-07-12)
+Status: **applied and verified** (2026-07-12)
 
 Migrations:
 
 - `supabase/migrations/20260712193922_phase_a_activity_lifecycle.sql` (A5 envelope/backfill)
-- `supabase/migrations/20260712195448_phase_a_activity_lifecycle_rpc.sql` (A6 RPC draft)
+- `supabase/migrations/20260712195448_phase_a_activity_lifecycle_rpc.sql` (A6 RPCs)
+- `supabase/migrations/20260712201203_phase_a_activity_lifecycle_fk_indexes.sql` (A6 advisor remediation)
 
 This packet records the live audit, the A5 migration boundary, and the recovery
 steps A6 must review before applying SQL. The connected Supabase project is
@@ -71,6 +72,10 @@ INVOKER` wrappers around non-exposed, hardened `SECURITY DEFINER` implementation
    lifecycle writes.
 5. Add the A6 RPCs only after the table grants and RLS policies are verified.
 
+These gates were completed on 2026-07-12 after fresh backup confirmation. The
+remote migration history now contains `phase_a_activity_lifecycle`,
+`phase_a_activity_lifecycle_rpc`, and `phase_a_activity_lifecycle_fk_indexes`.
+
 ## A6 negative and concurrency test gate
 
 Run these with a disposable authenticated test session after the migrations are
@@ -117,8 +122,23 @@ order by table_name, grantee, privilege_type;
 
 The active/paused query and orphan-event query must return no rows. Authenticated
 clients should be able to select only their own rows; direct insert/update/delete
-must fail until the reviewed A6 RPCs are installed. Service-role verification is
-performed separately and must not be exposed to the browser.
+must fail because lifecycle writes are routed through the reviewed A6 RPCs.
+Service-role verification is performed separately and must not be exposed to the browser.
+
+## Applied A6 results
+
+- Backfill: 8 completed + 1 draft freeform; 7 completed + 1 incomplete + 7 draft regimen;
+  0 rounds; 0 lifecycle events and 0 audit events fabricated.
+- Integrity: 0 orphan lifecycle events, 0 duplicate current users, and 0 unlinked specialized rows.
+- RLS/grants: all three tables have RLS; authenticated has SELECT only; anonymous access and direct
+  authenticated DML were denied; cross-user reads returned zero rows.
+- RPC behavior: create/start/retry returned `applied/applied/idempotent`; stale state, cross-user ID,
+  idempotency reuse, and `admin_repair` rejected; round replacement required confirmation; confirmed
+  replacement produced an incomplete old round and one active replacement.
+- Concurrency: two simultaneous starts produced one applied transition and one `state_conflict`; the
+  partial unique index remains the database safeguard.
+- Advisors: no new public `SECURITY DEFINER` warnings and no remaining unindexed FK warnings for the
+  A5 owner links. Existing unrelated security/performance baseline findings remain documented debt.
 
 ## Recovery posture
 

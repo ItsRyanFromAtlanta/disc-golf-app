@@ -4,6 +4,18 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A6 server lifecycle applied and verified
+
+**What:** Applied the A5 activity envelope/backfill, A6 lifecycle RPCs, and the FK-index advisor
+follow-up to Supabase after fresh backup confirmation. Added public invoker wrappers over private
+security-definer implementations, authenticated-only reads, and serialized lifecycle writes.
+**Verified:** Backfill counts match the audit; no orphan or duplicate-current rows remain. Live tests
+covered RLS isolation, anonymous/direct-DML denial, stale/cross-user/admin rejection, idempotent retry,
+round confirmation, replacement, supplied event IDs, and concurrent starts. Advisors report no new
+public security-definer or A5 owner-FK findings; existing unrelated warnings remain baseline debt.
+**Boundary:** A6 is complete. A7 may wire the local repository into freeform practice, then regimen;
+hide/restore/correction remain A8 scope.
+
 ## 2026-07-12 — Phase A A6 server lifecycle RPC draft
 
 **What:** Rechecked the live Supabase project and added the CLI-generated
