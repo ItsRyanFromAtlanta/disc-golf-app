@@ -29,9 +29,11 @@ reviewable checkpoint, not permission to perform later sessions early.
 1. **A1 — shell audit and route contract** (`GPT-5.3-Codex`, medium, COMPLETE 2026-07-12): mapped
    routes, shell/scroll/recovery behavior; added tested `src/lib/routeMetadata.js` compatibility
    contract and retained the `/regimens` alias. No database work or rendered-navigation change.
-2. **A2 — shared shell implementation** (`GPT-5.3-Codex`, medium): GlobalHeader, ScreenScrollRegion,
-   SheetHost, ToastHost, revised PLAY/DISCS/ME TabBar, ActiveActivityShell, safe areas, scroll/root,
-   320px/keyboard/focus/large-text verification. Preserve existing pages via wrappers.
+2. **A2 — shared shell implementation** (`GPT-5.3-Codex`, medium, COMPLETE 2026-07-12): added
+   GlobalHeader, ScreenScrollRegion, SheetHost, ToastHost, PLAY/DISCS/ME TabBar, ActiveActivityShell,
+   safe-area layout, per-route scroll restoration, and current-tab scroll/root behavior. Existing URLs
+   and feature pages remain compatible. Local browser smoke check passed; authenticated mobile/device
+   verification remains required because anonymous auth is disabled in the connected environment.
 3. **A3 — pure local lifecycle engine** (`GPT-5.6` high design; `GPT-5.3-Codex` medium build): types,
    transition table/reducer, policy constants, exhaustive valid/invalid/idempotency tests. No migration.
 4. **A4 — Dexie repository and InstantLaunch bridge** (`GPT-5.6`, high): transactional local activity,

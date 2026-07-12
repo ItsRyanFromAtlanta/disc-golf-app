@@ -1,31 +1,47 @@
-import { Link, useLocation } from 'react-router-dom'
-import { IconBriefcase, IconChartBar, IconTargetArrow, IconUserCircle } from '@tabler/icons-react'
-import { resolveActiveTab } from '../lib/navigation'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { IconBriefcase, IconTargetArrow, IconUserCircle } from '@tabler/icons-react'
+import { resolveRouteMetadata, resolveSectionRoot } from '../lib/routeMetadata'
+import { resolveTabPressAction, TAB_PRESS_ACTIONS } from '../lib/tabNavigation'
 
-// App-level bottom tab bar. Adding a feature area (Rounds, Caddie) later is
-// a one-line addition here — no other wiring needed. Active state matches by
-// path prefix so nested routes (e.g. /practice/history) keep their tab lit —
-// STATS lives nested under PLAY's own /practice prefix, so resolveActiveTab
-// (longest-prefix match) is what keeps the two from both lighting up together
-// on /practice/stats.
 const TABS = [
-  { to: '/practice', label: 'Play', icon: IconTargetArrow },
-  { to: '/bag', label: 'Bags', icon: IconBriefcase },
-  { to: '/practice/stats', label: 'Stats', icon: IconChartBar },
-  { to: '/profile', label: 'Pro', icon: IconUserCircle },
+  { section: 'play', label: 'Play', icon: IconTargetArrow },
+  { section: 'discs', label: 'Discs', icon: IconBriefcase },
+  { section: 'me', label: 'Me', icon: IconUserCircle },
 ]
 
-export default function TabBar() {
+export default function TabBar({ isAtTop, hasRequestedTop, onScrollToTop }) {
   const { pathname } = useLocation()
-  const activeTab = resolveActiveTab(TABS, pathname)
+  const navigate = useNavigate()
+  const route = resolveRouteMetadata(pathname)
+
+  function handleTabClick(event, tab) {
+    const active = route?.section === tab.section
+    const action = resolveTabPressAction({ isTargetActive: active, isAtTop, hasRequestedTop })
+
+    if (action === TAB_PRESS_ACTIONS.NAVIGATE) return
+
+    event.preventDefault()
+    if (action === TAB_PRESS_ACTIONS.SCROLL_TO_TOP) {
+      onScrollToTop()
+      return
+    }
+
+    navigate(resolveSectionRoot(tab.section))
+  }
 
   return (
-    <nav className="tab-bar">
+    <nav className="tab-bar" aria-label="Primary navigation">
       {TABS.map((tab) => {
-        const active = tab === activeTab
+        const active = route?.section === tab.section
         const Icon = tab.icon
         return (
-          <Link key={tab.to} to={tab.to} className={`tab-bar-item ${active ? 'tab-bar-item-active' : ''}`}>
+          <Link
+            key={tab.section}
+            to={resolveSectionRoot(tab.section)}
+            className={`tab-bar-item ${active ? 'tab-bar-item-active' : ''}`}
+            aria-current={active ? 'page' : undefined}
+            onClick={(event) => handleTabClick(event, tab)}
+          >
             <Icon size={24} stroke={active ? 2 : 1.75} />
             <span>{tab.label}</span>
           </Link>

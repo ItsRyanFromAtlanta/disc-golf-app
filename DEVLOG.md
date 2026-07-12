@@ -4,6 +4,19 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A2 shared application shell
+
+**What:** Replaced the implicit document scroll/four-tab framing with the shared A2 shell: route-aware
+standard and active shells, global header, accessible notification empty-state sheet, toast host,
+scroll region, safe-area-aware fixed PLAY/DISCS/ME tab bar, per-route scroll restoration, and approved
+current-tab scroll-to-top/root behavior.
+**Boundary:** No activity state, lifecycle repository, notification persistence, or database work was
+added. The bell intentionally hosts only an empty state until A9; the activity pill remains hidden until
+A7 connects a real activity. Existing `/practice`, `/bag`, `/profile`, and legacy routes remain valid.
+**Verified:** 248 tests, lint with only four pre-existing warnings, and production build pass. Local
+browser smoke check was clean, but anonymous auth is disabled in the connected environment, so the
+authenticated shell still needs real-account/device verification.
+
 ## 2026-07-12 — Phase A A1 route metadata and shell audit
 
 **What:** Audited the shipped routes, AppShell/TabBar, scroll ownership, onboarding/crash-recovery
