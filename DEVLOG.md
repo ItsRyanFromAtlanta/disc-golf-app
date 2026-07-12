@@ -4,6 +4,17 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A1 route metadata and shell audit
+
+**What:** Audited the shipped routes, AppShell/TabBar, scroll ownership, onboarding/crash-recovery
+redirects, and current compatibility alias. Added framework-free `src/lib/routeMetadata.js` plus tests
+that classify all current route families under approved PLAY/DISCS/ME sections, identify active capture,
+preservation and scroll behavior, and resolve `/regimens` to its supported nested route.
+**Decision:** A1 intentionally does not change rendered navigation or add a header/scroll host. The
+existing four-tab UI remains until A2 consumes the contract, avoiding a partial shell migration.
+**Verified:** 20 focused route/navigation/crash-recovery tests, lint (four existing warnings only), and
+production build pass. No database work.
+
 ## 2026-07-12 — Phase A shell and lifecycle walkthrough approved
 
 **What:** Completed and consolidated the pre-code walkthrough for PLAY/DISCS/ME shell behavior,

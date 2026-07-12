@@ -26,8 +26,9 @@ Sonnet/Opus labels below are preserved only as historical records of completed w
 Authoritative behavior: `PHASE_A_ARCHITECTURE.md`. Implement in this order; each numbered session is a
 reviewable checkpoint, not permission to perform later sessions early.
 
-1. **A1 — shell audit and route contract** (`GPT-5.3-Codex`, medium): map current routes and shell/
-   scroll/recovery behavior; define route metadata, compatibility aliases, and tests. No database work.
+1. **A1 — shell audit and route contract** (`GPT-5.3-Codex`, medium, COMPLETE 2026-07-12): mapped
+   routes, shell/scroll/recovery behavior; added tested `src/lib/routeMetadata.js` compatibility
+   contract and retained the `/regimens` alias. No database work or rendered-navigation change.
 2. **A2 — shared shell implementation** (`GPT-5.3-Codex`, medium): GlobalHeader, ScreenScrollRegion,
    SheetHost, ToastHost, revised PLAY/DISCS/ME TabBar, ActiveActivityShell, safe areas, scroll/root,
    320px/keyboard/focus/large-text verification. Preserve existing pages via wrappers.
