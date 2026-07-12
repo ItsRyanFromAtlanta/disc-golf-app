@@ -38,9 +38,11 @@ reviewable checkpoint, not permission to perform later sessions early.
    COMPLETE 2026-07-12): added lifecycle/type/source/reason constants, named policies, an
    optimistic-concurrency-aware transition table/reducer, practice-replacement/round-confirmation
    planning, and exhaustive valid/invalid/idempotency tests. No migration or persistence work.
-4. **A4 — Dexie repository and InstantLaunch bridge** (`GPT-5.6`, high): transactional local activity,
-   state event, and dependent outbox storage; single-active invariant; crash/retry tests; keep proven
-   capture. Then update handoff/docs, commit, push, and clear context.
+4. **A4 — Dexie repository and InstantLaunch bridge** (`GPT-5.6`, high, COMPLETE 2026-07-12):
+   added Dexie v2 activity/state-event stores, ordered diagnostic lifecycle outbox storage, a
+   transactional repository with the single-active invariant and atomic replacement, lossless
+   InstantLaunch v1→v2 migration, and an unwired recovery bridge that preserves proven capture.
+   Real IndexedDB upgrade/concurrency/rollback/retry tests use `fake-indexeddb`.
 5. **A5 — live schema audit and migration design** (`GPT-5.6`, high): confirm manual backup; audit live
    schema/RLS/indexes/test data; draft append-only migration and recovery notes; review before apply.
 6. **A6 — server lifecycle and RLS** (`GPT-5.6`, high): activities/events/audit, additive FKs, partial

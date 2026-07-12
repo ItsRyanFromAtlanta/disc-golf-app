@@ -113,6 +113,11 @@ big-bang rewrite; Supabase-direct calls remain valid until a screen is migrated.
 `TECH_STACK.md`/`DATABASE_SCHEMA.md` sections for the reference architecture (schema is absorbed
 append-only, not adopted verbatim — see below).
 
+Phase A A4 adds Dexie v2 `activities`/`activityStateEvents` stores and an ordered diagnostic lifecycle
+outbox behind `src/lib/repository/activityRepository.js`. Its InstantLaunch bridge is deliberately
+unwired until A7: InstantLaunch remains authoritative for live putt capture, batch summaries, and its
+proven putt outbox; lifecycle mirroring must never synthesize or relocate those facts.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

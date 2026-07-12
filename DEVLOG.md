@@ -4,6 +4,23 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-12 — Phase A A4 transactional local activity repository
+
+**What:** Upgraded the local database to Dexie v2 with `activities` and append-only
+`activityStateEvents`; added an ordered lifecycle outbox with dependency, retry, error, and poison
+metadata; implemented the local activity repository and active subscription; and added an unwired
+InstantLaunch recovery bridge plus a lossless v1→v2 state migration.
+**Decisions:** Activity/state-event/outbox writes commit in one Dexie transaction. Practice replacement
+closes the prior practice and starts the replacement atomically; rounds remain unchanged until explicit
+confirmation. Each transition depends on the previous lifecycle idempotency key. InstantLaunch still
+owns real-time putt capture and its existing outbox; A7 will wire the bridge into practice screens only
+after the full pause/resume/finalize flow is exercised.
+**Verified:** 34 focused A4 tests cover real IndexedDB schema upgrade, concurrent starts, single-active
+enforcement, idempotent retries, ordered dependencies, delayed/poisoned attempts, live subscriptions,
+lossless InstantLaunch recovery, and rollback at every partial-write boundary—including failure after
+closing a replaced practice. Full suite: 304 tests; build passes; lint has four pre-existing warnings.
+No Supabase migration, remote lifecycle RPC, or UI change.
+
 ## 2026-07-12 — Phase A A3 pure local lifecycle engine
 
 **What:** Added the framework-free `src/lib/activityLifecycle/` contract: canonical lifecycle/type/
