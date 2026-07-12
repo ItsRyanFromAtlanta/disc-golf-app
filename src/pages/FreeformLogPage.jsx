@@ -153,11 +153,14 @@ export default function FreeformLogPage() {
       .then((data) => {
         const s = suggestNextSession(data.runs, distanceSamples(data), allPuttSamples(data), new Date())
         setSuggestion(s)
-        // Defer to a pursuit-drill distance if one deep-linked us here.
-        setPendingDistance((prev) => prev ?? s.suggestedDistanceFt)
+        // A pursuit-drill distance (deep-linked) always wins over the auto
+        // suggestion; otherwise track the latest suggestion. Keyed off the
+        // stable pursuitDistance (not prev) so the launcher's shown distance and
+        // the distance the session actually starts at can never diverge.
+        setPendingDistance(pursuitDistance ?? s.suggestedDistanceFt)
       })
       .catch(() => {}) // non-critical — the card just shows a plain start with no suggestion
-  }, [session.fsmStatus, user.id])
+  }, [session.fsmStatus, user.id, pursuitDistance])
 
   // Session Summary data — see RegimenRunPage's identical comment on the lag
   // this can have for an offline finish (under-counts until the outbox

@@ -72,10 +72,11 @@ async function recomputeProfileXp(userId) {
   return total
 }
 
-// Run the badge pass against the user's current data and persist everything.
-// Returns { newlyEarned } so the caller can drive the celebration overlay.
-// Safe to call standalone (post-inventory / post-ingestion) or from
-// awardPostSession below.
+// Run the badge pass against the user's current data and persist everything
+// (progress, badge XP, and the profile XP/level cache). Returns
+// { newlyEarned, xpAfter } so the caller can drive the celebration overlay and
+// detect level-ups. Self-consistent for standalone callers (post-inventory /
+// post-ingestion) as well as awardPostSession below.
 export async function evaluateAndPersistBadges(userId, now = new Date()) {
   const [data, badgesResult, progressResult] = await Promise.all([
     fetchGamificationData(userId),
@@ -110,7 +111,14 @@ export async function evaluateAndPersistBadges(userId, now = new Date()) {
   }
 
   await appendXpEventsIdempotent(userId, xpEvents)
-  return { newlyEarned }
+
+  // Recompute the profile XP/level cache here (not only in awardPostSession) so
+  // this function is self-consistent for EVERY caller — including the standalone
+  // post-inventory / post-ingestion evaluations CLAUDE.md anticipates, which
+  // award badge XP without a session-XP step. Returns the fresh total so callers
+  // can detect level-ups without a second query.
+  const xpAfter = await recomputeProfileXp(userId)
+  return { newlyEarned, xpAfter }
 }
 
 // The single call the save paths make when a session ends. Awards the session's
@@ -134,8 +142,9 @@ export async function awardPostSession({ userId, sourceType, sourceRef, makes, c
     ])
   }
 
-  const { newlyEarned } = await evaluateAndPersistBadges(userId, now)
-  const xpAfter = await recomputeProfileXp(userId)
+  // evaluateAndPersistBadges recomputes and returns the fresh XP total (it owns
+  // the profile-cache refresh), so no separate recompute is needed here.
+  const { newlyEarned, xpAfter } = await evaluateAndPersistBadges(userId, now)
 
   const previousLevel = levelForXp(xpBefore)
   const newLevel = levelForXp(xpAfter)
