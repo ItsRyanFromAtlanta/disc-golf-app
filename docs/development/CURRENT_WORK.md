@@ -5,7 +5,8 @@ Last updated: 2026-07-12
 - **Active phase:** Phase B — DISCS data foundation.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete.
-- **Current checkpoint:** B1.6 repository and manufacturer-adapter contracts are implemented and verified.
+- **Current checkpoint:** B1.7 remote adapter/server-ingestion design is approved; B1.6 repository and
+  manufacturer-adapter contracts remain implemented and verified.
   B1.5 catalog foundation remains applied and verified. The normalized manufacturer,
   mold/plastic, run, stamp, provenance, import, private-configuration, and submission/review tables are
   live with RLS and least-privilege grants. Four manufacturers backfill all 36 molds with zero unlinked
@@ -23,7 +24,10 @@ Last updated: 2026-07-12
   connected to a Dexie v3 audited recovery outbox, canonical activity history, sync/incomplete badges,
   Recently Deleted restore, hidden-row metric exclusion, and audited detail correction. Typed sporting
   facts remain unchanged and local-only activities never invent putt totals.
-- **Current implementation:** B1.6 contract slice is complete: canonical catalog reads use the existing
+- **Current implementation:** B1.7 design-only slice is complete: remote fetching and adapter execution
+  are server-only, staged candidates require a future append-only candidate/artifact schema, and
+  canonical promotion is a separate admin-authorized transaction. No Edge Function or canonical write
+  path exists yet. B1.6 contract slice remains complete: canonical catalog reads use the existing
   offline-first cache boundary; private configurations and submission/evidence drafts have owner-scoped,
   idempotent client IDs and durable outbox writes; canonical/import/review writes are not exposed. Pure
   manufacturer adapters produce checksummed, provenance-bearing staged candidates and never import
@@ -46,9 +50,10 @@ Last updated: 2026-07-12
   persistence. Cross-device authenticated history/content
   interaction was also reported passed by the user in a separate independent session/device. This is
   user-reported evidence; Codex did not directly observe the second session or collect its device metadata.
-- **Context recommendation:** stop at the B1.6 contract checkpoint. The next work is a separately reviewed
-  remote adapter/server-ingestion design; do not add migration SQL or canonical catalog writes in this
-  checkpoint. The verified pre-apply archive for B1.5 is outside Git at
+- **Context recommendation:** the B1.7 design is approved. The next work is server-only staging
+  contracts and mocked ingestion; candidate migrations and canonical promotion still require their own
+  migration/security review. Do not add canonical catalog writes in the staging implementation. The
+  verified pre-apply archive for B1.5 is outside Git at
   `C:\tmp\disc-golf-app-backups\20260712-190157`.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,

@@ -1,5 +1,19 @@
 # Dev Log
 
+## 2026-07-12 — Phase B B1.7 remote adapter/server-ingestion design approved
+
+**What:** Recorded the approved design boundary following B1.6. Remote fetching and adapter
+execution are server-only; the browser repository remains canonical-read/owner-write only. The
+design specifies allowlisted HTTPS fetching, immutable private raw artifacts, checksummed staged
+candidates, idempotent import batches, separate admin promotion, and atomic dependency-ordered
+canonical writes.
+**Key decision:** staged candidates cannot use `catalog_entity_sources` because that table requires
+an existing canonical FK. A future append-only candidate/artifact migration is required. Adapter
+keys will use the database-compatible slug form (`mvp-catalog`) rather than the dotted test key
+(`mvp.catalog`).
+**Boundary:** This checkpoint adds documentation only. No Edge Function, migration SQL, service-role
+path, or canonical catalog write was added.
+
 ## 2026-07-12 — Phase B B1.6 repository and manufacturer-adapter contracts
 
 **What:** Added framework-free catalog repository and manufacturer-adapter contracts over the applied
