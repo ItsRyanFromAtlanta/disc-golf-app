@@ -55,12 +55,15 @@ Recommended model: GPT-5.6 high for architecture/contracts; GPT-5.3-Codex medium
 Phase A status: COMPLETE (2026-07-12). Automated equivalence, RLS, build/lint, browser, accessibility,
 reload, and authenticated notification-route checks passed. The independent authenticated-session/
 real-device gate was reported passed by the user; Codex did not directly observe that session or collect
-device metadata. Phase B planning is the next checkpoint, and migration SQL remains blocked until a fresh
-manual Supabase backup is confirmed.
+device metadata.
 
 ## Phase B — DISCS data foundation
 
-Recommended model: GPT-5.6 high. Manual Supabase backup is mandatory before migration SQL.
+Recommended model: GPT-5.6 high. Use the automated CLI/`pg_dump` backup policy before migration SQL.
+
+Phase B status: **IN PROGRESS** (2026-07-12). B1 catalog foundation, RLS, migration history, rollback-only
+ownership tests, and advisor index follow-ups are applied and verified. Manufacturer adapters,
+representative catalog data, and client repositories remain next.
 
 1. Catalog variants for mold/plastic/run/stamp with source provenance; manufacturer adapters; private
    custom configurations; community submission and admin-review queue.

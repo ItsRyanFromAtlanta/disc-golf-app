@@ -1,5 +1,59 @@
 # Dev Log
 
+## 2026-07-12 — Phase B B1.5 catalog foundation applied
+
+**What:** Applied and recorded the reviewed catalog foundation plus two append-only advisor index
+migrations after a verified automated backup.
+
+**Verified:** Four manufacturers link all 36 molds; 13 new tables have RLS; no test rows remain.
+Rollback-only tests passed authenticated reads, canonical-write denial, owner CRUD, cross-user isolation,
+submission transition, and submitted-row immutability. Advisors have no new catalog FK findings;
+`catalog_import_batches` intentionally remains client-inaccessible with RLS/no policy/no grant.
+
+## 2026-07-12 — Automated pre-migration backup policy
+
+**What:** Replaced the repeated manual-confirmation gate with CLI-first automated backup: Supabase dump
+when Docker is available, verified `pg_dump` fallback through pgpass otherwise, and a non-blocking
+reminder only when neither route works.
+
+**Verified:** The immediate Phase B backup is outside Git at
+`C:\tmp\disc-golf-app-backups\20260712-190157`. Its custom archive contains 875 entries and is 512,096
+bytes with SHA-256 `07135CED94F78FFE53D8BBAFCC43A99F6AA0ADED81FB1A5B2AFDD2F9517A77B6`;
+separate schema/data dumps are also non-empty.
+
+## 2026-07-12 — Reproducible Supabase CLI and psql connection
+
+**What:** Installed PostgreSQL 17 command-line tools without the local server, pinned Supabase CLI
+`2.109.1` as a project dev dependency, authenticated and linked the workspace to `disc-golf-app`, and
+configured the standard user-level pgpass entry.
+
+**Verified:** `npx supabase migration list` reads remote history; direct `psql` reaches Postgres 17.6 as
+the hosted `postgres` role and returns the expected 36 molds. No credential value entered repository
+files or command output.
+
+## 2026-07-12 — Phase B B1.1–B1.4 catalog audit, draft, and review
+
+**What:** Approved the normalized mold/plastic/run/stamp catalog and moderation design, confirmed the
+fresh manual backup, audited the live DISCS schema/data/RLS/grants, and generated the unapplied
+`phase_b_catalog_foundation` migration plus review/recovery packet.
+
+**Key decisions:** Preserve all 36 mold UUIDs and compatibility fields; replace direct canonical inserts
+with owner-scoped submissions; use typed provenance foreign keys with an exactly-one-target constraint;
+keep adapters and review writes server-side; seed future representative data against the actively
+exercised account rather than the larger but activity-empty disc account.
+
+**Audit:** No mold duplicates, missing flight data, or missing legacy provenance. All 36 mold plastic
+arrays are empty; 18 of 20 physical discs have plastic text. Existing mold policies use deprecated
+`auth.role()` and broad grants, which the draft replaces with explicit `TO authenticated` reads and
+least-privilege submission/configuration access.
+
+**Review:** B1.4 tightened cross-manufacturer mold/plastic integrity, composite submission ownership,
+submission status transitions, evidence destination checks, and the legacy `created_by` FK index.
+The final 105-statement draft passes PostgreSQL syntax parsing with `pglast` 8.2.
+
+**Boundary:** The reviewed migration remains unapplied. A fresh backup re-confirmation and explicit
+apply approval are still required before any remote database change.
+
 Newest entries first. One entry per meaningful unit of work. Keep entries short: what, why, decisions, gotchas.
 
 ---

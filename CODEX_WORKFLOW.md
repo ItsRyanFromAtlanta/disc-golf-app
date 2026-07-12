@@ -67,9 +67,26 @@ codex --model gpt-5.6 --config model_reasoning_effort="high"
 ## Installed capabilities
 
 - Project Supabase MCP: configured in `.codex/config.toml`.
+- Supabase CLI `2.109.1`: pinned as a project dev dependency; run it with `npx supabase`. The workspace
+  is linked to project `icqzbvtjisxwycvioiup` (`disc-golf-app`). Authentication and generated link
+  metadata stay outside Git.
+- PostgreSQL client `psql` 17.10: installed in the user environment and verified against the hosted
+  Postgres 17.6 database through the Supabase session pooler. The password lives only in the standard
+  user-level `%APPDATA%\postgresql\pgpass.conf`; never copy it into the repository or command output.
 - GitHub, browser automation, Vercel, OpenAI developer, and visualization capabilities: available in
   the Codex desktop environment.
 - Do not install duplicate plugins merely because a task mentions those services.
+
+Supabase connection checks:
+
+```powershell
+npx supabase projects list
+npx supabase migration list
+$url = (Get-Content -Raw supabase\.temp\pooler-url).Trim()
+psql $url -w -X -v ON_ERROR_STOP=1 -c "select current_database(), current_user, current_setting('server_version');"
+```
+
+Never print `pooler-url`, `pgpass.conf`, access tokens, database passwords, or service-role keys.
 
 Useful missing integration: official OpenAI Developer Docs MCP. The desktop sandbox could not launch
 the `codex.exe` installer command. Run once in a normal PowerShell session, then restart Codex:

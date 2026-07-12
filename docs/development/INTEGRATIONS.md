@@ -2,8 +2,10 @@
 
 ## Current
 
-- **Supabase MCP:** configured for the project. Database writes still require explicit scope, backup
-  confirmation for migrations, and post-change RLS verification.
+- **Supabase:** project MCP is configured; CLI `2.109.1` is pinned in `devDependencies` and linked to
+  `disc-golf-app`; `psql` 17.10 is installed and pooler connectivity is verified. Credentials remain in
+  Supabase CLI user storage and the standard user-level PostgreSQL password file, never in Git. Database
+  writes still require explicit scope, backup confirmation for migrations, and post-change RLS checks.
 - **Graphify 0.9.6:** installed locally with project-scoped Codex skill and pre-tool check. Use for code
   navigation and impact analysis; refresh after a major source checkpoint. Generated `graphify-out/`
   artifacts are disposable and should not become product documentation.
