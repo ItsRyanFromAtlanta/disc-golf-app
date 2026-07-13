@@ -10,6 +10,17 @@ export const CATALOG_ENTITY_TYPES = Object.freeze([
   'entity_source',
 ])
 
+export const CATALOG_SOURCE_TYPES = Object.freeze([
+  'manufacturer',
+  'pdga',
+  'curated_seed',
+  'community',
+  'import',
+  'other',
+])
+
+export const CATALOG_ADAPTER_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 export const CATALOG_CANONICAL_READ_ENTITIES = Object.freeze([
   'manufacturers',
   'manufacturer_aliases',
@@ -57,6 +68,14 @@ export function normalizeCatalogText(value, field = 'value') {
 
 export function normalizeIdentityPart(value, field = 'identity') {
   return normalizeCatalogText(value, field).toLocaleLowerCase('en-US')
+}
+
+export function normalizeAdapterKey(value, field = 'adapterKey') {
+  const normalized = normalizeCatalogText(value, field)
+  if (!CATALOG_ADAPTER_KEY_PATTERN.test(normalized)) {
+    throw new Error(`${field} must be a lowercase slug`)
+  }
+  return normalized
 }
 
 export function assertCatalogEntityType(entityType) {

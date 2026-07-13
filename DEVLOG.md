@@ -1,5 +1,17 @@
 # Dev Log
 
+## 2026-07-12 — Phase B B1.7 server-only fetch and staging contracts
+
+**What:** Implemented the first approved B1.7 slice: persisted adapter keys now use lowercase
+slugs, server-only fetch policy primitives enforce HTTPS/host/response/redirect limits, and a
+dependency-injected staging orchestrator composes fetch, adapter, and persistence boundaries.
+The orchestrator supports existing-batch replay and 304 handling but has no canonical-write path.
+**Verified:** 26 focused catalog/ingestion tests; 359 total unit tests; production build passes;
+lint retains the four pre-existing warnings. No migration SQL, Edge Function entrypoint, service-role
+credential, or canonical catalog write was added.
+**Handoff:** Candidate/artifact schema and the admin promotion operation remain separate migration,
+security, and rollback review gates.
+
 ## 2026-07-12 — Phase B B1.7 remote adapter/server-ingestion design approved
 
 **What:** Recorded the approved design boundary following B1.6. Remote fetching and adapter

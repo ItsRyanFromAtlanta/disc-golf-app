@@ -1,6 +1,8 @@
 import {
   CATALOG_CONFIDENCE_LEVELS,
+  CATALOG_SOURCE_TYPES,
   isPlainObject,
+  normalizeAdapterKey,
   normalizeCatalogText,
   normalizeIdentityPart,
   stableStringify,
@@ -19,6 +21,7 @@ function normalizeSource(source, sourceType) {
   const name = normalizeCatalogText(source.name, 'source.name')
   const type = source.type ?? sourceType
   if (typeof type !== 'string' || !type.trim()) throw new Error('source.type is required')
+  if (!CATALOG_SOURCE_TYPES.includes(type.trim())) throw new Error(`Unsupported source.type: ${type}`)
   if (source.url !== undefined && source.url !== null && typeof source.url !== 'string') {
     throw new TypeError('source.url must be a string when provided')
   }
@@ -50,11 +53,12 @@ export function defineManufacturerAdapter({
   sourceType = 'manufacturer',
   normalize,
 }) {
-  const key = assertVersion(adapterKey, 'adapterKey')
+  const key = normalizeAdapterKey(adapterKey)
   const version = assertVersion(adapterVersion, 'adapterVersion')
   const manufacturer = normalizeCatalogText(manufacturerName, 'manufacturerName')
   if (typeof normalize !== 'function') throw new TypeError('normalize must be a function')
   if (typeof sourceType !== 'string' || !sourceType.trim()) throw new Error('sourceType is required')
+  if (!CATALOG_SOURCE_TYPES.includes(sourceType.trim())) throw new Error(`Unsupported sourceType: ${sourceType}`)
 
   return Object.freeze({
     contractVersion: MANUFACTURER_ADAPTER_CONTRACT_VERSION,

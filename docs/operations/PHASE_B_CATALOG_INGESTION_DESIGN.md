@@ -1,6 +1,6 @@
 # Phase B B1.7 remote adapter and server-ingestion design
 
-Status: **approved for design implementation** (2026-07-12)
+Status: **approved; contract/staging slice implemented** (2026-07-12)
 
 This document defines the remote-fetch, adapter execution, staging, and reviewed-promotion
 boundaries that follow B1.6. It is a design checkpoint only: it adds no migration SQL, Edge
@@ -202,9 +202,9 @@ Before any production ingestion or canonical promotion:
 
 ## Implementation sequence after this design checkpoint
 
-1. Amend the adapter contract tests to use the persisted slug key and add the server envelope and
-   fetch-policy pure contracts.
-2. Implement a mocked, server-only staging function with no canonical write path.
+1. **Complete:** Amend the adapter contract tests to use the persisted slug key and add the server
+   envelope and fetch-policy pure contracts.
+2. **Complete:** Implement a mocked, server-only staging function with no canonical write path.
 3. Review and add the append-only candidate/artifact schema, with a fresh verified backup.
 4. Add the admin-only promotion operation and its atomic/RLS tests.
 5. Run one bounded manufacturer fixture in a non-production environment; promote only after an

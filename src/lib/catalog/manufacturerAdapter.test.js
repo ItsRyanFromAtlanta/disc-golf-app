@@ -23,7 +23,7 @@ function moldCandidate(overrides = {}) {
 
 function adapter(normalize = async () => [moldCandidate()]) {
   return defineManufacturerAdapter({
-    adapterKey: 'mvp.catalog',
+    adapterKey: 'mvp-catalog',
     adapterVersion: '1.0.0',
     manufacturerName: 'MVP',
     normalize,
@@ -39,7 +39,7 @@ describe('manufacturer adapter contract', () => {
     })
 
     expect(result).toMatchObject({
-      adapterKey: 'mvp.catalog',
+      adapterKey: 'mvp-catalog',
       adapterVersion: '1.0.0',
       sourceChecksum: expect.stringMatching(/^[a-f0-9]{64}$/),
       rowCount: 1,
@@ -85,8 +85,19 @@ describe('manufacturer adapter contract', () => {
     const registry = createManufacturerAdapterRegistry()
     const defined = adapter()
     expect(registry.register(defined)).toBe(defined)
-    expect(registry.get('mvp.catalog')).toBe(defined)
+    expect(registry.get('mvp-catalog')).toBe(defined)
     expect(registry.list()).toEqual([defined])
     expect(() => registry.register(defined)).toThrow('already registered')
+  })
+
+  it('requires persisted adapter keys to be lowercase slugs', () => {
+    expect(() =>
+      defineManufacturerAdapter({
+        adapterKey: 'mvp.catalog',
+        adapterVersion: '1.0.0',
+        manufacturerName: 'MVP',
+        normalize: async () => [],
+      }),
+    ).toThrow('lowercase slug')
   })
 })
