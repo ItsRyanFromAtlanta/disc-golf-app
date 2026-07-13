@@ -232,5 +232,9 @@ Before any production ingestion or canonical promotion:
    `C:\tmp\disc-golf-app-backups\20260712-212738`.
 5. Run one bounded manufacturer fixture in a non-production environment; promote only after an
    explicit review record.
+6. **Complete (2026-07-12):** Added a server-only, network-free official MVP source snapshot
+   adapter for four representative mold pages (Photon, Terra, Volt, and Watt). It validates the
+   official host, emits only allowlisted mold facts plus source-page evidence, and remains separate
+   from remote fetching and canonical promotion.
 
 No step above authorizes automatic canonical writes from remote ingestion.

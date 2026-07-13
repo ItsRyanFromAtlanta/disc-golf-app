@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-12 — Added bounded official MVP source adapter snapshot
+
+**What:** Added the server-only `mvp-catalog` adapter at version `1.0.0` with a bounded
+source snapshot for Photon, Terra, Volt, and Watt. Each candidate carries the official product-page
+URL, source class/dimension evidence, manufacturer identity, flight numbers, and a
+`manufacturer_verified` confidence level. Candidates are sorted by normalized identity for stable
+staging row order.
+**Boundary:** The adapter consumes a server-owned parsed payload and validates the official
+`mvpdiscsports.com` host. It does not fetch pages, copy images or prose, write Supabase rows, or
+authorize canonical promotion. The existing non-production fixture remains separate.
+**Verified:** 373 tests pass; production build passes; lint retains only the four pre-existing
+warnings; and graphify refreshed to 1,289 nodes and 2,683 edges. Official source references are the
+[MVP retail placards](https://mvpdiscsports.com/mvp-retail-placards/)
+and the individual [Photon](https://mvpdiscsports.com/discs/photon/),
+[Terra](https://mvpdiscsports.com/discs/terra/), [Volt](https://mvpdiscsports.com/discs/volt/), and
+[Watt](https://mvpdiscsports.com/discs/watt/) pages.
+**Handoff:** Keep live fetching, scheduling, admin review UI, and any canonical promotion behind
+the existing server-only and explicit-review gates.
+
 ## 2026-07-12 — Open-dataset source check completed without adoption
 
 **Finding:** A public 2020 PDGA-approved-disc CSV is mirrored in an R package, but the checked
