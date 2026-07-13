@@ -19,6 +19,7 @@ const SAFE_ERROR_CODES = new Set([
   'unsupported_mvp_adapter_request',
   'not_modified_without_existing_batch',
   'not_modified_without_new_artifact',
+  'not_modified_without_conditional_request',
   'https_required',
   'url_credentials_forbidden',
   'url_port_forbidden',

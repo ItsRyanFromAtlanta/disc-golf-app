@@ -91,13 +91,19 @@ Last updated: 2026-07-12
   live-verified (401 on an unauthenticated request); the full gate re-run after deployment passed clean:
   390 unit tests, production build, lint at the four-warning baseline, and graphify refreshed to 1,370
   nodes / 2,873 edges.
+- **Current conditional-fetch checkpoint:** `store.findLatestBatch()` now supplies the prior batch's
+  checksum/etag/last-modified before fetching; `catalogIngestionStage.js` forwards it as `conditional`
+  to the fetcher, which sends `If-None-Match`/`If-Modified-Since` and replays the real prior checksum on
+  a genuine 304 (previously it hashed an empty body, so a real 304 could never match a staged batch).
+  397 unit tests pass (7 new), build/lint/graphify gates re-ran clean. Not yet redeployed to the live
+  `catalog-ingestion` Edge Function — that redeploy is a deliberate separate step, not bundled into this
+  application-code checkpoint.
 - **Context recommendation:** keep the official MVP snapshot staged-only until an explicit review
   record is selected and promoted through the now-live admin path. Do not promote the historical public
   CSV candidate without a verified license/provenance review; do not add canonical catalog writes to
-  staging or grant the admin allowlist casually. Next up: real conditional-fetch (304) replay using
-  last-known source checksum/etag (currently stubbed), then crawler/scheduler automation, then the admin
-  review UI. The verified B1.8 follow-on archive is outside Git at
-  `C:\tmp\disc-golf-app-backups\20260712-212738`.
+  staging or grant the admin allowlist casually. Next up: redeploy `catalog-ingestion` with the
+  conditional-fetch fix, then crawler/scheduler automation, then the admin review UI. The verified B1.8
+  follow-on archive is outside Git at `C:\tmp\disc-golf-app-backups\20260712-212738`.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

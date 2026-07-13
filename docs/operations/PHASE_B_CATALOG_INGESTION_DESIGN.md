@@ -251,7 +251,9 @@ Before any production ingestion or canonical promotion:
 11. **Complete (2026-07-12):** Deployed the protected `catalog-ingestion` Edge Function after platform
     capacity returned; JWT verification is enabled and a live unauthenticated request returns 401. Full
     test/build/lint/graphify gates re-ran clean.
-12. **Pending:** Supply last-known source state before enabling real conditional 304 replay (currently
-    stubbed — see `mvpCatalogFetcher.js`'s 304 handling).
+12. **Complete (2026-07-12):** Wired real conditional 304 replay. `store.findLatestBatch()` supplies
+    the prior batch's checksum/etag/last-modified before fetching; the fetcher sends conditional headers
+    and replays the known checksum on a genuine 304 instead of hashing an empty body. Not yet deployed
+    to the live Edge Function — a deliberate separate step.
 
 No step above authorizes automatic canonical writes from remote ingestion.

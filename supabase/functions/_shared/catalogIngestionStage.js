@@ -43,6 +43,7 @@ export async function stageCatalogIngestion({
   requireFunction(runAdapter, 'runAdapter')
   requireObject(store, 'store')
   requireFunction(store.ensureSource, 'store.ensureSource')
+  requireFunction(store.findLatestBatch, 'store.findLatestBatch')
   requireFunction(store.findBatch, 'store.findBatch')
   requireFunction(store.stageImport, 'store.stageImport')
 
@@ -58,13 +59,30 @@ export async function stageCatalogIngestion({
   const sourceUrl = validateRemoteUrl(job.source.url)
   assertAllowedRemoteHost(new URL(sourceUrl).hostname, policy?.allowedHosts)
 
-  const fetched = await fetcher.fetch({ job, adapter, url: sourceUrl, policy })
+  const source = await store.ensureSource({ ...job.source, url: sourceUrl })
+  if (!source || typeof source.id !== 'string' || !source.id) throw new Error('store.ensureSource must return a source id')
+
+  // Conditional headers let a genuinely unchanged remote page short-circuit to a
+  // 304 that replays the prior checksum, instead of re-downloading and re-diffing
+  // content we already have a staged batch for.
+  const priorBatch = await store.findLatestBatch({
+    sourceId: source.id,
+    adapterName: job.adapterKey,
+    adapterVersion: job.adapterVersion,
+  })
+  const conditional = priorBatch && (priorBatch.etag || priorBatch.lastModified)
+    ? Object.freeze({
+        sourceChecksum: priorBatch.sourceChecksum,
+        etag: priorBatch.etag ?? null,
+        lastModified: priorBatch.lastModified ?? null,
+      })
+    : null
+
+  const fetched = await fetcher.fetch({ job, adapter, url: sourceUrl, policy, conditional })
   if (!fetched || typeof fetched !== 'object') throw new TypeError('fetcher.fetch must return an object')
   const limits = { ...CATALOG_FETCH_LIMITS, ...(policy?.limits ?? {}) }
   validateFetchResponseMetadata(fetched.envelope, limits)
   const fetchEnvelope = validateFetchEnvelope(fetched.envelope)
-  const source = await store.ensureSource({ ...job.source, url: sourceUrl })
-  if (!source || typeof source.id !== 'string' || !source.id) throw new Error('store.ensureSource must return a source id')
 
   const batchKey = Object.freeze({
     sourceId: source.id,

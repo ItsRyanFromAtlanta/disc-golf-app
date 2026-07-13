@@ -8,6 +8,7 @@
 
 import {
   CATALOG_RAW_ARTIFACT_BUCKET,
+  CATALOG_RAW_ARTIFACT_KIND,
   createArtifactPersistenceRow,
   createCandidatePersistenceRows,
 } from './catalogIngestionPersistence.js'
@@ -191,6 +192,35 @@ export function createSupabaseCatalogIngestionStore({
       const { data, error } = await query
       if (error) throw storeError(error, 'catalog_batch_lookup_failed')
       return normalizeBatch(data)
+    },
+
+    async findLatestBatch({ sourceId, adapterName, adapterVersion } = {}) {
+      const { data: batchRow, error: batchError } = await supabase
+        .from('catalog_import_batches')
+        .select(CATALOG_IMPORT_BATCH_SELECT)
+        .eq('source_id', sourceId)
+        .eq('adapter_name', adapterName)
+        .eq('adapter_version', adapterVersion)
+        .order('captured_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (batchError) throw storeError(batchError, 'catalog_batch_lookup_failed')
+      const batch = normalizeBatch(batchRow)
+      if (!batch) return null
+
+      const { data: artifactRow, error: artifactError } = await supabase
+        .from('catalog_import_artifacts')
+        .select('etag, last_modified')
+        .eq('import_batch_id', batch.id)
+        .eq('artifact_kind', CATALOG_RAW_ARTIFACT_KIND)
+        .maybeSingle()
+      if (artifactError) throw storeError(artifactError, 'catalog_batch_lookup_failed')
+
+      return {
+        ...batch,
+        etag: artifactRow?.etag ?? null,
+        lastModified: artifactRow?.last_modified ?? null,
+      }
     },
 
     async stageImport({ source, batch, envelope, rawResponseBody } = {}) {

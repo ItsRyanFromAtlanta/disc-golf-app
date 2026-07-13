@@ -219,4 +219,60 @@ describe('Supabase catalog ingestion store', () => {
     })).rejects.toMatchObject({ code: 'catalog_raw_artifact_invalid' })
     expect(harness.storage.upload).not.toHaveBeenCalled()
   })
+
+  it('finds the most recent batch and its cache validators for conditional replay', async () => {
+    const batchQuery = {
+      select: vi.fn(() => batchQuery),
+      eq: vi.fn(() => batchQuery),
+      order: vi.fn(() => batchQuery),
+      limit: vi.fn(() => batchQuery),
+      maybeSingle: vi.fn(async () => ({
+        data: { id: 'batch-1', source_id: source.id, adapter_name: 'mvp-catalog', adapter_version: '1.0.0', source_checksum: 'e'.repeat(64), status: 'staged', captured_at: '2026-07-12T00:00:00.000Z', row_count: 4 },
+        error: null,
+      })),
+    }
+    const artifactQuery = {
+      select: vi.fn(() => artifactQuery),
+      eq: vi.fn(() => artifactQuery),
+      maybeSingle: vi.fn(async () => ({ data: { etag: 'etag-1', last_modified: null }, error: null })),
+    }
+    const from = vi.fn((table) => (table === 'catalog_import_artifacts' ? artifactQuery : batchQuery))
+    const store = createSupabaseCatalogIngestionStore({
+      supabase: { rpc: vi.fn(), from },
+      storage: createSupabaseHarness().storage,
+      actorUserId: actor.userId,
+      actorPrincipal: actor.principal,
+    })
+
+    const result = await store.findLatestBatch({
+      sourceId: source.id,
+      adapterName: 'mvp-catalog',
+      adapterVersion: '1.0.0',
+    })
+
+    expect(batchQuery.order).toHaveBeenCalledWith('captured_at', { ascending: false })
+    expect(artifactQuery.eq).toHaveBeenCalledWith('import_batch_id', 'batch-1')
+    expect(result).toMatchObject({ id: 'batch-1', sourceChecksum: 'e'.repeat(64), etag: 'etag-1', lastModified: null })
+  })
+
+  it('returns null when no prior batch exists for the source and adapter', async () => {
+    const batchQuery = {
+      select: vi.fn(() => batchQuery),
+      eq: vi.fn(() => batchQuery),
+      order: vi.fn(() => batchQuery),
+      limit: vi.fn(() => batchQuery),
+      maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+    }
+    const from = vi.fn(() => batchQuery)
+    const store = createSupabaseCatalogIngestionStore({
+      supabase: { rpc: vi.fn(), from },
+      storage: createSupabaseHarness().storage,
+      actorUserId: actor.userId,
+      actorPrincipal: actor.principal,
+    })
+
+    const result = await store.findLatestBatch({ sourceId: source.id, adapterName: 'mvp-catalog', adapterVersion: '1.0.0' })
+
+    expect(result).toBeNull()
+  })
 })

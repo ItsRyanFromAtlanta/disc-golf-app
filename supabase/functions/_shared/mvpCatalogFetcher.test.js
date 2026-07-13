@@ -95,4 +95,43 @@ describe('MVP catalog fetcher', () => {
       code: 'response_too_large',
     })
   })
+
+  it('sends conditional headers and replays the prior checksum on a real 304', async () => {
+    const fetchImpl = vi.fn(async (_url, options) => {
+      expect(options.headers['if-none-match']).toBe('etag-prior')
+      expect(options.headers['if-modified-since']).toBe('Mon, 01 Jan 2026 00:00:00 GMT')
+      return new Response(null, { status: 304, headers: { etag: 'etag-prior' } })
+    })
+    const fetcher = createMvpCatalogFetcher({
+      fetchImpl,
+      captureNow: () => '2026-07-12T23:31:00.000Z',
+      clock: () => 1000,
+    })
+    const conditional = {
+      sourceChecksum: 'd'.repeat(64),
+      etag: 'etag-prior',
+      lastModified: 'Mon, 01 Jan 2026 00:00:00 GMT',
+    }
+
+    const result = await fetcher.fetch({ url: SOURCE_URL, policy: POLICY, conditional })
+
+    expect(result).toMatchObject({
+      envelope: {
+        status: 304,
+        notModified: true,
+        responseBytes: 0,
+        rawChecksum: conditional.sourceChecksum,
+      },
+    })
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
+  it('rejects a 304 that was not requested conditionally', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 304 }))
+    const fetcher = createMvpCatalogFetcher({ fetchImpl, clock: () => 1000 })
+
+    await expect(fetcher.fetch({ url: SOURCE_URL, policy: POLICY })).rejects.toMatchObject({
+      code: 'not_modified_without_conditional_request',
+    })
+  })
 })

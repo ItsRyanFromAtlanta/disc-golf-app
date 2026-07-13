@@ -75,7 +75,7 @@ export function createMvpCatalogFetcher({
 
   const lastRequestAt = new Map()
 
-  async function requestPage(url, policy) {
+  async function requestPage(url, policy, conditional) {
     const limits = sourcePolicyLimits(policy)
     const hostname = new URL(url).hostname.toLowerCase()
     const previousRequestAt = lastRequestAt.get(hostname)
@@ -83,16 +83,17 @@ export function createMvpCatalogFetcher({
     if (elapsed < limits.minimumHostDelayMs) await sleep(limits.minimumHostDelayMs - elapsed)
     lastRequestAt.set(hostname, clock())
 
-    return fetchWithTimeout(fetchImpl, url, {
-      headers: {
-        accept: 'text/html,application/xhtml+xml',
-        'user-agent': MVP_CATALOG_FETCH_USER_AGENT,
-      },
-      redirect: 'manual',
-    }, limits.timeoutMs)
+    const headers = {
+      accept: 'text/html,application/xhtml+xml',
+      'user-agent': MVP_CATALOG_FETCH_USER_AGENT,
+    }
+    if (conditional?.etag) headers['if-none-match'] = conditional.etag
+    if (conditional?.lastModified) headers['if-modified-since'] = conditional.lastModified
+
+    return fetchWithTimeout(fetchImpl, url, { headers, redirect: 'manual' }, limits.timeoutMs)
   }
 
-  async function fetchCatalogPage({ url, policy } = {}) {
+  async function fetchCatalogPage({ url, policy, conditional = null } = {}) {
     const requestedUrl = validateRemoteUrl(url)
     const limits = sourcePolicyLimits(policy)
     assertAllowedRemoteHost(new URL(requestedUrl).hostname, policy?.allowedHosts)
@@ -101,7 +102,9 @@ export function createMvpCatalogFetcher({
     let redirectCount = 0
     let response
     while (true) {
-      response = await requestPage(currentUrl, { ...policy, limits })
+      // Conditional headers only apply to the originally requested URL; a
+      // redirect target is a different resource and gets an unconditional GET.
+      response = await requestPage(currentUrl, { ...policy, limits }, currentUrl === requestedUrl ? conditional : null)
       if (!REDIRECT_STATUSES.has(response.status)) break
 
       const location = header(response, 'location')
@@ -127,8 +130,12 @@ export function createMvpCatalogFetcher({
 
     const capturedAt = captureNow()
     if (response.status === 304) {
-      const emptyBody = new Uint8Array(0)
-      const rawChecksum = await checksumBytes(emptyBody)
+      if (!conditional?.sourceChecksum) {
+        throw fetchError(
+          'not_modified_without_conditional_request',
+          'Remote catalog returned 304 without a conditional request',
+        )
+      }
       return {
         envelope: {
           requestedUrl,
@@ -136,14 +143,14 @@ export function createMvpCatalogFetcher({
           status: 304,
           contentType: null,
           responseBytes: 0,
-          etag: header(response, 'etag'),
-          lastModified: header(response, 'last-modified'),
+          etag: header(response, 'etag') ?? conditional.etag ?? null,
+          lastModified: header(response, 'last-modified') ?? conditional.lastModified ?? null,
           redirectCount,
           capturedAt,
-          rawChecksum,
+          rawChecksum: conditional.sourceChecksum,
           notModified: true,
         },
-        rawResponseBody: emptyBody,
+        rawResponseBody: new Uint8Array(0),
       }
     }
 

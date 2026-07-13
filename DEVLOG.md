@@ -1,5 +1,23 @@
 # Dev Log
 
+## 2026-07-12 — Wired real conditional-fetch (304) replay
+
+**What:** Replaced the stubbed 304 handler in `mvpCatalogFetcher.js`, which hashed an empty body and
+so could never match a real staged batch's checksum, with genuine conditional-fetch support. Added
+`store.findLatestBatch()` to look up the most recent staged batch (and its `etag`/`last_modified` from
+`catalog_import_artifacts`) for a source+adapter before fetching. `catalogIngestionStage.js` now calls
+`ensureSource`/`findLatestBatch` before `fetcher.fetch`, forwarding a `conditional` object; the fetcher
+sends `If-None-Match`/`If-Modified-Since` and, on a real 304, replays the prior checksum instead of
+hashing nothing, so the existing exact-match `findBatch` lookup now correctly resolves to `status:
+'existing'`. A 304 received without a conditional request throws the new
+`not_modified_without_conditional_request` code — an anomalous-upstream case, not a design gap.
+**Verified:** 397 unit tests pass (7 new), production build passes, lint retains only the four
+pre-existing warnings, graphify refreshed to 1,371 nodes and 2,874 edges. No database migration was
+needed — `etag`/`last_modified` columns already existed on `catalog_import_artifacts`.
+**Boundary:** No Edge Function redeploy yet — this is application code sitting behind the already-live
+`catalog-ingestion` function; redeploy is a deliberate separate step. No canonical write or admin
+allowlist change.
+
 ## 2026-07-12 — Deployed protected catalog-ingestion Edge Function
 
 **What:** Redeployed the `catalog-ingestion` Edge Function after the prior Codex platform usage-limit

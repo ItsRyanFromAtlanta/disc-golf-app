@@ -19,7 +19,7 @@ const fetchEnvelope = {
   rawChecksum: 'b'.repeat(64),
 }
 
-function createHarness({ existing = null, status = 200 } = {}) {
+function createHarness({ existing = null, status = 200, priorBatch = null } = {}) {
   const adapter = { adapterKey: 'mvp-catalog', adapterVersion: '1.0.0' }
   const runAdapter = vi.fn(async () => ({
     adapterKey: adapter.adapterKey,
@@ -47,6 +47,7 @@ function createHarness({ existing = null, status = 200 } = {}) {
   }
   const store = {
     ensureSource: vi.fn(async (source) => ({ ...source, id: 'source-1' })),
+    findLatestBatch: vi.fn(async () => priorBatch),
     findBatch: vi.fn(async () => existing),
     stageImport: vi.fn(async ({ batch }) => ({ batch: { id: 'batch-1', ...batch } })),
   }
@@ -137,6 +138,64 @@ describe('catalog ingestion staging orchestrator', () => {
         store: harness.store,
       }),
     ).rejects.toMatchObject({ code: 'response_too_large' })
-    expect(harness.store.ensureSource).not.toHaveBeenCalled()
+    expect(harness.store.stageImport).not.toHaveBeenCalled()
+  })
+
+  it('passes prior source state to the fetcher for conditional replay', async () => {
+    const priorBatch = {
+      id: 'batch-existing',
+      sourceChecksum: fetchEnvelope.rawChecksum,
+      etag: 'etag-1',
+      lastModified: 'Mon, 01 Jan 2026 00:00:00 GMT',
+    }
+    const harness = createHarness({ priorBatch })
+    await stageCatalogIngestion({
+      request,
+      adapterRegistry: { get: () => harness.adapter },
+      resolveSourcePolicy: () => ({ allowedHosts: ['mvp.example'] }),
+      fetcher: harness.fetcher,
+      runAdapter: harness.runAdapter,
+      store: harness.store,
+    })
+
+    expect(harness.store.findLatestBatch).toHaveBeenCalledWith({
+      sourceId: 'source-1',
+      adapterName: request.adapterKey,
+      adapterVersion: request.adapterVersion,
+    })
+    expect(harness.fetcher.fetch).toHaveBeenCalledWith(expect.objectContaining({
+      conditional: { sourceChecksum: fetchEnvelope.rawChecksum, etag: 'etag-1', lastModified: 'Mon, 01 Jan 2026 00:00:00 GMT' },
+    }))
+  })
+
+  it('omits conditional info when no prior batch has a cache validator', async () => {
+    const harness = createHarness({ priorBatch: { id: 'batch-existing', sourceChecksum: 'x'.repeat(64), etag: null, lastModified: null } })
+    await stageCatalogIngestion({
+      request,
+      adapterRegistry: { get: () => harness.adapter },
+      resolveSourcePolicy: () => ({ allowedHosts: ['mvp.example'] }),
+      fetcher: harness.fetcher,
+      runAdapter: harness.runAdapter,
+      store: harness.store,
+    })
+
+    expect(harness.fetcher.fetch).toHaveBeenCalledWith(expect.objectContaining({ conditional: null }))
+  })
+
+  it('resolves a real 304 replay to the existing batch instead of throwing', async () => {
+    const existing = { id: 'batch-existing', status: 'staged', sourceChecksum: fetchEnvelope.rawChecksum }
+    const priorBatch = { ...existing, etag: 'etag-1', lastModified: null }
+    const harness = createHarness({ existing, priorBatch, status: 304 })
+    const result = await stageCatalogIngestion({
+      request,
+      adapterRegistry: { get: () => harness.adapter },
+      resolveSourcePolicy: () => ({ allowedHosts: ['mvp.example'] }),
+      fetcher: harness.fetcher,
+      runAdapter: harness.runAdapter,
+      store: harness.store,
+    })
+
+    expect(result).toMatchObject({ status: 'existing', batch: existing })
+    expect(harness.store.stageImport).not.toHaveBeenCalled()
   })
 })

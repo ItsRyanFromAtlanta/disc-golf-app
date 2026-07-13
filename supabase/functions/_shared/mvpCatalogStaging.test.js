@@ -53,6 +53,7 @@ function createHarness({ existing = null, status = 200 } = {}) {
   }
   const store = {
     ensureSource: vi.fn(async (source) => ({ ...source, id: 'source-mvp' })),
+    findLatestBatch: vi.fn(async () => null),
     findBatch: vi.fn(async () => existing),
     stageImport: vi.fn(async ({ batch, envelope }) => {
       const rows = await createStagePersistencePayload({
