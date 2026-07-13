@@ -1,5 +1,16 @@
 # Dev Log
 
+## 2026-07-12 — Redeployed catalog-ingestion with conditional-fetch replay
+
+**What:** Redeployed the `catalog-ingestion` Edge Function (version 2) carrying the conditional-fetch
+fix, using the same flattened-directory deploy convention as before. Only `mvpCatalogFetcher.js`,
+`catalogIngestionStore.js`, `catalogIngestionStage.js`, and `catalogIngestionFunction.js` changed
+content from the prior deployment; the other 11 files were redeployed unchanged.
+**Verified:** Live smoke test confirms an unauthenticated POST still returns 401
+(`catalog_admin_auth_required`).
+**Handoff:** Both the deployment and the underlying fix are now shipped end-to-end. Next: crawler/
+scheduler automation, then the admin review UI.
+
 ## 2026-07-12 — Wired real conditional-fetch (304) replay
 
 **What:** Replaced the stubbed 304 handler in `mvpCatalogFetcher.js`, which hashed an empty body and

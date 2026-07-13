@@ -253,7 +253,9 @@ Before any production ingestion or canonical promotion:
     test/build/lint/graphify gates re-ran clean.
 12. **Complete (2026-07-12):** Wired real conditional 304 replay. `store.findLatestBatch()` supplies
     the prior batch's checksum/etag/last-modified before fetching; the fetcher sends conditional headers
-    and replays the known checksum on a genuine 304 instead of hashing an empty body. Not yet deployed
-    to the live Edge Function — a deliberate separate step.
+    and replays the known checksum on a genuine 304 instead of hashing an empty body. Redeployed to the
+    live `catalog-ingestion` Edge Function (version 2); confirmed 401 on an unauthenticated request.
+
+No step above authorizes automatic canonical writes from remote ingestion.
 
 No step above authorizes automatic canonical writes from remote ingestion.
