@@ -48,6 +48,11 @@ export async function stageCatalogIngestion({
 
   const adapter = adapterRegistry.get(job.adapterKey)
   if (!adapter) throw new Error(`Unknown manufacturer adapter: ${job.adapterKey}`)
+  if (adapter.adapterVersion !== job.adapterVersion) {
+    const error = new Error(`Adapter version mismatch for ${job.adapterKey}`)
+    error.code = 'adapter_version_mismatch'
+    throw error
+  }
 
   const policy = await resolveSourcePolicy({ job, adapter })
   const sourceUrl = validateRemoteUrl(job.source.url)

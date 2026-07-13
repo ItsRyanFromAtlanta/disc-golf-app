@@ -236,5 +236,10 @@ Before any production ingestion or canonical promotion:
    adapter for four representative mold pages (Photon, Terra, Volt, and Watt). It validates the
    official host, emits only allowlisted mold facts plus source-page evidence, and remains separate
    from remote fetching and canonical promotion.
+7. **Complete (2026-07-12):** Added `mvpCatalogStaging.js` to compose the official adapter with the
+   generic staging orchestrator and host policy. Injected fetch/storage tests cover persistence-row
+   creation, checksum replay, 304 rejection, and pre-fetch adapter-version rejection.
+8. Next, bind an environment-specific fetcher and Storage/database store behind this composition;
+   keep canonical promotion as a separate explicit-review operation.
 
 No step above authorizes automatic canonical writes from remote ingestion.

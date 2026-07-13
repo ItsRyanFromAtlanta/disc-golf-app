@@ -1,5 +1,20 @@
 # Dev Log
 
+## 2026-07-12 — Wired the official MVP adapter through staging
+
+**What:** Added `mvpCatalogStaging.js`, a server-only composition that selects the official MVP
+adapter, binds its host allowlist, and invokes the generic staging orchestrator with the existing
+pure `runManufacturerAdapter` contract. The generic orchestrator now rejects an adapter-version
+mismatch before any network or persistence call.
+**Verified:** The injected staging harness passes the real official MVP payload through mocked fetch
+and storage boundaries, creates checksum-addressed raw-artifact and candidate persistence rows,
+replays an existing checksum batch without a second write, rejects a 304 without an existing batch,
+and rejects a stale adapter version before fetch. Full suite: 376 tests; production build passes;
+lint retains only the four pre-existing warnings; graphify refreshed to 1,297 nodes and 2,712 edges.
+**Boundary:** No concrete remote fetcher, Storage client, canonical write, admin allowlist change, or
+database migration was added. The next environment-specific binding must remain server-only and
+explicitly reviewed before promotion.
+
 ## 2026-07-12 — Added bounded official MVP source adapter snapshot
 
 **What:** Added the server-only `mvp-catalog` adapter at version `1.0.0` with a bounded
