@@ -98,12 +98,20 @@ Last updated: 2026-07-12
   397 unit tests pass (7 new), build/lint/graphify gates re-ran clean. Redeployed to the live
   `catalog-ingestion` Edge Function (version 2); live smoke test confirms 401 on an unauthenticated
   request.
+- **Current crawler checkpoint:** added `mvpCatalogCrawl.js`, staging four curated official MVP product
+  pages sequentially through the existing unchanged single-page pipeline (each page gets its own
+  `catalog_sources` row and checksum-addressed batch, so per-page 304 replay and failure isolation work
+  without any contract changes). Admin-triggered only, via `{mode: 'crawl', jobId}` on the existing
+  `catalog-ingestion` Edge Function — explicitly not a cron/scheduled job, per user direction (chose
+  "multi-page crawler, admin-triggered" over a recurring scheduled job). 403 unit tests pass (10 new),
+  build/lint/graphify gates re-ran clean. Not yet redeployed to the live Edge Function.
 - **Context recommendation:** keep the official MVP snapshot staged-only until an explicit review
   record is selected and promoted through the now-live admin path. Do not promote the historical public
   CSV candidate without a verified license/provenance review; do not add canonical catalog writes to
-  staging or grant the admin allowlist casually. Next up: crawler/scheduler automation, then the admin
-  review UI. The verified B1.8 follow-on archive is outside Git at
-  `C:\tmp\disc-golf-app-backups\20260712-212738`.
+  staging or grant the admin allowlist casually. Do not add a cron/pg_cron job for this crawler without
+  explicit direction — the user chose bounded/admin-triggered specifically over recurring automation.
+  Next up: redeploy with the crawl mode, then the admin review UI. The verified B1.8 follow-on archive
+  is outside Git at `C:\tmp\disc-golf-app-backups\20260712-212738`.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

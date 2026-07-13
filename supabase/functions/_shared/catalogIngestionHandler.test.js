@@ -23,7 +23,7 @@ function request({ authorization = `Bearer user-token`, payload = body, method =
   })
 }
 
-function harness({ allowed = true, stageResult } = {}) {
+function harness({ allowed = true, stageResult, crawlResult } = {}) {
   const userClient = {
     auth: { getUser: vi.fn(async () => ({ data: { user: { id: userId } }, error: null })) },
   }
@@ -40,6 +40,10 @@ function harness({ allowed = true, stageResult } = {}) {
     batch: { id: 'batch-1', source_checksum: 'a'.repeat(64), row_count: 4 },
     envelope: { sourceChecksum: 'a'.repeat(64), rowCount: 4 },
   })
+  const crawl = vi.fn(async () => crawlResult ?? {
+    targets: 4,
+    results: [{ url: MVP_OFFICIAL_SOURCE.url, status: 'staged', batchId: 'batch-1' }],
+  })
   const createFetcher = vi.fn(() => ({ fetch: vi.fn() }))
   const createStore = vi.fn(() => ({ stageImport: vi.fn() }))
   const handler = createCatalogIngestionHandler({
@@ -52,10 +56,11 @@ function harness({ allowed = true, stageResult } = {}) {
     createServiceClient: vi.fn(() => serviceClient),
     fetchImpl: vi.fn(),
     stage,
+    crawl,
     createFetcher,
     createStore,
   })
-  return { handler, userClient, serviceClient, stage, createFetcher, createStore }
+  return { handler, userClient, serviceClient, stage, crawl, createFetcher, createStore }
 }
 
 describe('protected catalog-ingestion handler', () => {
@@ -105,6 +110,54 @@ describe('protected catalog-ingestion handler', () => {
       actorUserId: userId,
       actorPrincipal: `admin:${userId}`,
     }))
+  })
+
+  it('routes a crawl-mode request to the crawl composition, not the single-page stage', async () => {
+    const h = harness()
+    const crawlRequest = new Request('https://example.test/functions/v1/catalog-ingestion', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer user-token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'crawl', jobId: 'crawl-job-1' }),
+    })
+    const response = await h.handler(crawlRequest)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      result: { targets: 4, results: [{ url: MVP_OFFICIAL_SOURCE.url, status: 'staged', batchId: 'batch-1' }] },
+    })
+    expect(h.crawl).toHaveBeenCalledWith(expect.objectContaining({
+      jobId: 'crawl-job-1',
+      fetcher: expect.any(Object),
+      store: expect.any(Object),
+    }))
+    expect(h.stage).not.toHaveBeenCalled()
+  })
+
+  it('still checks the admin allowlist before running a crawl', async () => {
+    const h = harness({ allowed: false })
+    const crawlRequest = new Request('https://example.test/functions/v1/catalog-ingestion', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer user-token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'crawl', jobId: 'crawl-job-1' }),
+    })
+    const response = await h.handler(crawlRequest)
+
+    expect(response.status).toBe(403)
+    expect(h.crawl).not.toHaveBeenCalled()
+  })
+
+  it('rejects a crawl request without a jobId', async () => {
+    const h = harness()
+    const crawlRequest = new Request('https://example.test/functions/v1/catalog-ingestion', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer user-token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'crawl' }),
+    })
+    const response = await h.handler(crawlRequest)
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'catalog_ingestion_request_invalid' })
+    expect(h.crawl).not.toHaveBeenCalled()
   })
 
   it('returns a safe 400 for malformed JSON', async () => {

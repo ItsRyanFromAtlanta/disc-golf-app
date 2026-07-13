@@ -1,5 +1,23 @@
 # Dev Log
 
+## 2026-07-12 — Added bounded, admin-triggered MVP crawl mode
+
+**What:** Added `mvpCatalogCrawl.js`, a server-only orchestrator that stages a curated list of four
+official MVP product pages (Watt, Terra, Volt, Photon) sequentially through the existing single-page
+staging pipeline, unchanged. Each page gets its own `catalog_sources` row and checksum-addressed batch
+(no contract changes needed — a crawl target is just a `source.url` variation), so 304 replay and
+per-page failure isolation both work for free: one broken product page returns `{status: 'failed',
+error}` in the results array without blocking the other three. One fetcher/store instance is shared
+across the run so the existing per-host delay throttle applies across all pages. This is explicitly
+not a scheduled/recurring job — it only runs when an admin sends `{mode: 'crawl', jobId}` to the
+already-authenticated `catalog-ingestion` Edge Function, which now branches on `mode` before the
+existing admin-allowlist check. No dynamic link discovery from a listing page — the target list is a
+maintained constant, consistent with the project's "bounded, not ongoing scraping" ingestion principle.
+**Verified:** 403 unit tests pass (10 new), production build passes, lint retains only the four
+pre-existing warnings, graphify refreshed to 1,382 nodes and 2,897 edges.
+**Boundary:** No canonical write, no cron/pg_cron job, no admin allowlist change. Not yet deployed to
+the live Edge Function.
+
 ## 2026-07-12 — Redeployed catalog-ingestion with conditional-fetch replay
 
 **What:** Redeployed the `catalog-ingestion` Edge Function (version 2) carrying the conditional-fetch

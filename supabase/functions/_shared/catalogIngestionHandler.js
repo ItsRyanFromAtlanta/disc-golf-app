@@ -4,11 +4,13 @@
 
 import { createMvpCatalogFetcher } from './mvpCatalogFetcher.js'
 import { stageMvpCatalogIngestion } from './mvpCatalogStaging.js'
+import { crawlMvpCatalogSource } from './mvpCatalogCrawl.js'
 import { createSupabaseCatalogIngestionStore } from './catalogIngestionStore.js'
 import { adminPrincipalForUser } from './catalogIngestionAdmin.js'
 import {
   CATALOG_INGESTION_CORS_HEADERS,
   catalogIngestionErrorResponse,
+  normalizeCatalogCrawlRequest,
   normalizeCatalogIngestionRequest,
   summarizeCatalogIngestionResult,
 } from './catalogIngestionFunction.js'
@@ -61,6 +63,7 @@ export function createCatalogIngestionHandler({
   createClientImpl,
   fetchImpl = globalThis.fetch,
   stage = stageMvpCatalogIngestion,
+  crawl = crawlMvpCatalogSource,
   createFetcher = createMvpCatalogFetcher,
   createStore = createSupabaseCatalogIngestionStore,
   createUserClient,
@@ -116,7 +119,10 @@ export function createCatalogIngestionHandler({
         error.code = 'catalog_ingestion_request_invalid'
         throw error
       }
-      const requestBody = normalizeCatalogIngestionRequest(parsedBody)
+      const isCrawl = parsedBody?.mode === 'crawl'
+      const requestBody = isCrawl
+        ? normalizeCatalogCrawlRequest(parsedBody)
+        : normalizeCatalogIngestionRequest(parsedBody)
       const serviceClient = makeServiceClient({ url: supabaseUrl, key: secretKey })
 
       const { data: allowed, error: accessError } = await serviceClient.rpc('catalog_assert_ingestion_admin', {
@@ -129,15 +135,15 @@ export function createCatalogIngestionHandler({
         throw error
       }
 
-      const result = await stage({
-        request: requestBody,
-        fetcher: createFetcher({ fetchImpl }),
-        store: createStore({
-          supabase: serviceClient,
-          actorUserId,
-          actorPrincipal,
-        }),
-      })
+      const fetcher = createFetcher({ fetchImpl })
+      const store = createStore({ supabase: serviceClient, actorUserId, actorPrincipal })
+
+      if (isCrawl) {
+        const result = await crawl({ jobId: requestBody.jobId, fetcher, store })
+        return response({ result })
+      }
+
+      const result = await stage({ request: requestBody, fetcher, store })
       return response({ result: summarizeCatalogIngestionResult(result) })
     } catch (error) {
       const safe = catalogIngestionErrorResponse(error)

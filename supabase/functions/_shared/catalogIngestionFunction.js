@@ -90,6 +90,19 @@ export function normalizeCatalogIngestionRequest(body) {
   }
 }
 
+function invalidCrawlRequest() {
+  const error = new Error('catalog_ingestion_request_invalid')
+  error.code = 'catalog_ingestion_request_invalid'
+  return error
+}
+
+export function normalizeCatalogCrawlRequest(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw invalidCrawlRequest()
+  const jobId = typeof body.jobId === 'string' ? body.jobId.trim() : ''
+  if (!jobId || jobId.length > 128) throw invalidCrawlRequest()
+  return Object.freeze({ jobId })
+}
+
 export function summarizeCatalogIngestionResult(result) {
   const batch = result?.batch ?? {}
   return Object.freeze({

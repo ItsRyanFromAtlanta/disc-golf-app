@@ -255,7 +255,13 @@ Before any production ingestion or canonical promotion:
     the prior batch's checksum/etag/last-modified before fetching; the fetcher sends conditional headers
     and replays the known checksum on a genuine 304 instead of hashing an empty body. Redeployed to the
     live `catalog-ingestion` Edge Function (version 2); confirmed 401 on an unauthenticated request.
+13. **Complete (2026-07-12):** Added an admin-triggered crawl mode (`{mode: 'crawl', jobId}`) that
+    stages four curated official MVP product pages sequentially through the unchanged single-page
+    pipeline, one `catalog_sources` row and batch per page. Explicitly bounded, not a scheduled job —
+    the user chose this over a cron/pg_cron option when asked. No dynamic link discovery; the target
+    list is a maintained constant. Not yet redeployed to the live Edge Function.
 
-No step above authorizes automatic canonical writes from remote ingestion.
+No step above authorizes automatic canonical writes from remote ingestion, and no step introduces a
+recurring/scheduled crawl — every crawl or stage run is explicit and admin-triggered.
 
 No step above authorizes automatic canonical writes from remote ingestion.
