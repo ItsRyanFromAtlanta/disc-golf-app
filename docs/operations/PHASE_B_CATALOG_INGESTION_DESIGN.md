@@ -1,10 +1,10 @@
-# Phase B B1.7 remote adapter and server-ingestion design
+# Phase B B1.8 remote adapter and server-ingestion design
 
-Status: **approved; candidate/artifact persistence applied** (2026-07-12)
+Status: **approved; candidate/artifact persistence and admin promotion applied** (2026-07-12)
 
 This document defines the remote-fetch, adapter execution, staging, and reviewed-promotion
-boundaries that follow B1.6. It is a design checkpoint only: it adds no migration SQL, Edge
-Function code, service-role credentials, or canonical catalog writes.
+boundaries that follow B1.6. B1.7 staging and B1.8 admin review/promotion are now applied; the
+document remains the design authority for the bounded, server-only path.
 
 ## Scope and non-goals
 
@@ -16,10 +16,10 @@ The design covers:
 - idempotent import-batch creation and candidate deduplication; and
 - a separately authorized, transactional promotion path for reviewed candidates.
 
-It does not yet implement a crawler, scheduler, admin UI, review RPC, or canonical promotion.
-The candidate/artifact tables, private raw bucket, and explicit ingestion-admin allowlist are now
-provisioned; no review or canonical-write operation is exposed yet. User-provided URL hints remain
-a submission/evidence workflow, not an arbitrary fetch capability.
+It does not implement a crawler, scheduler, or admin UI. The candidate/artifact tables, private raw
+bucket, explicit ingestion-admin allowlist, review RPC, promotion RPC, and authenticated Edge
+Function are applied. User-provided URL hints remain a submission/evidence workflow, not an
+arbitrary fetch capability.
 
 ## Architectural boundary
 
@@ -169,8 +169,19 @@ mold_plastic -> run -> stamp
 
 The writer uses entity-specific allowlists and natural identity lookups. It does not construct
 dynamic SQL from adapter field names, accept client-provided canonical ids, or copy manufacturer
-images. Every promoted row receives a `catalog_entity_sources` record containing the source,
-batch, source reference, supported fields, evidence snapshot, confidence, and capture time.
+images. Every promoted row receives a `catalog_entity_sources` record containing the source, batch,
+candidate link, canonical target (including aliases), promotion principal, source reference,
+supported fields, evidence snapshot, confidence, and capture time. Existing canonical values are
+never overwritten: a non-null candidate value may fill a null, match the existing value, or abort
+the complete transaction as a canonical conflict.
+
+The live RPC boundary is `public.catalog_review_candidate` and
+`public.catalog_promote_import_batch`, both executable only by `service_role`. The
+`catalog-ingestion-admin` Edge Function validates the request JWT, derives the admin principal from
+the authenticated user id, and calls only those RPCs. Promotion locks the batch, requires every
+candidate to have an explicit disposition, processes only approved candidates in dependency order,
+and is idempotent after an accepted batch. A database trigger also requires the checksum-matched
+raw artifact before a reviewed batch can close as accepted or rejected.
 
 Any dependency or uniqueness conflict aborts the transaction and leaves the batch/candidates
 available for correction. There is no partial canonical promotion.
@@ -185,8 +196,9 @@ available for correction. There is no partial canonical promotion.
   internal trigger); a valid authenticated session alone is insufficient.
 - Error summaries are redacted and bounded. Raw payloads, tokens, cookies, and response headers
   containing secrets are never logged.
-- `private.catalog_ingestion_admins` is the explicit user allowlist for a future authenticated
-  ingestion/promotion trigger; it is service-role managed and empty until that operation exists.
+- `private.catalog_ingestion_admins` is the explicit user allowlist for the authenticated
+  ingestion/promotion trigger; it is service-role managed and remains empty until a production
+  reviewer is deliberately granted access.
 - Private artifacts have a retention policy and immutable paths keyed by checksum.
 
 ## Verification gates
@@ -199,12 +211,11 @@ Before any production ingestion or canonical promotion:
    changed checksums, adapter failures, malformed payloads, and retry behavior.
 3. Add negative RLS/grant tests proving anon and ordinary authenticated clients cannot write/read
    import batches, candidates, or private artifacts.
-4. Test promotion conflicts, composite-FK violations, duplicate identities, and full transaction
-   rollback with zero partial canonical rows or provenance rows.
+4. **Complete:** Test promotion conflicts, dependency ordering, idempotent retries, raw-artifact
+   closure, and full transaction rollback with zero partial canonical rows or provenance rows.
 5. Re-run the existing B1.6 repository/adaptor suite and browser smoke tests unchanged.
-6. **Complete for candidate/artifact persistence:** backup, append-only apply, advisor, RLS, grant,
-   Storage, and rollback-only constraint gates passed. The admin promotion operation remains gated
-   separately.
+6. **Complete for B1.8:** fresh backup, append-only migrations, advisor/lint, RLS/grant, Edge
+   Function JWT rejection, promotion, idempotency, artifact-guard, and rollback gates passed.
 
 ## Implementation sequence after this design checkpoint
 
@@ -212,10 +223,13 @@ Before any production ingestion or canonical promotion:
    envelope and fetch-policy pure contracts.
 2. **Complete:** Implement a mocked, server-only staging function with no canonical write path.
 3. **Complete (2026-07-12):** Added and applied the candidate/artifact persistence and advisor-index
-   migrations, with service-role-only grants, private Storage, checksum/path constraints, immutable
-   candidate source fields, append-only review history, and an explicit admin allowlist. The fresh
-   pre-index backup is recorded at `C:\tmp\disc-golf-app-backups\20260712-202618`.
-4. Add the admin-only promotion operation and its atomic/RLS tests.
+  migrations, with service-role-only grants, private Storage, checksum/path constraints, immutable
+  candidate source fields, append-only review history, and an explicit admin allowlist. The fresh
+  pre-index backup is recorded at `C:\tmp\disc-golf-app-backups\20260712-202618`.
+4. **Complete (2026-07-12):** Added and applied the admin review/promotion RPCs, provenance
+   candidate/alias/actor links, raw-artifact closure guard, and authenticated `catalog-ingestion-admin`
+   Edge Function. The fresh follow-on backup is recorded at
+   `C:\tmp\disc-golf-app-backups\20260712-212738`.
 5. Run one bounded manufacturer fixture in a non-production environment; promote only after an
    explicit review record.
 

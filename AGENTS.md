@@ -29,7 +29,10 @@ See `supabase_schema.sql` for full schema. Key tables:
 - `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
   RLS-enabled with no ordinary-client policies or grants, backed by the private
-  `catalog-import-raw` Storage bucket and `private.catalog_ingestion_admins` allowlist
+  `catalog-import-raw` Storage bucket and `private.catalog_ingestion_admins` allowlist. B1.8 adds
+  service-only `catalog_review_candidate` / `catalog_promote_import_batch` RPCs, an authenticated
+  `catalog-ingestion-admin` Edge Function, and candidate/alias/actor links on
+  `catalog_entity_sources`; canonical promotion remains explicit, dependency-ordered, and atomic.
 
 See `putting_practice_schema.sql` for the putting practice feature:
 - `putt_sessions` — a practice session (user-owned, freeform date/notes)

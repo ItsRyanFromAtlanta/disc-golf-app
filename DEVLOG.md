@@ -1,5 +1,29 @@
 # Dev Log
 
+## 2026-07-12 — Phase B B1.8 admin review and canonical promotion applied
+
+**What:** Added the service-only `catalog_review_candidate` and
+`catalog_promote_import_batch` RPCs, entity-specific static promotion allowlists, dependency-ordered
+canonical writes, natural-identity conflict handling, candidate/alias/actor provenance links, and
+the authenticated `catalog-ingestion-admin` Edge Function with JWT verification. Promotion requires
+explicit review dispositions, a checksum-matched raw artifact, and one atomic transaction; exact
+accepted-batch retries return idempotently.
+**Security:** Anonymous/authenticated function execution is denied; the deployed Edge Function rejects
+an unauthenticated request with HTTP 401; the admin allowlist remains empty after rollback tests. Raw
+artifacts are required by a database batch-closure trigger, and missing-artifact promotion rolls back
+canonical writes, provenance, and candidate state together.
+**Backup:** Fresh follow-on backup is outside Git at
+`C:\tmp\disc-golf-app-backups\20260712-212738`; custom archive 1,117 entries, 672,507 bytes,
+SHA-256 `581462507D65312A20FF362A1A191C2F8F4D134B913D39716247B71441EE7A89`. The CLI-first dump
+attempt fell back to PostgreSQL 17 `pg_dump` because Docker Desktop is unavailable.
+**Verified:** Linked error-level DB lint returned zero results; migration ledger contains all three
+B1.8 versions; successful review → promotion → retry and missing-artifact rollback transaction tests
+passed with zero residue; the Edge Function is ACTIVE with `verify_jwt=true`; 368 unit tests, build,
+and lint passed, with only the four pre-existing lint warnings. Graphify refreshed to 1,263 nodes,
+2,622 edges, and 72 communities.
+**Handoff:** Run one bounded non-production manufacturer fixture with an explicit review record before
+granting a production reviewer access. Crawler, scheduler, and admin UI remain out of scope.
+
 ## 2026-07-12 — Phase B B1.7 candidate/artifact persistence applied
 
 **What:** Added and applied the append-only candidate/artifact persistence boundary plus advisor
