@@ -1,5 +1,19 @@
 # Dev Log
 
+## 2026-07-12 — Added bounded non-production MVP catalog fixture
+
+**What:** Added a deterministic MVP manufacturer payload and adapter fixture with two representative
+mold candidates, production-shaped lowercase adapter metadata, fixture-only evidence, and an explicit
+approved review record. The fixture runs through the existing pure adapter contract and remains below
+the staging/canonical-write boundary.
+**Boundary:** The source is `fixture.example`, the reviewer principal is explicitly
+`fixture-reviewer:non-production`, and no Supabase rows, Storage objects, admin allowlist entries, or
+canonical writes were added.
+**Verified:** Focused adapter/ingestion tests pass (13 tests); full suite passes (370 tests), build
+passes, lint retains only the four pre-existing warnings, and graphify refreshed to 1,272 nodes,
+2,643 edges, and 75 communities.
+**Handoff:** Perform the open-dataset/source check before any production adapter or reviewer access.
+
 ## 2026-07-12 — Phase B B1.8 admin review and canonical promotion applied
 
 **What:** Added the service-only `catalog_review_candidate` and

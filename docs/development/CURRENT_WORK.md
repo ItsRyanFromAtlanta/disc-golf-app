@@ -7,8 +7,9 @@ Last updated: 2026-07-12
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete.
 - **Current checkpoint:** B1.7 server-only fetch/staging contracts and B1.8 admin review/promotion
   are implemented and live-verified; B1.7 design and B1.6 repository/manufacturer-adapter contracts
-  remain approved. The remaining ingestion work is a bounded manufacturer fixture and eventual
-  crawler/scheduler/admin UI, not an open canonical-write path.
+  remain approved. The bounded non-production MVP manufacturer fixture and explicit fixture review
+  record are now covered at the adapter boundary; remaining ingestion work is the open-dataset check
+  and eventual crawler/scheduler/admin UI, not an open canonical-write path.
   B1.5 catalog foundation remains applied and verified. The normalized manufacturer,
   mold/plastic, run, stamp, provenance, import, private-configuration, and submission/review tables are
   live with RLS and least-privilege grants. Four manufacturers backfill all 36 molds with zero unlinked
@@ -46,7 +47,7 @@ Last updated: 2026-07-12
   confirm `notifications` has RLS, authenticated read access, and only authenticated/service-role RPC
   execution. B1 uses automated CLI-first/`pg_dump` backup with a non-blocking reminder fallback;
   A10’s notification activity-owner covering index is applied.
-- **Verification for this checkpoint:** 368 unit tests pass, including the focused catalog/ingestion
+- **Verification for this checkpoint:** 370 unit tests pass, including the focused catalog/ingestion
   contract tests; build passes; lint retains only the four pre-existing warnings. Live rollback tests cover positive,
   idempotent, stale, invalid, cross-user, and collision cases with zero residue. Anonymous RPC execution
   and authenticated direct activity/audit DML are denied. Advisors have no new A8 findings; lint retains
@@ -62,9 +63,8 @@ Last updated: 2026-07-12
   persistence. Cross-device authenticated history/content
   interaction was also reported passed by the user in a separate independent session/device. This is
   user-reported evidence; Codex did not directly observe the second session or collect its device metadata.
-- **Context recommendation:** the next work is one bounded, non-production manufacturer fixture with
-  an explicit review record. Do not add canonical catalog writes to staging or grant the admin allowlist
-  casually. The verified B1.8 follow-on archive is outside Git at
+- **Context recommendation:** the next work is an open-dataset/source check. Do not add canonical
+  catalog writes to staging or grant the admin allowlist casually. The verified B1.8 follow-on archive is outside Git at
   `C:\tmp\disc-golf-app-backups\20260712-212738`.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,

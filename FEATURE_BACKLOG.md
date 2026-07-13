@@ -77,7 +77,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Game-flair card mode (rarity borders, equip animations, stat-block cards) | BACKLOG | Deliberately deferred from 1E |
 | Disc comparison view (side-by-side stats) | BACKLOG | Natural inventory extension |
 | Disc universe: MVP/Axiom/Streamline + Innova seed | IN PROGRESS | Manufacturer-site import with attribution (source_url/source_name/scraped_at on disc_molds); continue under the current Codex roadmap |
-| Disc universe: full ingestion pipeline (1F) | IN PROGRESS | B1.7/B1.8 server-only staging, review, atomic dependency-ordered promotion, provenance, raw-artifact guard, and admin JWT boundary are applied; remaining work is a bounded manufacturer fixture, open-dataset check, and polite crawler/scheduler/admin UI |
+| Disc universe: full ingestion pipeline (1F) | IN PROGRESS | B1.7/B1.8 server-only staging, review, atomic dependency-ordered promotion, provenance, raw-artifact guard, admin JWT boundary, and a bounded non-production MVP fixture with explicit review record are applied; remaining work is an open-dataset check and polite crawler/scheduler/admin UI |
 | Disc universe: remaining manufacturers (Discraft, Trilogy, Discmania, long tail) | BACKLOG | One bounded session per manufacturer; GPT-5.6 high for pipeline architecture, GPT-5.3-Codex medium per adapter |
 | Opt-in community mold statistics | LATER (deliberate) | Aggregate anonymized performance by catalog mold only after explicit consent; personal physical-disc data stays private by default. Apply minimum-sample/privacy thresholds and keep community benchmarks separate from personal recommendations. |
 | Disc wear timeline (condition change history) | BACKLOG | Current-state-only in v1 |
