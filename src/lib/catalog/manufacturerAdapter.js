@@ -7,7 +7,7 @@ import {
   normalizeIdentityPart,
   stableStringify,
   validateCatalogCandidate,
-} from './catalogContracts'
+} from './catalogContracts.js'
 
 export const MANUFACTURER_ADAPTER_CONTRACT_VERSION = 1
 

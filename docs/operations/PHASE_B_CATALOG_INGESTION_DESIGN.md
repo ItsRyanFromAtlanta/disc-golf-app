@@ -244,7 +244,14 @@ Before any production ingestion or canonical promotion:
 9. **Complete (2026-07-12):** Added the bounded MVP product-page parser and server fetcher. The
    fetcher revalidates redirects, enforces timeout/size/content-type/host-delay limits, checksums
    exact response bytes, and forwards the raw body to the injected staging boundary.
-10. Next, create the backup-gated transactional staging RPC/store and protected `catalog-ingestion`
-    Edge Function. Supply last-known source state before enabling conditional 304 replay.
+10. **Complete (2026-07-12 locally/live for the database boundary):** Added the append-only B1.9
+    staging RPC, ingestion-admin preflight, exact-byte Storage/RPC store, and protected handler
+    source. The live RPC passed a rollback-only batch/artifact/candidate transaction test with zero
+    residue afterward. No canonical table is written and no admin allowlist row was retained.
+11. **Complete (2026-07-12):** Deployed the protected `catalog-ingestion` Edge Function after platform
+    capacity returned; JWT verification is enabled and a live unauthenticated request returns 401. Full
+    test/build/lint/graphify gates re-ran clean.
+12. **Pending:** Supply last-known source state before enabling real conditional 304 replay (currently
+    stubbed — see `mvpCatalogFetcher.js`'s 304 handling).
 
 No step above authorizes automatic canonical writes from remote ingestion.

@@ -39,7 +39,9 @@ Last updated: 2026-07-12
   validation/checksums, and checksum-addressed raw artifacts. Candidate/artifact tables, private Storage,
   review history, append-only guards, service-only review/promotion RPCs, provenance candidate/alias/
   actor links, the raw-artifact closure trigger, and the authenticated `catalog-ingestion-admin` Edge
-  Function are applied. B1.6 contract slice remains complete:
+  Function are applied. The protected `catalog-ingestion` Edge Function is now also deployed (JWT
+  verification enabled; a live unauthenticated POST returns 401 `catalog_admin_auth_required`) after the
+  earlier Codex platform usage-limit rejection cleared. B1.6 contract slice remains complete:
   canonical catalog reads use the existing
   offline-first cache boundary; private configurations and submission/evidence drafts have owner-scoped,
   idempotent client IDs and durable outbox writes; canonical/import/review writes are not exposed. Pure
@@ -50,6 +52,12 @@ Last updated: 2026-07-12
   version drift is rejected before network or persistence calls, and persistence remains injected.
   `mvpProductPageParser.js` and `mvpCatalogFetcher.js` now parse one official product page per job,
   enforce network limits, checksum exact response bytes, and forward the raw body to that boundary.
+  `catalogIngestionStore.js` now binds that boundary to checksum-verified private Storage and the
+  service-only transactional staging RPC; `catalogIngestionHandler.js` adds the authenticated,
+  allowlist-preflighted `catalog-ingestion` function source. The function is now deployed and live
+  (JWT-protected, confirmed 401 on an unauthenticated request); the source tree was flattened into a
+  single sibling directory with rewritten relative imports for the deploy payload, matching the
+  `catalog-ingestion-admin` deploy convention, with no logic changes.
   GPT-5.6 Luna extra-high was requested for this implementation;
   the runtime model label remains GPT-5 Codex. Canonical promotion now requires explicit review,
   active allowlist membership, a matching raw artifact, and one atomic dependency-ordered transaction.
@@ -58,7 +66,7 @@ Last updated: 2026-07-12
   confirm `notifications` has RLS, authenticated read access, and only authenticated/service-role RPC
   execution. B1 uses automated CLI-first/`pg_dump` backup with a non-blocking reminder fallback;
   A10’s notification activity-owner covering index is applied.
-- **Verification for this checkpoint:** 381 unit tests pass, including the focused catalog/ingestion
+- **Previous full verification:** 381 unit tests pass, including the focused catalog/ingestion
   contract tests; build passes; lint retains only the four pre-existing warnings. Live rollback tests cover positive,
   idempotent, stale, invalid, cross-user, and collision cases with zero residue. Anonymous RPC execution
   and authenticated direct activity/audit DML are denied. Advisors have no new A8 findings; lint retains
@@ -75,11 +83,20 @@ Last updated: 2026-07-12
   interaction was also reported passed by the user in a separate independent session/device. This is
   user-reported evidence; Codex did not directly observe the second session or collect its device metadata.
   The official MVP fetch/parser checkpoint refreshed graphify to 1,326 nodes and 2,774 edges.
-- **Context recommendation:** keep the official MVP snapshot staged-only until the transactional
-  staging RPC/store is added after an automated backup, then protect the Edge Function and select an
-  explicit review record. Do not promote the historical public CSV candidate
-  without a verified license/provenance review; do not add canonical catalog writes to staging or grant
-  the admin allowlist casually. The verified B1.8 follow-on archive is outside Git at
+- **Current B1.9 verification:** the focused store/handler/staging suite passes (17 tests), and a
+  live rollback-only transaction inserted and then fully rolled back a temporary admin row, source,
+  batch, artifact, and candidate. The CLI-first/`pg_dump` backup fallback was unavailable in this
+  environment, so the manual-backup reminder remains active — confirm a real Supabase dashboard backup
+  exists before the next migration/FK session. The `catalog-ingestion` Edge Function is now deployed and
+  live-verified (401 on an unauthenticated request); the full gate re-run after deployment passed clean:
+  390 unit tests, production build, lint at the four-warning baseline, and graphify refreshed to 1,370
+  nodes / 2,873 edges.
+- **Context recommendation:** keep the official MVP snapshot staged-only until an explicit review
+  record is selected and promoted through the now-live admin path. Do not promote the historical public
+  CSV candidate without a verified license/provenance review; do not add canonical catalog writes to
+  staging or grant the admin allowlist casually. Next up: real conditional-fetch (304) replay using
+  last-known source checksum/etag (currently stubbed), then crawler/scheduler automation, then the admin
+  review UI. The verified B1.8 follow-on archive is outside Git at
   `C:\tmp\disc-golf-app-backups\20260712-212738`.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,

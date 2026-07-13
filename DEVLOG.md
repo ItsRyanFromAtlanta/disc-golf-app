@@ -1,5 +1,38 @@
 # Dev Log
 
+## 2026-07-12 — Deployed protected catalog-ingestion Edge Function
+
+**What:** Redeployed the `catalog-ingestion` Edge Function after the prior Codex platform usage-limit
+rejection cleared. The function's source tree (`index.ts` plus 14 shared modules spanning
+`supabase/functions/_shared`, `_shared/adapters`, and `src/lib/catalog`) was flattened into a single
+sibling directory for the deploy payload, with cross-directory relative imports rewritten to flat
+`./module.js` specifiers — the same convention the earlier `catalog-ingestion-admin` deploy used, since
+Edge Function bundles don't preserve the repo's actual directory structure. No source logic changed.
+**Verified:** JWT verification is enabled; an unauthenticated POST returns 401
+(`catalog_admin_auth_required`). Full gates re-run clean: 390 unit tests pass, production build passes,
+lint retains only the four pre-existing warnings, graphify refreshed to 1,370 nodes and 2,873 edges.
+**Handoff:** Both `catalog-ingestion` and `catalog-ingestion-admin` are now live. Remaining B1.7-scope
+ingestion work: real conditional-fetch (304) replay using last-known source checksum/etag instead of the
+current stub, then the crawler/scheduler automation, then the admin review UI.
+
+## 2026-07-12 — Added transactional catalog staging boundary
+
+**What:** Added the append-only B1.9 staging migrations, including a service-only source resolver,
+an explicit ingestion-admin preflight, and an allowlist-checked transactional RPC that inserts a
+staged batch, checksum-addressed raw-artifact metadata, and normalized candidates atomically. Added
+the Supabase Storage/RPC store with exact-byte verification, non-upserted uploads, conflict reads,
+and cleanup on transaction failure, plus a protected `catalog-ingestion` handler and Edge Function
+entrypoint. Canonical review and promotion remain separate.
+**Verified:** The focused store/handler/staging suite passes (17 tests). The live RPC was exercised
+inside a rollback-only transaction: batch, artifact, candidate, source, and temporary allowlist
+rows appeared together and all residue returned to zero after rollback. The Supabase CLI and
+`pg_dump` were unavailable, so no automated backup was produced; the required manual-backup
+reminder remains active. Deployment was attempted with JWT verification enabled but was rejected by
+the Codex usage limit before the platform created the function.
+**Handoff:** Re-run the protected `catalog-ingestion` deployment after platform capacity returns,
+then run the full test/build/graphify/commit gates. Do not add an admin allowlist row casually and
+do not perform remote production ingestion until a reviewer is explicitly granted access.
+
 ## 2026-07-12 — Added bounded MVP product-page fetch and parser
 
 **What:** Added a pure parser for one official MVP product page and a server-only fetcher that

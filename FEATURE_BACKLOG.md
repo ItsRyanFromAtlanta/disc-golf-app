@@ -191,3 +191,10 @@ All features below assume native Swift/iOS (Vision, CoreML, ARKit, watchOS, Heal
 | CV disc variant recognition (stamp/color masking) | Bag system + manual selection solves this at 2% of cost |
 | Hardware volume-button silence override | Web cannot intercept volume buttons; on-screen pill ships in 2.2c |
 | Full haptic vocabulary (frequency/intensity-specific patterns, iOS haptics) | Vibration API too crude; requires native haptic engines via Capacitor |
+# 2026-07-12 checkpoint note
+
+The Phase B catalog-ingestion pipeline now has the transactional staging RPC, authenticated
+allowlist preflight, exact-byte Storage/RPC store, and protected `catalog-ingestion` function
+source, now deployed live (JWT-protected, confirmed 401 on an unauthenticated request) after the
+earlier Codex platform usage-limit rejection cleared. Full test/build/lint/graphify gates re-ran
+clean; canonical review/promotion remains separate and no admin allowlist row was added.
