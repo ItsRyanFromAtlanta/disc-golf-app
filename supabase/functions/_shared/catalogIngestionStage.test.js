@@ -27,13 +27,22 @@ function createHarness({ existing = null, status = 200 } = {}) {
     source: { ...request.source, id: 'source-1' },
     sourceChecksum: fetchEnvelope.rawChecksum,
     capturedAt: fetchEnvelope.capturedAt,
-    candidates: [{ identityKey: 'mold:manufacturerKey=mvp|moldKey=watt', entityType: 'mold' }],
+    candidates: [{
+      entityType: 'mold',
+      identity: { manufacturerKey: 'mvp', moldKey: 'watt' },
+      identityKey: 'mold:manufacturerKey=mvp|moldKey=watt',
+      fields: { mold_name: 'Watt' },
+      supportedFields: ['mold_name'],
+      sourceReference: 'https://mvp.example/catalog/watt',
+      evidenceSnapshot: { title: 'Watt' },
+      confidence: 'manufacturer_verified',
+    }],
   }))
   const fetcher = {
     fetch: vi.fn(async () => ({
       envelope: { ...fetchEnvelope, status, responseBytes: status === 304 ? 0 : fetchEnvelope.responseBytes },
       ...(status === 304 ? {} : { payload: { molds: ['Watt'] } }),
-      rawArtifact: { path: 'catalog-imports/job-1.raw', checksum: fetchEnvelope.rawChecksum },
+      rawArtifact: { path: `raw/${fetchEnvelope.rawChecksum}.raw`, checksum: fetchEnvelope.rawChecksum },
     })),
   }
   const store = {

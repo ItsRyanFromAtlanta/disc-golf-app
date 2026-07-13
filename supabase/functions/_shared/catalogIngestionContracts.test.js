@@ -50,7 +50,7 @@ describe('catalog ingestion contracts', () => {
         capturedAt: fetchEnvelope.capturedAt,
         candidates: [{ identityKey: 'mold:manufacturerKey=mvp|moldKey=watt', entityType: 'mold' }],
       },
-      rawArtifact: { path: 'catalog-imports/job-1.raw', checksum: 'a'.repeat(64) },
+      rawArtifact: { path: `raw/${'a'.repeat(64)}.raw`, checksum: 'a'.repeat(64) },
     })
 
     expect(envelope).toMatchObject({
@@ -58,7 +58,7 @@ describe('catalog ingestion contracts', () => {
       jobId: 'job-1',
       sourceChecksum: 'a'.repeat(64),
       rowCount: 1,
-      rawArtifact: { path: 'catalog-imports/job-1.raw' },
+      rawArtifact: { path: `raw/${'a'.repeat(64)}.raw` },
     })
     expect(Object.isFrozen(envelope)).toBe(true)
   })

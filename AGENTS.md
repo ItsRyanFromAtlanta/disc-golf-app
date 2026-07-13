@@ -26,6 +26,10 @@ See `supabase_schema.sql` for full schema. Key tables:
 - `rounds` / `round_holes` — user-owned round data
 - `live_sessions` — active caddie chat state (JSONB log) during a round
 - `caddie_recommendations` — logged AI suggestions per hole, tagged with model used
+- `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
+  `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
+  RLS-enabled with no ordinary-client policies or grants, backed by the private
+  `catalog-import-raw` Storage bucket and `private.catalog_ingestion_admins` allowlist
 
 See `putting_practice_schema.sql` for the putting practice feature:
 - `putt_sessions` — a practice session (user-owned, freeform date/notes)

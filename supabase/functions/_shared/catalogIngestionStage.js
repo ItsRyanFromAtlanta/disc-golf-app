@@ -12,6 +12,10 @@ import {
   normalizeIngestionJobRequest,
   validateFetchEnvelope,
 } from './catalogIngestionContracts.js'
+import {
+  assertChecksumAddressedRawArtifact,
+  normalizeStagedCandidates,
+} from './catalogIngestionPersistence.js'
 
 function requireFunction(value, field) {
   if (typeof value !== 'function') throw new TypeError(`${field} must be a function`)
@@ -80,12 +84,14 @@ export async function stageCatalogIngestion({
     capturedAt: fetchEnvelope.capturedAt,
     sourceChecksum: fetchEnvelope.rawChecksum,
   })
+  const candidates = await normalizeStagedCandidates(adapterRun?.candidates)
   const envelope = createStagedIngestionEnvelope({
     request: job,
     fetch: fetchEnvelope,
-    adapterRun,
+    adapterRun: { ...adapterRun, candidates },
     rawArtifact: fetched.rawArtifact,
   })
+  assertChecksumAddressedRawArtifact(envelope.rawArtifact, envelope.sourceChecksum)
   const batch = {
     ...batchKey,
     jobId: job.jobId,

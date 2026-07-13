@@ -62,8 +62,8 @@ device metadata.
 Recommended model: GPT-5.6 high. Use the automated CLI/`pg_dump` backup policy before migration SQL.
 
 Phase B status: **IN PROGRESS** (2026-07-12). B1 catalog foundation, RLS, migration history, rollback-only
-ownership tests, and advisor index follow-ups are applied and verified. Manufacturer adapters,
-representative catalog data, and client repositories remain next.
+ownership tests, and B1.7 candidate/artifact persistence with advisor index follow-ups are applied and
+verified. Manufacturer adapters, representative catalog data, and client repositories remain next.
 
 1. Catalog variants for mold/plastic/run/stamp with source provenance; manufacturer adapters; private
    custom configurations; community submission and admin-review queue.

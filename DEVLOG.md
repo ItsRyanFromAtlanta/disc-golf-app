@@ -1,5 +1,27 @@
 # Dev Log
 
+## 2026-07-12 — Phase B B1.7 candidate/artifact persistence applied
+
+**What:** Added and applied the append-only candidate/artifact persistence boundary plus advisor
+indexes. `catalog_import_artifacts` stores checksum-bound raw-response metadata; `catalog_import_candidates`
+stores normalized identity/fields/evidence with server-computed checksums and validation/dedup/review
+state; `catalog_import_candidate_reviews` is append-only audit history. A private ingestion-admin
+allowlist and private `catalog-import-raw` Storage bucket complete the server-only boundary.
+**Security:** RLS is enabled with no ordinary-client policies/grants; service_role is the only table
+caller. Candidate source fields are immutable after staging, review history cannot be updated/deleted,
+and raw object paths are `raw/<sha256>.raw`.
+**Backup:** Fresh pre-index backup is outside Git at
+`C:\tmp\disc-golf-app-backups\20260712-202618`; custom archive 1,085 entries, 612,325 bytes,
+SHA-256 `17CFD4E5A1CE87D181BF0CA77B11BB6AFD98F1C71AA107EA63E31B8BDED2486B`; schema/data dumps are
+also non-empty.
+**Verified:** Rollback-only SQL and live constraint/trigger tests passed; anon/authenticated reads are
+denied while service_role reads succeed; linked error-level DB lint returned zero results; scoped
+advisors show no new catalog FK findings; 364 unit tests, production build, and lint passed (only the
+four pre-existing warnings remain). The Supabase MCP runner recorded remote UTC migration versions,
+so local filenames were reconciled to `20260713002434` and `20260713002750`.
+**Handoff:** The admin review/promotion operation remains a separate gate; no canonical catalog write
+path or Edge Function entrypoint was added.
+
 ## 2026-07-12 — Vercel project link and stale-branch diagnosis
 
 **What:** Linked the workspace to the Discology Vercel project `disc-golf-app` (`prj_1IfaHXl5q4UFOgxwYXPAZASKL0Lg`)

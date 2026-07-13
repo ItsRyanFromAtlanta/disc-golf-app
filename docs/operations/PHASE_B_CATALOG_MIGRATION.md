@@ -36,6 +36,28 @@ reach this result; behavioral/RLS verification remains a post-apply gate.
 - `catalog_import_batches` intentionally has RLS with no client policy and no client grant. Its advisor
   INFO notice documents deny-by-default server/service-role isolation, not missing access.
 
+## B1.7 candidate/artifact persistence result
+
+Applied and verified on 2026-07-12:
+
+- `supabase/migrations/20260713002434_phase_b_catalog_candidate_artifact_persistence.sql`
+- `supabase/migrations/20260713002750_phase_b_catalog_candidate_artifact_indexes.sql`
+- `public.catalog_import_artifacts` stores immutable raw-response metadata and binds its checksum to
+  the durable batch checksum; `public.catalog_import_candidates` stores normalized, checksummed,
+  reviewable rows; `public.catalog_import_candidate_reviews` preserves append-only review decisions.
+- `private.catalog_ingestion_admins` is the service-role-managed admin allowlist; no ordinary client
+  grants or RLS policies exist for staging, review, or admin rows.
+- The `catalog-import-raw` bucket is private, 5 MiB-limited, and restricted to the approved fetch
+  content types. No `storage.objects` policy grants ordinary-client access.
+- Rollback-only live tests passed checksum/FK constraints, immutable candidate source fields, and
+  append-only review guards. The linked error-level database lint returned zero results; advisors
+  report only intentional RLS-no-policy and unused-index INFO notices for the empty staging tables.
+
+The pre-index backup was automated and verified at
+`C:\tmp\disc-golf-app-backups\20260712-202618`: custom archive 1,085 entries, 612,325 bytes,
+SHA-256 `17CFD4E5A1CE87D181BF0CA77B11BB6AFD98F1C71AA107EA63E31B8BDED2486B`; schema/data dumps
+remain outside Git.
+
 ## Live audit snapshot
 
 - Connected project: `disc-golf-app` (`icqzbvtjisxwycvioiup`, us-east-1), Postgres 17.6.1.141.

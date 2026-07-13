@@ -66,7 +66,8 @@ reviewable checkpoint, not permission to perform later sessions early.
     unit/lint/build/RLS/browser/accessibility/device gates; final high-risk review and release documentation.
     The independent authenticated-session/real-device gate was reported passed by the user; Codex did not
     directly observe that second session or collect its device metadata. Phase A is now closed at the
-    documentation and planning boundary; Phase B begins with design review only.
+    documentation and planning boundary; Phase B began with design review only, and the B1.7
+    candidate/artifact persistence checkpoint is now applied and verified.
 
 Mandatory reviews: route contract before A2; transition table before A4; migration before and after
 A6; the first practice mode before integrating the second; audit/statistics before closing A8; full

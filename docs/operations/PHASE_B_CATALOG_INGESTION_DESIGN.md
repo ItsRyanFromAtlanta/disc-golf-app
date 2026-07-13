@@ -1,6 +1,6 @@
 # Phase B B1.7 remote adapter and server-ingestion design
 
-Status: **approved; contract/staging slice implemented** (2026-07-12)
+Status: **approved; candidate/artifact persistence applied** (2026-07-12)
 
 This document defines the remote-fetch, adapter execution, staging, and reviewed-promotion
 boundaries that follow B1.6. It is a design checkpoint only: it adds no migration SQL, Edge
@@ -16,9 +16,10 @@ The design covers:
 - idempotent import-batch creation and candidate deduplication; and
 - a separately authorized, transactional promotion path for reviewed candidates.
 
-It does not yet implement a crawler, scheduler, admin UI, review RPC, candidate table, storage
-bucket, or canonical promotion. User-provided URL hints remain a submission/evidence workflow,
-not an arbitrary fetch capability.
+It does not yet implement a crawler, scheduler, admin UI, review RPC, or canonical promotion.
+The candidate/artifact tables, private raw bucket, and explicit ingestion-admin allowlist are now
+provisioned; no review or canonical-write operation is exposed yet. User-provided URL hints remain
+a submission/evidence workflow, not an arbitrary fetch capability.
 
 ## Architectural boundary
 
@@ -93,19 +94,20 @@ the raw body or credentials.
 ### Candidate staging
 
 The existing `catalog_entity_sources` table is reserved for promoted canonical rows because its
-exactly-one-target check requires a canonical foreign key. Staged candidates therefore need a
-future append-only migration for a queryable `catalog_import_candidates` table with, at minimum:
+exactly-one-target check requires a canonical foreign key. Staged candidates now live in the
+append-only migration `20260713002434_phase_b_catalog_candidate_artifact_persistence.sql` with:
 
 - `import_batch_id`, `row_number`, and a stable candidate id;
 - `entity_type`, `identity_key`, and identity JSON;
 - normalized fields JSON and the exact `supported_fields` list;
 - source reference, evidence snapshot, confidence, and candidate checksum;
 - validation/dedup/review status plus a machine-readable conflict code; and
-- created/updated timestamps.
+- created/updated timestamps, immutable source fields, and a server-side guard.
 
-Raw response metadata and object paths may be added to the batch through additive columns or a
-companion `catalog_import_artifacts` table. The choice is a migration-review decision; neither
-is created in this checkpoint.
+Raw response metadata and object paths live in the companion `catalog_import_artifacts` table.
+The `catalog-import-raw` Storage bucket is private, limited to the fetch-policy response size and
+content types, and uses `raw/<sha256>.raw` immutable object paths. The table ties the artifact
+checksum to the durable batch checksum with a composite foreign key.
 
 ## Fetch security and politeness
 
@@ -176,12 +178,15 @@ available for correction. There is no partial canonical promotion.
 ## Authorization and data handling
 
 - `service_role` is available only inside the server function or trusted promotion worker.
-- Import batches, candidate rows, and raw artifacts have no ordinary-client read/write path.
+- Import batches, candidate rows, review history, and raw artifacts have no ordinary-client
+  read/write path.
 - Canonical tables remain authenticated-read/service-write as established by B1.5.
 - Admin authorization must be explicit (reviewed claim/allowlist for user invocation, or a signed
   internal trigger); a valid authenticated session alone is insufficient.
 - Error summaries are redacted and bounded. Raw payloads, tokens, cookies, and response headers
   containing secrets are never logged.
+- `private.catalog_ingestion_admins` is the explicit user allowlist for a future authenticated
+  ingestion/promotion trigger; it is service-role managed and empty until that operation exists.
 - Private artifacts have a retention policy and immutable paths keyed by checksum.
 
 ## Verification gates
@@ -197,15 +202,19 @@ Before any production ingestion or canonical promotion:
 4. Test promotion conflicts, composite-FK violations, duplicate identities, and full transaction
    rollback with zero partial canonical rows or provenance rows.
 5. Re-run the existing B1.6 repository/adaptor suite and browser smoke tests unchanged.
-6. Run the migration backup, apply, advisor, RLS, and rollback gates before adding the candidate
-   table or promotion RPCs.
+6. **Complete for candidate/artifact persistence:** backup, append-only apply, advisor, RLS, grant,
+   Storage, and rollback-only constraint gates passed. The admin promotion operation remains gated
+   separately.
 
 ## Implementation sequence after this design checkpoint
 
 1. **Complete:** Amend the adapter contract tests to use the persisted slug key and add the server
    envelope and fetch-policy pure contracts.
 2. **Complete:** Implement a mocked, server-only staging function with no canonical write path.
-3. Review and add the append-only candidate/artifact schema, with a fresh verified backup.
+3. **Complete (2026-07-12):** Added and applied the candidate/artifact persistence and advisor-index
+   migrations, with service-role-only grants, private Storage, checksum/path constraints, immutable
+   candidate source fields, append-only review history, and an explicit admin allowlist. The fresh
+   pre-index backup is recorded at `C:\tmp\disc-golf-app-backups\20260712-202618`.
 4. Add the admin-only promotion operation and its atomic/RLS tests.
 5. Run one bounded manufacturer fixture in a non-production environment; promote only after an
    explicit review record.
