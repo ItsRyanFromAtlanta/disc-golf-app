@@ -1,5 +1,17 @@
 # Dev Log
 
+## 2026-07-12 — Open-dataset source check completed without adoption
+
+**Finding:** A public 2020 PDGA-approved-disc CSV is mirrored in an R package, but the checked
+listing does not establish a sufficiently clear dataset license/provenance chain for canonical
+ingestion. The PDGA Developer Program is currently closed and its stated restrictions prohibit
+storing data returned by its API.
+**Decision:** Do not copy or promote that dataset. Continue with attributed official manufacturer
+sources, checksum-bound raw artifacts, explicit review, and the existing server-only staging boundary.
+No external dataset, migration, admin allowlist entry, or canonical catalog write was added.
+**Handoff:** The next bounded slice is an official manufacturer-source adapter review; crawler,
+scheduler, and admin UI remain out of scope.
+
 ## 2026-07-12 — Added bounded non-production MVP catalog fixture
 
 **What:** Added a deterministic MVP manufacturer payload and adapter fixture with two representative
