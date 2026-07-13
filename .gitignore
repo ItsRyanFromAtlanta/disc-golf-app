@@ -38,3 +38,6 @@ graphify-out/
 ios/App/DerivedData/
 android/.gradle/
 android/app/build/
+
+.vercel
+.env*

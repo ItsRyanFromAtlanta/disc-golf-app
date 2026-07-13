@@ -1,5 +1,16 @@
 # Dev Log
 
+## 2026-07-12 — Vercel project link and stale-branch diagnosis
+
+**What:** Linked the workspace to the Discology Vercel project `disc-golf-app` (`prj_1IfaHXl5q4UFOgxwYXPAZASKL0Lg`)
+through the authenticated CLI and verified the connected Vercel project/deployment list. Vercel is
+connected to the GitHub repository `ItsRyanFromAtlanta/disc-golf-app` and the preview branch
+`codex/phase-b-disc-foundation`.
+**Finding:** The latest Vercel preview is commit `fa36652`; this workspace is three commits ahead locally,
+so Vercel cannot deploy the current Codex work until the branch is pushed. The generated `.vercel` link
+metadata and OIDC environment file are ignored; no secret values were printed.
+**Boundary:** No push, redeploy, environment-variable mutation, or production change was performed.
+
 ## 2026-07-12 — Phase B B1.7 server-only fetch and staging contracts
 
 **What:** Implemented the first approved B1.7 slice: persisted adapter keys now use lowercase
