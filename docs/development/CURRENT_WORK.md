@@ -11,8 +11,10 @@ Last updated: 2026-07-12
   record are now covered at the adapter boundary. A separate bounded official MVP source snapshot
   adapter covers Photon, Terra, Volt, and Watt with product-page provenance; the open-dataset check is
   complete with no safe dataset selected for promotion. Its server-only staging composition now binds
-  the official registry and host policy to injected fetch/storage dependencies; remaining ingestion work
-  is environment-specific fetch/storage binding, crawler/scheduler/admin UI, not an open canonical-write path.
+  the official registry and host policy to injected fetch/storage dependencies. A bounded official
+  product-page parser/fetcher now produces verified parsed facts and exact raw-byte handoff; remaining
+  ingestion work is the backup-gated transactional staging RPC/store, protected Edge Function,
+  conditional fetch state, crawler/scheduler/admin UI, not an open canonical-write path.
   B1.5 catalog foundation remains applied and verified. The normalized manufacturer,
   mold/plastic, run, stamp, provenance, import, private-configuration, and submission/review tables are
   live with RLS and least-privilege grants. Four manufacturers backfill all 36 molds with zero unlinked
@@ -46,6 +48,8 @@ Last updated: 2026-07-12
   only reviewable mold facts/evidence, and leaves fetch, review, and promotion outside the adapter.
   `mvpCatalogStaging.js` now composes that adapter with the generic staging orchestrator; adapter
   version drift is rejected before network or persistence calls, and persistence remains injected.
+  `mvpProductPageParser.js` and `mvpCatalogFetcher.js` now parse one official product page per job,
+  enforce network limits, checksum exact response bytes, and forward the raw body to that boundary.
   GPT-5.6 Luna extra-high was requested for this implementation;
   the runtime model label remains GPT-5 Codex. Canonical promotion now requires explicit review,
   active allowlist membership, a matching raw artifact, and one atomic dependency-ordered transaction.
@@ -54,7 +58,7 @@ Last updated: 2026-07-12
   confirm `notifications` has RLS, authenticated read access, and only authenticated/service-role RPC
   execution. B1 uses automated CLI-first/`pg_dump` backup with a non-blocking reminder fallback;
   A10’s notification activity-owner covering index is applied.
-- **Verification for this checkpoint:** 376 unit tests pass, including the focused catalog/ingestion
+- **Verification for this checkpoint:** 381 unit tests pass, including the focused catalog/ingestion
   contract tests; build passes; lint retains only the four pre-existing warnings. Live rollback tests cover positive,
   idempotent, stale, invalid, cross-user, and collision cases with zero residue. Anonymous RPC execution
   and authenticated direct activity/audit DML are denied. Advisors have no new A8 findings; lint retains
@@ -70,9 +74,10 @@ Last updated: 2026-07-12
   persistence. Cross-device authenticated history/content
   interaction was also reported passed by the user in a separate independent session/device. This is
   user-reported evidence; Codex did not directly observe the second session or collect its device metadata.
-  The official MVP staging checkpoint refreshed graphify to 1,297 nodes and 2,712 edges.
-- **Context recommendation:** keep the official MVP snapshot staged-only until an environment-specific
-  fetch/storage binding and explicit review record are selected. Do not promote the historical public CSV candidate
+  The official MVP fetch/parser checkpoint refreshed graphify to 1,326 nodes and 2,774 edges.
+- **Context recommendation:** keep the official MVP snapshot staged-only until the transactional
+  staging RPC/store is added after an automated backup, then protect the Edge Function and select an
+  explicit review record. Do not promote the historical public CSV candidate
   without a verified license/provenance review; do not add canonical catalog writes to staging or grant
   the admin allowlist casually. The verified B1.8 follow-on archive is outside Git at
   `C:\tmp\disc-golf-app-backups\20260712-212738`.

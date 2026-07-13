@@ -241,5 +241,10 @@ Before any production ingestion or canonical promotion:
    creation, checksum replay, 304 rejection, and pre-fetch adapter-version rejection.
 8. Next, bind an environment-specific fetcher and Storage/database store behind this composition;
    keep canonical promotion as a separate explicit-review operation.
+9. **Complete (2026-07-12):** Added the bounded MVP product-page parser and server fetcher. The
+   fetcher revalidates redirects, enforces timeout/size/content-type/host-delay limits, checksums
+   exact response bytes, and forwards the raw body to the injected staging boundary.
+10. Next, create the backup-gated transactional staging RPC/store and protected `catalog-ingestion`
+    Edge Function. Supply last-known source state before enabling conditional 304 replay.
 
 No step above authorizes automatic canonical writes from remote ingestion.

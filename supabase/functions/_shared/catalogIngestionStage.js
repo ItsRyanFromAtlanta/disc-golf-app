@@ -90,6 +90,9 @@ export async function stageCatalogIngestion({
     sourceChecksum: fetchEnvelope.rawChecksum,
   })
   const candidates = await normalizeStagedCandidates(adapterRun?.candidates)
+  if (fetched.rawResponseBody !== undefined && !(fetched.rawResponseBody instanceof Uint8Array)) {
+    throw new TypeError('fetcher.rawResponseBody must be a Uint8Array when provided')
+  }
   const envelope = createStagedIngestionEnvelope({
     request: job,
     fetch: fetchEnvelope,
@@ -109,6 +112,7 @@ export async function stageCatalogIngestion({
     batch,
     candidates: envelope.candidates,
     rawArtifact: envelope.rawArtifact,
+    rawResponseBody: fetched.rawResponseBody,
     envelope,
   })
 

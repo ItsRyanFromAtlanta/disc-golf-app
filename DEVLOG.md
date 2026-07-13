@@ -1,5 +1,23 @@
 # Dev Log
 
+## 2026-07-12 — Added bounded MVP product-page fetch and parser
+
+**What:** Added a pure parser for one official MVP product page and a server-only fetcher that
+revalidates the official host on every redirect, enforces timeout/size/content-type limits, honors
+minimum host delay, computes the SHA-256 of the exact response bytes, and emits the existing parsed
+adapter payload plus raw-byte/artifact metadata. The staging orchestrator now forwards those raw bytes
+to the injected persistence boundary.
+**Verified:** Focused parser/fetch/staging tests pass (13); full suite passes (381); production build
+passes; lint retains only the four pre-existing warnings; graphify refreshed to 1,326 nodes and 2,774
+edges. The parser ignores scripts and page prose, extracts only product title, class, flight ratings,
+dimensions, and official source URL, and rejects non-product or incomplete pages.
+**Boundary:** No Storage upload, staging-table write, migration, canonical write, or Edge Function was
+added. The concrete fetcher exposes a 304 envelope but does not invent a prior checksum; conditional
+replay remains behind the existing injected orchestrator contract until the transactional store can
+supply last-known source state.
+**Handoff:** Create the migration-backed transactional staging RPC/store only after the required
+automated backup, then add the protected `catalog-ingestion` Edge Function around this verified path.
+
 ## 2026-07-12 — Wired the official MVP adapter through staging
 
 **What:** Added `mvpCatalogStaging.js`, a server-only composition that selects the official MVP

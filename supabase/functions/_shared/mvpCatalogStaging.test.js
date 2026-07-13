@@ -43,6 +43,7 @@ function createHarness({ existing = null, status = 200 } = {}) {
         ? {}
         : {
             payload: MVP_OFFICIAL_PAYLOAD,
+            rawResponseBody: new Uint8Array([1, 2, 3]),
             rawArtifact: {
               path: rawArtifactPathForChecksum(SOURCE_CHECKSUM),
               checksum: SOURCE_CHECKSUM,
@@ -71,6 +72,19 @@ function createHarness({ existing = null, status = 200 } = {}) {
 describe('official MVP staging composition', () => {
   it('wires the official adapter through injected fetch and persistence boundaries', async () => {
     const harness = createHarness()
+    let persistedRawResponseBody
+    harness.store.stageImport.mockImplementationOnce(async ({ batch, envelope, rawResponseBody }) => {
+      persistedRawResponseBody = rawResponseBody
+      const rows = await createStagePersistencePayload({
+        batchId: 'batch-mvp-1',
+        batch,
+        envelope,
+      })
+      harness.persisted.batch = rows.batch
+      harness.persisted.artifact = rows.artifact
+      harness.persisted.candidates = rows.candidates
+      return { batch: rows.batch }
+    })
     const result = await stageMvpCatalogIngestion({
       request,
       fetcher: harness.fetcher,
@@ -103,6 +117,7 @@ describe('official MVP staging composition', () => {
       source_checksum: SOURCE_CHECKSUM,
     })
     expect(harness.persisted.candidates).toHaveLength(4)
+    expect(persistedRawResponseBody).toEqual(new Uint8Array([1, 2, 3]))
     expect(harness.persisted.candidates.map(({ identity_key }) => identity_key)).toEqual([
       'mold:manufacturerKey=mvp|moldKey=photon',
       'mold:manufacturerKey=mvp|moldKey=terra',
