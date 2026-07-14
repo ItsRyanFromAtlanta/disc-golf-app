@@ -116,6 +116,8 @@ Last updated: 2026-07-12
   Browser-confirmed the unauthenticated redirect works; could NOT browser-verify the signed-in
   "unauthorized" render or the reviewer happy path because guest sign-in doesn't complete in this dev
   environment and no admin session was available — the 401/403/400 logic itself is fully unit-tested.
+  Redeployed `catalog-ingestion-admin` (version 2); live smoke test confirms 401 on an unauthenticated
+  `list_batches` request.
 - **Context recommendation:** keep the official MVP snapshot staged-only until an explicit review
   record is selected and promoted through the admin path. Do not promote the historical public CSV
   candidate without a verified license/provenance review; do not add canonical catalog writes to

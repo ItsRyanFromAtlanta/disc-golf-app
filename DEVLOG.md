@@ -1,5 +1,16 @@
 # Dev Log
 
+## 2026-07-13 — Redeployed catalog-ingestion-admin with the review UI's read ops
+
+**What:** Redeployed `catalog-ingestion-admin` (version 2) carrying the `list_batches`/`list_candidates`
+operations and the refactored handler factory.
+**Verified:** Live smoke test with `{operation: 'list_batches'}` and no bearer token still returns 401.
+**Handoff:** Phase B Track 1B ingestion pipeline (B1.5–B1.7 scope) is now complete end-to-end: schema,
+staging RPC/store, protected Edge Functions, conditional fetch, bounded crawl, and admin review UI. The
+admin allowlist is still empty — grant your own account access to `private.catalog_ingestion_admins`
+when ready to actually exercise the review/promote flow, then the next real milestone is the
+`disc_molds` migration script once a batch has been promoted through it.
+
 ## 2026-07-13 — Added the catalog admin review UI
 
 **What:** Built the first admin-facing screen for the B1.7 pipeline: `/admin/catalog`, reachable only
