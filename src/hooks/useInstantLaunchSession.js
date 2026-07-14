@@ -78,6 +78,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     return {
       id,
       _op: 'insert',
+      _table: 'putt_events',
       user_id: userIdRef.current,
       ...parentFk,
       set_order: sessionStateRef.current?.stage.regimenSetOrder ?? null,

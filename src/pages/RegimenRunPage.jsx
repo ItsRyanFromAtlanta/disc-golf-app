@@ -278,6 +278,7 @@ export default function RegimenRunPage() {
       parentWriteRow: {
         id: newRunId,
         _op: 'insert',
+        _table: 'putting_regimen_runs',
         user_id: user.id,
         regimen_id: regimenId,
         started_at: new Date().toISOString(),
@@ -355,6 +356,7 @@ export default function RegimenRunPage() {
     const summaryRow = {
       id: crypto.randomUUID(),
       _op: 'insert',
+      _table: 'putting_regimen_run_sets',
       run_id: regimenRunId,
       regimen_set_id: currentSet.id,
       makes: stageState.tally.makes,
@@ -384,6 +386,7 @@ export default function RegimenRunPage() {
       session.endSession(() => summaryRow, {
         id: regimenRunId,
         _op: 'update',
+        _table: 'putting_regimen_runs',
         completed: true,
         completed_at: new Date().toISOString(),
         total_score: finalTotal,
@@ -411,6 +414,7 @@ export default function RegimenRunPage() {
       session.endSession(null, {
         id: regimenRunId,
         _op: 'update',
+        _table: 'putting_regimen_runs',
         completed: false,
         completed_at: new Date().toISOString(),
         total_score: runningTotal,
@@ -430,6 +434,7 @@ export default function RegimenRunPage() {
     const summaryRow = {
       id: crypto.randomUUID(),
       _op: 'insert',
+      _table: 'putting_regimen_run_sets',
       run_id: regimenRunId,
       regimen_set_id: currentSet.id,
       makes: stageState.tally.makes,
@@ -448,6 +453,7 @@ export default function RegimenRunPage() {
     session.endSession(() => summaryRow, {
       id: regimenRunId,
       _op: 'update',
+      _table: 'putting_regimen_runs',
       completed: false,
       completed_at: new Date().toISOString(),
       total_score: finalTotal,

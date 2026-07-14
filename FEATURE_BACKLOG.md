@@ -115,7 +115,7 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 | Scoring canvas: split-screen tap as primary input | SHIPPED | Layer 4, Screen 8 — TapZone primary, gesture/panic are opt-in alt modes via CanvasContextBar toggle |
 | Scoring canvas: stack-tracker pips, weather→backup swap suggestion, panic toggle | SHIPPED | Layer 4, Screen 8 — swap suggestion uses putt_events.putter_disc_id (now actually written) + discs.role backup_putter |
 | Unified session report (putter matrix, drop-off vs 30-day baseline, replay) | SHIPPED | Layer 4, Screen 9 — one SessionReport component, 3 entry points (History detail, regimen summary, new freeform summary) |
-| Analytics tower (equipment-milestone chart markers, sync ledger, CSV export) | BACKLOG | Layer 5, Screen 10 |
+| Analytics tower (equipment-milestone chart markers, sync ledger, CSV export) | SHIPPED | Layer 5, Screen 10 (2026-07-14) — make-% trend (7/30/90d + ★ primary-putter markers), dual-outbox sync ledger + standalone SYNC NOW, behavioral toggles, 2-file CSV export, 2-step clear-cache; confidence map embedded as a panel |
 | Player career hub (manual PDGA entry, skill radar, most-trusted-putter) | BACKLOG | Layer 5, Screen 11; PDGA scraper deferred, no official API |
 | Trophy room (XP/levels, badge evaluator, pursuits carousel) | SHIPPED | Layer 5, Screen 12 — XP ledger + 25-badge evaluator + filtered trophy wall, writes hardened behind SECURITY DEFINER RPCs post-review; bag-tag/QR challenge parked with Social |
 | UDisc CSV ingestion (writes existing rounds table via Track 1.5 provenance) | BACKLOG | Layer 5, Screen 13 |
@@ -155,7 +155,7 @@ into the blueprint integration and are cross-referenced there).
 | UDisc CSV round import | BACKLOG | Score-only data; idempotent via provenance; verify current CSV format at build time |
 | Course catalog UI | BACKLOG | Next planning cycle after current execution order |
 | Round management UI (/rounds tree) | BACKLOG | Next planning cycle; weather auto-capture ships with it |
-| Data export (own-your-data CSV) | BACKLOG | Cheap trust-builder; build as importer rehearsal |
+| Data export (own-your-data CSV) | SHIPPED | Shipped with Screen 10 (2026-07-14) as two plain .csv files (freeform + regimen); doubles as UDisc-importer rehearsal for Screen 13 |
 | Same-day practice↔round linkage | BACKLOG | Derivable by date; insights lib join, no schema |
 
 ## Native iOS Roadmap (parked — requires platform decision)

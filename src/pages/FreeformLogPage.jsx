@@ -268,6 +268,7 @@ export default function FreeformLogPage() {
       parentWriteRow: {
         id: newSessionId,
         _op: 'insert',
+        _table: 'putt_sessions',
         user_id: user.id,
         session_date: todayLocalDate(),
       },
@@ -329,6 +330,7 @@ export default function FreeformLogPage() {
     return {
       id: crypto.randomUUID(),
       _op: 'insert',
+      _table: 'putt_distance_logs',
       session_id: freeformSessionId,
       user_id: user.id,
       distance_feet: stageState.stage.distanceFt,
@@ -361,7 +363,7 @@ export default function FreeformLogPage() {
     captureCompletedDistance()
     const weatherUpdate =
       weatherCondition != null
-        ? { id: freeformSessionId, _op: 'update', weather_condition: weatherCondition, wind_mph: windMph }
+        ? { id: freeformSessionId, _op: 'update', _table: 'putt_sessions', weather_condition: weatherCondition, wind_mph: windMph }
         : null
     session.endSession(buildDistanceLogRow, weatherUpdate)
     loadTodaysLogs()

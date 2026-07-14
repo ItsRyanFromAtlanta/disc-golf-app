@@ -12,7 +12,7 @@ import RegimenRunPage from './pages/RegimenRunPage'
 import RoutineBuilderPage from './pages/RoutineBuilderPage'
 import HistoryPage from './pages/HistoryPage'
 import HistoryDetailPage from './pages/HistoryDetailPage'
-import ConfidenceMapPage from './pages/ConfidenceMapPage'
+import AnalyticsPage from './pages/AnalyticsPage'
 import ProfilePage from './pages/ProfilePage'
 import TrophyRoomPage from './pages/TrophyRoomPage'
 import BagPage from './pages/BagPage'
@@ -56,7 +56,7 @@ function App() {
           <Route path="regimens/:regimenId/run" element={<RegimenRunPage />} />
           <Route path="history" element={<HistoryPage />} />
           <Route path="history/:type/:id" element={<HistoryDetailPage />} />
-          <Route path="stats" element={<ConfidenceMapPage />} />
+          <Route path="stats" element={<AnalyticsPage />} />
         </Route>
         <Route path="/profile">
           <Route index element={<ProfilePage />} />

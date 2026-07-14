@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { readAppSettings } from '../lib/appSettings'
 
 // Simplified per-outcome patterns (ms). iOS Safari doesn't implement
 // navigator.vibrate at all, so the capability check below silently no-ops
@@ -15,6 +16,9 @@ export function usePuttHaptics() {
   const vibrate = useCallback(
     (pattern) => {
       if (!supported) return
+      // Read fresh each buzz so the Screen 10 haptics toggle takes effect
+      // immediately, without needing to remount the active-session page.
+      if (!readAppSettings().hapticsEnabled) return
       navigator.vibrate(pattern)
     },
     [supported],

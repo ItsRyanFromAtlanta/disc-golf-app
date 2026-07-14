@@ -4,6 +4,62 @@ Newest entries first. One entry per meaningful unit of work. Keep entries short:
 
 ---
 
+## 2026-07-14 — Analytics & Settings Control Tower (SHIPPED) — Layer 5, Screen 10
+
+**What:** Screen 10 per `SCREEN_SPECS.md`. `/practice/stats` (STATS tab) now renders a new
+`AnalyticsPage` that composes six panels: a make-% **trend chart**, the **confidence map**, a **sync
+ledger**, **behavioral toggles**, **data export**, and a 2-step **clear-cache** control. The standalone
+`ConfidenceMapPage` was deleted and its band list extracted into a reusable
+`components/analytics/ConfidenceMapPanel.jsx` (embedded here; parent owns the single history fetch).
+
+**New pure/unit-tested lib:**
+- `lib/insights/timeSeries.js` — `makePercentTimeSeries(samples, { now, windowDays })` buckets the flat
+  `allPuttSamples` into one point per **UTC-day that was actually practiced** (rest days are gaps, never
+  fabricated 0% points), within a trailing 7/30/90-day window. UTC-day bucketing keeps it deterministic
+  under the repo's no-jsdom vitest. 6 tests.
+- `lib/appSettings.js` — units / defaultStackSize / hapticsEnabled, localStorage-persisted with the
+  viewPreference try/catch shell; pure `normalizeSettings`/`applySettings` (clamps stack size 5–50,
+  degrades unknown fields to defaults individually). 6 tests. `usePuttHaptics` now reads
+  `hapticsEnabled` fresh on each buzz so the toggle takes effect without remounting the capture page.
+- `lib/csvExport.js` — pure `toCsv` (RFC-ish quoting) + `buildFreeformCsv`/`buildRegimenCsv` row
+  builders, impure `downloadCsv`. 6 tests.
+- `lib/instantLaunch/flushOutbox.js` — session-agnostic `flushOutbox()` for the ledger's `[ SYNC NOW ]`
+  (the per-page scheduler only runs while a capture page is mounted). Routes each outbox row to its table
+  via a new `_table` tag added at every enqueue site (both session pages + `buildPuttEventRow`);
+  `syncRows` strips `_table` before writing. Idempotent by the same client-uuid+ignoreDuplicates path as
+  the scheduler. `pendingWriteCount` helper drives the ledger + gates clear-cache. 4 tests (storage +
+  supabaseSync mocked).
+- `lib/analytics.js` — `fetchPrimaryPutterMilestones` reads `disc_role_history` (role→primary_putter,
+  joined to the disc for a display name) for the trend chart's ★ equipment-milestone markers.
+
+**Key decisions / divergences:**
+- **CSV export is two plain `.csv` files, not a zip** — no zip dependency in the bundle and adding one
+  for two files isn't worth the weight (documented in `csvExport.js`; trivial to fold into a zip later).
+- **Sync ledger counts BOTH outboxes** (InstantLaunch capture + staged Dexie repository) for an honest
+  pending total; `SYNC NOW` drains the InstantLaunch outbox (where pending capture writes realistically
+  live). The divergence note "local database sync = the staged Dexie + InstantLaunch buffers" (not a
+  separate concept) is carried over from Screen 10's spec.
+- **Units toggle is display-only for now** — persisted, but the app stays feet-native (CLAUDE.md); it
+  does not yet re-scale stored distances. Slot for a future metric-conversion pass.
+- **Clear-cache is gated on zero pending writes** (button disabled + modal unreachable while pending),
+  so the wipe can never drop an un-synced capture; it clears the Dexie DB (`delete()`+`open()`) and the
+  InstantLaunch blob only, never server data.
+- **Trend chart is hand-rolled SVG** (no chart lib) — fixed 0–100% y-axis so line height is comparable
+  across range switches; milestone ★ markers are vertical dashed lines at each role-change timestamp.
+
+**Model:** mixed — Opus 4.8 for the time-series/flush-routing algorithmic work, Sonnet-tier UI patterns
+for the panels (built in one pass on Opus).
+
+**Verification:** full unit suite **258 passing** (25 files; +22 new across the 4 new lib test files),
+oxlint clean on all new files (only pre-existing warnings elsewhere), `vite build` succeeds. **Live
+browser + DB verification was NOT run this session** — this environment has no Supabase credentials
+(`.env` is a local dummy) and the Supabase MCP required interactive approval unavailable in this
+autonomous run. The milestone markers depend on `layer5_disc_role_history_schema.sql` having been applied
+to the live project (done in the Layer 5 prep session, commit 5c40b3a); that application was not
+re-confirmed here. **Next session should live-drive `/practice/stats` against the real test account**
+(trend renders, ★ marker at the Anode's primary-putter promotion, SYNC NOW with a pending write, CSV
+downloads, clear-cache gating) before treating Screen 10 as field-verified.
+
 ## 2026-07-11 — Screen 12 code review + fix pass (Trophy Room hardening)
 
 **What:** `/code-review high` on the full Screen 12 diff (8-angle parallel finder pass, 10 one-vote

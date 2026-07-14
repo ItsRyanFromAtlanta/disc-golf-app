@@ -139,8 +139,11 @@ Layer 0 docs alignment (in progress) → Layer 1 foundation (schema absorption, 
 Layer 4 execution engine (routine builder, scoring canvas, session summary) → Layer 5 analytics +
 progression (analytics tower, career hub, trophy room, UDisc ingestion). Social, hardware, and utility
 screens (14–21 minus what's absorbed into Layer 5) are deliberately parked — see `SCREEN_SPECS.md`.
-Session history v1 is SHIPPED. Native sensor-fusion features remain parked on the Native iOS Roadmap in
-FEATURE_BACKLOG.md.
+Session history v1 is SHIPPED. Layers 0–4 are complete; Layer 5 is in progress — Screen 12 (Trophy Room)
+SHIPPED 2026-07-11 and Screen 10 (Analytics & Settings Control Tower) SHIPPED 2026-07-14 (the STATS tab's
+`/practice/stats` now renders `AnalyticsPage`, with the confidence map extracted into an embeddable
+`ConfidenceMapPanel`); Screens 11 (Career Hub) and 13 (UDisc ingestion) remain. Native sensor-fusion
+features remain parked on the Native iOS Roadmap in FEATURE_BACKLOG.md.
 
 ## Conventions
 - All user-owned tables use Row Level Security scoped to `auth.uid()`

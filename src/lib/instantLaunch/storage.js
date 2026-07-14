@@ -26,6 +26,19 @@ export function writeInstantLaunchState(state) {
   }
 }
 
+// Wipes the persisted InstantLaunch blob entirely (Screen 10's CLEAR CACHE) —
+// resets to a fresh default. Only safe to call with an empty outbox (the
+// Analytics screen gates on zero pending writes), since this discards any
+// not-yet-synced captures along with the cache.
+export function clearInstantLaunchState() {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore — nothing persisted to clear
+  }
+  return defaultInstantLaunchState()
+}
+
 // Read-modify-write in one step: apply a pure stateReducer transform and
 // persist the result, returning the new state so callers can sync their own
 // React state from it too.

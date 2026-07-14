@@ -13,6 +13,7 @@ export {
 export { regimenPBRunIds, distancePBSessionIds, DISTANCE_PB_MIN_ATTEMPTS } from './pbs'
 export { distanceDropOff, DROP_OFF_WARN_THRESHOLD_PCT } from './dropOff'
 export { putterBreakdown } from './putterBreakdown'
+export { makePercentTimeSeries, TIME_RANGE_DAYS, DEFAULT_TIME_RANGE_DAYS } from './timeSeries'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
 export {

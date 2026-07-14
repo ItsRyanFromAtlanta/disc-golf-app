@@ -37,8 +37,10 @@ are stated below — **confirm the active model matches before starting a layer.
   History detail + regimen summary + a new freeform summary phase, putter breakdown, distance drop-off
   vs 30-day baseline, replay).
 - **Layer 5 — Analytics + Progression** (Sonnet 5 for UI, Opus 4.8 for the UDisc parser + badge
-  evaluator): Screens 10–13 — Analytics tower (equipment-milestone chart markers, sync ledger, CSV
-  export), Career Hub (manual PDGA entry, skill radar, most-trusted-putter), Trophy Room (**SHIPPED**
+  evaluator): Screens 10–13 — Analytics tower (**SHIPPED** 2026-07-14: make-% trend with 7/30/90-day
+  range chips + equipment-milestone ★ markers, dual-outbox sync ledger + standalone SYNC NOW, behavioral
+  toggles, CSV export, 2-step clear-cache — see DEVLOG), Career Hub (manual PDGA entry, skill radar,
+  most-trusted-putter), Trophy Room (**SHIPPED**
   2026-07-11, Opus 4.8: XP ledger + 25-badge evaluator + Trophy Room UI, all writes hardened behind
   SECURITY DEFINER RPCs after a code-review pass — see DEVLOG), UDisc CSV ingestion (writes existing
   `rounds` table via

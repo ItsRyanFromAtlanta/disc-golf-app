@@ -12,7 +12,10 @@ export async function syncRows(table, rows) {
   const permanentFailureIds = []
 
   for (const row of rows) {
-    const { id, _op, ...fields } = row
+    // `_table` is a routing tag (added at enqueue so a standalone flush can
+    // find each row's target table); it is never a real column, so strip it
+    // alongside id/_op before the write.
+    const { id, _op, _table, ...fields } = row
     try {
       const { error } =
         _op === 'update'

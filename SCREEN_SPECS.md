@@ -29,7 +29,7 @@ blueprint's `discs.role` model (see Screen 6 below).
 | 7 | Custom Routine Builder | IN SCOPE | 4 |
 | 8 | Rapid-Fire Scoring Canvas & Mid-Round Swaps | IN SCOPE | 4 |
 | 9 | Session Summary & Progress Report | IN SCOPE | 4 |
-| 10 | Global Analytics & Settings Control Tower | IN SCOPE | 5 |
+| 10 | Global Analytics & Settings Control Tower | SHIPPED (2026-07-14) | 5 |
 | 11 | Player Career Hub | IN SCOPE | 5 |
 | 12 | Trophy Room & Social Gamification Hub | IN SCOPE (minus bag-tag/QR) | 5 |
 | 13 | Frictionless UDisc Ingestion Center | IN SCOPE | 5 |
@@ -254,9 +254,20 @@ REPLAY/DASHBOARD footer.
 
 ## Screen 10: Global Analytics & Settings Control Tower
 
+**SHIPPED 2026-07-14** — `/practice/stats` now renders `AnalyticsPage` (replaced the standalone
+`ConfidenceMapPage`, which was extracted into the reusable `ConfidenceMapPanel` embed). See DEVLOG
+2026-07-14 for the build + the deferred-live-verification note.
+
 **Blueprint ref:** `AnalyticsControlView`, Section 3 Screen 10. Build as specified — time-series chart
 with equipment-milestone injections, sync/storage controls, behavioral toggles, CSV export, 2-step
 clear-cache.
+
+- **Shipped divergences:** CSV export is two plain `.csv` files, not a zip (no zip dep in the bundle —
+  see `lib/csvExport.js`); the units toggle is a persisted display preference that does not yet re-scale
+  stored distances (app stays feet-native per CLAUDE.md). Sync ledger counts both the InstantLaunch
+  capture outbox and the staged Dexie repository outbox; `[ SYNC NOW ]` drains the InstantLaunch outbox
+  via the new standalone `lib/instantLaunch/flushOutbox.js` (outbox rows now carry a `_table` routing
+  tag so a session-agnostic flush can route them).
 
 - **REUSE:** `src/pages/ConfidenceMapPage.jsx` (embeds as a panel — this screen is its expansion, moves
   under the STATS tab), `src/lib/insights/` (`decayWeightedForm`, `confidenceMap`, `cadenceFingerprint`,

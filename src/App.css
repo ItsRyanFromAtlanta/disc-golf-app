@@ -7,6 +7,7 @@
 .history-detail-page,
 .profile-page,
 .confidence-map-page,
+.analytics-page,
 .bag-page,
 .bag-locker-page,
 .bag-manage-page,
@@ -2588,4 +2589,255 @@
 .badge-inspect-progress {
   margin: 8px 0 12px;
   color: var(--color-text-secondary);
+}
+
+/* ===== Screen 10: Analytics & Settings Control Tower ===== */
+.analytics-page > section + section {
+  margin-top: 16px;
+}
+
+.settings-card {
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-bg-surface);
+  padding: 16px;
+}
+
+.settings-card h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.settings-card-sub {
+  margin: -6px 0 12px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* --- shared button variants --- */
+.secondary-button,
+.danger-button {
+  min-height: var(--tap-target-min);
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-button:disabled,
+.danger-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.danger-button {
+  border-color: var(--color-negative);
+  color: var(--color-negative);
+}
+
+.danger-zone {
+  border-color: var(--color-negative);
+}
+
+/* --- trend chart --- */
+.trend-range-chips {
+  margin-bottom: 10px;
+}
+
+.trend-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.trend-gridline {
+  stroke: var(--color-border-default);
+  stroke-width: 1;
+}
+
+.trend-axis-label {
+  fill: var(--color-text-secondary);
+  font-size: 9px;
+}
+
+.trend-line {
+  stroke: var(--color-secondary-accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.trend-dot {
+  fill: var(--color-secondary-accent);
+}
+
+.trend-milestone-line {
+  stroke: var(--color-highlight);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.trend-milestone-star {
+  fill: var(--color-highlight);
+  font-size: 12px;
+}
+
+.trend-empty {
+  color: var(--color-text-secondary);
+  padding: 24px 0;
+  text-align: center;
+}
+
+.trend-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.trend-legend {
+  color: var(--color-highlight);
+}
+
+/* --- sync ledger --- */
+.sync-ledger-status {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.sync-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+
+.sync-dot-ok {
+  background: var(--color-secondary-accent);
+}
+
+.sync-dot-pending {
+  background: var(--color-highlight);
+}
+
+.sync-ledger-line {
+  margin: 0;
+  font-weight: 600;
+}
+
+.sync-ledger-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.sync-ledger-error {
+  color: var(--color-negative);
+}
+
+/* --- behavioral toggles --- */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: var(--border-width) solid var(--color-border-default);
+}
+
+.setting-row:first-of-type {
+  border-top: none;
+}
+
+.setting-label span {
+  display: block;
+  font-weight: 600;
+}
+
+.setting-label small {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.setting-number {
+  width: 72px;
+  padding: 8px 10px;
+  font-size: 16px;
+  text-align: center;
+}
+
+/* switch */
+.switch {
+  width: 52px;
+  height: 30px;
+  border-radius: 15px;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-surface-alt);
+  position: relative;
+  flex: 0 0 auto;
+  cursor: pointer;
+  padding: 0;
+}
+
+.switch-on {
+  background: var(--color-positive);
+  border-color: var(--color-positive);
+}
+
+.switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-text-inverse);
+  transition: transform 0.15s ease;
+}
+
+.switch-on .switch-knob {
+  transform: translateX(22px);
+}
+
+/* --- data export --- */
+.data-export-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.data-export-actions .secondary-button {
+  flex: 1 1 0;
+}
+
+/* --- clear-cache modal --- */
+.modal-body-text {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* --- confidence-map panel (embedded) --- */
+.confidence-map-panel .confidence-map-intro {
+  margin-top: 0;
 }
