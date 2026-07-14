@@ -1,5 +1,26 @@
 # Dev Log
 
+## 2026-07-14 — Planned 3 jump-ahead features + reconciled stale Track 1 status (handoff to coding model)
+
+**What:** Produced an executable handoff plan for three genuinely-unbuilt features and fixed the
+documentation drift that would have misled the coding model. Discovered while scoping "next steps" that
+Track 1 (1A player profile, 1B disc molds + locker migration, 1C bags/flight chart, 1E bag/disc manager
+UI) is **already shipped** — live schema + built UI (`ProfilePage`, `BagPage`, `BagLockerPage`,
+`DiscCard`) — but `DEVELOPMENT_PLAN.md` still read "NEXT UP / schema to generate."
+**Decisions (owner):** build three features **ahead of roadmap phase order** (deliberate, documented) —
+J1 Round logging + quick-course under a **new COURSES tab** (front-runs Phase E; owner picked the
+quick-course scope over full course directory), J2 Disc comparison view (Phase C), J3 Game-flair disc
+cards (Phase B cosmetic). Round logging's schema is 100% ready (1.5 groundwork applied); only an RLS
+migration + offline-first `roundRepository`/`roundLog.js` (mirroring `discRepository`/`discLocker`) are
+new.
+**Doc changes (this commit):** `DEVELOPMENT_PLAN.md` — marked 1A/1B/1C/1E SHIPPED, added a "Jump-ahead
+features (J1–J3)" section with per-feature specs, files, reuse, and models. `FEATURE_BACKLOG.md` — 1E →
+SHIPPED, disc-comparison + game-flair + round-logging rows → IN PROGRESS. `PRODUCT_ROADMAP.md` — note
+that the jump is a deliberate owner decision, not a sequencing violation.
+**Handoff:** Full plan at `~/.claude/plans/1a-2yes-bright-pelican.md`. Coding model builds J1→J2→J3
+(J2/J3 independent), running the per-feature gate and updating DEVLOG/CURRENT_WORK/FEATURE_BACKLOG as it
+goes. Recommended models: GPT-5.6 high (J1 round state/schema), GPT-5.3-Codex medium (J2, J3).
+
 ## 2026-07-14 — Executed the catalog-ingestion teardown (code + functions + DB)
 
 **What:** Carried out the scrap decided the day before. Removed the entire ingestion surface from the

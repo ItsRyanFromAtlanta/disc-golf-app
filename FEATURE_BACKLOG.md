@@ -58,7 +58,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 
 | Feature | Status | Notes |
 |---|---|---|
-| Round logging tree (/rounds: courses, holes, scores) | BACKLOG | Schema already exists (rounds, round_holes, courses, holes) |
+| Round logging tree (/rounds: courses, holes, scores) | IN PROGRESS | J1 (jump-ahead ahead of roadmap Phase E, owner decision 2026-07-14). New COURSES tab + quick-course flow; schema ready (all empty), needs RLS migration + roundRepository. See DEVELOPMENT_PLAN §J1 |
 | Live caddie chat (OpenAI Responses API, server-side) | BACKLOG | Schema exists; build after rounds/course prep and approve safety/cost/context policy |
 | Course prep views | BACKLOG | |
 | Stats tab (app-level) | REJECTED | Statistics are contextual; ME is the career-wide summary |
@@ -73,9 +73,9 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Extend into ME/Profile/Settings and approved preference taxonomy |
 | Disc molds reference table + locker migration | SHIPPED | Extend with normalized plastic/run/stamp variants and moderation |
 | Multiple bags + membership + flight chart | SHIPPED | Phase C; locker/bag split; partial unique index for default bag |
-| Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | IN PROGRESS | 1E — locker=inventory, bags=loadouts; grid/list toggle; minimal cards v1; tab bar: Practice/Bag/Profile |
-| Game-flair card mode (rarity borders, equip animations, stat-block cards) | BACKLOG | Deliberately deferred from 1E |
-| Disc comparison view (side-by-side stats) | BACKLOG | Natural inventory extension |
+| Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | SHIPPED | 1E — locker=inventory, bags=loadouts; grid/list toggle; minimal cards v1; tab bar shipped. Scope met; see DEVELOPMENT_PLAN §1E |
+| Game-flair card mode (rarity borders, equip animations, stat-block cards) | IN PROGRESS | J3 (jump-ahead, DEVELOPMENT_PLAN). Opt-in flair variant on DiscCard + discFlair.js tier logic, Settings toggle |
+| Disc comparison view (side-by-side stats) | IN PROGRESS | J2 (jump-ahead, DEVELOPMENT_PLAN). Personal-cohort v1: /bag/compare, reuse effectiveFlightNumbers + FlightCurve |
 | Disc universe: manual disc/mold population | BACKLOG | REPLACES the scrapped automated seed. Owner populates `disc_molds` by hand later — add-disc UI or an owner-supplied one-time seed SQL. No scraping, no attribution-import pipeline. See DEVELOPMENT_PLAN.md §1B population policy. |
 | Disc universe: MVP/Axiom/Streamline + Innova seed (automated import) | REJECTED | SCRAPPED 2026-07-13. Was: manufacturer-site import with attribution; bounded official MVP snapshot adapter covering four molds. Abandoned — owner will populate discs manually instead. Live crawl proved the pipeline works end-to-end but the parser can't read MVP's current live page format (flight numbers moved to prose, no `data-flight` attr); not worth maintaining a scraper against a site we don't control. |
 | Disc universe: full ingestion pipeline (1F) | REJECTED | SCRAPPED 2026-07-13. Built and deployed: B1.5–B1.7 server-only staging RPC/store, official MVP adapter, bounded product-page fetch/parser, conditional fetch, bounded crawl, review→promote RPCs, provenance, raw-artifact guard, admin JWT boundary, admin review UI. All functional (CORS fix verified end-to-end). Code + `catalog_*` tables + Edge Functions PARKED in place (not deleted — ask owner before removing). Reason: manual population chosen over maintaining automated ingestion. |

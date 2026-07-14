@@ -139,13 +139,13 @@ Four tracks. Tracks 1–2 are sequential build work; Track 3 is an experimental 
 
 ## Track 1 — Foundation data (committed, in flight)
 
-### 1A. Player profile expansion — NEXT UP
+### 1A. Player profile expansion — SHIPPED
 - **Schema:** `phase_a_profile_schema.sql` (generated) — handedness, per-throw confidence + max distance (value+source pattern), C1 comfort, specialty_shots[], target_rating, units, private injury_notes
 - **UI:** sectioned profile page at `/profile` (Identity / Throwing / Calibration / Goals), edit-in-place per section; first-login nudge when throwing profile empty
 - **Rules:** injury_notes never selected in any shared/social view (convention + query discipline)
 - **Model:** Sonnet 5 · **Effort:** S · **Test:** save/reload each section; check constraints reject bad enums
 
-### 1B. Disc molds reference + locker migration
+### 1B. Disc molds reference + locker migration — SHIPPED
 
 > **⚠️ Population policy (decided 2026-07-13): automated catalog ingestion is SCRAPPED.**
 > Do NOT build, extend, run, or re-plan a manufacturer-site scraper / server ingestion pipeline to
@@ -167,7 +167,7 @@ Four tracks. Tracks 1–2 are sequential build work; Track 3 is an experimental 
 - **UI:** `/bag/locker`, `/bag/discs/new` (search molds → pick/create → customize), `/bag/discs/:id`
 - **Effort:** M–L · **Test:** migration dry-run against copy of data; effective-flight-number coalesce unit tests
 
-### 1C. Bags + membership + flight chart
+### 1C. Bags + membership + flight chart — SHIPPED
 - **Schema (to generate):** `bags` (name, description, bag_type, is_default via partial unique index, capacity) + `bag_discs` join (unique pair, RLS via bag ownership)
 - **Tandem accommodation:** add nullable `bag_id` FK to `rounds` ("which bag was I carrying") — enables per-bag performance stats and caddie context later
 - **Rules:** disc can be in multiple bags; lost/retired/sold excluded from bag views, memberships preserved
@@ -188,7 +188,7 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Needs:** Vercel account + GitHub repo connection (auto-deploy on push to main); env vars (Supabase URL/anon key) set in Vercel dashboard; `vite-plugin-pwa` for manifest + basic service worker (app-shell caching only — NOT offline data, that's 2.2's buffering)
 - **Model:** Sonnet 5 · **Effort:** S · **Test:** install to phone home screen; full auth + logging flow on cellular, not just wifi
 
-### 1E. Bag & Disc Manager UI + app-level navigation
+### 1E. Bag & Disc Manager UI + app-level navigation — SHIPPED
 - **Concept:** game-inventory mental model — **locker = inventory** (all owned discs), **bags = loadouts** (equipped subsets), **profile = character sheet**, **flight chart = stat coverage**. Future round tracking selects a loadout whose disc attributes are all referenceable.
 - **App nav:** bottom tab bar ships now — Practice / Bag / Profile — replacing header-icon navigation. Rounds and Caddie tabs added as those areas are built (5-tab cap matches full roadmap; "More" tab absorbs overflow if ever needed).
 - **Locker UI:** grid ⇄ list toggle via peripheral icon (persist preference). Cards are clean/minimal in v1: name/nickname, flight numbers, photo thumbnail, stability accent, status. Search + filter (manufacturer, speed class, stability, status) + sort (speed, stability, recently added).
@@ -197,6 +197,71 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Deferred game flair (backlog):** rarity-style borders, equip animations, full stat-block card mode.
 - **Model:** Sonnet 5 · **Effort:** M · **Test:** grid/list toggle persists; equip/unequip reflects in both locker and bag views; search/filter correct on effective numbers
 - **Note:** 1C shipped schema + possibly partial UI with no navigation entry point — session must first audit what exists at /bag routes and wire or build accordingly.
+
+---
+
+## Jump-ahead features — out of roadmap sequence (owner decision 2026-07-14)
+
+These three were selected by the owner to build **ahead of their `PRODUCT_ROADMAP.md` phase**, a
+deliberate, documented jump (not a sequencing violation). Each is safe to build now because its schema is
+already live and it is self-contained. **1A/1B/1C/1E above are SHIPPED** — do not rebuild them; the older
+"NEXT UP / to generate" wording was stale. Detailed handoff plan: `~/.claude/plans/1a-2yes-bright-pelican.md`.
+Recommended build order: J1 → J2 → J3 (J2/J3 are independent). Each feature runs the full per-session
+gate (build + lint + `vitest run` + `graphify update .` + DEVLOG entry + working-checkpoint commit on a
+feature branch; `main` auto-deploys). State + verify the recommended model at the start of each.
+
+### J1. Round logging + quick-course (new COURSES tab) — front-runs roadmap Phase E
+- **Model: GPT-5.6 high** (round state + schema/RLS) · **Effort:** L
+- **Schema:** already exists, all tables empty, **no new columns** — `courses`, `layouts`, `holes`,
+  `rounds`, `round_holes`, `course_aliases` (1.5 groundwork applied: `rounds.layout_id/external_source/
+  external_ref/bag_id`, first-class `layouts`, `holes.layout_id`, sparse-nullable `round_holes`). Only DB
+  work is a new **RLS-policy migration** (take a manual backup first): `courses`/`layouts`/`holes` =
+  community read-all-authenticated, insert-open (`created_by = auth.uid()`), update-creator-only (mirror
+  `disc_molds`); `rounds`/`round_holes` = owner-scoped to `auth.uid()`; `course_aliases` = insert-open/
+  update-closed.
+- **Data layer (mirror the shipped offline-first pattern):** new `src/lib/roundLog.js` (Supabase query
+  functions, single source of query shape — mirrors `src/lib/discLocker.js`) with `fetchRounds`,
+  `fetchRound` (join `round_holes`+`holes`+optional disc), `createRound`, `updateRound`, `upsertRoundHole`,
+  and course helpers `fetchCourses`, `fetchCourse`, `createCourseWithLayout({name,location,holes})`
+  (quick-course: course + default layout + N holes), `fetchLayoutHoles`. Use client-id upsert on
+  `onConflict:'id'` for idempotent replay (copy `upsertDisc`). New `src/lib/repository/roundRepository.js`
+  mirroring `discRepository.js` (`useRoundList/useCreateRound/useUpdateRound`). `dexieDb.js`: add
+  `version(5)` carrying v4 tables unchanged + `rounds: 'id, user_id, course_id, status, [user_id+status]'`
+  and `roundHoles: 'id, round_id, hole_id'`.
+- **Pure logic:** `src/lib/rounds.js` (+ `rounds.test.js`): `roundTotal`, `parTotal`, `relativeToPar`
+  (handle sparse rounds), `formatRelativeToPar` (`E`/`+3`/`-2`).
+- **Routes** under the new COURSES tab (inside `AppShell`): `/courses` (root: directory + Add course + My
+  rounds), `/courses/new` (quick-course), `/courses/:courseId` (detail + Start round), `/rounds` (history),
+  `/rounds/new` (pick course/layout + bag), `/rounds/:roundId` (active scorecard), `/rounds/:roundId/summary`
+  (finalize). New pages: `CoursesPage`, `CourseFormPage`, `CourseDetailPage`, `RoundsPage`, `RoundStartPage`,
+  `RoundScorecardPage`, `RoundSummaryPage`.
+- **Shell/nav:** add a **COURSES** tab to `src/components/AppShell.jsx` (between DISCS and ME → PLAY /
+  DISCS / COURSES / ME; Tabler outline icon); register routes in `src/App.jsx` like the `/bag` tree.
+- **Reuse:** `fetchBags` for bag pick; `useDiscList`/`DiscCard` for per-hole disc; field-screen ergonomics
+  (primary controls in viewport, secondary in sheets; TTFP not network-gated).
+- **Verify:** create quick course → start round → enter scores → finalize; total + relative-to-par correct
+  and match unit tests; reload mid-round persists (Dexie); second user can't read the round (RLS).
+
+### J2. Disc comparison view — front-runs roadmap Phase C item 5
+- **Model: GPT-5.3-Codex medium** · **Effort:** S · **No new schema.**
+- Add a **Compare multi-select mode** to `src/pages/BagLockerPage.jsx` (reuse the existing `addToBag`
+  picker toggle) → "Compare (n)" navigates to `/bag/compare?ids=…` (cap 2–4). New `/bag/compare` route +
+  `src/pages/DiscComparePage.jsx`.
+- Reuse `effectiveFlightNumbers` (`src/lib/discs.js`), `stabilityClass`/`stabilityColor`
+  (`src/lib/discFilters.js`), and overlaid `FlightCurve` (`src/components/putterLineup/FlightCurve.jsx`).
+  Side-by-side table + curves. Pure `src/lib/discCompare.js` (+ test) for per-axis min/max highlight and
+  near-identical-disc "gap" flags — derived only, no opaque composite (roadmap rule).
+- **Verify:** select 2–3 discs → numbers equal `effectiveFlightNumbers`, curves overlay, override axis shows.
+
+### J3. Game-flair disc cards — front-runs roadmap Phase B item 5 / deferred backlog
+- **Model: GPT-5.3-Codex medium** · **Effort:** S.
+- Extend `src/components/DiscCard.jsx` with a `flair` variant (default OFF → today's minimal card is
+  byte-identical): rarity border, stat-block layout, subtle mount/equip animation. Pure `src/lib/discFlair.js`
+  (+ test) `discTier(disc)` from an available signal for v1 (role/wear_score/status) — note the real
+  cosmetic-tier **unlock events (Phase B item 5) are unbuilt** and are the eventual backing source.
+- Opt-in via a **Settings toggle** stored through the `src/lib/viewPreference.js` pattern. CSS in
+  `src/App.css` honoring "Sun-Drenched Topo" (no pure black/white, ≥2px borders, Oswald, theme-correct).
+- **Verify:** toggle on → rarity styling renders and is correct in light+dark; toggle off → identical to today.
 
 ---
 

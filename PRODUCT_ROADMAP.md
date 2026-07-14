@@ -8,6 +8,12 @@ integration map; older tracks and layers in `DEVELOPMENT_PLAN.md` are historical
 Layer 1–4 work. New work extends the shipped React/Vite/Supabase app and never adopts the blueprint's
 greenfield Expo schema literally.
 
+> **Deliberate out-of-sequence work (owner decision 2026-07-14):** three features are being built ahead
+> of their phase order — Round logging + quick-course/COURSES tab (Phase E), Disc comparison view
+> (Phase C), and Game-flair disc cards (Phase B cosmetic). Each is self-contained with live schema, so
+> the jump is intentional, not a sequencing violation. See `DEVELOPMENT_PLAN.md` "Jump-ahead features"
+> (J1–J3) and `~/.claude/plans/1a-2yes-bright-pelican.md`.
+
 ## Product structure
 
 - Bottom navigation now targets **PLAY / DISCS / ME**. A **COURSES** tab is added when the course
