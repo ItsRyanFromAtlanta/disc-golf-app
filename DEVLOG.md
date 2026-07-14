@@ -1,5 +1,28 @@
 # Dev Log
 
+## 2026-07-14 — Executed the catalog-ingestion teardown (code + functions + DB)
+
+**What:** Carried out the scrap decided the day before. Removed the entire ingestion surface from the
+repo (26 files, ~5k lines): both Edge Function dirs, all `_shared/catalog*`+`mvp*` modules,
+`AdminCatalogReviewPage.jsx`, `src/lib/catalogAdmin.js`, `src/lib/catalog/*`, the dead
+`src/lib/repository/catalogRepository.js`, and the `/admin/catalog` route in `App.jsx`. Deleted the
+`catalog-ingestion` and `catalog-ingestion-admin` Edge Functions from the live project. Applied a DB
+teardown migration (`20260714120000`) that dropped the ingestion-only tables
+(`catalog_import_batches/candidates/artifacts/candidate_reviews`, `private.catalog_ingestion_admins`),
+the ingestion RPCs and their private helpers (enumerated by exact name via a `pg_proc` DO block — no
+`catalog_%` wildcard, so no foundation/submission helper was caught).
+**Preserved (verified via list_tables before + after):** the catalog foundation — `manufacturers` (4),
+`disc_molds` (36), `discs` (20), `catalog_sources` (4) — and the whole submission flow
+(`catalog_submissions`/`_reviews`/`_evidence`), plastics/runs/stamps, `user_disc_configurations`. Row
+counts unchanged. `discs.mold_id` FK intact.
+**Verified:** 333 unit tests pass (34 files), build + lint clean, app loads in-browser with the route
+gone and no console errors. Migration applied cleanly on the second attempt.
+**Gotcha:** the first apply rolled back atomically — Supabase blocks direct `DELETE` on
+`storage.objects`/`storage.buckets` (`storage.protect_delete`). Removed the bucket-delete from the
+migration; the empty `catalog-import-raw` bucket (0 objects, confirmed) is left for a one-click dashboard
+deletion since the CLI only manages objects, not buckets, and bucket deletion needs the Management API.
+**Follow-up left for owner:** delete the empty `catalog-import-raw` Storage bucket from the dashboard.
+
 ## 2026-07-13 — Scrapped catalog ingestion; discs to be populated manually
 
 **Decision:** Abandon the automated catalog-ingestion effort. `disc_molds` will be populated **manually**

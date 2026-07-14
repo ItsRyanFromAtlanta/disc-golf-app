@@ -72,8 +72,10 @@ begin
   end loop;
 end $$;
 
--- 4. Raw-artifact private Storage bucket (objects first, then the bucket).
-delete from storage.objects where bucket_id = 'catalog-import-raw';
-delete from storage.buckets where id = 'catalog-import-raw';
-
 commit;
+
+-- 4. The raw-artifact private Storage bucket ('catalog-import-raw') is removed
+--    out-of-band via the Storage API, NOT here: Supabase blocks direct DELETE on
+--    storage.objects/buckets (storage.protect_delete). The bucket held 0 objects
+--    (no batch was ever staged), so removing it is a no-data-loss cleanup done
+--    through the CLI/dashboard alongside this migration.

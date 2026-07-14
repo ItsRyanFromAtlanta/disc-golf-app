@@ -23,13 +23,14 @@ Last updated: 2026-07-13
   tables are live with RLS and least-privilege grants and hold real data (four manufacturers, 36 molds,
   20 physical `discs` across three owners with `mold_id` links). This is the schema manual population
   targets — keep it. `discs.mold_id` FKs into `disc_molds`; never drop it.
-- **Database teardown state:** The ingestion-only DB objects (staging/candidate/artifact/review tables,
+- **Database teardown state:** DONE (2026-07-14, migration `20260714120000`, applied after a confirmed
+  manual backup). Dropped the ingestion-only DB objects: the staging/candidate/artifact/review tables,
   the `catalog_assert_ingestion_admin` / `catalog_review_candidate` / `catalog_promote_import_batch` /
-  staging RPCs, the `private.catalog_ingestion_admins` allowlist, and the `catalog-import-raw` Storage
-  bucket) are targeted for a dedicated drop migration. Per project rule, that migration runs ONLY after a
-  confirmed manual Supabase backup and must preserve every foundation table above. The migration files
-  that created these objects stay as append-only history — the teardown is a new forward migration, not a
-  deletion of past files.
+  `catalog_stage_import` / `catalog_ensure_source` RPCs and their private helpers, and the
+  `private.catalog_ingestion_admins` allowlist. Every foundation table was preserved (verified before +
+  after). The migration files that created these objects stay as append-only history. **One follow-up
+  remains:** delete the empty `catalog-import-raw` Storage bucket from the Supabase dashboard — direct
+  DELETE on storage tables is blocked, and the CLI manages objects, not buckets.
 - **Resume point:** Track 1 continues at 1A (player profile expansion) / 1B disc-molds schema +
   migration whenever the owner hand-populates discs. The 1B mold-derivation migration (molds from
   distinct manufacturer/mold pairs in existing `discs`) is still valid and no longer blocked on any seed.
