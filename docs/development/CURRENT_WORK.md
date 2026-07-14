@@ -106,15 +106,27 @@ Last updated: 2026-07-12
   "multi-page crawler, admin-triggered" over a recurring scheduled job). 403 unit tests pass (10 new),
   build/lint/graphify gates re-ran clean. Redeployed to the live Edge Function (version 3); live smoke
   test with a crawl-mode body and no bearer token still returns 401.
+- **Current admin UI checkpoint:** added `/admin/catalog` (direct URL only, not in player nav),
+  gated by `ProtectedRoute` plus a server-side allowlist check reused from `catalog_assert_ingestion_admin`.
+  Extended `catalog-ingestion-admin` with `list_batches`/`list_candidates` read operations (no new
+  migration — the tables already had zero client-facing RLS policies), and refactored its `index.ts`
+  into a testable `createCatalogAdminHandler` factory matching `catalog-ingestion`'s pattern. Added
+  `src/lib/catalogAdmin.js` and `AdminCatalogReviewPage.jsx` (list batches → review candidates with a
+  required reason → promote). 416 unit tests pass (13 new), build/lint/graphify gates re-ran clean.
+  Browser-confirmed the unauthenticated redirect works; could NOT browser-verify the signed-in
+  "unauthorized" render or the reviewer happy path because guest sign-in doesn't complete in this dev
+  environment and no admin session was available — the 401/403/400 logic itself is fully unit-tested.
 - **Context recommendation:** keep the official MVP snapshot staged-only until an explicit review
-  record is selected and promoted through the now-live admin path. Do not promote the historical public
-  CSV candidate without a verified license/provenance review; do not add canonical catalog writes to
-  staging or grant the admin allowlist casually. Do not add a cron/pg_cron job for this crawler without
-  explicit direction — the user chose bounded/admin-triggered specifically over recurring automation.
-  B1.7-scope ingestion work (staging RPC/store, protected Edge Function, conditional fetch, crawler) is
-  now complete and deployed end-to-end. Next up: the admin review UI — there is currently zero UI for
-  reviewing/promoting staged candidates, only the RPC/Edge Function layer. The verified B1.8 follow-on
-  archive is outside Git at `C:\tmp\disc-golf-app-backups\20260712-212738`.
+  record is selected and promoted through the admin path. Do not promote the historical public CSV
+  candidate without a verified license/provenance review; do not add canonical catalog writes to
+  staging or grant the admin allowlist casually. Do not add a cron/pg_cron job for the crawler without
+  explicit direction. **The admin allowlist is still empty** — the user needs to explicitly grant their
+  own account access to `private.catalog_ingestion_admins` before the new review UI's write actions can
+  be exercised; do not add that row unilaterally. B1.7-scope ingestion work (staging RPC/store,
+  protected Edge Function, conditional fetch, crawler, admin review UI) is now feature-complete; next
+  up is redeploying `catalog-ingestion-admin`, then eventually the mold-migration script once a batch
+  has actually been promoted. The verified B1.8 follow-on archive is outside Git at
+  `C:\tmp\disc-golf-app-backups\20260712-212738`.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

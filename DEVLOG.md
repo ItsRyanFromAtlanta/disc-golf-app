@@ -1,5 +1,31 @@
 # Dev Log
 
+## 2026-07-13 — Added the catalog admin review UI
+
+**What:** Built the first admin-facing screen for the B1.7 pipeline: `/admin/catalog`, reachable only
+by direct URL (not linked from the player-facing PLAY/DISCS/ME nav), gated by `ProtectedRoute` plus a
+server-side allowlist check. Extended `catalog-ingestion-admin` with two read-only operations —
+`list_batches` and `list_candidates` — that reuse the existing `catalog_assert_ingestion_admin` RPC for
+authorization before querying with the service-role client; no new migration or RLS policy was needed
+since `catalog_import_batches`/`catalog_import_candidates` already had zero policies (service-role only)
+and the assert-RPC already existed. Refactored the previously-monolithic `catalog-ingestion-admin`
+`index.ts` into a dependency-injected `createCatalogAdminHandler` factory (`catalogIngestionAdminHandler.js`),
+matching `catalog-ingestion`'s testable pattern; the existing `review`/`promote` RPC dispatch is
+unchanged. Added `src/lib/catalogAdmin.js` (first client-side use of `supabase.functions.invoke`) and
+`AdminCatalogReviewPage.jsx`: lists staged batches, lets an admin approve/reject/needs-changes each
+candidate with a required reason, and promotes a fully-reviewed batch.
+**Verified:** 416 unit tests pass (13 new), production build passes, lint retains only the four
+pre-existing warnings, graphify refreshed to 1,406 nodes and 2,944 edges. Confirmed in the browser that
+an unauthenticated request to `/admin/catalog` redirects away (`ProtectedRoute` working). Could not
+browser-verify the signed-in-but-not-admin "unauthorized" render or the reviewer happy path — guest
+sign-in in this dev environment doesn't complete (no auth network call fires; appears unrelated to this
+change) and no admin test-account session was available. The 401/403/400 gating logic itself has full
+unit coverage in `catalogIngestionAdminHandler.test.js`.
+**Handoff:** The admin allowlist (`private.catalog_ingestion_admins`) is still empty — nobody, including
+the project owner, can use this screen's write actions yet. Adding an allowlist row is a deliberate,
+security-sensitive step left for the user to take explicitly (not done here). Once granted, worth a
+manual pass through the review → promote flow in the real browser.
+
 ## 2026-07-13 — Redeployed catalog-ingestion with crawl mode
 
 **What:** Redeployed `catalog-ingestion` (version 3) carrying the crawl-mode handler/contract changes

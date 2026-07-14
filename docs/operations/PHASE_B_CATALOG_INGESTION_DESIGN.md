@@ -263,6 +263,12 @@ Before any production ingestion or canonical promotion:
     unauthenticated crawl-mode request. B1.7-scope ingestion work is complete end-to-end; the admin
     review UI is the only remaining gap.
 
+14. **Complete (2026-07-13):** Added the admin review UI at `/admin/catalog` (direct URL, not in the
+    player nav). `catalog-ingestion-admin` gained `list_batches`/`list_candidates` read operations,
+    authorized via the existing `catalog_assert_ingestion_admin` RPC — no new migration, since the
+    staging tables already had zero client-facing RLS policies (service-role only). The admin allowlist
+    remains empty; granting it is left to the user as an explicit, separate step. Not yet redeployed.
+
 No step above authorizes automatic canonical writes from remote ingestion, and no step introduces a
 recurring/scheduled crawl — every crawl or stage run is explicit and admin-triggered.
 
