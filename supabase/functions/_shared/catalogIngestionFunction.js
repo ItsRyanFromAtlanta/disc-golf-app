@@ -66,7 +66,7 @@ function statusForCode(code) {
 }
 
 export const CATALOG_INGESTION_CORS_HEADERS = Object.freeze({
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  'Access-Control-Allow-Headers': 'authorization, apikey, x-client-info, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Origin': '*',
   'Content-Type': 'application/json',

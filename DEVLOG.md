@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-13 — Admin allowlist granted; fixed CORS header gap blocking the review UI
+
+**What:** The project owner granted their account into `private.catalog_ingestion_admins` (manual SQL,
+per the documented handoff). First real signed-in visit to `/admin/catalog` then failed with
+`catalog_admin_operation_failed` — but the Edge Function logs showed only the OPTIONS preflight
+arriving, never the POST. Root cause: `supabase.functions.invoke()` always sends `apikey` and
+`x-client-info` headers, but both catalog Edge Functions' `Access-Control-Allow-Headers` allowed only
+`authorization, content-type`, so the browser passed the preflight but blocked the actual request
+client-side. Added `apikey, x-client-info` to the CORS allowlist in `catalogIngestionAdminHandler.js`
+and `catalogIngestionFunction.js`.
+**Verified:** 416 unit tests pass. Redeployed `catalog-ingestion-admin` (version 3); browser-confirmed
+the signed-in admin happy path now works end-to-end — `/admin/catalog` authenticates, calls
+`list_batches`, and renders the legitimate "No staged batches" empty state. A direct authed `fetch`
+also returns `200 {"result":[]}`, confirming the allowlist grant itself.
+**Handoff:** `catalog-ingestion` carries the same fix locally but has NOT been redeployed yet — redeploy
+it before triggering the first admin crawl. The review → promote flow remains unexercised because zero
+batches are staged; the next milestone is redeploy + first live crawl to stage a batch, then a full
+review/promote pass, then the `disc_molds` migration script.
+
 ## 2026-07-13 — Redeployed catalog-ingestion-admin with the review UI's read ops
 
 **What:** Redeployed `catalog-ingestion-admin` (version 2) carrying the `list_batches`/`list_candidates`
