@@ -1,5 +1,17 @@
 # Dev Log
 
+## 2026-07-13 — Redeployed catalog-ingestion with crawl mode
+
+**What:** Redeployed `catalog-ingestion` (version 3) carrying the crawl-mode handler/contract changes
+and the new `mvpCatalogCrawl.js`, added to the flattened deploy file set with its import rewritten to
+the flat `./mvpCatalogAdapter.js` path (the local source correctly uses `./adapters/mvpCatalogAdapter.js`
+— these differ by design, see the deploy convention notes in earlier entries).
+**Verified:** Live smoke test with a `{mode: 'crawl', jobId: 'smoke-test'}` body and no bearer token
+still returns 401 `catalog_admin_auth_required` — auth is checked before mode routing, as designed.
+**Handoff:** B1.7-scope ingestion work (staging RPC/store, protected Edge Function, conditional fetch,
+crawler) is now complete and deployed end-to-end. Next: the admin review UI — there is currently zero
+UI for reviewing/promoting staged candidates, only the RPC/Edge Function layer.
+
 ## 2026-07-12 — Added bounded, admin-triggered MVP crawl mode
 
 **What:** Added `mvpCatalogCrawl.js`, a server-only orchestrator that stages a curated list of four
