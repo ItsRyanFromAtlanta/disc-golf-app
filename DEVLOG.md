@@ -1,5 +1,25 @@
 # Dev Log
 
+## 2026-07-13 — Scrapped catalog ingestion; discs to be populated manually
+
+**Decision:** Abandon the automated catalog-ingestion effort. `disc_molds` will be populated **manually**
+by the owner, later (add-disc UI or an owner-supplied one-time seed SQL), not by a manufacturer-site
+scraper. Trigger: the first live crawl proved the pipeline works end-to-end (auth, CORS, fetch,
+throttle, staging boundary all correct) but the parser couldn't read MVP's current live page — flight
+numbers now live in prose ("flight numbers of 2 | 5 | -0.5 | 0.5") with no `data-flight` attribute, so
+all 4 targets failed with `mvp_flight_numbers_missing` and 0 batches staged. Maintaining a scraper
+against a site we don't control isn't worth it for a solo catalog.
+**What changed:** Documentation only. Added a standing "population policy" note to `DEVELOPMENT_PLAN.md`
+§1B (disc molds section); flipped the three `FEATURE_BACKLOG.md` disc-universe ingestion rows to
+REJECTED with reasoning preserved, and added a new BACKLOG row for manual population.
+**Parked, not deleted:** The `catalog-ingestion` / `catalog-ingestion-admin` Edge Functions (both live,
+CORS fix included), all `supabase/functions/_shared/catalog*`/`mvp*` modules, `src/pages/AdminCatalogReviewPage.jsx`,
+`src/lib/catalogAdmin.js`, and the `catalog_*` staging tables + `private.catalog_ingestion_admins`
+allowlist remain in place, out of scope. Removing them (and revoking the admin grant) is a separate
+cleanup to run only if the owner asks.
+**Next:** Track 1 resumes at 1A (player profile) / 1B disc-molds schema + migration whenever the owner
+is ready to hand-populate; the migration step still derives molds from manually-entered discs.
+
 ## 2026-07-13 — Admin allowlist granted; fixed CORS header gap blocking the review UI
 
 **What:** The project owner granted their account into `private.catalog_ingestion_admins` (manual SQL,

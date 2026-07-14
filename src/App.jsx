@@ -21,7 +21,6 @@ import BagManagePage from './pages/BagManagePage'
 import DiscFormPage from './pages/DiscFormPage'
 import DiscDetailPage from './pages/DiscDetailPage'
 import NotificationsPage from './pages/NotificationsPage'
-import AdminCatalogReviewPage from './pages/AdminCatalogReviewPage'
 import './App.css'
 
 function App() {
@@ -74,17 +73,6 @@ function App() {
           <Route path="discs/:discId" element={<DiscDetailPage />} />
         </Route>
       </Route>
-
-      {/* Internal data-curation tooling, not linked from the player-facing
-          PLAY/DISCS/ME nav. Server-side allowlist gates the actual data. */}
-      <Route
-        path="/admin/catalog"
-        element={
-          <ProtectedRoute>
-            <AdminCatalogReviewPage />
-          </ProtectedRoute>
-        }
-      />
 
       {/* Old flat URLs from the v1/v2 slices */}
       <Route path="/regimens" element={<Navigate to="/practice/regimens" replace />} />

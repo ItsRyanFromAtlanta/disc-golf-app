@@ -146,9 +146,24 @@ Four tracks. Tracks 1–2 are sequential build work; Track 3 is an experimental 
 - **Model:** Sonnet 5 · **Effort:** S · **Test:** save/reload each section; check constraints reject bad enums
 
 ### 1B. Disc molds reference + locker migration
+
+> **⚠️ Population policy (decided 2026-07-13): automated catalog ingestion is SCRAPPED.**
+> Do NOT build, extend, run, or re-plan a manufacturer-site scraper / server ingestion pipeline to
+> populate `disc_molds`. The owner will populate discs **manually, later**. Standing instructions for
+> any future session touching this section:
+> - **Populate `disc_molds` by hand**, when the owner is ready — either a hand-written one-time seed
+>   SQL migration (curated mold specs the owner supplies) or the existing manual add-disc UI. There is
+>   no seed-import dependency and no scraping step anymore.
+> - **The migration step below is still valid** (it derives molds from discs the owner already entered),
+>   but it is no longer blocked on or preceded by any automated seed.
+> - **The existing Phase B catalog-ingestion code is parked, not deleted** — the `catalog-ingestion` /
+>   `catalog-ingestion-admin` Edge Functions, `supabase/functions/_shared/catalog*`/`mvp*` modules,
+>   `src/pages/AdminCatalogReviewPage.jsx`, `src/lib/catalogAdmin.js`, and the `catalog_*` staging tables
+>   remain in place but are out of scope. Don't build on them. (Ask the owner before removing any of it.)
+
 - **Schema (to generate):** `disc_molds` (shared; insert-open, update-closed RLS; unique on lower(manufacturer), lower(mold_name); nullable enrichment: image_url, pdga_approved_date, production_status, plastics[], diameter, rim width) + `discs` alterations (mold_id FK, nickname, weight_grams, color, override flight numbers, photo_url, acquired_on, provenance, status lifecycle)
 - **Migration:** script creating molds from distinct (manufacturer, mold) pairs in existing discs, linking copies, moving manual numbers to overrides where they differ from stock. **Model: Opus 4.8** — destructive-adjacent data work
-- **Seed:** import script pulling mold specs from manufacturer sites (MVP/Axiom/Streamline first), Infinite Discs as fallback; one-time seed, not ongoing scraping; manual entry always available
+- **Seed:** ~~import script pulling mold specs from manufacturer sites~~ **(scrapped — see population policy above).** Discs/molds are populated manually by the owner; manual entry via the add-disc UI is the standing path, with an optional owner-supplied one-time seed SQL if a bulk load is wanted.
 - **UI:** `/bag/locker`, `/bag/discs/new` (search molds → pick/create → customize), `/bag/discs/:id`
 - **Effort:** M–L · **Test:** migration dry-run against copy of data; effective-flight-number coalesce unit tests
 
