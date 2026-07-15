@@ -210,7 +210,7 @@ Recommended build order: J1 → J2 → J3 (J2/J3 are independent). Each feature 
 gate (build + lint + `vitest run` + `graphify update .` + DEVLOG entry + working-checkpoint commit on a
 feature branch; `main` auto-deploys). State + verify the recommended model at the start of each.
 
-### J1. Round logging + quick-course (new COURSES tab) — front-runs roadmap Phase E
+### J1. Round logging + quick-course (new COURSES tab) — SHIPPED 2026-07-14; front-runs roadmap Phase E
 - **Model: GPT-5.6 high** (round state + schema/RLS) · **Effort:** L
 - **Schema:** already exists, all tables empty, **no new columns** — `courses`, `layouts`, `holes`,
   `rounds`, `round_holes`, `course_aliases` (1.5 groundwork applied: `rounds.layout_id/external_source/
@@ -241,6 +241,10 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
   (primary controls in viewport, secondary in sheets; TTFP not network-gated).
 - **Verify:** create quick course → start round → enter scores → finalize; total + relative-to-par correct
   and match unit tests; reload mid-round persists (Dexie); second user can't read the round (RLS).
+  **Completed:** live policy migration applied, rollback-only authenticated RLS smoke passed, full local
+  test/build/lint gate passed, graph refreshed, and browser route smoke reached the auth gate without
+  console errors. The deployed composite round/activity FK is satisfied by the repository's matching
+  activity-parent lifecycle bridge.
 
 ### J2. Disc comparison view — front-runs roadmap Phase C item 5
 - **Model: GPT-5.3-Codex medium** · **Effort:** S · **No new schema.**

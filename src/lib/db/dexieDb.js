@@ -77,6 +77,29 @@ export class AppDatabase extends Dexie {
       outbox:
         '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
     })
+
+    // J1: round logging mirrors private round parents and scorecard children
+    // locally so a field session can survive a reload without a network. The
+    // shared course/layout/hole reference data remains remote-only in v1; a
+    // successfully loaded round cache carries the hole snapshot needed by an
+    // active scorecard.
+    this.version(5).stores({
+      discs: 'id, user_id, mold_id, status',
+      bags: 'id, user_id',
+      bagDiscs: 'id, bag_id, disc_id',
+      regimens: 'id, user_id, difficulty',
+      regimenRuns: 'id, user_id, regimen_id',
+      puttSessions: 'id, user_id',
+      profile: 'id',
+      activities: 'id, user_id, type, state, [user_id+state], hidden_at, updated_at',
+      activityStateEvents: 'id, activity_id, user_id, idempotency_key, [activity_id+recorded_at]',
+      auditEvents: 'id, user_id, entity_type, entity_id, action, idempotency_key, [entity_id+recorded_at]',
+      notifications: 'id, user_id, category, priority, read_at, resolved_at, expires_at, dedupe_key, [user_id+resolved_at], [user_id+read_at], [user_id+dedupe_key]',
+      rounds: 'id, user_id, course_id, status, [user_id+status]',
+      roundHoles: 'id, round_id, hole_id',
+      outbox:
+        '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
+    })
   }
 }
 

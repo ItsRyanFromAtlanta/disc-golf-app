@@ -17,6 +17,19 @@ describe('route metadata contract', () => {
     expect(resolveRouteMetadata('/practice')).toMatchObject({ id: 'play-root', section: 'play', scrollKey: 'play-root' })
     expect(resolveRouteMetadata('/bag')).toMatchObject({ id: 'discs-root', section: 'discs', scrollKey: 'discs-root' })
     expect(resolveRouteMetadata('/profile')).toMatchObject({ id: 'me-root', section: 'me', scrollKey: 'me-root' })
+    expect(resolveRouteMetadata('/courses')).toMatchObject({ id: 'courses-root', section: 'courses', scrollKey: 'courses-root' })
+  })
+
+  it('classifies the course and round trees with explicit workflow metadata', () => {
+    expect(resolveRouteMetadata('/courses/new')).toMatchObject({
+      id: 'courses-new',
+      section: 'courses',
+      preserveNestedState: true,
+    })
+    expect(resolveRouteMetadata('/courses/course-1')).toMatchObject({ id: 'course-detail', section: 'courses' })
+    expect(resolveRouteMetadata('/rounds/new')).toMatchObject({ id: 'round-start', preserveNestedState: true })
+    expect(resolveRouteMetadata('/rounds/round-1')).toMatchObject({ id: 'round-scorecard', preserveNestedState: true })
+    expect(resolveRouteMetadata('/rounds/round-1/summary')).toMatchObject({ id: 'round-summary', preserveNestedState: false })
   })
 
   it('keeps the global notification fallback inside the standard shell', () => {
@@ -59,7 +72,7 @@ describe('route metadata contract', () => {
     expect(resolveSectionRoot('play')).toBe('/practice')
     expect(resolveSectionRoot('discs')).toBe('/bag')
     expect(resolveSectionRoot('me')).toBe('/profile')
-    expect(resolveSectionRoot('courses')).toBeNull()
+    expect(resolveSectionRoot('courses')).toBe('/courses')
   })
 
   it('returns null for an unknown path instead of inventing shell behavior', () => {

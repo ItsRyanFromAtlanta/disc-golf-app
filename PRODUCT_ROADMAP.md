@@ -16,8 +16,8 @@ greenfield Expo schema literally.
 
 ## Product structure
 
-- Bottom navigation now targets **PLAY / DISCS / ME**. A **COURSES** tab is added when the course
-  directory ships. The standalone STATS destination is obsolete: statistics live with their subject,
+- Bottom navigation now targets **PLAY / DISCS / COURSES / ME** because the J1 course directory shipped
+  on 2026-07-14. The standalone STATS destination is obsolete: statistics live with their subject,
   while ME provides the career-wide summary.
 - PLAY prioritizes: resume unfinished activity → Quick Play → select routine → create routine →
   History. Only one activity may remain unfinished; starting another closes the previous activity as

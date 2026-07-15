@@ -58,11 +58,11 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 
 | Feature | Status | Notes |
 |---|---|---|
-| Round logging tree (/rounds: courses, holes, scores) | IN PROGRESS | J1 (jump-ahead ahead of roadmap Phase E, owner decision 2026-07-14). New COURSES tab + quick-course flow; schema ready (all empty), needs RLS migration + roundRepository. See DEVELOPMENT_PLAN §J1 |
+| Round logging tree (/rounds: courses, holes, scores) | SHIPPED | J1 shipped 2026-07-14: COURSES tab, quick-course, offline-first scorecard/history/finalization, activity-parent FK bridge, and live owner-scoped RLS. |
 | Live caddie chat (OpenAI Responses API, server-side) | BACKLOG | Schema exists; build after rounds/course prep and approve safety/cost/context policy |
 | Course prep views | BACKLOG | |
 | Stats tab (app-level) | REJECTED | Statistics are contextual; ME is the career-wide summary |
-| Bottom tab bar app nav | SHIPPED | Revise from PLAY/BAGS/STATS/PRO to approved PLAY/DISCS/ME; add COURSES later |
+| Bottom tab bar app nav | SHIPPED | Approved PLAY/DISCS/ME shell extended to PLAY/DISCS/COURSES/ME when the J1 course directory shipped |
 | PWA deploy + on-course testing | BACKLOG | |
 | Capacitor wrap (app stores, native GPS/camera) | LATER (deliberate) | Wider-audience phase |
 
@@ -165,14 +165,14 @@ into the blueprint integration and are cross-referenced there).
 
 | Feature | Status | Notes |
 |---|---|---|
-| Layouts as first-class entities (layouts table; holes/rounds re-pointed) | NEXT UP | Track 1.5 — must land before real round data; mirrors UDisc model |
-| Provenance columns on rounds/courses (external_source, external_ref) | NEXT UP | Track 1.5 — idempotent imports, native vs imported distinguishable |
-| course_aliases table | NEXT UP | Track 1.5 — UDisc name matching + catalog search synonyms; insert-open/update-closed |
-| bag_id on rounds | NEXT UP | Rides with 1C — per-bag performance stats, caddie context |
+| Layouts as first-class entities (layouts table; holes/rounds re-pointed) | SHIPPED | Track 1.5 groundwork consumed by J1 course/layout detail and scorecard |
+| Provenance columns on rounds/courses (external_source, external_ref) | SHIPPED | Track 1.5 groundwork retained for future imports; native J1 rows leave provenance nullable |
+| course_aliases table | SHIPPED | Track 1.5 groundwork; J1 applies authenticated insert-open/update-closed RLS |
+| bag_id on rounds | SHIPPED | J1 round setup optionally records the selected bag |
 | round_hole_id on putt_events | NEXT UP | Rides with 2.2 — tournament vs practice putting in one insights system |
 | UDisc CSV round import | BACKLOG | Score-only data; idempotent via provenance; verify current CSV format at build time |
-| Course catalog UI | BACKLOG | Next planning cycle after current execution order |
-| Round management UI (/rounds tree) | BACKLOG | Next planning cycle; weather auto-capture ships with it |
+| Course catalog UI | SHIPPED | J1 COURSES directory, quick-course form, layout/hole detail |
+| Round management UI (/rounds tree) | SHIPPED | J1 round setup, offline scorecard, history, and finalization; weather remains future work |
 | Data export (own-your-data CSV) | BACKLOG | Cheap trust-builder; build as importer rehearsal |
 | Same-day practice↔round linkage | BACKLOG | Derivable by date; insights lib join, no schema |
 

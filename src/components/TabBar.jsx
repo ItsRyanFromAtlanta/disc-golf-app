@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { IconBriefcase, IconTargetArrow, IconUserCircle } from '@tabler/icons-react'
+import { IconBriefcase, IconMap2, IconTargetArrow, IconUserCircle } from '@tabler/icons-react'
 import { resolveRouteMetadata, resolveSectionRoot } from '../lib/routeMetadata'
 import { resolveTabPressAction, TAB_PRESS_ACTIONS } from '../lib/tabNavigation'
 
 const TABS = [
   { section: 'play', label: 'Play', icon: IconTargetArrow },
   { section: 'discs', label: 'Discs', icon: IconBriefcase },
+  { section: 'courses', label: 'Courses', icon: IconMap2 },
   { section: 'me', label: 'Me', icon: IconUserCircle },
 ]
 

@@ -1,5 +1,30 @@
 # Dev Log
 
+## 2026-07-14 — Shipped J1 round logging + quick-course
+
+**What:** Built the new COURSES tree and round logger: course directory, quick-course creation,
+course/layout detail, round setup with optional bag, offline-first scorecard, round history, and
+finalization summary. Added `roundLog.js`, the Dexie v5 `rounds`/`roundHoles` stores, pure sparse-score
+helpers in `rounds.js`, route metadata/tests, the COURSES tab, and Sun-Drenched Topo field-screen styles.
+
+**Data contract:** Applied `20260714150000_phase_c_round_logging_rls.sql` to the live project. Courses,
+layouts, holes, and aliases are authenticated community-read with bounded inserts/updates; rounds and
+round holes are owner-scoped. The deployed composite `rounds(id,user_id) → activities(id,user_id)` FK was
+found during the smoke test and is now honored by the round repository: it creates the matching
+idempotent activity parent and drains lifecycle writes before round writes. No schema columns changed.
+
+**Verified:** 338 unit tests pass across 35 files, lint passes with only the four pre-existing warnings,
+production build passes, `git diff --check` passes, and `graphify update .` rebuilt the graph. Live SQL
+verification confirmed RLS/policies/indexes; an authenticated create/read/update/foreign-user visibility
+smoke passed inside a rollback-only transaction with zero rows left behind. The browser reached the
+existing login gate at `/courses` with no console errors; no guest account was created.
+
+**Migration note:** The bundled Supabase dump command could not create an automated backup because this
+environment lacks Docker, and `pg_dump` is unavailable. The required manual-backup reminder remains open
+for the next migration session; this J1 policy migration was applied within the approved scope.
+
+**Next:** J2 disc comparison view.
+
 ## 2026-07-14 — Planned 3 jump-ahead features + reconciled stale Track 1 status (handoff to coding model)
 
 **What:** Produced an executable handoff plan for three genuinely-unbuilt features and fixed the

@@ -11,6 +11,13 @@
 .bag-locker-page,
 .bag-manage-page,
 .disc-form-page,
+.course-page,
+.course-form-page,
+.course-detail-page,
+.rounds-page,
+.round-start-page,
+.scorecard-page,
+.round-summary-page,
 .onboarding-page {
   max-width: 480px;
   margin: 0 auto;
@@ -112,6 +119,272 @@
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 14px;
+}
+
+.practice-header .start-button {
+  width: auto;
+  margin-top: 0;
+  padding: 0 16px;
+}
+
+.course-section {
+  margin-top: 24px;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-heading-row h2,
+.section-heading-row h3 {
+  margin: 0;
+}
+
+.course-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.course-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: var(--tap-target-min);
+  padding: 14px 16px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.course-card > span:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.course-card strong {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.course-card small {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.course-card-chevron {
+  color: var(--color-secondary-accent);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.course-card-score {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-display);
+  color: var(--color-positive);
+}
+
+.course-card-score small {
+  font-family: var(--font-body);
+}
+
+.empty-state {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 20px;
+  border: var(--border-width) dashed var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface-alt);
+  color: var(--color-text-secondary);
+}
+
+.course-layout {
+  margin-top: 16px;
+  padding: 16px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.course-start-button {
+  width: auto;
+  min-height: 48px;
+  margin-top: 0;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+.course-hole-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.course-hole-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-bg-primary);
+}
+
+.course-hole-row span {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.scorecard-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 12px;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-secondary-accent);
+  border-radius: 8px;
+  background: var(--color-secondary-accent-soft);
+  color: var(--color-text-primary);
+}
+
+.scorecard-toolbar span:last-child {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.scorecard-hole-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.scorecard-hole {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.scorecard-hole-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.scorecard-hole-meta > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scorecard-hole-meta span {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.scorecard-hole label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.scorecard-input {
+  width: 80px;
+  min-height: 56px;
+  padding: 6px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  text-align: center;
+}
+
+.scorecard-hole select,
+.scorecard-hole textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.round-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.round-summary-stat {
+  display: flex;
+  min-height: 82px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-summary-stat span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.round-summary-stat strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+
+.round-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.round-actions .link-button {
+  align-self: center;
+  margin-top: 0;
+}
+
+@media (max-width: 380px) {
+  .course-start-button {
+    padding: 0 10px;
+    font-size: 14px;
+  }
+
+  .round-summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .practice-header {

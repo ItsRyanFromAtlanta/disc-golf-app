@@ -21,6 +21,13 @@ import BagManagePage from './pages/BagManagePage'
 import DiscFormPage from './pages/DiscFormPage'
 import DiscDetailPage from './pages/DiscDetailPage'
 import NotificationsPage from './pages/NotificationsPage'
+import CoursesPage from './pages/CoursesPage'
+import CourseFormPage from './pages/CourseFormPage'
+import CourseDetailPage from './pages/CourseDetailPage'
+import RoundsPage from './pages/RoundsPage'
+import RoundStartPage from './pages/RoundStartPage'
+import RoundScorecardPage from './pages/RoundScorecardPage'
+import RoundSummaryPage from './pages/RoundSummaryPage'
 import './App.css'
 
 function App() {
@@ -71,6 +78,17 @@ function App() {
           <Route path="manage" element={<BagManagePage />} />
           <Route path="discs/new" element={<DiscFormPage />} />
           <Route path="discs/:discId" element={<DiscDetailPage />} />
+        </Route>
+        <Route path="/courses">
+          <Route index element={<CoursesPage />} />
+          <Route path="new" element={<CourseFormPage />} />
+          <Route path=":courseId" element={<CourseDetailPage />} />
+        </Route>
+        <Route path="/rounds">
+          <Route index element={<RoundsPage />} />
+          <Route path="new" element={<RoundStartPage />} />
+          <Route path=":roundId/summary" element={<RoundSummaryPage />} />
+          <Route path=":roundId" element={<RoundScorecardPage />} />
         </Route>
       </Route>
 

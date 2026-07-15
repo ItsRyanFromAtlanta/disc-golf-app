@@ -65,10 +65,22 @@ The app uses nested feature trees. Putting practice is the first tree:
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
 Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
 
-**App-level nav is PLAY / DISCS / ME** (approved 2026-07-11 and detailed in
-`PHASE_A_ARCHITECTURE.md`). Add COURSES only when the directory ships. `/practice` remains compatible
-while PLAY routes are introduced; statistics live with their subject and ME provides the career-wide
-summary. The earlier PLAY/BAGS/STATS/PRO blueprint navigation is historical, not current.
+J1 ships the first sibling tree under the COURSES section:
+
+```
+/courses                 → course directory + recent rounds
+/courses/new             → quick-course builder
+/courses/:courseId       → layout and hole detail
+/rounds                  → round history
+/rounds/new              → course/layout/bag selection
+/rounds/:roundId         → offline-first scorecard
+/rounds/:roundId/summary → total, relative-to-par, and finalization
+```
+
+**App-level nav is PLAY / DISCS / COURSES / ME** after the J1 directory shipped (the approved base
+shell remains PLAY / DISCS / ME; COURSES was added at its documented trigger). `/practice` remains
+compatible while PLAY routes are introduced; statistics live with their subject and ME provides the
+career-wide summary. The earlier PLAY/BAGS/STATS/PRO blueprint navigation is historical, not current.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
@@ -158,7 +170,7 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 ## Current build focus
 Executing `PRODUCT_ROADMAP.md`: production/shared contracts → DISCS data foundation → DISCS
 experience/intelligence → PLAY/ME/reports → courses/rounds/interoperability. Bottom navigation is
-PLAY / DISCS / ME, with COURSES added when its directory ships; no standalone Stats tab. Existing
+PLAY / DISCS / COURSES / ME now that the course directory ships; no standalone Stats tab. Existing
 Layers 1–4 and Trophy Room are shipped foundations to extend, not rebuild. Social, commerce,
 native/hardware, experimental capture, AI narrative, advanced sync UI, and PDGA automation remain
 parked only until their documented revisit triggers are satisfied.

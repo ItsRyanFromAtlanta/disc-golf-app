@@ -9,8 +9,8 @@ afterEach(async () => {
   for (const database of databasesToDelete.splice(0)) await database.delete()
 })
 
-describe('AppDatabase v4 upgrade', () => {
-  it('preserves v1 cache/outbox rows while adding lifecycle and audit stores', async () => {
+describe('AppDatabase v5 upgrade', () => {
+  it('preserves v1 cache/outbox rows while adding lifecycle, audit, notification, and round stores', async () => {
     const name = `DexieUpgradeTest-${crypto.randomUUID()}`
     const legacy = new Dexie(name)
     legacy.version(1).stores({
@@ -32,13 +32,13 @@ describe('AppDatabase v4 upgrade', () => {
     databasesToDelete.push(upgraded)
     await upgraded.open()
 
-    expect(upgraded.verno).toBe(4)
+    expect(upgraded.verno).toBe(5)
     expect(await upgraded.discs.get('disc-1')).toMatchObject({ status: 'in_locker' })
     expect(await upgraded.outbox.toArray()).toEqual([
       expect.objectContaining({ table: 'discs', op: 'update', payload: { id: 'disc-1' } }),
     ])
     expect(upgraded.tables.map((table) => table.name)).toEqual(
-      expect.arrayContaining(['activities', 'activityStateEvents', 'auditEvents', 'notifications']),
+      expect.arrayContaining(['activities', 'activityStateEvents', 'auditEvents', 'notifications', 'rounds', 'roundHoles']),
     )
     expect(upgraded.outbox.schema.indexes.map((index) => index.name)).toEqual(
       expect.arrayContaining(['dependencyKey', 'nextRetryAt', '[table+idempotencyKey]']),
