@@ -157,6 +157,38 @@ export class AppDatabase extends Dexie {
       outbox:
         '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
     })
+
+    // Phase B 2B: capacity-neutral ghost slots and reversible shot-tag
+    // assignments. Removed rows remain cached as tombstones for history.
+    this.version(8).stores({
+      discs: 'id, user_id, mold_id, status',
+      bags: 'id, user_id',
+      bagDiscs: 'id, bag_id, disc_id',
+      regimens: 'id, user_id, difficulty',
+      regimenRuns: 'id, user_id, regimen_id',
+      puttSessions: 'id, user_id',
+      profile: 'id',
+      activities: 'id, user_id, type, state, [user_id+state], hidden_at, updated_at',
+      activityStateEvents: 'id, activity_id, user_id, idempotency_key, [activity_id+recorded_at]',
+      auditEvents: 'id, user_id, entity_type, entity_id, action, idempotency_key, [entity_id+recorded_at]',
+      notifications: 'id, user_id, category, priority, read_at, resolved_at, expires_at, dedupe_key, [user_id+resolved_at], [user_id+read_at], [user_id+dedupe_key]',
+      rounds: 'id, user_id, course_id, status, bag_version_id, [user_id+status]',
+      roundHoles: 'id, round_id, hole_id',
+      catalogManufacturers: 'id, name, status',
+      catalogMolds: 'id, manufacturer_id, manufacturer, mold_name, category, catalog_status',
+      catalogPlastics: 'id, manufacturer_id, name, catalog_status',
+      catalogMoldPlastics: 'id, mold_id, plastic_id, availability_status',
+      catalogRuns: 'id, mold_plastic_id, catalog_status',
+      catalogStamps: 'id, run_id, catalog_status',
+      discStateEvents: 'id, user_id, disc_id, event_type, idempotency_key, [disc_id+occurred_at]',
+      bagVersions: 'id, user_id, bag_id, version, restored_from_version_id, idempotency_key, [bag_id+version]',
+      bagVersionDiscs: 'id, user_id, bag_version_id, disc_id, [bag_version_id+disc_id]',
+      bagGhostSlots: 'id, user_id, bag_id, speed_class, stability_class, removed_at, [bag_id+removed_at]',
+      shotTags: 'id, user_id, slug, category, retired_at',
+      discShotTagAssignments: 'id, user_id, disc_id, shot_tag_id, removed_at, idempotency_key, [disc_id+removed_at]',
+      outbox:
+        '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
+    })
   }
 }
 

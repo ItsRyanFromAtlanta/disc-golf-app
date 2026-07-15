@@ -15,6 +15,9 @@ import {
 import EditableSection from '../components/EditableSection'
 import { loadBagVersions, restoreBagVersion, captureBagVersion } from '../lib/repository/bagHistoryRepository'
 import { previewBagRestore } from '../lib/bagHistory'
+import { stabilityGaps } from '../lib/wishlist'
+import { activeGhostSlots } from '../lib/discTaxonomy'
+import { addGhostSlot, loadGhostSlots, removeGhostSlot } from '../lib/repository/discTaxonomyRepository'
 
 export default function BagManagePage() {
   const { user } = useAuth()
@@ -26,6 +29,7 @@ export default function BagManagePage() {
   const [creating, setCreating] = useState(false)
   const [historyByBag, setHistoryByBag] = useState({})
   const [restorePreview, setRestorePreview] = useState(null)
+  const [ghostSlotsByBag, setGhostSlotsByBag] = useState({})
 
   async function loadAll() {
     const [bagsData, discsData] = await Promise.all([fetchBags(user.id), fetchUserDiscs(user.id)])
@@ -119,6 +123,37 @@ export default function BagManagePage() {
       setRestorePreview(null)
       await loadAll()
       await showHistory(restorePreview.bagId)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function showGhostSlots(bagId) {
+    try {
+      const rows = await loadGhostSlots(bagId)
+      setGhostSlotsByBag((prev) => ({ ...prev, [bagId]: rows }))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function addNextGhostSlot(bagId) {
+    const bagDiscs = discs.filter((disc) => membership[bagId]?.has(disc.id))
+    const persisted = activeGhostSlots(ghostSlotsByBag[bagId] ?? [])
+    const next = stabilityGaps(bagDiscs, { limit: 12 }).find(
+      (gap) => !persisted.some((slot) => slot.speed_class === gap.speedClass && slot.stability_class === gap.stabilityClass),
+    )
+    if (!next) return setError('No uncovered flight slot remains for this bag.')
+    try {
+      await addGhostSlot(user.id, bagId, {
+        speed_class: next.speedClass,
+        stability_class: next.stabilityClass,
+        target_speed: next.exampleFlightNumbers.speed,
+        target_glide: next.exampleFlightNumbers.glide,
+        target_turn: next.exampleFlightNumbers.turn,
+        target_fade: next.exampleFlightNumbers.fade,
+      })
+      await showGhostSlots(bagId)
     } catch (err) {
       setError(err.message)
     }
@@ -259,6 +294,20 @@ export default function BagManagePage() {
                 onClick={() => previewRestore(bag.id, version)}
               >
                 v{version.version} · {new Date(version.created_at).toLocaleDateString()}
+              </button>
+            ))}
+          </div>
+          <div className="bag-history-controls">
+            <button type="button" className="link-button" onClick={() => showGhostSlots(bag.id)}>Ghost slots</button>
+            <button type="button" className="link-button" onClick={() => addNextGhostSlot(bag.id)}>Add next gap</button>
+            {activeGhostSlots(ghostSlotsByBag[bag.id] ?? []).map((slot) => (
+              <button
+                key={slot.id}
+                type="button"
+                className="ghost-slot-card"
+                onClick={async () => { await removeGhostSlot(slot); await showGhostSlots(bag.id) }}
+              >
+                👻 {slot.stability_class} {slot.speed_class} · remove
               </button>
             ))}
           </div>

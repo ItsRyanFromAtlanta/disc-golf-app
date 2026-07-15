@@ -2,8 +2,7 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** Phase B 2A physical-disc timelines and bag snapshots complete; continue with
-  ghost-slot records, shot tags, and reversible assignment tombstones.
+- **Active phase:** Phase B item 2 complete through 2B; continue with item 3 private disc photos.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -72,11 +71,18 @@ Last updated: 2026-07-15
   diff checks pass; lint retains four existing warnings. Authenticated capture/restore passed in a
   rollback-only transaction with zero smoke rows. Advisor-requested FK indexes were applied in an
   append-only follow-up after the smoke exposed and fixed a self-recursive INSERT policy.
+- **Phase B 2B shipped 2026-07-15:** Applied private capacity-neutral `bag_ghost_slots`, shared/private
+  `shot_tags`, and append-preserving `disc_shot_tag_assignments` tombstones. Seeded 10 curated tags,
+  added Dexie v8 mirrors, bag gap persistence/removal, and disc-detail tag assignment/custom creation.
+- **2B verification:** Fresh manual backup confirmed. 355 tests pass across 40 files; build/diff pass;
+  lint retains four existing warnings. Authenticated ghost insert, tag assignment, and tombstone update
+  passed rollback-only; 10 system tags were visible and no smoke rows remained. Advisors found no new
+  security issue or missing 2B FK index.
 - **Migration follow-up:** automated backup was attempted with the bundled `supabase db dump --linked`,
   but Docker is unavailable and `pg_dump` is not installed. Take a manual backup before the next DDL/FK
   session. No J1 data rows were seeded.
-- **Resume point:** Continue Phase B item 2 with ghost-slot records, shot-tag dictionary/assignments,
-  and reversible assignment tombstones. Manual catalog population remains owner-driven.
+- **Resume point:** Phase B item 3: up to three private disc photos with Storage RLS, compression,
+  offline queue, replacement history, and 30-day recovery. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-15 — Shipped Phase B 2B ghost slots and shot tags
+
+**What:** Persisted private, capacity-neutral bag ghost slots and added a physical-disc shot taxonomy.
+The dictionary includes 10 curated tags plus private custom tags; assignment removal writes a
+`removed_at` tombstone, while a partial unique index permits only one active disc/tag pair. Dexie v8
+mirrors active rows and tombstones. Bag management can persist/remove derived gaps and disc detail can
+assign, remove, or create tags.
+
+**Migration:** Owner confirmed a fresh manual backup. Applied owner-scoped RLS and least-privilege
+grants; anonymous access is absent. No social/community aggregation or caddie logic was added.
+
+**Verified:** 355 tests pass across 40 files, build and diff checks pass, lint retains four existing
+warnings, and rollback-only authenticated ghost/assignment/tombstone smoke passed with zero residue.
+Advisors found no new 2B security issue or missing foreign-key index.
+
+**Next:** Phase B item 3 private physical-disc photos.
+
+---
+
 ## 2026-07-15 — Shipped Phase B 2A disc timelines and bag versions
 
 **What:** Added immutable owner-scoped physical-disc state events and immutable bag metadata/membership

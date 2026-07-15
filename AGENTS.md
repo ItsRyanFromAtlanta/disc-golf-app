@@ -29,6 +29,9 @@ See `supabase_schema.sql` for full schema. Key tables:
 - `disc_state_events` — immutable owner-scoped physical-disc status/role/wear/condition/bag timeline
 - `bag_versions` / `bag_version_discs` — immutable bag metadata/membership snapshots; restores create
   a new current version and rounds may retain the exact `bag_version_id` selected at start
+- `bag_ghost_slots` — private capacity-neutral desired flight slots with reversible removal
+- `shot_tags` / `disc_shot_tag_assignments` — curated/private physical-disc taxonomy with assignment
+  tombstones; removing a tag never deletes its historical assignment row
 - `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
   RLS-enabled with no ordinary-client policies or grants, backed by the private
