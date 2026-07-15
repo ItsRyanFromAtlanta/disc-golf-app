@@ -1,6 +1,6 @@
 # Development Plan
 
-Last updated: 2026-07-12
+Last updated: 2026-07-15
 Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
 `PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
@@ -194,7 +194,8 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Locker UI:** grid ⇄ list toggle via peripheral icon (persist preference). Cards are clean/minimal in v1: name/nickname, flight numbers, photo thumbnail, stability accent, status. Search + filter (manufacturer, speed class, stability, status) + sort (speed, stability, recently added).
 - **Disc detail:** inspect view — full attributes, effective vs stock numbers, condition, bag memberships with one-tap equip/unequip per bag.
 - **Bag view:** loadout screen — disc list + flight chart coverage + capacity indicator if set; bag switcher; add-from-locker flow.
-- **Deferred game flair (backlog):** rarity-style borders, equip animations, full stat-block card mode.
+- **Game flair:** delivered in the J3 jump-ahead checkpoint below; cosmetic unlock events remain deferred to
+  roadmap Phase B item 5.
 - **Model:** Sonnet 5 · **Effort:** M · **Test:** grid/list toggle persists; equip/unequip reflects in both locker and bag views; search/filter correct on effective numbers
 - **Note:** 1C shipped schema + possibly partial UI with no navigation entry point — session must first audit what exists at /bag routes and wire or build accordingly.
 
@@ -261,15 +262,21 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
   near-identical/no-gap flags are shipped. Full tests/build/lint gate passed, graph refreshed, and the
   browser route smoke reached the auth gate without console errors.
 
-### J3. Game-flair disc cards — front-runs roadmap Phase B item 5 / deferred backlog
+### J3. Game-flair disc cards — SHIPPED 2026-07-15; front-runs roadmap Phase B item 5 / deferred backlog
 - **Model: GPT-5.3-Codex medium** · **Effort:** S.
 - Extend `src/components/DiscCard.jsx` with a `flair` variant (default OFF → today's minimal card is
   byte-identical): rarity border, stat-block layout, subtle mount/equip animation. Pure `src/lib/discFlair.js`
   (+ test) `discTier(disc)` from an available signal for v1 (role/wear_score/status) — note the real
   cosmetic-tier **unlock events (Phase B item 5) are unbuilt** and are the eventual backing source.
-- Opt-in via a **Settings toggle** stored through the `src/lib/viewPreference.js` pattern. CSS in
+- Opt-in via a **Profile preferences toggle** stored through the `src/lib/viewPreference.js` pattern. CSS in
   `src/App.css` honoring "Sun-Drenched Topo" (no pure black/white, ≥2px borders, Oswald, theme-correct).
-- **Verify:** toggle on → rarity styling renders and is correct in light+dark; toggle off → identical to today.
+- **Completed:** archived status → legendary primary putter → epic situational weather → rare wear score ≥7 →
+  common fallback precedence is pure-tested; all locker card modes receive the persisted preference; the Profile
+  preferences checkbox stores the opt-in flag; flair-on cards render tier borders, Tier/Signal stat blocks, and
+  reduced-motion-safe mount animation. No schema changes. Full tests/build/lint gate passed and the graph refreshed.
+  Browser smoke reached the existing `/login` gate from `/profile`; the available guest action did not navigate,
+  so an authenticated toggle/card interaction could not be exercised. The current app contract is light-only, so
+  verification uses the existing Sun-Drenched Topo tokens rather than adding a dark-theme variant.
 
 ---
 

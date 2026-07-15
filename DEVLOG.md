@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-15 — Shipped J3 game-flair disc cards
+
+**What:** Added an opt-in `DiscCard` flair variant for the locker. `discTier(disc)` is a pure, tested
+precedence function: archived status (`lost`/`retired`/`sold`) wins first, followed by `primary_putter`
+legendary, `situational_weather` epic, wear score ≥7 rare, and common fallback. The Profile preferences
+checkbox persists through the existing local-storage preference pattern and feeds every locker grid/list,
+compare-mode, and add-to-bag card. Flair cards add Topo rarity borders, Tier/Signal stat blocks, and a subtle
+mount animation guarded by `prefers-reduced-motion`; the default-off card markup/classes remain unchanged.
+
+**Verified:** 348 unit tests pass across 37 files, lint passes with only the four pre-existing warnings,
+production build passes, `git diff --check` passes, and `graphify update .` rebuilt the graph. Browser smoke
+reached the existing `/login` auth gate from `/profile`; the available guest action did not navigate, so an
+authenticated toggle/card interaction could not be exercised. No schema changes; the existing theme contract
+is light-only and no dark-mode variant was added.
+
+**Next:** Resume the roadmap's DISCS intelligence work.
+
+---
+
 ## 2026-07-15 — Shipped J2 disc comparison view
 
 **What:** Added locker compare mode with a 2–4 disc cap, `/bag/compare?ids=…`, and the side-by-side

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchProfile, upsertProfileFields, isThrowingProfileEmpty } from '../lib/profile'
+import { getFlairMode, setFlairMode } from '../lib/viewPreference'
 import EditableSection from '../components/EditableSection'
 import ChipGroup from '../components/ChipGroup'
 
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
   const [error, setError] = useState(null)
+  const [flairEnabled, setFlairEnabled] = useState(getFlairMode)
   const throwingRef = useRef(null)
 
   useEffect(() => {
@@ -57,6 +59,28 @@ export default function ProfilePage() {
           ›
         </span>
       </Link>
+
+      <section className="profile-section profile-preferences" aria-labelledby="profile-preferences-title">
+        <div className="profile-section-header">
+          <h2 id="profile-preferences-title">Preferences</h2>
+        </div>
+        <label className="preference-toggle" htmlFor="disc-card-flair">
+          <span className="preference-toggle-copy">
+            <strong>Game-flair disc cards</strong>
+            <small>Show rarity borders, stat blocks, and mount motion in your locker.</small>
+          </span>
+          <input
+            id="disc-card-flair"
+            type="checkbox"
+            checked={flairEnabled}
+            onChange={(event) => {
+              const enabled = event.target.checked
+              setFlairEnabled(enabled)
+              setFlairMode(enabled)
+            }}
+          />
+        </label>
+      </section>
 
       {nudgeVisible && (
         <div className="nudge-banner">

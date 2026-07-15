@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** J2 complete; next is J3 game-flair disc cards.
+- **Active phase:** J3 complete; resume with the roadmap's DISCS intelligence work.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -49,11 +49,18 @@ Last updated: 2026-07-15
   four pre-existing warnings; `graphify update .` completed. Browser smoke reached `/login` from the
   protected compare route with no console errors; no authenticated browser session was available and no
   guest account was created.
+- **J3 shipped 2026-07-15:** Added the opt-in game-flair `DiscCard` variant, pure role/wear/status tier
+  precedence, local Profile preferences toggle, locker wiring across grid/list/compare/picker cards, Tier/Signal
+  stat blocks, Topo rarity borders, and a reduced-motion-safe mount animation. No schema changes.
+- **J3 verification:** 348 tests pass across 37 files; production build passes; lint retains only the four
+  pre-existing warnings; `git diff --check` and `graphify update .` completed. Browser smoke reached `/login`
+  from `/profile`; the available guest action did not navigate, so authenticated toggle/card interaction remains
+  unexercised. The current theme contract is light-only; no dark-mode variant was added.
 - **Migration follow-up:** automated backup was attempted with the bundled `supabase db dump --linked`,
   but Docker is unavailable and `pg_dump` is not installed. Take a manual backup before the next DDL/FK
   session. No J1 data rows were seeded.
-- **Resume point:** Start J3 game-flair disc cards on the `codex/j2-disc-compare` checkpoint, then return
-  to the roadmap's DISCS intelligence work. The 1B mold-derivation migration remains valid for the
+- **Resume point:** Continue from the `codex/j3-game-flair` checkpoint, then return to the roadmap's DISCS
+  intelligence work. The 1B mold-derivation migration remains valid for the
   owner's future manual catalog population.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,

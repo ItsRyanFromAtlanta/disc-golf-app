@@ -6,7 +6,7 @@ import { fetchBags, fetchBagDiscs, addDiscToBag, removeDiscFromBag } from '../li
 import { useDiscList } from '../lib/repository/discRepository'
 import { filterDiscs, sortDiscs } from '../lib/discFilters'
 import { COMPARE_MAX, COMPARE_MIN } from '../lib/discCompare'
-import { getViewMode, setViewMode } from '../lib/viewPreference'
+import { getFlairMode, getViewMode, setViewMode } from '../lib/viewPreference'
 import DiscCard from '../components/DiscCard'
 import ChipGroup from '../components/ChipGroup'
 
@@ -37,6 +37,7 @@ export default function BagLockerPage() {
   const [error, setError] = useState(null)
   const displayError = error || discsQuery.error?.message || null
   const [viewMode, setViewModeState] = useState(getViewMode)
+  const [flairEnabled] = useState(getFlairMode)
 
   const [query, setQuery] = useState('')
   const [manufacturer, setManufacturer] = useState('all')
@@ -254,6 +255,7 @@ export default function BagLockerPage() {
                 key={disc.id}
                 disc={disc}
                 variant={viewMode}
+                flair={flairEnabled}
                 action={
                   <button
                     type="button"
@@ -271,6 +273,7 @@ export default function BagLockerPage() {
                 key={disc.id}
                 disc={disc}
                 variant={viewMode}
+                flair={flairEnabled}
                 action={
                   <button
                     type="button"
@@ -282,7 +285,13 @@ export default function BagLockerPage() {
                 }
               />
             ) : (
-              <DiscCard key={disc.id} disc={disc} variant={viewMode} to={`/bag/discs/${disc.id}`} />
+              <DiscCard
+                key={disc.id}
+                disc={disc}
+                variant={viewMode}
+                flair={flairEnabled}
+                to={`/bag/discs/${disc.id}`}
+              />
             ),
           )}
         </div>
