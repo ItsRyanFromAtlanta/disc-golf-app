@@ -26,6 +26,9 @@ See `supabase_schema.sql` for full schema. Key tables:
 - `rounds` / `round_holes` — user-owned round data
 - `live_sessions` — active caddie chat state (JSONB log) during a round
 - `caddie_recommendations` — logged AI suggestions per hole, tagged with model used
+- `disc_state_events` — immutable owner-scoped physical-disc status/role/wear/condition/bag timeline
+- `bag_versions` / `bag_version_discs` — immutable bag metadata/membership snapshots; restores create
+  a new current version and rounds may retain the exact `bag_version_id` selected at start
 - `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
   RLS-enabled with no ordinary-client policies or grants, backed by the private

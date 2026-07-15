@@ -72,7 +72,9 @@ RLS are live; the automated ingestion/admin pipeline was subsequently scrapped a
 of manual curation. B2 ships the migration-free, read-only client repository: normalized Dexie v6
 caches for manufacturers/molds/plastics/mold-plastic links/runs/stamps, TanStack offline-first reads,
 and migrated mold selection/search/onboarding consumers. Manual representative catalog population
-remains owner-driven; physical-disc timelines and bag snapshots are next.
+remains owner-driven. Phase B 2A now ships immutable physical-disc events, bag versions/membership
+snapshots, preview-first restore, Dexie v7 mirrors, and round-to-bag-version capture. Ghost-slot records,
+shot tags, and reversible assignment tombstones remain next within item 2.
 
 1. Catalog variants for mold/plastic/run/stamp with source provenance; manufacturer adapters; private
    custom configurations; community submission and admin-review queue.

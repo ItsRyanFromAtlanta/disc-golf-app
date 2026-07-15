@@ -17,6 +17,8 @@ import {
   updateRound,
   upsertRoundHole,
 } from '../roundLog'
+import { captureBagVersion, loadBagVersions } from './bagHistoryRepository'
+import { latestBagVersion } from '../bagHistory'
 
 const ROUND_TABLE = 'rounds'
 const ROUND_HOLE_TABLE = 'round_holes'
@@ -243,7 +245,23 @@ export function useCreateRound(userId) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (fields) => {
-      const payload = { ...fields, id: fields.id ?? crypto.randomUUID(), user_id: userId }
+      const roundId = fields.id ?? crypto.randomUUID()
+      let bagVersionId = fields.bag_version_id ?? null
+      if (fields.bag_id && !bagVersionId) {
+        try {
+          bagVersionId = await captureBagVersion(fields.bag_id, {
+            idempotencyKey: `round-bag:${roundId}`,
+          })
+        } catch {
+          bagVersionId = latestBagVersion(await loadBagVersions(fields.bag_id))?.id ?? null
+        }
+      }
+      const payload = {
+        ...fields,
+        id: roundId,
+        user_id: userId,
+        bag_version_id: bagVersionId,
+      }
       try {
         return await runQueuedMutation({
           table: ROUND_TABLE,

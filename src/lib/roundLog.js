@@ -27,6 +27,7 @@ function normalizeRoundFields(fields = {}) {
     'course_id',
     'layout_id',
     'bag_id',
+    'bag_version_id',
     'played_at',
     'weather_summary',
     'target_score',

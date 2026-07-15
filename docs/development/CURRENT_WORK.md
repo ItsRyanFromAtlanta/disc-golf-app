@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** Phase B B2 read-only catalog repository complete; continue with physical-disc
-  timelines and bag configuration versions/snapshots.
+- **Active phase:** Phase B 2A physical-disc timelines and bag snapshots complete; continue with
+  ghost-slot records, shot tags, and reversible assignment tombstones.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -64,11 +64,19 @@ Last updated: 2026-07-15
 - **B2 verification:** 351 tests pass across 38 files; production build and `git diff --check` pass;
   lint retains only the four pre-existing warnings. Live checks confirm all six canonical tables have
   RLS, authenticated SELECT, no authenticated INSERT, and no anonymous SELECT. No schema/data writes.
+- **Phase B 2A shipped 2026-07-15:** Applied immutable `disc_state_events`, `bag_versions`, and
+  `bag_version_discs`; backfilled five bags/22 memberships; added trigger-backed physical-disc events,
+  authenticated security-invoker capture/restore RPCs, Dexie v7, preview-first restore UI, and
+  `rounds.bag_version_id` capture. Restore skips unavailable discs and creates a new version.
+- **2A verification:** Manual backup confirmed by the owner. 353 tests pass across 39 files; build and
+  diff checks pass; lint retains four existing warnings. Authenticated capture/restore passed in a
+  rollback-only transaction with zero smoke rows. Advisor-requested FK indexes were applied in an
+  append-only follow-up after the smoke exposed and fixed a self-recursive INSERT policy.
 - **Migration follow-up:** automated backup was attempted with the bundled `supabase db dump --linked`,
   but Docker is unavailable and `pg_dump` is not installed. Take a manual backup before the next DDL/FK
   session. No J1 data rows were seeded.
-- **Resume point:** Continue after B2 with Phase B item 2: physical-disc timelines and bag
-  configuration versions/snapshots. Manual catalog population remains owner-driven.
+- **Resume point:** Continue Phase B item 2 with ghost-slot records, shot-tag dictionary/assignments,
+  and reversible assignment tombstones. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

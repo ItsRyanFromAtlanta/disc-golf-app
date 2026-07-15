@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-15 — Shipped Phase B 2A disc timelines and bag versions
+
+**What:** Added immutable owner-scoped physical-disc state events and immutable bag metadata/membership
+snapshots. Database triggers record status, role, wear, condition, and bag membership changes. Bag
+history is cached in Dexie v7; Manage Bags previews additions/removals/unavailable discs before an
+atomic restore that always creates a new version. New rounds capture `bag_version_id`.
+
+**Migration:** Owner confirmed a manual backup after automated dump failed for missing Docker/pg_dump.
+The foundation migration backfilled five bags and 22 memberships without changing current state. A
+rollback smoke found self-recursive bag-version INSERT RLS; an append-only follow-up removed that
+lookup and added both advisor-requested FK indexes.
+
+**Verified:** 353 tests pass across 39 files, lint retains only four existing warnings, production
+build and diff checks pass, and authenticated capture/restore passed rollback-only with zero smoke rows.
+
+**Next:** Ghost slots, shot tags, and reversible assignment tombstones complete Phase B item 2.
+
+---
+
 ## 2026-07-15 — Shipped B2 read-only offline catalog repository
 
 **What:** Added a normalized catalog snapshot repository for manufacturers, molds, plastics,

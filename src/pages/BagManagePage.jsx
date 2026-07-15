@@ -13,6 +13,8 @@ import {
   removeDiscFromBag,
 } from '../lib/discLocker'
 import EditableSection from '../components/EditableSection'
+import { loadBagVersions, restoreBagVersion, captureBagVersion } from '../lib/repository/bagHistoryRepository'
+import { previewBagRestore } from '../lib/bagHistory'
 
 export default function BagManagePage() {
   const { user } = useAuth()
@@ -22,6 +24,8 @@ export default function BagManagePage() {
   const [error, setError] = useState(null)
   const [newBagName, setNewBagName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [historyByBag, setHistoryByBag] = useState({})
+  const [restorePreview, setRestorePreview] = useState(null)
 
   async function loadAll() {
     const [bagsData, discsData] = await Promise.all([fetchBags(user.id), fetchUserDiscs(user.id)])
@@ -86,6 +90,40 @@ export default function BagManagePage() {
     }
   }
 
+  async function showHistory(bagId) {
+    setError(null)
+    try {
+      const versions = await loadBagVersions(bagId)
+      setHistoryByBag((prev) => ({ ...prev, [bagId]: versions }))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  function previewRestore(bagId, version) {
+    const snapshotDiscIds = (version.bag_version_discs ?? []).map((row) => row.disc_id)
+    setRestorePreview({
+      bagId,
+      version,
+      ...previewBagRestore({
+        currentDiscIds: [...(membership[bagId] ?? [])],
+        snapshotDiscIds,
+        availableDiscIds: discs.filter((disc) => disc.status === 'in_locker').map((disc) => disc.id),
+      }),
+    })
+  }
+
+  async function applyRestore() {
+    try {
+      await restoreBagVersion(restorePreview.version)
+      setRestorePreview(null)
+      await loadAll()
+      await showHistory(restorePreview.bagId)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   if (error && !bags) return <p className="form-error">{error}</p>
   if (!bags) return <p className="loading">Loading...</p>
 
@@ -110,14 +148,16 @@ export default function BagManagePage() {
               bag_type: bag.bag_type ?? '',
               capacity: bag.capacity ?? '',
             }}
-            onSave={(draft) =>
-              updateBag(bag.id, {
+            onSave={async (draft) => {
+              await updateBag(bag.id, {
                 name: draft.name.trim(),
                 description: draft.description.trim() || null,
                 bag_type: draft.bag_type.trim() || null,
                 capacity: draft.capacity === '' ? null : Number(draft.capacity),
-              }).then(loadAll)
-            }
+              })
+              await captureBagVersion(bag.id)
+              await loadAll()
+            }}
             renderView={(v) => (
               <dl className="profile-field-list">
                 <div>
@@ -206,8 +246,38 @@ export default function BagManagePage() {
               })}
             </ul>
           )}
+
+          <div className="bag-history-controls">
+            <button type="button" className="link-button" onClick={() => showHistory(bag.id)}>
+              Version history
+            </button>
+            {(historyByBag[bag.id] ?? []).map((version) => (
+              <button
+                key={version.id}
+                type="button"
+                className="link-button"
+                onClick={() => previewRestore(bag.id, version)}
+              >
+                v{version.version} · {new Date(version.created_at).toLocaleDateString()}
+              </button>
+            ))}
+          </div>
         </div>
       ))}
+
+      {restorePreview && (
+        <div className="bag-manage-card" role="dialog" aria-label="Restore bag version preview">
+          <h2>Restore v{restorePreview.version.version}?</h2>
+          <p>Add {restorePreview.additions.length} · Remove {restorePreview.removals.length}</p>
+          {restorePreview.unavailable.length > 0 && (
+            <p>{restorePreview.unavailable.length} unavailable historical disc(s) will remain excluded.</p>
+          )}
+          <div className="profile-section-actions">
+            <button type="button" onClick={applyRestore}>Apply as new version</button>
+            <button type="button" className="link-button" onClick={() => setRestorePreview(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       {creating ? (
         <form onSubmit={handleCreateBag} className="putt-form">

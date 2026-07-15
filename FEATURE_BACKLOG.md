@@ -82,7 +82,8 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Disc universe: full ingestion pipeline (1F) | REJECTED | SCRAPPED 2026-07-13 and torn down 2026-07-14. Append-only migration history remains; ingestion-only code, functions, and live tables were removed. Reason: manual population chosen over maintaining automated ingestion. |
 | Disc universe: remaining manufacturers (Discraft, Trilogy, Discmania, long tail) | REJECTED | SCRAPPED 2026-07-13 with the ingestion pipeline it depended on. Manual population covers any manufacturer without per-manufacturer adapter work. |
 | Opt-in community mold statistics | LATER (deliberate) | Aggregate anonymized performance by catalog mold only after explicit consent; personal physical-disc data stays private by default. Apply minimum-sample/privacy thresholds and keep community benchmarks separate from personal recommendations. |
-| Disc wear timeline (condition change history) | BACKLOG | Current-state-only in v1 |
+| Disc wear timeline (condition change history) | SHIPPED | Phase B 2A (2026-07-15): trigger-backed immutable status/role/wear/condition and bag membership events |
+| Bag configuration versions + restore preview | SHIPPED | Phase B 2A (2026-07-15): immutable metadata/membership snapshots, unavailable placeholders, atomic restore-as-new-version, and round snapshot FK |
 | Slot analysis ("no stable fairway in this bag") | BACKLOG | Derived view over bag + effective flight numbers |
 | Per-disc usage stats | BACKLOG | Needs round data linking discs to holes |
 | Personal disc photos as lost-disc flyers | BACKLOG | Photo field ships in Phase B; flyer generation later |

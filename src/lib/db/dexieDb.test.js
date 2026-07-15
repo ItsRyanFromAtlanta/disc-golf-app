@@ -9,7 +9,7 @@ afterEach(async () => {
   for (const database of databasesToDelete.splice(0)) await database.delete()
 })
 
-describe('AppDatabase v6 upgrade', () => {
+describe('AppDatabase v7 upgrade', () => {
   it('preserves v1 cache/outbox rows while adding lifecycle, audit, notification, and round stores', async () => {
     const name = `DexieUpgradeTest-${crypto.randomUUID()}`
     const legacy = new Dexie(name)
@@ -32,7 +32,7 @@ describe('AppDatabase v6 upgrade', () => {
     databasesToDelete.push(upgraded)
     await upgraded.open()
 
-    expect(upgraded.verno).toBe(6)
+    expect(upgraded.verno).toBe(7)
     expect(await upgraded.discs.get('disc-1')).toMatchObject({ status: 'in_locker' })
     expect(await upgraded.outbox.toArray()).toEqual([
       expect.objectContaining({ table: 'discs', op: 'update', payload: { id: 'disc-1' } }),
@@ -51,6 +51,9 @@ describe('AppDatabase v6 upgrade', () => {
         'catalogMoldPlastics',
         'catalogRuns',
         'catalogStamps',
+        'discStateEvents',
+        'bagVersions',
+        'bagVersionDiscs',
       ]),
     )
     expect(upgraded.outbox.schema.indexes.map((index) => index.name)).toEqual(

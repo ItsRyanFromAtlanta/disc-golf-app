@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import { bagIdsToUnsetForNewDefault } from './bags'
 import { discIdsToUnsetForNewPrimary, situationalRoleCount, SITUATIONAL_ROLE_CAP } from './discs'
+import { captureBagVersion } from './repository/bagHistoryRepository'
 
 // `discs.mold` is a legacy text column (kept as a human label after
 // migration); the joined disc_molds record must be aliased to something
@@ -143,9 +144,11 @@ export async function fetchDiscBagIds(discId) {
 export async function addDiscToBag(bagId, discId) {
   const { error } = await supabase.from('bag_discs').insert({ bag_id: bagId, disc_id: discId })
   if (error) throw error
+  await captureBagVersion(bagId)
 }
 
 export async function removeDiscFromBag(bagId, discId) {
   const { error } = await supabase.from('bag_discs').delete().eq('bag_id', bagId).eq('disc_id', discId)
   if (error) throw error
+  await captureBagVersion(bagId)
 }
