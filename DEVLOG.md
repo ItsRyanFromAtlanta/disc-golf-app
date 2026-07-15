@@ -1,5 +1,21 @@
 # Dev Log
 
+## 2026-07-15 — Shipped Phase B item 3 private disc photos
+
+**What:** Applied `disc_photos`, the private image-only `disc-private-photos` bucket, owner-scoped
+metadata and Storage RLS, and security-invoker register/delete/restore RPCs. The shipped client provides
+front/back/side compression, signed display URLs, Dexie v9 Blob retry, immutable replacement history,
+legacy URL fallback, and 30-day recoverable removal.
+
+**Verified:** Rollback-only authenticated owner/foreign-user tests passed for metadata visibility,
+Storage path insert/visibility, RPC ownership rejection, replacement history, exact 30-day deletion,
+restore, and idempotent retry. Zero smoke rows remain. Advisors introduced no new security warning or
+missing foreign-key index; only the expected unused-index notice appears on the new empty table.
+
+**Next:** Phase B item 4 Lost & Found.
+
+---
+
 ## 2026-07-15 — Removed Codex pre-migration backup gate
 
 **What:** Per owner direction, removed automated dump attempts and manual backup confirmation from

@@ -21,10 +21,10 @@ Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GP
 architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
 Sonnet/Opus labels below are preserved only as historical records of completed work.
 
-Phase B item 3 local checkpoint (2026-07-15): private front/back/side disc-photo metadata/RPC and
-Storage RLS migration, compressed client derivatives, Dexie v9 Blob queue, signed display URLs, and
-30-day recovery UI are implemented and green locally. Live apply, authenticated RLS/restore smoke
-testing, and advisor review are next; backup commands and confirmation are not migration gates.
+Phase B item 3 complete (2026-07-15): private front/back/side disc-photo metadata/RPC and Storage RLS,
+compressed client derivatives, Dexie v9 Blob queue, signed display URLs, immutable replacement history,
+and 30-day recovery are live and verified. Rollback-only owner/foreign-user metadata, RPC, Storage-path,
+replacement, delete/restore, and idempotency checks passed with zero residue; item 4 Lost & Found is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

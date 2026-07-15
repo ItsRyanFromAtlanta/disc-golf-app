@@ -46,6 +46,8 @@ create unique index disc_photos_current_slot_uniq
   where superseded_at is null and deleted_at is null;
 create index disc_photos_disc_history_idx
   on public.disc_photos (disc_id, slot, created_at desc);
+create index disc_photos_user_id_idx
+  on public.disc_photos (user_id);
 create index disc_photos_recovery_idx
   on public.disc_photos (user_id, recoverable_until)
   where deleted_at is not null and superseded_at is null;

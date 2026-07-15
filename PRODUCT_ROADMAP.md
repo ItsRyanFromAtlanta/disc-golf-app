@@ -76,13 +76,14 @@ remains owner-driven. Phase B 2A now ships immutable physical-disc events, bag v
 snapshots, preview-first restore, Dexie v7 mirrors, and round-to-bag-version capture. Phase B 2B adds
 capacity-neutral persisted ghost slots, a curated/private shot-tag dictionary, reversible assignment
 tombstones, Dexie v8 mirrors, and management UI. Item 2 is complete. Item 3's private-photo client,
-Dexie v9 queue, tests, and unapplied migration are ready; live apply and security smoke tests are next.
+Dexie v9 queue, private Storage/RLS, signed display URLs, replacement history, and 30-day recovery are
+live and verified. Item 3 is complete; Lost & Found is next.
 
 1. Catalog variants for mold/plastic/run/stamp with source provenance; manufacturer adapters; private
    custom configurations; community submission and admin-review queue.
 2. Physical-disc timelines, bag configuration versions/snapshots, ghost-slot records, shot-tag
    dictionary/assignments, and reversible assignment tombstones.
-3. **LOCAL CHECKPOINT READY 2026-07-15; LIVE APPLY NEXT.** Supabase Storage/RLS for up to
+3. **COMPLETE 2026-07-15.** Supabase Storage/RLS for up to
    three private disc photos (front/back/side), compressed derivative, offline queue, replacement
    history, and 30-day deletion recovery.
 4. Lost & Found case/update timeline with optional GPS/course/notes/contact; no timed auto-archive.

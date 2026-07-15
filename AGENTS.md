@@ -33,7 +33,7 @@ See `supabase_schema.sql` for full schema. Key tables:
 - `shot_tags` / `disc_shot_tag_assignments` — curated/private physical-disc taxonomy with assignment
   tombstones; removing a tag never deletes its historical assignment row
 - `disc_photos` — owner-scoped immutable front/back/side photo versions; private Storage paths,
-  replacement history, and 30-day recoverable deletion (Phase B item 3 migration pending live apply)
+  replacement history, and 30-day recoverable deletion
 - `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
   RLS-enabled with no ordinary-client policies or grants, backed by the private

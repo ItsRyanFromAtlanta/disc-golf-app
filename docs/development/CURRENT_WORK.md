@@ -2,8 +2,7 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** Phase B item 3 private disc photos is green locally; live migration, RLS smoke,
-  and advisor review are next.
+- **Active phase:** Phase B item 3 private disc photos is complete; continue with item 4 Lost & Found.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -79,20 +78,20 @@ Last updated: 2026-07-15
   lint retains four existing warnings. Authenticated ghost insert, tag assignment, and tombstone update
   passed rollback-only; 10 system tags were visible and no smoke rows remained. Advisors found no new
   security issue or missing 2B FK index.
-- **Phase B item 3 local checkpoint 2026-07-15:** Added an unapplied append-only `disc_photos`
+- **Phase B item 3 shipped 2026-07-15:** Applied the append-only `disc_photos`
   migration with owner-scoped metadata/Storage RLS, immutable front/back/side object versions,
   security-invoker register/delete/restore RPCs, and a private image-only bucket. Client-side WebP
   compression, signed display URLs, Dexie v9 Blob upload/retry queue, legacy `photo_url` fallback,
   replacement UI, and 30-day restore are implemented.
-- **Item 3 local verification:** 358 tests pass across 41 files and production build/diff pass. Lint
-  retains only the four pre-existing warnings after the photo hook warning was fixed. The global
-  `supabase` command and `pg_dump` are unavailable; the pinned CLI was discovered and both linked
-  schema/data dumps were attempted, but Docker is unavailable. No live SQL was applied.
+- **Item 3 verification:** 358 tests pass across 41 files and production build/diff pass. Lint retains
+  only four pre-existing warnings. Rollback-only owner/foreign-user metadata, Storage-path, RPC,
+  replacement, exact 30-day delete/restore, and idempotency checks passed with zero residue. The bucket
+  is private/image-only/5 MB; RLS and all five policies are active. Advisors found no new security issue
+  or missing B3 foreign-key index.
 - **Migration policy:** Do not retry automated backup commands or request manual backup confirmation;
   use append-only SQL, rollback notes, RLS negative tests, advisors, and post-apply smoke checks.
-- **Resume point:** Apply `20260715203000_phase_b_private_disc_photos.sql`, run authenticated
-  owner/foreign-user Storage +
-  metadata/RPC smoke tests and advisors, then close item 3. Manual catalog population remains owner-driven.
+- **Resume point:** Phase B item 4 Lost & Found case/update timeline with optional GPS, course, notes,
+  and contact details; no timed auto-archive. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.
