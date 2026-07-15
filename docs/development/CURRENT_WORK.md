@@ -1,8 +1,8 @@
 # Current Work
 
-Last updated: 2026-07-14
+Last updated: 2026-07-15
 
-- **Active phase:** J1 complete; next is J2 disc comparison view.
+- **Active phase:** J2 complete; next is J3 game-flair disc cards.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -41,12 +41,20 @@ Last updated: 2026-07-14
   rollback-only authenticated owner/foreign-user smoke passed with zero rows left behind. Browser smoke
   reached `/login` from `/courses` with no console errors because no authenticated browser session was
   available; no guest account was created.
+- **J2 shipped 2026-07-15:** Added locker compare mode with a 2–4 selection cap, `/bag/compare`, pure
+  effective-flight comparison rules, per-axis low/high highlights, override markers, stability labels,
+  current-reality curve overlay, and explicit no-meaningful-gap flags for pairs within ±1 on every
+  populated axis. No schema changes.
+- **J2 verification:** 342 tests pass across 36 files; production build passes; lint retains only the
+  four pre-existing warnings; `graphify update .` completed. Browser smoke reached `/login` from the
+  protected compare route with no console errors; no authenticated browser session was available and no
+  guest account was created.
 - **Migration follow-up:** automated backup was attempted with the bundled `supabase db dump --linked`,
   but Docker is unavailable and `pg_dump` is not installed. Take a manual backup before the next DDL/FK
   session. No J1 data rows were seeded.
-- **Resume point:** Start J2 disc comparison on the `codex/j1-round-logging` checkpoint, then return to
-  the roadmap's DISCS intelligence work. The 1B mold-derivation migration remains valid for the owner's
-  future manual catalog population.
+- **Resume point:** Start J3 game-flair disc cards on the `codex/j2-disc-compare` checkpoint, then return
+  to the roadmap's DISCS intelligence work. The 1B mold-derivation migration remains valid for the
+  owner's future manual catalog population.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

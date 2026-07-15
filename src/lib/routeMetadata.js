@@ -220,6 +220,16 @@ const APP_ROUTES = [
     scrollKey: 'discs-collection',
   },
   {
+    id: 'disc-compare',
+    match: /^\/bag\/compare$/,
+    section: 'discs',
+    shell: SHELL_TYPES.STANDARD,
+    title: 'Compare Discs',
+    showActivityPill: true,
+    preserveNestedState: false,
+    scrollKey: 'discs-compare',
+  },
+  {
     id: 'discs-root',
     match: /^\/bag$/,
     section: 'discs',

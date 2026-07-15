@@ -1,5 +1,21 @@
 # Dev Log
 
+## 2026-07-15 — Shipped J2 disc comparison view
+
+**What:** Added locker compare mode with a 2–4 disc cap, `/bag/compare?ids=…`, and the side-by-side
+comparison page. The page derives effective flight numbers, per-axis low/high highlights, explicit
+override markers, stability labels, a current-reality curve overlay, and no-meaningful-gap flags for
+disc pairs within ±1 on every populated flight axis. Added pure `discCompare.js` rules/tests and a
+small overlay export from `FlightCurve.jsx`; no schema changes.
+
+**Verified:** 342 unit tests pass across 36 files, lint passes with only the four pre-existing warnings,
+production build passes, `git diff --check` passes, and `graphify update .` rebuilt the graph. Browser
+smoke reached the existing `/login` auth gate from the protected compare route with zero console errors;
+an authenticated locker/compare interaction could not be exercised without a browser session, and no
+guest account was created.
+
+**Next:** J3 game-flair disc cards.
+
 ## 2026-07-14 — Shipped J1 round logging + quick-course
 
 **What:** Built the new COURSES tree and round logger: course directory, quick-course creation,

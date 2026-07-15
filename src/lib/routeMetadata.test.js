@@ -51,6 +51,11 @@ describe('route metadata contract', () => {
       scrollKey: 'play-history-deleted',
     })
     expect(resolveRouteMetadata('/bag/discs/disc-1').preserveNestedState).toBe(false)
+    expect(resolveRouteMetadata('/bag/compare')).toMatchObject({
+      id: 'disc-compare',
+      section: 'discs',
+      scrollKey: 'discs-compare',
+    })
   })
 
   it('keeps public routes outside an authenticated shell', () => {

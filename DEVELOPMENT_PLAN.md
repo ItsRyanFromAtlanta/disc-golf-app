@@ -246,7 +246,7 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
   console errors. The deployed composite round/activity FK is satisfied by the repository's matching
   activity-parent lifecycle bridge.
 
-### J2. Disc comparison view — front-runs roadmap Phase C item 5
+### J2. Disc comparison view — SHIPPED 2026-07-15; front-runs roadmap Phase C item 5
 - **Model: GPT-5.3-Codex medium** · **Effort:** S · **No new schema.**
 - Add a **Compare multi-select mode** to `src/pages/BagLockerPage.jsx` (reuse the existing `addToBag`
   picker toggle) → "Compare (n)" navigates to `/bag/compare?ids=…` (cap 2–4). New `/bag/compare` route +
@@ -256,6 +256,10 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
   Side-by-side table + curves. Pure `src/lib/discCompare.js` (+ test) for per-axis min/max highlight and
   near-identical-disc "gap" flags — derived only, no opaque composite (roadmap rule).
 - **Verify:** select 2–3 discs → numbers equal `effectiveFlightNumbers`, curves overlay, override axis shows.
+  **Completed:** locker selection, capped compare route, pure comparison rules/tests, per-axis
+  min/max highlights, explicit override markers, stability labels, current-reality curve overlay, and
+  near-identical/no-gap flags are shipped. Full tests/build/lint gate passed, graph refreshed, and the
+  browser route smoke reached the auth gate without console errors.
 
 ### J3. Game-flair disc cards — front-runs roadmap Phase B item 5 / deferred backlog
 - **Model: GPT-5.3-Codex medium** · **Effort:** S.

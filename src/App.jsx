@@ -20,6 +20,7 @@ import BagLockerPage from './pages/BagLockerPage'
 import BagManagePage from './pages/BagManagePage'
 import DiscFormPage from './pages/DiscFormPage'
 import DiscDetailPage from './pages/DiscDetailPage'
+import DiscComparePage from './pages/DiscComparePage'
 import NotificationsPage from './pages/NotificationsPage'
 import CoursesPage from './pages/CoursesPage'
 import CourseFormPage from './pages/CourseFormPage'
@@ -75,6 +76,7 @@ function App() {
         <Route path="/bag">
           <Route index element={<BagPage />} />
           <Route path="locker" element={<BagLockerPage />} />
+          <Route path="compare" element={<DiscComparePage />} />
           <Route path="manage" element={<BagManagePage />} />
           <Route path="discs/new" element={<DiscFormPage />} />
           <Route path="discs/:discId" element={<DiscDetailPage />} />
