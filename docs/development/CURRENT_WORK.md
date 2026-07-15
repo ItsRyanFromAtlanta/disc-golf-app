@@ -2,7 +2,8 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** Phase B item 2 complete through 2B; continue with item 3 private disc photos.
+- **Active phase:** Phase B item 3 private disc photos is green locally; live migration and RLS smoke
+  await a fresh verified manual backup.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -78,11 +79,21 @@ Last updated: 2026-07-15
   lint retains four existing warnings. Authenticated ghost insert, tag assignment, and tombstone update
   passed rollback-only; 10 system tags were visible and no smoke rows remained. Advisors found no new
   security issue or missing 2B FK index.
+- **Phase B item 3 local checkpoint 2026-07-15:** Added an unapplied append-only `disc_photos`
+  migration with owner-scoped metadata/Storage RLS, immutable front/back/side object versions,
+  security-invoker register/delete/restore RPCs, and a private image-only bucket. Client-side WebP
+  compression, signed display URLs, Dexie v9 Blob upload/retry queue, legacy `photo_url` fallback,
+  replacement UI, and 30-day restore are implemented.
+- **Item 3 local verification:** 358 tests pass across 41 files and production build/diff pass. Lint
+  retains only the four pre-existing warnings after the photo hook warning was fixed. The global
+  `supabase` command and `pg_dump` are unavailable; the pinned CLI was discovered and both linked
+  schema/data dumps were attempted, but Docker is unavailable. No live SQL was applied.
 - **Migration follow-up:** automated backup was attempted with the bundled `supabase db dump --linked`,
   but Docker is unavailable and `pg_dump` is not installed. Take a manual backup before the next DDL/FK
   session. No J1 data rows were seeded.
-- **Resume point:** Phase B item 3: up to three private disc photos with Storage RLS, compression,
-  offline queue, replacement history, and 30-day recovery. Manual catalog population remains owner-driven.
+- **Resume point:** Obtain and verify a fresh manual Supabase backup, apply
+  `20260715203000_phase_b_private_disc_photos.sql`, run authenticated owner/foreign-user Storage +
+  metadata/RPC smoke tests and advisors, then close item 3. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

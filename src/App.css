@@ -2073,6 +2073,70 @@
   margin: 8px 0;
 }
 
+.disc-photo-manager {
+  margin-block: 1.5rem;
+}
+
+.disc-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.disc-photo-slot {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.disc-photo-slot h3 {
+  margin: 0;
+}
+
+.disc-photo-slot img,
+.disc-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: var(--border-width) solid var(--color-border-default);
+}
+
+.disc-photo-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-surface-alt);
+}
+
+.disc-photo-picker {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.disc-photo-picker input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.disc-photo-recovery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .disc-photo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .bag-membership-row {
   display: flex;
   align-items: center;

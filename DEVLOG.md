@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-15 — Phase B item 3 private photos local checkpoint
+
+**What:** Added an unapplied owner-scoped `disc_photos` migration and private image Storage contract
+for immutable front/back/side versions. The client compresses to bounded WebP derivatives, displays
+short-lived signed URLs, queues Blobs in Dexie v9 for offline retry, preserves legacy `photo_url` as a
+front-slot fallback, and supports replacement plus 30-day recoverable removal.
+
+**Backup gate:** Global Supabase CLI and `pg_dump` are unavailable. The pinned Supabase CLI was then
+used to attempt linked schema and data dumps, but both require unavailable Docker Desktop. No backup
+artifact was produced and no live SQL was applied; a fresh verified manual backup remains mandatory.
+
+**Verified:** 358 tests pass across 41 files, production build and diff checks pass, and the new hook
+lint warning was fixed; four pre-existing lint warnings remain.
+
+**Next:** Confirm a manual backup, apply the migration, run authenticated cross-owner Storage/RLS/RPC
+smoke tests and advisors, then close Phase B item 3.
+
+---
+
 ## 2026-07-15 — Shipped Phase B 2B ghost slots and shot tags
 
 **What:** Persisted private, capacity-neutral bag ghost slots and added a physical-disc shot taxonomy.

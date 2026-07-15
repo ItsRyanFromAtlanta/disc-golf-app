@@ -11,6 +11,7 @@ import {
   removeShotTagAssignment,
 } from '../lib/repository/discTaxonomyRepository'
 import { activeShotTagAssignments, assignedShotTags } from '../lib/discTaxonomy'
+import DiscPhotoManager from '../components/DiscPhotoManager'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
 
@@ -117,6 +118,13 @@ export default function DiscDetailPage() {
         <span className={disc.status === 'in_locker' ? 'zone-badge' : 'abandoned-badge'}>{disc.status}</span>
       </p>
 
+      <DiscPhotoManager
+        userId={user.id}
+        discId={discId}
+        legacyPhotoUrl={disc.photo_url}
+        onError={setError}
+      />
+
       <h2>Flight numbers</h2>
       <table className="flight-compare-table">
         <thead>
@@ -156,7 +164,6 @@ export default function DiscDetailPage() {
           status: disc.status ?? 'in_locker',
           acquired_on: disc.acquired_on ?? '',
           provenance: disc.provenance ?? '',
-          photo_url: disc.photo_url ?? '',
           notes: disc.notes ?? '',
         }}
         onSave={(draft) =>
@@ -169,15 +176,11 @@ export default function DiscDetailPage() {
             status: draft.status,
             acquired_on: draft.acquired_on || null,
             provenance: draft.provenance.trim() || null,
-            photo_url: draft.photo_url.trim() || null,
             notes: draft.notes.trim() || null,
           })
         }
         renderView={(v) => (
           <>
-            {v.photo_url && (
-              <img src={v.photo_url} alt={v.nickname || 'Disc photo'} className="disc-detail-photo" />
-            )}
             <dl className="profile-field-list">
               <div>
                 <dt>Nickname</dt>
@@ -268,13 +271,6 @@ export default function DiscDetailPage() {
               type="text"
               value={draft.provenance}
               onChange={(e) => setDraft({ ...draft, provenance: e.target.value })}
-            />
-            <label htmlFor="d-photo">Photo URL</label>
-            <input
-              id="d-photo"
-              type="text"
-              value={draft.photo_url}
-              onChange={(e) => setDraft({ ...draft, photo_url: e.target.value })}
             />
             <label htmlFor="d-notes">Notes</label>
             <textarea id="d-notes" rows={2} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />

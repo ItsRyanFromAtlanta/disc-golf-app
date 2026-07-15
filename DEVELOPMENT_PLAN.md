@@ -21,6 +21,12 @@ Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GP
 architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
 Sonnet/Opus labels below are preserved only as historical records of completed work.
 
+Phase B item 3 local checkpoint (2026-07-15): private front/back/side disc-photo metadata/RPC and
+Storage RLS migration, compressed client derivatives, Dexie v9 Blob queue, signed display URLs, and
+30-day recovery UI are implemented and green locally. The migration is deliberately unapplied because
+both linked CLI dump attempts require unavailable Docker and `pg_dump` is unavailable; take and verify
+a manual backup before live apply and authenticated RLS/restore smoke testing.
+
 ## Phase A execution sessions — approved 2026-07-12
 
 Authoritative behavior: `PHASE_A_ARCHITECTURE.md`. Implement in this order; each numbered session is a
