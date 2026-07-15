@@ -6,8 +6,8 @@ Recommended model: **GPT-5.6, high reasoning** for schema/security/contracts. Us
 **GPT-5.3-Codex, medium reasoning** for normal implementation and tests.
 
 This specification governs the production/shared-contract phase in `PRODUCT_ROADMAP.md`. It is a
-design contract, not migration SQL. Before generating or running migration SQL, confirm the manual
-Supabase backup and perform a fresh live-schema audit.
+design contract, not migration SQL. Before generating or running migration SQL, perform a fresh
+live-schema audit and review the rollback and ownership-test plan.
 
 ## 1. Canonical activity envelope
 

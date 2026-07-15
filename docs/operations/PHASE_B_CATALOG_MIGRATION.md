@@ -94,14 +94,12 @@ features. Those boundaries prevent inferred catalog facts and premature client c
 
 Before any future apply:
 
-1. Create and verify the automated CLI/`pg_dump` backup; no additional confirmation is required after
-   path, size, archive listing, and checksum verification.
-2. Confirm the migration remains unapplied locally and remotely.
-3. Re-run the live-audit counts; duplicate molds, blank names, and null `mold_id` counts must remain zero.
-4. Review every table/check/FK/index, especially run identity and submission status transitions.
-5. Review the admin authorization design. Service-role use must remain server-side only.
-6. Apply first to a disposable/local database or reviewed Supabase development branch when available.
-7. Run positive, negative, cross-user, duplicate, and transaction-rollback tests.
+1. Confirm the migration remains unapplied locally and remotely.
+2. Re-run the live-audit counts; duplicate molds, blank names, and null `mold_id` counts must remain zero.
+3. Review every table/check/FK/index, especially run identity and submission status transitions.
+4. Review the admin authorization design. Service-role use must remain server-side only.
+5. Apply first to a disposable/local database or reviewed Supabase development branch when available.
+6. Run positive, negative, cross-user, duplicate, and transaction-rollback tests.
 8. Run security and performance advisors; do not accept new DISCS findings.
 
 ## Verification SQL
@@ -155,8 +153,7 @@ Required authenticated-session tests:
 
 ## Recovery posture
 
-Before client rollout, a failed apply recovers from the confirmed backup. Because the migration is one
-transaction, an ordinary SQL error should roll it back completely; still verify no new table or column
+Because the migration is one transaction, an ordinary SQL error should roll it back completely; verify no new table or column
 survived before retrying. After any client or adapter writes Phase B data, do not drop or hand-edit the
 catalog tables. Disable new writes, export every Phase B table, preserve submission/provenance history,
 and use a reviewed forward repair. Compatibility columns remain specifically to support safe rollback of

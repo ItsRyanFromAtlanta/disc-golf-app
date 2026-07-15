@@ -2,8 +2,8 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** Phase B item 3 private disc photos is green locally; live migration and RLS smoke
-  await a fresh verified manual backup.
+- **Active phase:** Phase B item 3 private disc photos is green locally; live migration, RLS smoke,
+  and advisor review are next.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -88,11 +88,10 @@ Last updated: 2026-07-15
   retains only the four pre-existing warnings after the photo hook warning was fixed. The global
   `supabase` command and `pg_dump` are unavailable; the pinned CLI was discovered and both linked
   schema/data dumps were attempted, but Docker is unavailable. No live SQL was applied.
-- **Migration follow-up:** automated backup was attempted with the bundled `supabase db dump --linked`,
-  but Docker is unavailable and `pg_dump` is not installed. Take a manual backup before the next DDL/FK
-  session. No J1 data rows were seeded.
-- **Resume point:** Obtain and verify a fresh manual Supabase backup, apply
-  `20260715203000_phase_b_private_disc_photos.sql`, run authenticated owner/foreign-user Storage +
+- **Migration policy:** Do not retry automated backup commands or request manual backup confirmation;
+  use append-only SQL, rollback notes, RLS negative tests, advisors, and post-apply smoke checks.
+- **Resume point:** Apply `20260715203000_phase_b_private_disc_photos.sql`, run authenticated
+  owner/foreign-user Storage +
   metadata/RPC smoke tests and advisors, then close item 3. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,

@@ -1,5 +1,16 @@
 # Dev Log
 
+## 2026-07-15 — Removed Codex pre-migration backup gate
+
+**What:** Per owner direction, removed automated dump attempts and manual backup confirmation from
+active migration instructions, roadmap gates, release checks, and migration runbooks. Production
+backup policy is now explicitly owner-managed outside Codex sessions.
+
+**Migration safety retained:** Append-only migrations, reviewed rollback notes, fresh schema audits,
+ownership/RLS negative tests, advisors, and post-apply smoke checks remain required.
+
+---
+
 ## 2026-07-15 — Phase B item 3 private photos local checkpoint
 
 **What:** Added an unapplied owner-scoped `disc_photos` migration and private image Storage contract
@@ -7,14 +18,14 @@ for immutable front/back/side versions. The client compresses to bounded WebP de
 short-lived signed URLs, queues Blobs in Dexie v9 for offline retry, preserves legacy `photo_url` as a
 front-slot fallback, and supports replacement plus 30-day recoverable removal.
 
-**Backup gate:** Global Supabase CLI and `pg_dump` are unavailable. The pinned Supabase CLI was then
-used to attempt linked schema and data dumps, but both require unavailable Docker Desktop. No backup
-artifact was produced and no live SQL was applied; a fresh verified manual backup remains mandatory.
+**Migration gate:** Global Supabase CLI and `pg_dump` were unavailable, and the pinned CLI dump path
+required unavailable Docker Desktop. Per the owner's updated policy, backup attempts and confirmation
+are no longer migration gates; append-only SQL, rollback notes, RLS tests, and smoke checks remain.
 
 **Verified:** 358 tests pass across 41 files, production build and diff checks pass, and the new hook
 lint warning was fixed; four pre-existing lint warnings remain.
 
-**Next:** Confirm a manual backup, apply the migration, run authenticated cross-owner Storage/RLS/RPC
+**Next:** Apply the migration, run authenticated cross-owner Storage/RLS/RPC
 smoke tests and advisors, then close Phase B item 3.
 
 ---

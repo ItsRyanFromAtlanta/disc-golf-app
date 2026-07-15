@@ -164,13 +164,9 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 - Schema files are append-only history; never edit a previously-run schema file, add a new one. New concepts from the blueprint are absorbed as additive columns/tables on the existing schema (e.g. `discs.role`, `discs.wear_score`), never as a wholesale schema replacement.
 - Commit at every working checkpoint. Push coherent green stages to a feature branch and use a reviewed
   pull request for `main` because `main` auto-deploys; direct production pushes require explicit approval.
-- **Before any migration or FK-restructuring session:** Codex should create and verify a timestamped
-  backup automatically when the connected tooling permits it: try `supabase db dump --linked` first,
-  then fall back to `pg_dump` through the configured pgpass connection. Store dumps outside Git and
-  report their path, size, and checksum without printing credentials or contents. A verified automated
-  backup satisfies the migration gate without another user confirmation. If neither backup path is
-  available, give a prominent non-blocking manual-backup reminder and continue only within the scope the
-  user already approved; do not repeatedly stop for backup confirmation.
+- Database changes use append-only migrations, reviewed rollback notes, ownership/RLS negative tests,
+  and post-apply smoke checks. Do not run automated backup commands or block migrations on manual
+  backup confirmation; the owner manages production backup policy outside Codex sessions.
 - Every task states its recommended model up front: **GPT-5.3-Codex medium** for normal UI/CRUD/test work; **GPT-5.6 high** for architecture, migrations, RLS/security, rules engines, synchronization, and complex algorithms. Use **GPT-5.4 mini low** only for bounded mechanical work with normal verification. Confirm the active model/reasoning level before starting a section.
 - Plan-first rule: iterate and agree on designs in conversation BEFORE generating files, schemas, or prompts. Always prompt for approval before file generation.
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).

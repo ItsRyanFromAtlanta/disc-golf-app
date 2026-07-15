@@ -6,7 +6,7 @@
 - Pull request review gates pass; no unrelated changes are bundled.
 - Tests, lint, build, browser smoke tests, and `git diff --check` pass.
 - Offline/resume and error paths are verified for affected flows.
-- Schema changes have backup confirmation, migration/rollback notes, and RLS negative tests.
+- Schema changes have reviewed migration/rollback notes and RLS negative tests.
 - Secrets, logs, fixtures, generated maps, and source maps contain no sensitive data.
 - Documentation, `DEVLOG.md`, `CURRENT_WORK.md`, and backlog status are updated.
 - Preview is smoke-tested before merging the protected production branch.

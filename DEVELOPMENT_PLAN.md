@@ -23,9 +23,8 @@ Sonnet/Opus labels below are preserved only as historical records of completed w
 
 Phase B item 3 local checkpoint (2026-07-15): private front/back/side disc-photo metadata/RPC and
 Storage RLS migration, compressed client derivatives, Dexie v9 Blob queue, signed display URLs, and
-30-day recovery UI are implemented and green locally. The migration is deliberately unapplied because
-both linked CLI dump attempts require unavailable Docker and `pg_dump` is unavailable; take and verify
-a manual backup before live apply and authenticated RLS/restore smoke testing.
+30-day recovery UI are implemented and green locally. Live apply, authenticated RLS/restore smoke
+testing, and advisor review are next; backup commands and confirmation are not migration gates.
 
 ## Phase A execution sessions — approved 2026-07-12
 
@@ -89,7 +88,7 @@ are stated below — **confirm the active model matches before starting a layer.
 
 - **Layer 0 — Documentation alignment** (Sonnet 5, IN PROGRESS): blueprint into repo, `SCREEN_SPECS.md`
   rewrite, this doc + `CLAUDE.md` + `FEATURE_BACKLOG.md` + `DEVLOG.md` updated.
-- **Layer 1 — Foundation** (Opus 4.8, manual DB backup first, COMPLETE): one append-only schema file (disc
+- **Layer 1 — Foundation** (Opus 4.8, COMPLETE): one append-only schema file (disc
   role/wear/odometer, bag capacity, profile PDGA/XP/level fields, weather columns, `putt_events.putter_disc_id`,
   routine `rules_config`/`drill_type`/100-putt CHECK, badges/badge_progress/xp_events tables, disc
   merge trigger); Dexie.js + TanStack Query repository skeleton (staged local-first, behind a
@@ -223,7 +222,7 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
 - **Schema:** already exists, all tables empty, **no new columns** — `courses`, `layouts`, `holes`,
   `rounds`, `round_holes`, `course_aliases` (1.5 groundwork applied: `rounds.layout_id/external_source/
   external_ref/bag_id`, first-class `layouts`, `holes.layout_id`, sparse-nullable `round_holes`). Only DB
-  work is a new **RLS-policy migration** (take a manual backup first): `courses`/`layouts`/`holes` =
+  work is a new **RLS-policy migration**: `courses`/`layouts`/`holes` =
   community read-all-authenticated, insert-open (`created_by = auth.uid()`), update-creator-only (mirror
   `disc_molds`); `rounds`/`round_holes` = owner-scoped to `auth.uid()`; `course_aliases` = insert-open/
   update-closed.
@@ -374,7 +373,7 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
 1. **1A** player profile (quick win, unblocks caddie context later)
 2. **2.1** confidence map (one-session win on shipped data)
 3. **1D** deploy + PWA baseline (get it on your phone BEFORE the big schema work; validate on cellular)
-4. **1B + 1.5** molds/locker migration + round/course groundwork (one big schema session, Opus 4.8; MANUAL DB BACKUP FIRST)
+4. **1B + 1.5** molds/locker migration + round/course groundwork (one big schema session, Opus 4.8)
 5. **1C** bags (+ bag_id on rounds)
 6. **1E** bag & disc manager UI + bottom tab bar (inventory/loadout experience; audits + completes 1C's UI)
 7. **2.2** per-putt capture (the enabler, + round_hole_id accommodation, + local buffering)
