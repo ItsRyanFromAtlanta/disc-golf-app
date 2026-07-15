@@ -25,44 +25,6 @@ export async function fetchDisc(discId) {
 
 // Universe tab -> DiscFormPage handoff (Screen 5): resolve the mold picked
 // from the catalog accordion into MoldPicker's selectedMold shape.
-export async function fetchMoldById(moldId) {
-  const { data, error } = await supabase.from('disc_molds').select('*').eq('id', moldId).single()
-  if (error) throw error
-  return data
-}
-
-export async function searchMolds(query) {
-  if (!query.trim()) return []
-  const { data, error } = await supabase
-    .from('disc_molds')
-    .select('*')
-    .or(`manufacturer.ilike.%${query}%,mold_name.ilike.%${query}%`)
-    .order('manufacturer')
-    .limit(20)
-  if (error) throw error
-  return data
-}
-
-// Zero-typing putter provisioning (Onboarding Step 2): exact brand + category
-// match, no search string — distinct from searchMolds' free-text ilike used
-// by the typed disc-add flow.
-export async function fetchPutterMolds(manufacturer) {
-  const { data, error } = await supabase
-    .from('disc_molds')
-    .select('*')
-    .eq('manufacturer', manufacturer)
-    .eq('category', 'putter')
-    .order('mold_name')
-  if (error) throw error
-  return data
-}
-
-export async function createMold(fields) {
-  const { data, error } = await supabase.from('disc_molds').insert(fields).select().single()
-  if (error) throw error
-  return data
-}
-
 export async function upsertDisc(userId, discId, fields) {
   const payload = { ...fields, user_id: userId }
   let query

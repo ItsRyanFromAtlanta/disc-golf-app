@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { upsertDisc, fetchMoldById } from '../lib/discLocker'
+import { upsertDisc } from '../lib/discLocker'
+import { useCatalog } from '../lib/repository/catalogRepository'
 import MoldPicker from '../components/MoldPicker'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
@@ -34,23 +35,26 @@ export default function DiscFormPage() {
   const [form, setForm] = useState(BLANK_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const catalog = useCatalog()
 
   // Universe tab hand-off (?mold=<id>&plastic=<name>): prefill the mold and
   // plastic fields rather than building a separate weight-selection drawer.
   useEffect(() => {
     const moldId = searchParams.get('mold')
     if (!moldId) return
-    fetchMoldById(moldId)
-      .then(setMold)
-      .catch((err) => setError(err.message))
+    if (catalog.data) {
+      const selected = catalog.data.molds.find((candidate) => candidate.id === moldId)
+      if (selected) setMold(selected)
+      else setError('That mold is no longer in the approved catalog.')
+    }
     const plastic = searchParams.get('plastic')
     if (plastic) setForm((prev) => ({ ...prev, plastic }))
-  }, [searchParams])
+  }, [catalog.data, searchParams])
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!mold) {
-      setError('Pick or create a mold first.')
+      setError('Pick an approved mold first.')
       return
     }
     setSaving(true)

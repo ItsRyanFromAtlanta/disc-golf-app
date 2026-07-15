@@ -67,10 +67,12 @@ device metadata.
 
 Recommended model: GPT-5.6 high. Use the automated CLI/`pg_dump` backup policy before migration SQL.
 
-Phase B status: **IN PROGRESS** (2026-07-12). B1 catalog foundation, RLS, migration history, rollback-only
-ownership tests, B1.7 candidate/artifact persistence, and B1.8 admin review/promotion with advisor/lint
-follow-ups are applied and verified. Manufacturer fixtures, representative catalog data, and client
-repositories remain next.
+Phase B status: **IN PROGRESS** (2026-07-15). The retained B1 catalog foundation and least-privilege
+RLS are live; the automated ingestion/admin pipeline was subsequently scrapped and torn down in favor
+of manual curation. B2 ships the migration-free, read-only client repository: normalized Dexie v6
+caches for manufacturers/molds/plastics/mold-plastic links/runs/stamps, TanStack offline-first reads,
+and migrated mold selection/search/onboarding consumers. Manual representative catalog population
+remains owner-driven; physical-disc timelines and bag snapshots are next.
 
 1. Catalog variants for mold/plastic/run/stamp with source provenance; manufacturer adapters; private
    custom configurations; community submission and admin-review queue.

@@ -2,7 +2,8 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** J3 complete; resume with the roadmap's DISCS intelligence work.
+- **Active phase:** Phase B B2 read-only catalog repository complete; continue with physical-disc
+  timelines and bag configuration versions/snapshots.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -56,12 +57,18 @@ Last updated: 2026-07-15
   pre-existing warnings; `git diff --check` and `graphify update .` completed. Browser smoke reached `/login`
   from `/profile`; the available guest action did not navigate, so authenticated toggle/card interaction remains
   unexercised. The current theme contract is light-only; no dark-mode variant was added.
+- **B2 shipped 2026-07-15:** Added a read-only normalized catalog repository over manufacturers,
+  molds, plastics, mold-plastic links, runs, and stamps; Dexie v6 persists the snapshot and TanStack
+  Query supplies offline-first reads. Mold picker, Universe search, onboarding putter selection, and
+  add-disc URL handoff now use it. Removed the stale ordinary-client `disc_molds` insert path.
+- **B2 verification:** 351 tests pass across 38 files; production build and `git diff --check` pass;
+  lint retains only the four pre-existing warnings. Live checks confirm all six canonical tables have
+  RLS, authenticated SELECT, no authenticated INSERT, and no anonymous SELECT. No schema/data writes.
 - **Migration follow-up:** automated backup was attempted with the bundled `supabase db dump --linked`,
   but Docker is unavailable and `pg_dump` is not installed. Take a manual backup before the next DDL/FK
   session. No J1 data rows were seeded.
-- **Resume point:** Continue from the `codex/j3-game-flair` checkpoint, then return to the roadmap's DISCS
-  intelligence work. The 1B mold-derivation migration remains valid for the
-  owner's future manual catalog population.
+- **Resume point:** Continue after B2 with Phase B item 2: physical-disc timelines and bag
+  configuration versions/snapshots. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

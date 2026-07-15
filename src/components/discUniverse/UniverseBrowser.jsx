@@ -1,22 +1,20 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { searchMolds } from '../../lib/discLocker'
+import { filterCatalogMolds, useCatalog } from '../../lib/repository/catalogRepository'
 import { stabilityGaps } from '../../lib/wishlist'
 
 // 3-tier vertical accordion (Mold -> Plastic) over the shared disc_molds
-// catalog, driven by the existing free-text searchMolds -- disc_molds has no
-// "browse everything" endpoint, so this stays search-first rather than
-// inventing a full-catalog listing. Tapping a plastic hands off to the
-// existing DiscFormPage add-disc flow (prefilled via query params) instead of
-// a bespoke weight-selection drawer, since disc_molds has no per-run/weight
-// rows to back one.
+// catalog. The read-only repository hydrates normalized plastic/run/stamp
+// rows and falls back to its IndexedDB snapshot when the network disappears.
 export default function UniverseBrowser({ discs }) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [searching, setSearching] = useState(false)
-  const [error, setError] = useState(null)
   const [openManufacturer, setOpenManufacturer] = useState(null)
   const [openMoldId, setOpenMoldId] = useState(null)
+  const catalog = useCatalog()
+  const results = useMemo(
+    () => (catalog.data && query.trim() ? filterCatalogMolds(catalog.data, { query }) : []),
+    [catalog.data, query],
+  )
 
   const gaps = useMemo(() => stabilityGaps(discs ?? []), [discs])
 
@@ -29,23 +27,10 @@ export default function UniverseBrowser({ discs }) {
     return groups
   }, [results])
 
-  async function handleSearch(value) {
+  function handleSearch(value) {
     setQuery(value)
     setOpenManufacturer(null)
     setOpenMoldId(null)
-    if (!value.trim()) {
-      setResults([])
-      return
-    }
-    setSearching(true)
-    setError(null)
-    try {
-      setResults(await searchMolds(value))
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSearching(false)
-    }
   }
 
   return (
@@ -68,9 +53,9 @@ export default function UniverseBrowser({ discs }) {
         value={query}
         onChange={(e) => handleSearch(e.target.value)}
       />
-      {searching && <p className="loading">Searching...</p>}
-      {error && <p className="form-error">{error}</p>}
-      {query.trim() && !searching && results.length === 0 && <p>No molds match.</p>}
+      {catalog.isLoading && <p className="loading">Loading catalog...</p>}
+      {catalog.error && <p className="form-error">{catalog.error.message}</p>}
+      {query.trim() && !catalog.isLoading && results.length === 0 && <p>No molds match.</p>}
 
       {Object.entries(byManufacturer).map(([manufacturer, molds]) => (
         <div key={manufacturer} className="universe-accordion-tier">
@@ -96,7 +81,7 @@ export default function UniverseBrowser({ discs }) {
                 </button>
                 {openMoldId === mold.id && (
                   <ul className="universe-plastic-list">
-                    {(mold.plastics?.length ? mold.plastics : ['Standard']).map((plastic) => (
+                    {(mold.plastics?.length ? mold.plastics.map((plastic) => plastic.name) : ['Standard']).map((plastic) => (
                       <li key={plastic}>
                         <Link
                           to={`/bag/discs/new?mold=${mold.id}&plastic=${encodeURIComponent(plastic)}`}

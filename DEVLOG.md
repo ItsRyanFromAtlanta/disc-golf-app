@@ -1,5 +1,25 @@
 # Dev Log
 
+## 2026-07-15 — Shipped B2 read-only offline catalog repository
+
+**What:** Added a normalized catalog snapshot repository for manufacturers, molds, plastics,
+mold-plastic availability, runs, and stamps. Dexie v6 mirrors the shared reference rows and TanStack
+Query reads remote-first with a complete local fallback. Mold picker, Disc Universe search, onboarding
+putter selection, and URL-prefilled add-disc now share this boundary. Removed the stale direct
+`disc_molds` insert path because canonical tables are authenticated-read-only.
+
+**Data decision:** No schema or production-data writes. The live catalog currently contains four
+manufacturers and 36 molds; plastic/run/stamp rows remain empty. Representative cross-table fixtures
+are deterministic test data only, so the UI never presents invented canonical products.
+
+**Verified:** 351 tests pass across 38 files, production build and `git diff --check` pass, and lint
+retains only the four pre-existing warnings. Live Supabase checks confirm RLS plus authenticated SELECT,
+no authenticated INSERT, and no anonymous SELECT on all six cached canonical tables.
+
+**Next:** Phase B item 2 — physical-disc timelines and bag configuration versions/snapshots.
+
+---
+
 ## 2026-07-15 — Shipped J3 game-flair disc cards
 
 **What:** Added an opt-in `DiscCard` flair variant for the locker. `discTier(disc)` is a pure, tested
