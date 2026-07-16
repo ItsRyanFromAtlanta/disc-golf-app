@@ -118,6 +118,12 @@ export default function DiscDetailPage() {
         <span className={disc.status === 'in_locker' ? 'zone-badge' : 'abandoned-badge'}>{disc.status}</span>
       </p>
 
+      <p>
+        <Link to={`/bag/lost-found?disc=${discId}`} className="link-button">
+          {disc.status === 'lost' ? 'View Lost & Found case' : 'Report lost or view recovery history'}
+        </Link>
+      </p>
+
       <DiscPhotoManager
         userId={user.id}
         discId={discId}

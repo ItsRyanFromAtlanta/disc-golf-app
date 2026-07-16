@@ -19,11 +19,66 @@
 .round-start-page,
 .scorecard-page,
 .round-summary-page,
+.lost-found-page,
 .onboarding-page {
   max-width: 480px;
   margin: 0 auto;
   padding: 32px 20px;
   text-align: left;
+}
+
+.lost-found-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.lost-found-panel {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.lost-found-fields,
+.lost-found-case-detail,
+.lost-found-timeline li {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.lost-found-coordinate-grid,
+.lost-found-resolution-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.lost-found-coordinate-grid label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.lost-found-case-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.lost-found-case-list button {
+  width: 100%;
+  border: var(--border-width) solid var(--color-border-default);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+}
+
+.lost-found-case-active {
+  border-color: var(--color-border-focus) !important;
+}
+
+.lost-found-timeline {
+  display: grid;
+  gap: 0.75rem;
+  padding-left: 1.5rem;
 }
 
 .splash-page {

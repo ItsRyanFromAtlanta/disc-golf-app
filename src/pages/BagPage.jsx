@@ -129,6 +129,9 @@ export default function BagPage() {
         <Link to="/bag/locker" className="link-button">
           Locker
         </Link>
+        <Link to="/bag/lost-found" className="link-button">
+          Lost &amp; Found
+        </Link>
       </div>
 
       <div className="capacity-indicator">

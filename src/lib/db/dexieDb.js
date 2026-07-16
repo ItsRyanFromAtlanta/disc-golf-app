@@ -223,6 +223,14 @@ export class AppDatabase extends Dexie {
       outbox:
         '++id, table, op, createdAt, idempotencyKey, dependencyKey, nextRetryAt, [table+idempotencyKey]',
     })
+
+    // Phase B item 4: owner-private Lost & Found state, immutable timeline
+    // cache, and an idempotent operation queue for offline case updates.
+    this.version(10).stores({
+      lostFoundCases: 'id, user_id, disc_id, status, latest_update_at, [user_id+status]',
+      lostFoundUpdates: 'id, user_id, case_id, event_type, occurred_at, [case_id+occurred_at]',
+      lostFoundOutbox: 'id, userId, caseId, discId, op, status, createdAt, idempotencyKey',
+    })
   }
 }
 

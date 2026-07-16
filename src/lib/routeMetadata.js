@@ -190,6 +190,16 @@ const APP_ROUTES = [
     scrollKey: 'discs-form',
   },
   {
+    id: 'lost-found',
+    match: /^\/bag\/lost-found$/,
+    section: 'discs',
+    shell: SHELL_TYPES.STANDARD,
+    title: 'Lost & Found',
+    showActivityPill: true,
+    preserveNestedState: true,
+    scrollKey: 'discs-lost-found',
+  },
+  {
     id: 'disc-detail',
     match: /^\/bag\/discs\/[^/]+$/,
     section: 'discs',
