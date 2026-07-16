@@ -6,6 +6,9 @@ import {
   flightChartPoint,
   flightChartPoints,
   capacityTier,
+  bagDisplayName,
+  buildBagDraft,
+  bagDraftHasChanges,
 } from './bags'
 
 describe('bagIdsToUnsetForNewDefault', () => {
@@ -26,6 +29,23 @@ describe('bagIdsToUnsetForNewDefault', () => {
   it('returns nothing to unset on a fresh account with no default yet', () => {
     const bags = [{ id: 'a', is_default: false }]
     expect(bagIdsToUnsetForNewDefault(bags, 'a')).toEqual([])
+  })
+})
+
+describe('bag editor contracts', () => {
+  const bag = { id: 'a', name: 'Tournament Cart', description: null, bag_type: 'tournament', capacity: null, is_default: true }
+
+  it('keeps private names internally and uses a generic external main-bag label', () => {
+    expect(bagDisplayName(bag)).toBe('Tournament Cart')
+    expect(bagDisplayName(bag, { external: true })).toBe('Main Bag')
+    expect(bagDisplayName({ name: 'Travel', is_default: false }, { external: true })).toBe('Travel')
+  })
+
+  it('detects grouped metadata and membership changes independent of membership order', () => {
+    const draft = buildBagDraft(bag, ['d1', 'd2'])
+    expect(bagDraftHasChanges(bag, ['d2', 'd1'], draft)).toBe(false)
+    expect(bagDraftHasChanges(bag, ['d1', 'd2'], { ...draft, discIds: ['d1'] })).toBe(true)
+    expect(bagDraftHasChanges(bag, ['d1', 'd2'], { ...draft, name: 'New name' })).toBe(true)
   })
 })
 

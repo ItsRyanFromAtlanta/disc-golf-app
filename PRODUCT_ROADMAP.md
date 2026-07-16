@@ -100,8 +100,8 @@ Recommended model: GPT-5.3-Codex medium for UI; GPT-5.6 high for scoring/merge a
 
 1. **COMPLETE 2026-07-16.** Collection-first DISCS hub, quantity-first duplicate add, rich
    physical-disc profile, photo flow, contextual performance, lifecycle, and history.
-2. Bag editor with grouped save/version, state-in-time preview/apply restore, unavailable placeholders,
-   one private main bag, and generic external label `Main Bag`.
+2. **COMPLETE 2026-07-16.** Bag editor with grouped save/version, state-in-time preview/apply restore,
+   unavailable placeholders, one private main bag, and generic external label `Main Bag`.
 3. Flight Spectrum (wear-adjusted default, official toggle, clustering, accessible ghost styling).
 4. Bag Resonance first draft with component scores and presets; ghost gaps never count toward capacity.
 5. Disc/bag comparisons using personal, official, and eligible community cohorts with graceful cohort

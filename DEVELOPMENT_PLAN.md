@@ -25,9 +25,9 @@ Phase B item 5 complete (2026-07-16): immutable `disc_odometer_events`, RPC-main
 airball totals, permanent 300/1,000/5,000 chain-hit cosmetic unlocks, direct-total guards, Dexie v11
 offline replay, and disc-detail odometer/history UI are live and verified. Rollback-only milestone,
 idempotency, correction-retention, owner/foreign-user, direct-write, and zero-residue checks passed.
-Phase B is complete. Phase C item 1 shipped 2026-07-16 with a collection-first DISCS hub,
-quantity-first duplicate creation, and contextual physical-disc performance/history. Phase C item 2
-bag-editor consolidation is next.
+Phase B is complete. Phase C items 1–2 shipped 2026-07-16: collection-first DISCS/profile
+consolidation plus atomic grouped bag editing, one-version saves, detailed state-in-time restore, and
+private main-bag invariants. Phase C item 3 Flight Spectrum is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

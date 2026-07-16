@@ -53,3 +53,27 @@ export async function restoreBagVersion(version, { idempotencyKey = crypto.rando
   await fetchBagVersions(version.bag_id)
   return data
 }
+
+export async function groupedSaveBag(bagId, draft, { idempotencyKey = crypto.randomUUID() } = {}) {
+  const { data, error } = await supabase.rpc('grouped_save_bag', {
+    p_bag_id: bagId,
+    p_name: draft.name,
+    p_description: draft.description || null,
+    p_bag_type: draft.bagType || null,
+    p_capacity: draft.capacity,
+    p_make_default: draft.makeDefault,
+    p_disc_ids: draft.discIds,
+    p_idempotency_key: idempotencyKey,
+  })
+  if (error) throw error
+  await fetchBagVersions(bagId)
+  return data
+}
+
+export async function deleteBagWithReplacement(bagId, replacementDefaultId = null) {
+  const { error } = await supabase.rpc('delete_bag_with_replacement', {
+    p_bag_id: bagId,
+    p_replacement_default_id: replacementDefaultId,
+  })
+  if (error) throw error
+}

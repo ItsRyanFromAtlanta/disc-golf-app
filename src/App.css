@@ -1447,6 +1447,28 @@
   margin: 10px 0;
 }
 
+.bag-main-toggle {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.bag-restore-group {
+  border-top: 2px solid var(--border-default);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.bag-restore-group h3 {
+  margin: 0 0 0.4rem;
+}
+
+.bag-restore-group ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 .bag-membership-list {
   list-style: none;
   padding: 0;

@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-16
 
-- **Active phase:** Phase C item 1 is complete; continue with Phase C item 2 bag-editor consolidation.
+- **Active phase:** Phase C items 1–2 are complete; continue with Phase C item 3 Flight Spectrum.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -118,9 +118,21 @@ Last updated: 2026-07-16
   retains four existing warnings. Graphify was refreshed. Anonymous mobile/desktop browser checks
   reached the protected-route login redirect without errors or overflow; authenticated rendering remains
   unexercised in the isolated browser session.
-- **Resume point:** Phase C item 2. Reconcile the already-shipped bag versions, restore preview,
-  unavailable placeholders, capacity enforcement, and default-bag behavior before proposing the
-  remaining grouped editor/save UX. Manual catalog population remains owner-driven.
+- **Phase C item 2 shipped 2026-07-16:** Manage Bags now stages metadata, default selection, and all
+  membership changes in one draft with Save/Cancel. A security-invoker RPC applies the owner-scoped
+  change atomically, enforces the 35-disc hard cap, and captures exactly one immutable version.
+  Restore preview names additions/removals/unavailable historical discs and restores metadata plus
+  eligible membership as a new version. Main-bag deletion requires atomic replacement; the sole bag
+  cannot be deleted. Owner-private names map to generic `Main Bag` only in external display contexts.
+- **Item 2 verification:** 379 tests pass across 46 files; build/diff pass and lint retains four existing
+  warnings. Live rollback-only checks passed grouped-save idempotency, one-version capture, capacity,
+  owner/foreign-user isolation, direct-delete protection, restore provenance, replacement promotion,
+  and zero residue. A cascade history-owner defect exposed by the smoke was fixed append-only. New RPCs
+  are security invoker, authenticated-only, and absent from new advisor findings. Anonymous browser
+  checks reached the protected login route at mobile/desktop widths with no errors or overflow.
+- **Resume point:** Phase C item 3 Flight Spectrum. Reconcile the existing effective-flight chart,
+  wear/override rules, ghost slots, and comparison curve before proposing clustering/toggle UI. Manual
+  catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

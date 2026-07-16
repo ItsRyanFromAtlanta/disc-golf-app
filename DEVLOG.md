@@ -1,5 +1,30 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase C item 2 atomic bag editing
+
+**What:** Replaced immediate per-checkbox bag mutations with one draft-based metadata, main-bag, and
+membership save. The authenticated security-invoker RPC applies the group atomically, enforces the
+35-disc ceiling and ownership, and captures exactly one immutable version per idempotent save. Restore
+preview now names additions, removals, and unavailable placeholders and restores historical metadata
+plus eligible membership as a new version. Main-bag deletion atomically promotes an explicit
+replacement; the sole bag and direct main-bag deletion are protected. Private names remain owner-facing
+while external presentation uses the generic `Main Bag` contract.
+
+**Database:** Applied `phase_c_grouped_bag_save` and the append-only
+`phase_c_bag_delete_history_owner` follow-up. The first rollback smoke exposed an existing cascade
+defect where membership history lost its owner after the parent bag disappeared; the follow-up safely
+falls back to the physical disc owner. The repeated smoke passed with zero residue.
+
+**Verified:** 379 tests pass across 46 files, production build/diff pass, and lint retains four existing
+warnings. Live checks passed one-version save, retry idempotency, capacity rejection, direct-delete
+protection, restore provenance, foreign-owner denial, replacement promotion, authenticated-only RPC
+grants, and zero residue. Advisors added no C2 finding. Anonymous mobile/desktop browser checks reached
+the protected login redirect without errors or overflow; no authenticated browser session was available.
+
+**Next:** Phase C item 3 Flight Spectrum.
+
+---
+
 ## 2026-07-16 — Shipped Phase C item 1 collection-first DISCS profiles
 
 **What:** Promoted `/bag` into a Collection/Bags/Putters/Universe DISCS hub with total, active,
