@@ -81,6 +81,54 @@
   padding-left: 1.5rem;
 }
 
+.disc-odometer-panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.disc-odometer-header,
+.disc-odometer-totals,
+.disc-odometer-quick-actions,
+.disc-odometer-milestones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.disc-odometer-tier {
+  padding: 0.35rem 0.65rem;
+  border: var(--border-width) solid var(--color-border-focus);
+  text-transform: uppercase;
+  font-family: var(--font-display);
+}
+
+.disc-odometer-totals div {
+  min-width: 28%;
+  padding: 0.6rem;
+  background: var(--color-bg-surface-alt);
+  text-align: center;
+}
+
+.disc-odometer-totals dt { color: var(--color-text-secondary); }
+.disc-odometer-totals dd { margin: 0; font: 600 1.4rem var(--font-display); }
+
+.disc-odometer-form,
+.disc-odometer-history li {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.disc-odometer-history {
+  display: grid;
+  gap: 0.75rem;
+  padding-left: 1.5rem;
+}
+
 .splash-page {
   width: 100%;
   max-width: 480px;

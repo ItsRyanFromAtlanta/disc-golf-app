@@ -9,7 +9,7 @@ afterEach(async () => {
   for (const database of databasesToDelete.splice(0)) await database.delete()
 })
 
-describe('AppDatabase v10 upgrade', () => {
+describe('AppDatabase v11 upgrade', () => {
   it('preserves v1 cache/outbox rows while adding lifecycle, audit, notification, and round stores', async () => {
     const name = `DexieUpgradeTest-${crypto.randomUUID()}`
     const legacy = new Dexie(name)
@@ -32,7 +32,7 @@ describe('AppDatabase v10 upgrade', () => {
     databasesToDelete.push(upgraded)
     await upgraded.open()
 
-    expect(upgraded.verno).toBe(10)
+    expect(upgraded.verno).toBe(11)
     expect(await upgraded.discs.get('disc-1')).toMatchObject({ status: 'in_locker' })
     expect(await upgraded.outbox.toArray()).toEqual([
       expect.objectContaining({ table: 'discs', op: 'update', payload: { id: 'disc-1' } }),
@@ -62,10 +62,15 @@ describe('AppDatabase v10 upgrade', () => {
         'lostFoundCases',
         'lostFoundUpdates',
         'lostFoundOutbox',
+        'discOdometerEvents',
+        'discCosmeticUnlocks',
+        'discOdometerOutbox',
       ]),
     )
     expect(upgraded.lostFoundCases.schema.indexes.map((index) => index.name)).toContain('[user_id+status]')
     expect(upgraded.lostFoundUpdates.schema.indexes.map((index) => index.name)).toContain('[case_id+occurred_at]')
+    expect(upgraded.discOdometerEvents.schema.indexes.map((index) => index.name)).toContain('[disc_id+occurred_at]')
+    expect(upgraded.discCosmeticUnlocks.schema.indexes.map((index) => index.name)).toContain('[disc_id+tier]')
     expect(upgraded.outbox.schema.indexes.map((index) => index.name)).toEqual(
       expect.arrayContaining(['dependencyKey', 'nextRetryAt', '[table+idempotencyKey]']),
     )

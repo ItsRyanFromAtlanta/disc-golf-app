@@ -1,9 +1,13 @@
+import { highestUnlockedTier } from './discOdometer'
+
 const ARCHIVED_STATUSES = new Set(['lost', 'retired', 'sold'])
 
 export const DISC_TIERS = Object.freeze(['common', 'rare', 'epic', 'legendary', 'archived'])
 
 export function discTier(disc = {}) {
   if (ARCHIVED_STATUSES.has(disc?.status)) return 'archived'
+  const unlockedTier = highestUnlockedTier(disc?.cosmeticUnlocks)
+  if (unlockedTier !== 'common') return unlockedTier
   if (disc?.role === 'primary_putter') return 'legendary'
   if (disc?.role === 'situational_weather') return 'epic'
 

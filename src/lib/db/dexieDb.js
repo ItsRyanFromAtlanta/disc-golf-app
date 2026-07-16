@@ -231,6 +231,14 @@ export class AppDatabase extends Dexie {
       lostFoundUpdates: 'id, user_id, case_id, event_type, occurred_at, [case_id+occurred_at]',
       lostFoundOutbox: 'id, userId, caseId, discId, op, status, createdAt, idempotencyKey',
     })
+
+    // Phase B item 5: immutable odometer/unlock mirrors plus replayable
+    // client-generated telemetry envelopes.
+    this.version(11).stores({
+      discOdometerEvents: 'id, user_id, disc_id, metric, occurred_at, [disc_id+occurred_at]',
+      discCosmeticUnlocks: 'id, user_id, disc_id, tier, threshold, [disc_id+tier]',
+      discOdometerOutbox: 'id, userId, discId, metric, status, createdAt, idempotencyKey',
+    })
   }
 }
 

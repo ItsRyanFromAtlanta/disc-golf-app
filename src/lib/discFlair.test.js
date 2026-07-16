@@ -16,6 +16,11 @@ describe('discTier', () => {
     expect(discTier({ status: 'in_locker', role: 'situational_weather' })).toBe('epic')
   })
 
+  it('keeps the highest permanent odometer unlock above temporary role and wear signals', () => {
+    expect(discTier({ cosmeticUnlocks: [{ tier: 'epic' }], wear_score: 2 })).toBe('epic')
+    expect(discTier({ cosmeticUnlocks: [{ tier: 'rare' }, { tier: 'legendary' }], role: 'standard' })).toBe('legendary')
+  })
+
   it('accepts numeric wear values at or above the rare threshold', () => {
     expect(discTier({ wear_score: 7 })).toBe('rare')
     expect(discTier({ wear_score: '8' })).toBe('rare')

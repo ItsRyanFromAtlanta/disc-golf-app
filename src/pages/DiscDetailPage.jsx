@@ -12,6 +12,7 @@ import {
 } from '../lib/repository/discTaxonomyRepository'
 import { activeShotTagAssignments, assignedShotTags } from '../lib/discTaxonomy'
 import DiscPhotoManager from '../components/DiscPhotoManager'
+import DiscOdometerManager from '../components/DiscOdometerManager'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
 
@@ -128,6 +129,13 @@ export default function DiscDetailPage() {
         userId={user.id}
         discId={discId}
         legacyPhotoUrl={disc.photo_url}
+        onError={setError}
+      />
+
+      <DiscOdometerManager
+        userId={user.id}
+        disc={disc}
+        onDiscUpdate={setDisc}
         onError={setError}
       />
 

@@ -6,7 +6,7 @@ import { captureBagVersion } from './repository/bagHistoryRepository'
 // `discs.mold` is a legacy text column (kept as a human label after
 // migration); the joined disc_molds record must be aliased to something
 // else, or the two "mold" keys collide in the returned row.
-const DISC_WITH_MOLD = '*, moldInfo:disc_molds(*)'
+const DISC_WITH_MOLD = '*, moldInfo:disc_molds(*), cosmeticUnlocks:disc_cosmetic_unlocks(tier,threshold,unlocked_at)'
 
 export async function fetchUserDiscs(userId) {
   const { data, error } = await supabase
