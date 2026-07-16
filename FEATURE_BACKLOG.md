@@ -87,6 +87,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Persisted bag ghost slots | SHIPPED | Phase B 2B (2026-07-15): owner-scoped, capacity-neutral target flight gaps with reversible removal and Dexie v8 mirror |
 | Physical-disc shot tags + tombstones | SHIPPED | Phase B 2B (2026-07-15): 10 curated tags, private custom tags, active-only uniqueness, and append-preserving removal tombstones |
 | Private physical-disc photos | SHIPPED | B3 (2026-07-15): three private slots, compression, signed URLs, Dexie v9 upload queue, immutable replacement history, owner-scoped Storage/RLS, and 30-day recovery |
+| Private Lost & Found timeline | SHIPPED | B4 (2026-07-15): owner-only cases/immutable updates, optional course/GPS/notes/contact, Dexie v10 replay, and atomic lost/recovered status transitions |
 | Slot analysis ("no stable fairway in this bag") | BACKLOG | Derived view over bag + effective flight numbers |
 | Per-disc usage stats | BACKLOG | Needs round data linking discs to holes |
 | Personal disc photos as lost-disc flyers | BACKLOG | Photo field ships in Phase B; flyer generation later |

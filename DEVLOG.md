@@ -1,5 +1,21 @@
 # Dev Log
 
+## 2026-07-15 — Shipped Phase B item 4 Lost & Found
+
+**What:** Applied private owner-scoped Lost & Found cases and immutable update timelines with optional
+course, browser GPS, area, notes, and contact evidence. Atomic RPCs mark an opened case's physical disc
+lost and return a recovered disc to the locker. The new DISCS route provides case history and resolution;
+Dexie v10 caches the timeline and replays idempotent offline operations. Cases never auto-archive.
+
+**Verified:** 362 tests pass across 42 files, production build and diff checks pass, and lint retains only
+the four pre-existing warnings. Rollback-only authenticated owner/foreign-user visibility, recovery
+atomicity, immutable client grants, and zero-residue checks passed. Linked database lint reports no new
+B4 finding; its only warning predates this work.
+
+**Next:** Phase B item 5 odometer and permanent cosmetic-tier unlock events.
+
+---
+
 ## 2026-07-15 — Shipped Phase B item 3 private disc photos
 
 **What:** Applied `disc_photos`, the private image-only `disc-private-photos` bucket, owner-scoped

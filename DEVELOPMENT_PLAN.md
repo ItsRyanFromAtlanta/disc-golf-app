@@ -21,10 +21,10 @@ Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GP
 architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
 Sonnet/Opus labels below are preserved only as historical records of completed work.
 
-Phase B item 3 complete (2026-07-15): private front/back/side disc-photo metadata/RPC and Storage RLS,
-compressed client derivatives, Dexie v9 Blob queue, signed display URLs, immutable replacement history,
-and 30-day recovery are live and verified. Rollback-only owner/foreign-user metadata, RPC, Storage-path,
-replacement, delete/restore, and idempotency checks passed with zero residue; item 4 Lost & Found is next.
+Phase B item 4 complete (2026-07-15): private `lost_found_cases` envelopes and immutable update timelines,
+optional course/GPS/area/notes/contact evidence, atomic lost/recovered disc-status synchronization, Dexie
+v10 offline replay, and `/bag/lost-found` are live and verified. Rollback-only owner/foreign-user RLS,
+recovery, immutable grants, and zero-residue checks passed; item 5 odometer/cosmetic unlock events is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

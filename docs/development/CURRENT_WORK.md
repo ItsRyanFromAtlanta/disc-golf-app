@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-15
 
-- **Active phase:** Phase B item 3 private disc photos is complete; continue with item 4 Lost & Found.
+- **Active phase:** Phase B item 4 Lost & Found is complete; continue with item 5 odometer and permanent cosmetic unlock events.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -88,10 +88,20 @@ Last updated: 2026-07-15
   replacement, exact 30-day delete/restore, and idempotency checks passed with zero residue. The bucket
   is private/image-only/5 MB; RLS and all five policies are active. Advisors found no new security issue
   or missing B3 foreign-key index.
+- **Phase B item 4 shipped 2026-07-15:** Applied private owner-scoped `lost_found_cases` and immutable
+  `lost_found_updates`, security-invoker RPC entry points backed by atomic owner-checking helpers, and
+  automatic disc `lost`/`in_locker` lifecycle transitions. `/bag/lost-found` supports optional shared
+  course, browser GPS, area, notes, contact details, sightings, resolution, and full history. Dexie v10
+  caches both entities and replays an idempotent offline queue. There is no timed auto-archive.
+- **Item 4 verification:** 362 tests pass across 42 files; build/diff pass; lint retains four existing
+  warnings. Rollback-only authenticated owner visibility, foreign-user invisibility, recovery atomicity,
+  immutable client grants, and zero-residue checks passed. Linked database lint reports no B4 finding;
+  its sole warning is the pre-existing unused `private.activity_transition.v_replaced_event` variable.
 - **Migration policy:** Do not retry automated backup commands or request manual backup confirmation;
   use append-only SQL, rollback notes, RLS negative tests, advisors, and post-apply smoke checks.
-- **Resume point:** Phase B item 4 Lost & Found case/update timeline with optional GPS, course, notes,
-  and contact details; no timed auto-archive. Manual catalog population remains owner-driven.
+- **Resume point:** Phase B item 5 odometer events (`total_throws`, chain hits, airballs, manual
+  corrections/import provenance) and permanent cosmetic-tier unlock events. Manual catalog population
+  remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

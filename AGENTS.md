@@ -34,6 +34,8 @@ See `supabase_schema.sql` for full schema. Key tables:
   tombstones; removing a tag never deletes its historical assignment row
 - `disc_photos` — owner-scoped immutable front/back/side photo versions; private Storage paths,
   replacement history, and 30-day recoverable deletion
+- `lost_found_cases` / `lost_found_updates` — private owner-scoped recovery envelopes and immutable
+  location/sighting/contact timelines; atomic RPCs synchronize physical-disc lost/recovered status
 - `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
   RLS-enabled with no ordinary-client policies or grants, backed by the private
@@ -68,6 +70,7 @@ The app uses nested feature trees. Putting practice is the first tree:
 /practice/regimens/:id/run         → active regimen run-through with live scoring
 /practice/history                  → unified session history feed
 /practice/history/:type/:id        → session/run detail view (type = 'freeform' | 'regimen')
+/bag/lost-found                    → private offline-ready disc recovery cases and update timelines
 ```
 
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
