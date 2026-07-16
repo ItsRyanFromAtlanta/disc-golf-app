@@ -140,9 +140,19 @@ Last updated: 2026-07-16
   warnings. React review added stale-request cleanup and non-blocking ghost errors. Anonymous mobile and
   desktop browser checks reached the protected login route with no runtime errors, overlay, or overflow;
   authenticated spectrum interaction remains unexercised in the isolated browser session.
-- **Resume point:** Phase C item 4 Bag Resonance first draft. Reconcile Flight Spectrum clusters,
-  persisted ghost gaps, bag capacity, effective-flight rules, and comparison logic before defining the
-  component-score/preset contract. Manual catalog population remains owner-driven.
+- **Phase C item 4 shipped 2026-07-16:** Added the schema-free `bagResonance` pure-function contract and
+  panel below Flight Spectrum. It scores current-reality flight coverage, speed ladder, and near-duplicate
+  separation with Balanced, Coverage-first, and Minimal redundancy presets. Active ghost slots remain
+  separate desired gaps and never affect physical disc count, capacity, or actual coverage. Empty bags
+  still show the honest resonance/spectrum zero state. No schema or route change.
+- **Item 4 verification:** 386 tests pass across 48 files; production build and diff checks pass; lint
+  retains four existing warnings. React review passed hooks, keyboard semantics, stable keys, and preset
+  button labeling. Anonymous mobile (390×844) and desktop (1280×800) browser checks loaded content with
+  no runtime errors, overlay, or horizontal overflow; authenticated resonance interaction remains
+  unexercised in the isolated browser session. Graphify refresh remains required after commit.
+- **Resume point:** Phase C item 5 disc/bag comparisons. Extend the shipped comparison foundation with
+  personal, official, and eligible community cohorts, graceful cohort broadening, and explicit attribution.
+  Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

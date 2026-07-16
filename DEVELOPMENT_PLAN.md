@@ -27,7 +27,10 @@ offline replay, and disc-detail odometer/history UI are live and verified. Rollb
 idempotency, correction-retention, owner/foreign-user, direct-write, and zero-residue checks passed.
 Phase B is complete. Phase C items 1–3 shipped 2026-07-16: collection-first DISCS/profile
 consolidation, atomic grouped bag editing, and the accessible current-reality/official Flight Spectrum.
-Phase C item 4 Bag Resonance is next.
+Phase C items 1–4 shipped 2026-07-16: collection-first DISCS/profile consolidation, atomic grouped
+bag editing, accessible current-reality/official Flight Spectrum, and the schema-free Bag Resonance draft
+with transparent component presets and capacity-neutral ghost gaps. Phase C item 5 disc/bag comparisons
+is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

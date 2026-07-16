@@ -104,7 +104,9 @@ Recommended model: GPT-5.3-Codex medium for UI; GPT-5.6 high for scoring/merge a
    unavailable placeholders, one private main bag, and generic external label `Main Bag`.
 3. **COMPLETE 2026-07-16.** Flight Spectrum (wear-adjusted default, official toggle, clustering,
    accessible ghost styling).
-4. Bag Resonance first draft with component scores and presets; ghost gaps never count toward capacity.
+4. **COMPLETE 2026-07-16.** Bag Resonance first draft with transparent coverage, speed-ladder, and
+   separation component scores; Balanced, Coverage-first, and Minimal redundancy presets; ghost gaps
+   never count toward physical disc capacity.
 5. Disc/bag comparisons using personal, official, and eligible community cohorts with graceful cohort
    broadening and explicit attribution.
 

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { fetchBags, fetchBagDiscs, fetchUserDiscs } from '../lib/discLocker'
 import { bagViewDiscs, capacityTier } from '../lib/bags'
 import FlightSpectrum from '../components/FlightSpectrum'
+import BagResonance from '../components/BagResonance'
 import ChipGroup from '../components/ChipGroup'
 import PutterLineup from '../components/putterLineup/PutterLineup'
 import UniverseBrowser from '../components/discUniverse/UniverseBrowser'
@@ -211,14 +212,16 @@ export default function BagPage() {
         </p>
       )}
 
+      {ghostError && <p className="form-error">Desired slots unavailable: {ghostError}</p>}
+      <FlightSpectrum discs={discs} ghostSlots={ghostSlots} />
+      <BagResonance discs={discs} ghostSlots={ghostSlots} capacity={cap} />
+
       {loadingDiscs ? (
         <p className="loading">Loading...</p>
       ) : discs.length === 0 ? (
         <p>No discs in this bag yet.</p>
       ) : (
         <>
-          {ghostError && <p className="form-error">Desired slots unavailable: {ghostError}</p>}
-          <FlightSpectrum discs={discs} ghostSlots={ghostSlots} />
           <ul className="putt-log-list">
             {discs.map((disc) => (
               <li key={disc.id}>

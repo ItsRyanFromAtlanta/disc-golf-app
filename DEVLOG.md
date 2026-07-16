@@ -1,5 +1,27 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase C item 4 Bag Resonance
+
+**What:** Added a pure, schema-free Bag Resonance contract and panel below Flight Spectrum. The panel
+scores three explainable current-reality components: occupied flight coverage, speed-class ladder, and
+near-duplicate separation. Balanced, Coverage-first, and Minimal redundancy presets change only the
+weights shown to the player.
+
+**Key decisions:** Effective flight numbers and existing wear/override behavior remain the source of
+truth through Flight Spectrum helpers. Ghost slots are rendered as desired targets only: they are excluded
+from physical disc count, capacity/headroom, and actual coverage. Capacity is displayed independently so
+the score cannot silently imply that a bag is full or incomplete. The panel also renders for empty bags
+to preserve an honest zero-data state.
+
+**Verified:** 386 tests pass across 48 files; production build and diff checks pass; lint retains the
+four pre-existing warnings. Anonymous mobile (390×844) and desktop (1280×800) browser checks loaded
+without runtime errors, error overlay, or horizontal overflow. Authenticated bag interaction remains
+unexercised in the isolated browser session.
+
+**Next:** Phase C item 5 disc/bag comparisons.
+
+---
+
 ## 2026-07-16 — Shipped Phase C item 3 Flight Spectrum
 
 **What:** Replaced the bag's basic speed/stability plot with an accessible Flight Spectrum. Current

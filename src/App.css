@@ -2478,6 +2478,92 @@
   background: var(--color-negative);
 }
 
+/* Bag view: resonance */
+
+.bag-resonance {
+  background: var(--color-bg-surface);
+  border: 2px solid var(--color-border-default);
+  margin: 16px 0;
+  padding: 12px;
+}
+
+.bag-resonance-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.bag-resonance-heading h2,
+.bag-resonance-heading p {
+  margin: 0;
+}
+
+.bag-resonance-score {
+  color: var(--color-secondary-accent);
+  font-size: 1.8rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bag-resonance-score span {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.bag-resonance-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.bag-resonance-presets button {
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  min-height: 40px;
+  padding: 6px 10px;
+}
+
+.bag-resonance-presets button[aria-pressed='true'] {
+  background: var(--color-secondary-accent);
+  color: var(--color-text-inverse);
+}
+
+.bag-resonance-component {
+  margin: 10px 0;
+}
+
+.bag-resonance-component > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bag-resonance-track {
+  background: var(--color-bg-surface-alt);
+  border: 2px solid var(--color-border-default);
+  height: 10px;
+  margin-top: 4px;
+}
+
+.bag-resonance-track > div {
+  background: var(--color-highlight);
+  height: 100%;
+}
+
+.bag-resonance-gaps {
+  border-left: 4px solid var(--color-highlight);
+  padding-left: 8px;
+}
+
+@media (max-width: 520px) {
+  .bag-resonance-heading {
+    flex-direction: column;
+  }
+}
+
 .start-button[aria-disabled='true'] {
   background: var(--color-border-default);
   color: var(--color-text-secondary);
