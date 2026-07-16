@@ -46,6 +46,22 @@ export async function upsertDisc(userId, discId, fields) {
   return data
 }
 
+export function buildDiscCopies(userId, fields, quantity, idFactory = () => crypto.randomUUID()) {
+  const count = Number(quantity)
+  if (!Number.isInteger(count) || count < 1 || count > 10) throw new Error('Quantity must be between 1 and 10')
+  return Array.from({ length: count }, () => ({ ...fields, id: idFactory(), user_id: userId }))
+}
+
+// One Postgres statement makes duplicate creation all-or-nothing: callers
+// never have to reconcile a partially-created set of physical discs.
+export async function createDiscCopies(userId, fields, quantity) {
+  const payloads = buildDiscCopies(userId, fields, quantity)
+  const { data, error } = await supabase.from('discs').upsert(payloads, { onConflict: 'id' }).select(DISC_WITH_MOLD)
+  if (error) throw error
+  if (data.length !== payloads.length) throw new Error('Not every physical disc was returned after creation')
+  return data
+}
+
 // Mirrors setDefaultBag's one-default pattern: discs.role enforces a single
 // primary_putter per user via a partial unique index, so promoting a new
 // primary requires unsetting the old one first (see discIdsToUnsetForNewPrimary).

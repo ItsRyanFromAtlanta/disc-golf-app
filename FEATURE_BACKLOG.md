@@ -74,6 +74,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Disc molds reference table + locker migration | SHIPPED | Extend with normalized plastic/run/stamp variants and moderation |
 | Multiple bags + membership + flight chart | SHIPPED | Phase C; locker/bag split; partial unique index for default bag |
 | Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | SHIPPED | 1E — locker=inventory, bags=loadouts; grid/list toggle; minimal cards v1; tab bar shipped. Scope met; see DEVELOPMENT_PLAN §1E |
+| Collection-first DISCS hub + rich physical-disc profile | SHIPPED | Phase C item 1 (2026-07-16): Collection/Bags/Putters/Universe hierarchy, inventory summary, atomic 1–10 copy creation, genuine-event contextual performance, and unified lifecycle/photo/odometer history |
 | Game-flair card mode (rarity borders, equip animations, stat-block cards) | SHIPPED | J3 shipped 2026-07-15. Opt-in DiscCard flair variant, pure role/wear/status tier logic, Profile preferences toggle, reduced-motion-safe Topo styling; cosmetic unlock events remain Phase B work |
 | Disc comparison view (side-by-side stats) | SHIPPED | J2 (2026-07-15). Personal-cohort v1: /bag/compare, effective-flight comparison, per-axis highlights, override markers, curve overlay, and no-gap flags |
 | Disc universe: read-only offline catalog repository | SHIPPED | B2 shipped 2026-07-15: Dexie v6 normalized caches + TanStack offline-first snapshot; mold picker, Universe, onboarding, and URL handoff migrated; canonical client inserts removed |

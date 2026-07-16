@@ -1,6 +1,6 @@
 # Development Plan
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
 `PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
@@ -25,7 +25,9 @@ Phase B item 5 complete (2026-07-16): immutable `disc_odometer_events`, RPC-main
 airball totals, permanent 300/1,000/5,000 chain-hit cosmetic unlocks, direct-total guards, Dexie v11
 offline replay, and disc-detail odometer/history UI are live and verified. Rollback-only milestone,
 idempotency, correction-retention, owner/foreign-user, direct-write, and zero-residue checks passed.
-Phase B is complete; Phase C item 1 collection-first DISCS/profile consolidation is next.
+Phase B is complete. Phase C item 1 shipped 2026-07-16 with a collection-first DISCS hub,
+quantity-first duplicate creation, and contextual physical-disc performance/history. Phase C item 2
+bag-editor consolidation is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase C item 1 collection-first DISCS profiles
+
+**What:** Promoted `/bag` into a Collection/Bags/Putters/Universe DISCS hub with total, active,
+bagged, and lost counts, recent additions, and the existing locker embedded as the collection view.
+Add-disc now creates 1–10 distinct physical copies in one all-or-nothing operation. Disc detail adds
+contextual putting/round performance derived only from genuine records and one merged lifecycle,
+odometer, Lost & Found, and photo history. Existing `/bag/locker` links remain compatible. No schema
+change was required.
+
+**Verified:** 376 tests pass across 46 files, production build and diff checks pass, and lint retains
+only four pre-existing warnings. Graphify was refreshed. Mobile and desktop anonymous browser checks
+confirmed the protected-route login redirect with no runtime errors or horizontal overflow; the
+isolated browser had no authenticated test session for the private collection screen.
+
+**Next:** Phase C item 2 bag-editor consolidation, beginning with reconciliation of shipped version,
+restore, placeholder, capacity, and default-bag behavior.
+
+---
+
 ## 2026-07-16 — Shipped Phase B item 5 disc odometers and permanent tiers
 
 **What:** Applied immutable owner-scoped throws, chain-hit, and airball events with source/reference/

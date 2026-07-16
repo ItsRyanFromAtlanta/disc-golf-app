@@ -12,7 +12,7 @@ import ChipGroup from '../components/ChipGroup'
 
 const STATUS_FILTERS = ['all', 'in_locker', 'lost', 'retired', 'sold']
 
-export default function BagLockerPage() {
+export default function BagLockerPage({ embedded = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -130,7 +130,7 @@ export default function BagLockerPage() {
 
   return (
     <section className="bag-locker-page">
-      <header className="practice-header">
+      {!embedded && <header className="practice-header">
         <h1>{pickerBag ? `Add to ${pickerBag.name}` : 'Locker'}</h1>
         <div className="locker-header-actions">
           {pickerBag ? (
@@ -152,7 +152,7 @@ export default function BagLockerPage() {
             </>
           )}
         </div>
-      </header>
+      </header>}
 
       {displayError && <p className="form-error">{displayError}</p>}
 

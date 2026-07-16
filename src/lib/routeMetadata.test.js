@@ -20,6 +20,11 @@ describe('route metadata contract', () => {
     expect(resolveRouteMetadata('/courses')).toMatchObject({ id: 'courses-root', section: 'courses', scrollKey: 'courses-root' })
   })
 
+  it('keeps the locker compatibility route inside the collection-first DISCS section', () => {
+    expect(resolveRouteMetadata('/bag/locker')).toMatchObject({ id: 'disc-collection', section: 'discs' })
+    expect(resolveRouteMetadata('/bag')).toMatchObject({ id: 'discs-root', title: 'Discs' })
+  })
+
   it('classifies the course and round trees with explicit workflow metadata', () => {
     expect(resolveRouteMetadata('/courses/new')).toMatchObject({
       id: 'courses-new',

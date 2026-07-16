@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-16
 
-- **Active phase:** Phase B is complete; continue with Phase C item 1 collection-first DISCS and physical-disc profile consolidation.
+- **Active phase:** Phase C item 1 is complete; continue with Phase C item 2 bag-editor consolidation.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -109,9 +109,18 @@ Last updated: 2026-07-16
   grants, and zero-residue checks passed. Database lint and advisors report no B5 finding.
 - **Migration policy:** Do not retry automated backup commands or request manual backup confirmation;
   use append-only SQL, rollback notes, RLS negative tests, advisors, and post-apply smoke checks.
-- **Resume point:** Phase C item 1 collection-first DISCS hub and rich physical-disc profile
-  consolidation. Reconcile the already-shipped locker, comparison, photos, lifecycle, Lost & Found,
-  taxonomy, and odometer surfaces before proposing net-new UI. Manual catalog population remains owner-driven.
+- **Phase C item 1 shipped 2026-07-16:** `/bag` is now a collection-first DISCS hub with
+  Collection/Bags/Putters/Universe navigation, active/bagged/lost inventory counts, recent additions,
+  and embedded locker compatibility. Add-disc supports one atomic 1–10 physical-copy operation. Disc
+  detail derives putting and round context only from genuine recorded events and merges lifecycle,
+  odometer, Lost & Found, and photo records into one reverse-chronological history. No schema change.
+- **Item 1 verification:** 376 tests pass across 46 files; production build and diff checks pass; lint
+  retains four existing warnings. Graphify was refreshed. Anonymous mobile/desktop browser checks
+  reached the protected-route login redirect without errors or overflow; authenticated rendering remains
+  unexercised in the isolated browser session.
+- **Resume point:** Phase C item 2. Reconcile the already-shipped bag versions, restore preview,
+  unavailable placeholders, capacity enforcement, and default-bag behavior before proposing the
+  remaining grouped editor/save UX. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

@@ -13,6 +13,7 @@ import {
 import { activeShotTagAssignments, assignedShotTags } from '../lib/discTaxonomy'
 import DiscPhotoManager from '../components/DiscPhotoManager'
 import DiscOdometerManager from '../components/DiscOdometerManager'
+import DiscProfileContext from '../components/DiscProfileContext'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
 
@@ -166,6 +167,8 @@ export default function DiscDetailPage() {
           </tr>
         </tbody>
       </table>
+
+      <DiscProfileContext discId={discId} onError={setError} />
 
       <EditableSection
         title="Details"

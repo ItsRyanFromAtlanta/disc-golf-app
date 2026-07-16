@@ -129,6 +129,47 @@
   padding-left: 1.5rem;
 }
 
+.discs-hub-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.discs-hub-summary div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem 0.35rem;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-surface-alt);
+  text-align: center;
+}
+
+.discs-hub-summary strong { font: 600 1.35rem var(--font-display); }
+.discs-hub-summary span { color: var(--color-text-secondary); font-size: 0.78rem; }
+.discs-hub-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+.disc-context-panel,
+.disc-history-panel {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-surface);
+}
+
+.disc-context-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.disc-context-stats div,
+.disc-profile-history li { display: grid; gap: 0.25rem; }
+.disc-context-stats div { padding: 0.65rem; background: var(--color-bg-surface-alt); }
+.disc-context-stats dd { margin: 0; font: 600 1.25rem var(--font-display); }
+.disc-context-stats span { color: var(--color-text-secondary); font-size: 0.8rem; }
+.disc-profile-history { display: grid; gap: 0.8rem; padding-left: 1.5rem; }
+
 .splash-page {
   width: 100%;
   max-width: 480px;

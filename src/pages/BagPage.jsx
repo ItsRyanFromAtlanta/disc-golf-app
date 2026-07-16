@@ -7,20 +7,23 @@ import FlightChart from '../components/FlightChart'
 import ChipGroup from '../components/ChipGroup'
 import PutterLineup from '../components/putterLineup/PutterLineup'
 import UniverseBrowser from '../components/discUniverse/UniverseBrowser'
+import BagLockerPage from './BagLockerPage'
 
 const TABS = [
-  { key: 'mybags', label: 'My Bags' },
+  { key: 'collection', label: 'Collection' },
+  { key: 'mybags', label: 'Bags' },
   { key: 'putters', label: '🎯 Putters' },
   { key: 'universe', label: 'Universe' },
 ]
 
 export default function BagPage() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('mybags')
+  const [tab, setTab] = useState('collection')
   const [bags, setBags] = useState(null)
   const [selectedBagId, setSelectedBagId] = useState(null)
   const [discs, setDiscs] = useState([])
   const [allDiscs, setAllDiscs] = useState(null)
+  const [baggedDiscIds, setBaggedDiscIds] = useState(new Set())
   const [error, setError] = useState(null)
   const [loadingDiscs, setLoadingDiscs] = useState(false)
 
@@ -30,6 +33,10 @@ export default function BagPage() {
         setBags(data)
         const defaultBag = data.find((b) => b.is_default) ?? data[0]
         setSelectedBagId(defaultBag?.id ?? null)
+        return Promise.all(data.map((bag) => fetchBagDiscs(bag.id)))
+      })
+      .then((bagDiscs) => {
+        setBaggedDiscIds(new Set(bagDiscs.flat().map((disc) => disc.id)))
       })
       .catch((err) => setError(err.message))
   }, [user.id])
@@ -56,7 +63,7 @@ export default function BagPage() {
 
   const header = (
     <header className="practice-header">
-      <h1>Bag</h1>
+      <h1>Discs</h1>
     </header>
   )
 
@@ -69,6 +76,30 @@ export default function BagPage() {
       onSelect={(t) => setTab(t.key)}
     />
   )
+
+  if (tab === 'collection') {
+    const active = (allDiscs ?? []).filter((disc) => disc.status === 'in_locker')
+    const lost = (allDiscs ?? []).filter((disc) => disc.status === 'lost')
+    const recent = [...(allDiscs ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3)
+    return (
+      <section className="bag-page discs-hub-page">
+        {header}
+        {tabHeader}
+        <div className="discs-hub-summary" aria-label="Collection summary">
+          <div><strong>{allDiscs?.length ?? 0}</strong><span>Total discs</span></div>
+          <div><strong>{active.length}</strong><span>Active</span></div>
+          <div><strong>{baggedDiscIds.size}</strong><span>Bagged</span></div>
+          <div><strong>{lost.length}</strong><span>Lost</span></div>
+        </div>
+        <div className="discs-hub-actions">
+          <Link to="/bag/lost-found" className="link-button">Lost &amp; Found</Link>
+          <Link to="/bag/compare" className="link-button">Compare</Link>
+        </div>
+        {recent.length > 0 && <p className="log-time">Recently added: {recent.map((disc) => disc.nickname || disc.moldInfo?.mold_name || disc.mold).join(', ')}</p>}
+        <BagLockerPage embedded />
+      </section>
+    )
+  }
 
   if (tab === 'putters') {
     return (

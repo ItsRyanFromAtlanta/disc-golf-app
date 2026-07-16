@@ -98,8 +98,8 @@ offline replay, and permanent 300/1,000/5,000 chain-hit unlocks. All Phase B ite
 
 Recommended model: GPT-5.3-Codex medium for UI; GPT-5.6 high for scoring/merge algorithms.
 
-1. Collection-first DISCS hub, quantity-first duplicate add, rich physical-disc profile, photo flow,
-   contextual performance, lifecycle, and history.
+1. **COMPLETE 2026-07-16.** Collection-first DISCS hub, quantity-first duplicate add, rich
+   physical-disc profile, photo flow, contextual performance, lifecycle, and history.
 2. Bag editor with grouped save/version, state-in-time preview/apply restore, unavailable placeholders,
    one private main bag, and generic external label `Main Bag`.
 3. Flight Spectrum (wear-adjusted default, official toggle, clustering, accessible ghost styling).
