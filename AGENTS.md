@@ -36,6 +36,8 @@ See `supabase_schema.sql` for full schema. Key tables:
   replacement history, and 30-day recoverable deletion
 - `lost_found_cases` / `lost_found_updates` — private owner-scoped recovery envelopes and immutable
   location/sighting/contact timelines; atomic RPCs synchronize physical-disc lost/recovered status
+- `disc_odometer_events` / `disc_cosmetic_unlocks` — immutable owner-scoped throws/chain-hits/airballs
+  deltas and permanent 300/1,000/5,000 chain-hit tier unlocks; cached disc totals are RPC-maintained
 - `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
   RLS-enabled with no ordinary-client policies or grants, backed by the private

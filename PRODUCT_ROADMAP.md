@@ -67,7 +67,7 @@ device metadata.
 
 Recommended model: GPT-5.6 high. Review migration SQL and rollback notes before live apply.
 
-Phase B status: **IN PROGRESS** (2026-07-15). The retained B1 catalog foundation and least-privilege
+Phase B status: **COMPLETE** (2026-07-16). The retained B1 catalog foundation and least-privilege
 RLS are live; the automated ingestion/admin pipeline was subsequently scrapped and torn down in favor
 of manual curation. B2 ships the migration-free, read-only client repository: normalized Dexie v6
 caches for manufacturers/molds/plastics/mold-plastic links/runs/stamps, TanStack offline-first reads,
@@ -79,7 +79,8 @@ tombstones, Dexie v8 mirrors, and management UI. Item 2 is complete. Item 3's pr
 Dexie v9 queue, private Storage/RLS, signed display URLs, replacement history, and 30-day recovery are
 live and verified. Item 4 now adds private Lost & Found cases, immutable update timelines, optional
 course/GPS/notes/contact evidence, Dexie v10 offline replay, and atomic disc status transitions. Items
-3 and 4 are complete; odometer and permanent cosmetic unlock events are next.
+3 and 4 are complete. Item 5 now ships immutable odometer deltas, guarded cached totals, Dexie v11
+offline replay, and permanent 300/1,000/5,000 chain-hit unlocks. All Phase B items are complete.
 
 1. Catalog variants for mold/plastic/run/stamp with source provenance; manufacturer adapters; private
    custom configurations; community submission and admin-review queue.
@@ -90,8 +91,8 @@ course/GPS/notes/contact evidence, Dexie v10 offline replay, and atomic disc sta
    history, and 30-day deletion recovery.
 4. **COMPLETE 2026-07-15.** Lost & Found case/update timeline with optional GPS/course/notes/contact;
    offline replay and no timed auto-archive.
-5. Odometer events (`total_throws`, chain hits, airballs/manual corrections/import provenance) and
-   permanent cosmetic-tier unlock events.
+5. **COMPLETE 2026-07-16.** Odometer events (`total_throws`, chain hits, airballs/manual
+   corrections/import provenance) and permanent cosmetic-tier unlock events.
 
 ## Phase C — DISCS experience and intelligence
 

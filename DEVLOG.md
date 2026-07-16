@@ -1,5 +1,22 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase B item 5 disc odometers and permanent tiers
+
+**What:** Applied immutable owner-scoped throws, chain-hit, and airball events with source/reference/
+installation/correction provenance. An atomic RPC maintains non-negative cached totals and permanently
+unlocks rare, epic, and legendary cosmetics at 300, 1,000, and 5,000 chain hits. Direct total mutation
+is trigger-blocked. Dexie v11 adds offline replay and the disc profile now exposes totals, milestone
+progress, quick entry, correction, and immutable history. Batch summaries never synthesize events.
+
+**Verified:** 370 tests pass across 44 files, production build and diff checks pass, and lint retains
+only four pre-existing warnings. Rollback-only milestone crossing, idempotent replay, correction-to-zero
+with retained unlock, throws/airballs aggregation, cross-owner isolation, direct-write blocking,
+immutable grants, and zero-residue checks passed. Database lint/advisors report no B5 finding.
+
+**Next:** Phase C item 1 collection-first DISCS and rich physical-disc profile consolidation.
+
+---
+
 ## 2026-07-15 — Shipped Phase B item 4 Lost & Found
 
 **What:** Applied private owner-scoped Lost & Found cases and immutable update timelines with optional

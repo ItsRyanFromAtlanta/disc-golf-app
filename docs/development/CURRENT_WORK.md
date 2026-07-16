@@ -1,8 +1,8 @@
 # Current Work
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
-- **Active phase:** Phase B item 4 Lost & Found is complete; continue with item 5 odometer and permanent cosmetic unlock events.
+- **Active phase:** Phase B is complete; continue with Phase C item 1 collection-first DISCS and physical-disc profile consolidation.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -97,11 +97,21 @@ Last updated: 2026-07-15
   warnings. Rollback-only authenticated owner visibility, foreign-user invisibility, recovery atomicity,
   immutable client grants, and zero-residue checks passed. Linked database lint reports no B4 finding;
   its sole warning is the pre-existing unused `private.activity_transition.v_replaced_event` variable.
+- **Phase B item 5 shipped 2026-07-16:** Applied immutable owner-scoped `disc_odometer_events` for
+  throws, chain hits, and airballs; RPC-maintained non-negative cached disc totals; permanent
+  `disc_cosmetic_unlocks` at 300/1,000/5,000 chain hits; and insert/update guards against direct total
+  manipulation. Dexie v11 mirrors both ledgers and replays idempotent offline events. Disc detail now
+  shows totals, milestone progress, quick entry/correction controls, and immutable history. Batch-ribbon
+  summaries do not synthesize events.
+- **Item 5 verification:** 370 tests pass across 44 files; build/diff pass; lint retains four existing
+  warnings. Rollback-only threshold crossing, idempotent retry, correction-to-zero with permanent unlock
+  retention, throws/airballs aggregation, foreign-user invisibility, direct-write blocking, immutable
+  grants, and zero-residue checks passed. Database lint and advisors report no B5 finding.
 - **Migration policy:** Do not retry automated backup commands or request manual backup confirmation;
   use append-only SQL, rollback notes, RLS negative tests, advisors, and post-apply smoke checks.
-- **Resume point:** Phase B item 5 odometer events (`total_throws`, chain hits, airballs, manual
-  corrections/import provenance) and permanent cosmetic-tier unlock events. Manual catalog population
-  remains owner-driven.
+- **Resume point:** Phase C item 1 collection-first DISCS hub and rich physical-disc profile
+  consolidation. Reconcile the already-shipped locker, comparison, photos, lifecycle, Lost & Found,
+  taxonomy, and odometer surfaces before proposing net-new UI. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.
