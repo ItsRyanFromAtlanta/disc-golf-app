@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchBags, fetchBagDiscs, fetchUserDiscs } from '../lib/discLocker'
-import { bagViewDiscs, flightChartPoints, capacityTier } from '../lib/bags'
-import FlightChart from '../components/FlightChart'
+import { bagViewDiscs, capacityTier } from '../lib/bags'
+import FlightSpectrum from '../components/FlightSpectrum'
 import ChipGroup from '../components/ChipGroup'
 import PutterLineup from '../components/putterLineup/PutterLineup'
 import UniverseBrowser from '../components/discUniverse/UniverseBrowser'
 import BagLockerPage from './BagLockerPage'
+import { loadGhostSlots } from '../lib/repository/discTaxonomyRepository'
 
 const TABS = [
   { key: 'collection', label: 'Collection' },
@@ -26,6 +27,8 @@ export default function BagPage() {
   const [baggedDiscIds, setBaggedDiscIds] = useState(new Set())
   const [error, setError] = useState(null)
   const [loadingDiscs, setLoadingDiscs] = useState(false)
+  const [ghostSlots, setGhostSlots] = useState([])
+  const [ghostError, setGhostError] = useState(null)
 
   useEffect(() => {
     fetchBags(user.id)
@@ -56,6 +59,25 @@ export default function BagPage() {
       .then((data) => setDiscs(bagViewDiscs(data)))
       .catch((err) => setError(err.message))
       .finally(() => setLoadingDiscs(false))
+  }, [selectedBagId])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!selectedBagId) {
+      setGhostSlots([])
+      setGhostError(null)
+      return () => { cancelled = true }
+    }
+    setGhostError(null)
+    loadGhostSlots(selectedBagId)
+      .then((rows) => { if (!cancelled) setGhostSlots(rows) })
+      .catch((err) => {
+        if (!cancelled) {
+          setGhostSlots([])
+          setGhostError(err.message)
+        }
+      })
+    return () => { cancelled = true }
   }, [selectedBagId])
 
   if (error) return <p className="form-error">{error}</p>
@@ -135,8 +157,6 @@ export default function BagPage() {
   }
 
   const selectedBag = bags.find((b) => b.id === selectedBagId)
-  const discsWithMolds = discs.filter((d) => d.moldInfo).map((disc) => ({ disc, mold: disc.moldInfo }))
-  const points = flightChartPoints(discsWithMolds)
   const cap = selectedBag?.capacity ?? 35
   const tier = capacityTier(discs.length, cap)
 
@@ -197,7 +217,8 @@ export default function BagPage() {
         <p>No discs in this bag yet.</p>
       ) : (
         <>
-          <FlightChart points={points} />
+          {ghostError && <p className="form-error">Desired slots unavailable: {ghostError}</p>}
+          <FlightSpectrum discs={discs} ghostSlots={ghostSlots} />
           <ul className="putt-log-list">
             {discs.map((disc) => (
               <li key={disc.id}>

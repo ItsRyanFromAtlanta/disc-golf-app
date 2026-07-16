@@ -1,5 +1,23 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase C item 3 Flight Spectrum
+
+**What:** Replaced the bag's basic speed/stability plot with an accessible Flight Spectrum. Current
+reality is the default and composes per-copy overrides with the existing wear adjustment; Official
+shows untouched manufacturer numbers. Nearby discs form deterministic clusters with visible counts and
+named member links. Persisted active ghost slots render as hollow dashed diamonds and are explicitly
+described as desired, capacity-neutral coverage. The legend, marker shapes, SVG titles, text details,
+and missing-data notices keep meaning independent of color. No schema change was required.
+
+**Verified:** 383 tests pass across 47 files, production build/diff pass, and lint retains four existing
+warnings. React review added stale-request cleanup and non-blocking ghost-slot errors. Anonymous mobile
+and desktop browser checks reached the protected login route with meaningful content, no error overlay,
+no runtime errors, and no horizontal overflow; the isolated session had no authenticated test login.
+
+**Next:** Phase C item 4 Bag Resonance first draft.
+
+---
+
 ## 2026-07-16 — Shipped Phase C item 2 atomic bag editing
 
 **What:** Replaced immediate per-checkbox bag mutations with one draft-based metadata, main-bag, and

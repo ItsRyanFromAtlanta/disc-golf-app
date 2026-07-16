@@ -73,6 +73,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Extend into ME/Profile/Settings and approved preference taxonomy |
 | Disc molds reference table + locker migration | SHIPPED | Extend with normalized plastic/run/stamp variants and moderation |
 | Multiple bags + membership + flight chart | SHIPPED | Phase C; locker/bag split; partial unique index for default bag |
+| Flight Spectrum | SHIPPED | Phase C item 3 (2026-07-16): wear-adjusted current-reality default, official manufacturer toggle, deterministic proximity clusters, accessible capacity-neutral ghost diamonds, legend/details, and missing-data states |
 | Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | SHIPPED | 1E — locker=inventory, bags=loadouts; grid/list toggle; minimal cards v1; tab bar shipped. Scope met; see DEVELOPMENT_PLAN §1E |
 | Collection-first DISCS hub + rich physical-disc profile | SHIPPED | Phase C item 1 (2026-07-16): Collection/Bags/Putters/Universe hierarchy, inventory summary, atomic 1–10 copy creation, genuine-event contextual performance, and unified lifecycle/photo/odometer history |
 | Game-flair card mode (rarity borders, equip animations, stat-block cards) | SHIPPED | J3 shipped 2026-07-15. Opt-in DiscCard flair variant, pure role/wear/status tier logic, Profile preferences toggle, reduced-motion-safe Topo styling; cosmetic unlock events remain Phase B work |

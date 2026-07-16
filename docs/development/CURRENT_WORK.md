@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-16
 
-- **Active phase:** Phase C items 1–2 are complete; continue with Phase C item 3 Flight Spectrum.
+- **Active phase:** Phase C items 1–3 are complete; continue with Phase C item 4 Bag Resonance.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -130,9 +130,19 @@ Last updated: 2026-07-16
   and zero residue. A cascade history-owner defect exposed by the smoke was fixed append-only. New RPCs
   are security invoker, authenticated-only, and absent from new advisor findings. Anonymous browser
   checks reached the protected login route at mobile/desktop widths with no errors or overflow.
-- **Resume point:** Phase C item 3 Flight Spectrum. Reconcile the existing effective-flight chart,
-  wear/override rules, ghost slots, and comparison curve before proposing clustering/toggle UI. Manual
-  catalog population remains owner-driven.
+- **Phase C item 3 shipped 2026-07-16:** Replaced the basic bag plot with Flight Spectrum. Current
+  reality applies per-copy overrides and the existing wear adjustment; Official uses untouched catalog
+  numbers. Deterministic proximity clusters expose counts and named member links. Persisted active ghost
+  slots render as hollow dashed diamonds with explicit desired/capacity-neutral labels. Shape, border,
+  text, legend, SVG titles, and an adjacent detail list avoid color-only meaning. Missing data is counted
+  honestly and ghost loading failure no longer blocks the bag screen. No schema change.
+- **Item 3 verification:** 383 tests pass across 47 files; build/diff pass and lint retains four existing
+  warnings. React review added stale-request cleanup and non-blocking ghost errors. Anonymous mobile and
+  desktop browser checks reached the protected login route with no runtime errors, overlay, or overflow;
+  authenticated spectrum interaction remains unexercised in the isolated browser session.
+- **Resume point:** Phase C item 4 Bag Resonance first draft. Reconcile Flight Spectrum clusters,
+  persisted ghost gaps, bag capacity, effective-flight rules, and comparison logic before defining the
+  component-score/preset contract. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.

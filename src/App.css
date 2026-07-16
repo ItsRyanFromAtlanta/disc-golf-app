@@ -1362,6 +1362,143 @@
   stroke-width: 1.5;
 }
 
+.flight-spectrum {
+  background: var(--color-bg-surface);
+  border: 2px solid var(--color-border-default);
+  margin: 16px 0;
+  padding: 12px;
+}
+
+.flight-spectrum-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.flight-spectrum-header h2,
+.flight-spectrum-header p {
+  margin: 0;
+}
+
+.flight-spectrum-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.flight-spectrum-toggle button {
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  min-height: 44px;
+  padding: 6px 10px;
+}
+
+.flight-spectrum-toggle button[aria-pressed='true'] {
+  background: var(--color-secondary-accent);
+  color: var(--color-text-inverse);
+}
+
+.flight-spectrum-chart {
+  display: block;
+  height: auto;
+  margin: 12px auto;
+  max-width: 520px;
+  width: 100%;
+}
+
+.flight-spectrum-disc circle,
+.flight-spectrum-cluster circle {
+  fill: var(--color-secondary-accent);
+  stroke: var(--color-bg-primary);
+  stroke-width: 2;
+}
+
+.flight-spectrum-cluster text {
+  fill: var(--color-text-inverse);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.flight-spectrum-ghost {
+  fill: transparent;
+  stroke: var(--color-highlight);
+  stroke-dasharray: 4 3;
+  stroke-width: 3;
+}
+
+.flight-spectrum-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.flight-spectrum-legend span {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.flight-spectrum-legend i {
+  display: inline-grid;
+  font-style: normal;
+  height: 16px;
+  place-items: center;
+  width: 16px;
+}
+
+.spectrum-legend-disc {
+  background: var(--color-secondary-accent);
+  border: 2px solid var(--color-bg-primary);
+  border-radius: 50%;
+}
+
+.spectrum-legend-cluster {
+  background: var(--color-secondary-accent);
+  border: 2px solid var(--color-bg-primary);
+  border-radius: 50%;
+  color: var(--color-text-inverse);
+  font-size: 10px;
+}
+
+.spectrum-legend-ghost {
+  border: 3px dashed var(--color-highlight);
+  transform: rotate(45deg) scale(0.72);
+}
+
+.flight-spectrum-details {
+  border-top: 2px solid var(--color-border-default);
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 8px 0 0;
+}
+
+.flight-spectrum-details li {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.flight-spectrum-details span {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+@media (max-width: 520px) {
+  .flight-spectrum-header,
+  .flight-spectrum-details li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .flight-spectrum-details span {
+    text-align: left;
+  }
+}
+
 .flight-number-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
