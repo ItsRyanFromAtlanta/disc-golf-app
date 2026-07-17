@@ -38,6 +38,12 @@ describe('route metadata contract', () => {
     })
   })
 
+  it('keeps immutable weekly report history nested under ME', () => {
+    expect(resolveRouteMetadata('/profile/reports')).toMatchObject({
+      id: 'weekly-reports', section: 'me', title: 'Weekly Reports', preserveNestedState: false,
+    })
+  })
+
   it('keeps the locker compatibility route inside the collection-first DISCS section', () => {
     expect(resolveRouteMetadata('/bag/locker')).toMatchObject({ id: 'disc-collection', section: 'discs' })
     expect(resolveRouteMetadata('/bag')).toMatchObject({ id: 'discs-root', title: 'Discs' })

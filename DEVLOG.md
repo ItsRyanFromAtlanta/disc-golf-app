@@ -1,5 +1,28 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 3 checkpoint 5 deterministic weekly reports
+
+**What:** Added `/profile/reports` and a ME entry point for manually generating the latest completed
+Monday–Sunday recap and auditing every immutable version. The report view surfaces putting volume and
+conversion, completed rounds, deterministic highlights, sample counts, timezone, calculation version,
+and source cutoff; superseded versions remain inspectable instead of being overwritten.
+
+**Determinism/persistence:** Pure calendar helpers convert the profile's IANA timezone into exact UTC
+bounds and re-evaluate offsets across DST transitions. Generation reads remote authoritative source
+rows, includes only completed non-hidden lifecycle parents, freezes a source cutoff, and inserts a new
+version linked through `supersedes_id`. A unique-version race refetches once before failing. History
+reads remote-first and mirrors immutable snapshots into the existing Dexie v14 store for offline
+fallback; generation intentionally never uses a potentially partial local cache.
+
+**Verified:** 425 tests pass across 62 files, including DST, source aggregation, supersession, and route
+contracts. Production build and `git diff --check` pass. Lint retains only the four pre-existing
+warnings; the existing bundle-size advisory remains unchanged.
+
+**Next:** Reconcile Phase D item 4 against shipped confidence-map/session-report foundations before
+planning its first checkpoint.
+
+---
+
 ## 2026-07-16 — Phase D item 3 checkpoint 4 goal lifecycle UI
 
 **What:** Added `/profile/goals` for measurable rating, practice-frequency, putting-volume, and

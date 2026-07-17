@@ -9,6 +9,7 @@
 .career-page,
 .settings-page,
 .goals-page,
+.weekly-reports-page,
 .confidence-map-page,
 .bag-page,
 .bag-locker-page,
@@ -32,6 +33,7 @@
 
 .career-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-bottom: 12px;
@@ -118,6 +120,27 @@
 .goal-event-list { display: grid; gap: 8px; padding-left: 20px; }
 .goal-event-list li { padding-left: 4px; }
 .goal-event-list time { display: block; color: var(--color-text-secondary); font-size: 13px; }
+.weekly-reports-intro { display: grid; gap: 14px; margin-bottom: 22px; }
+.weekly-reports-intro h1, .weekly-reports-intro p, .weekly-report-head h3 { margin: 0; }
+.weekly-reports-intro p, .weekly-report-head span { color: var(--color-text-secondary); }
+.weekly-reports-intro .btn-primary { min-height: 52px; }
+.weekly-report-weeks, .weekly-report-history { display: grid; gap: 18px; }
+.weekly-report-week > h2 { margin: 0 0 10px; }
+.weekly-report-week > details { margin-top: 10px; }
+.weekly-report-week summary { min-height: 44px; padding: 10px 0; cursor: pointer; font-weight: 700; }
+.weekly-report-card { display: grid; gap: 14px; padding: 16px; border: var(--border-width) solid var(--color-border-default); border-radius: 12px; background: var(--color-bg-surface); }
+.weekly-report-head { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+.weekly-report-head > div { display: grid; gap: 3px; }
+.weekly-report-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.weekly-report-metrics div { padding: 10px 6px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-surface-alt); text-align: center; }
+.weekly-report-metrics strong, .weekly-report-metrics span { display: block; }
+.weekly-report-metrics strong { font-family: var(--font-display); font-size: 22px; }
+.weekly-report-metrics span { color: var(--color-text-secondary); font-size: 12px; }
+.weekly-report-highlights { display: grid; gap: 6px; margin: 0; padding-left: 22px; }
+.weekly-report-audit { display: grid; gap: 8px; margin: 0; }
+.weekly-report-audit div { display: flex; justify-content: space-between; gap: 12px; }
+.weekly-report-audit dt { font-weight: 700; }
+.weekly-report-audit dd { margin: 0; color: var(--color-text-secondary); text-align: right; overflow-wrap: anywhere; }
 
 .lost-found-page {
   display: grid;

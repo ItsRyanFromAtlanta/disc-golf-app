@@ -31,6 +31,7 @@ export default function CareerHubPage() {
         <Link className="link-button" to="/profile/details">Edit profile</Link>
         <Link className="link-button" to="/profile/settings">Settings</Link>
         <Link className="link-button" to="/profile/goals">Goals</Link>
+        <Link className="link-button" to="/profile/reports">Reports</Link>
       </div>
       <section className="career-identity" aria-labelledby="career-player-name">
         <span className="career-avatar" aria-hidden="true">🥏</span>

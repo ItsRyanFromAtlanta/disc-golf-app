@@ -17,6 +17,7 @@ import ProfilePage from './pages/ProfilePage'
 import CareerHubPage from './pages/CareerHubPage'
 import SettingsPage from './pages/SettingsPage'
 import GoalsPage from './pages/GoalsPage'
+import WeeklyReportsPage from './pages/WeeklyReportsPage'
 import TrophyRoomPage from './pages/TrophyRoomPage'
 import BagPage from './pages/BagPage'
 import BagLockerPage from './pages/BagLockerPage'
@@ -78,6 +79,7 @@ function App() {
           <Route path="details" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="goals" element={<GoalsPage />} />
+          <Route path="reports" element={<WeeklyReportsPage />} />
           <Route path="trophies" element={<TrophyRoomPage />} />
         </Route>
         <Route path="/bag">

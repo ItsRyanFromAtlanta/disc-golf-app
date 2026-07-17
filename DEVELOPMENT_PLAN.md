@@ -40,8 +40,10 @@ owner-scoped RLS/indexes/grants; atomic goal RPCs; Dexie v14 mirrors; and pure g
 The ME career summary is shipped with evidence-backed practice telemetry, a sparse-data-safe five-axis
 radar, rating/identity context, and a physical-disc trusted-putter audit. Profile/Settings separation
 and contextual notification preferences are shipped. Goal creation, pause/resume/completion/
-cancellation, optimistic version checks, and immutable history
-UI are shipped; weekly deterministic report generation/version UI is the next D3 checkpoint.
+cancellation, optimistic version checks, and immutable history UI are shipped. Phase D item 3 is
+complete: `/profile/reports` now generates the latest completed DST-aware Monday–Sunday window from
+completed visible activity, inserts immutable superseding versions, and exposes remote-first/Dexie-
+fallback version history. Phase D item 4 scope reconciliation is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

@@ -92,6 +92,7 @@ J1 ships the first sibling tree under the COURSES section:
 /profile/details         → editable player profile
 /profile/settings        → device/cross-device preferences and optional notification categories
 /profile/goals           → measurable goals, lifecycle actions, and immutable status history
+/profile/reports         → deterministic weekly snapshots and immutable version history
 ```
 
 **App-level nav is PLAY / DISCS / COURSES / ME** after the J1 directory shipped (the approved base
@@ -181,6 +182,12 @@ runs before notification production, while critical sync/data-safety alerts cann
 Phase D D3 checkpoint 4 adds `/profile/goals`. Reads are remote-first with Dexie fallback; creation and
 pause/resume/completion/cancellation use only the atomic public RPCs. Every transition sends the
 currently-read version and the UI reloads authoritative goal parents plus immutable `goal_events`.
+
+Phase D D3 checkpoint 5 adds `/profile/reports`. Generation uses the profile's IANA timezone to freeze
+the latest completed Monday–Sunday window into exact DST-aware UTC bounds, includes only completed,
+visible lifecycle sources, and inserts a new immutable snapshot version with an explicit supersession
+link. Report history reads remote-first with Dexie fallback; generation never relies on a partial local
+cache and never overwrites an earlier version.
 
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the

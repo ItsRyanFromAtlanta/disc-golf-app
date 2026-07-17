@@ -250,6 +250,16 @@ const APP_ROUTES = [
     scrollKey: 'discs-root',
   },
   {
+    id: 'weekly-reports',
+    match: /^\/profile\/reports$/,
+    section: 'me',
+    shell: SHELL_TYPES.STANDARD,
+    title: 'Weekly Reports',
+    showActivityPill: true,
+    preserveNestedState: false,
+    scrollKey: 'me-weekly-reports',
+  },
+  {
     id: 'goals',
     match: /^\/profile\/goals$/,
     section: 'me',
