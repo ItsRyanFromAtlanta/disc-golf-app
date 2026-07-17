@@ -1,5 +1,29 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 4 ghost pacing
+
+**What:** Added a compact live best-run ghost to active regimen scoring. It reports attempts ahead/
+behind at the same elapsed time, seconds ahead/behind at the same attempt count, and makes ahead/behind
+at the same attempt count. Comparison starts after three current real-time attempts.
+
+**Selection/recovery:** A non-gating background query admits only completed-visible runs of the same
+regimen, requires five timed events, selects highest score, and uses newest completion as the tie-break.
+The available profile freezes at Start. InstantLaunch v3 preserves the profile and current diagnostic
+events across crash recovery while the existing putt outbox remains the sole sporting-fact authority.
+
+**Data boundary:** Batch summaries do not advance the ghost or receive synthetic timestamps. History
+failure never delays Start, and a late response never changes an active opponent. No schema change was
+needed.
+
+**Verified:** 442 tests pass across 66 files, including profile selection/ties, minimum evidence,
+attempt/time/make deltas, InstantLaunch v1/v2→v3 migration, diagnostic persistence, and outbox
+separation. Production build and diff checks pass. Lint retains only the four pre-existing warnings;
+the existing bundle-size advisory remains unchanged.
+
+**Next:** D4 checkpoint 5 — JYLY/Around-the-World drill-engine generalization.
+
+---
+
 ## 2026-07-16 — Phase D item 4 checkpoint 3 experiment markers
 
 **What:** Added `/practice/stats` experiment markers for recording when a physical new putter enters

@@ -3,7 +3,7 @@
 // localStorage directly — storage.js is the only impure caller, which is
 // what keeps this fully vitest-testable (no jsdom in this repo's vitest
 // config, so `localStorage` itself isn't available under test).
-export const INSTANT_LAUNCH_SCHEMA_VERSION = 2
+export const INSTANT_LAUNCH_SCHEMA_VERSION = 3
 
 export function defaultInstantLaunchState() {
   return {
@@ -32,6 +32,11 @@ export function defaultInstantLaunchState() {
       // zero network dependency (no re-fetching the regimen/sets to render
       // distances/reps) — matches the "no network gating" TTFP rule.
       activeRegimenSnapshot: null, // { regimen, sets } | null
+      // D4 ghost pacing: frozen at session start and progressed only by real
+      // gesture/tap events. These are diagnostic snapshots, never a second
+      // sporting-fact outbox and never synthesized from batch summaries.
+      ghostProfile: null,
+      ghostCurrentEvents: [],
       currentStage: { setOrder: null, distanceFt: null, sequenceCounter: 0 },
       lastUpdatedAt: null,
     },
@@ -43,11 +48,12 @@ export function defaultInstantLaunchState() {
   }
 }
 
-// V1 is the shipped InstantLaunch shape. A4 adds only activityId, so preserve
-// every recovery snapshot and pending capture write during that upgrade. Any
-// unknown shape still resets rather than risking malformed capture state.
+// V1 is the shipped InstantLaunch shape; v2 adds activityId; v3 adds frozen
+// ghost-pacing diagnostics. Preserve every recovery snapshot and pending
+// capture write during upgrades. Any unknown shape still resets rather than
+// risking malformed capture state.
 export function migrateOrResetState(rawParsed) {
-  if (!rawParsed || ![1, INSTANT_LAUNCH_SCHEMA_VERSION].includes(rawParsed.schemaVersion)) {
+  if (!rawParsed || ![1, 2, INSTANT_LAUNCH_SCHEMA_VERSION].includes(rawParsed.schemaVersion)) {
     return defaultInstantLaunchState()
   }
 
@@ -84,6 +90,27 @@ export function applySetSmartPredictionCard(state, card) {
 
 export function applySetCrashRecoveryBuffer(state, buffer) {
   return { ...state, crashRecoveryBuffer: { ...state.crashRecoveryBuffer, ...buffer } }
+}
+
+export function applyAppendGhostCurrentEvent(state, event) {
+  if (!state.crashRecoveryBuffer.ghostProfile) return state
+  return {
+    ...state,
+    crashRecoveryBuffer: {
+      ...state.crashRecoveryBuffer,
+      ghostCurrentEvents: [...state.crashRecoveryBuffer.ghostCurrentEvents, event],
+    },
+  }
+}
+
+export function applyRemoveGhostCurrentEvent(state, eventId) {
+  return {
+    ...state,
+    crashRecoveryBuffer: {
+      ...state.crashRecoveryBuffer,
+      ghostCurrentEvents: state.crashRecoveryBuffer.ghostCurrentEvents.filter((event) => event.id !== eventId),
+    },
+  }
 }
 
 export function applyClearCrashRecoveryBuffer(state) {

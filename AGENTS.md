@@ -207,6 +207,12 @@ Before/after evidence uses only attributed events from completed-visible activit
 window as ending at the next marker, requires 10 attempts on both sides, and shows Wilson intervals for
 small samples. Batch summaries and unselected events never become experiment evidence.
 
+Phase D D4 checkpoint 4 adds schema-free best-run ghost pacing to active regimen runs. A background
+completed-visible history read selects the highest-scoring same-regimen run with at least five timed
+real-time events (newest completion breaks score ties). The profile freezes at Start and InstantLaunch
+v3 retains it plus current diagnostic progress across recovery without duplicating sporting facts.
+Comparison begins after three current real-time attempts; batch summaries never receive invented timing.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

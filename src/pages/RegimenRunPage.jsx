@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
 import { decayWeightedForm, distanceDropOff, putterBreakdown } from '../lib/insights'
+import { compareGhostPace } from '../lib/ghostPacing'
 import { computeSetScore, computeCompletionBonus, inferPressurePuttMade } from '../lib/regimenScoring'
 import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
@@ -33,6 +34,8 @@ import SessionReport from '../components/sessionReport/SessionReport'
 import FatigueCheckin from '../components/puttingCanvas/FatigueCheckin'
 import { fatigueCheckinTrigger } from '../lib/fatigueCheckin'
 import { fatigueCheckinRepository } from '../lib/repository/fatigueCheckinRepository'
+import { fetchGhostPacingProfile } from '../lib/repository/ghostPacingRepository'
+import GhostPaceCard from '../components/puttingCanvas/GhostPaceCard'
 
 const BASELINE_WINDOW_DAYS = 30
 
@@ -106,6 +109,7 @@ export default function RegimenRunPage() {
   const [externalFactors, setExternalFactors] = useState([])
   const [perceivedEffort, setPerceivedEffort] = useState(null)
   const [fatiguePrompt, setFatiguePrompt] = useState(null)
+  const [availableGhostProfile, setAvailableGhostProfile] = useState(null)
 
   // Session Summary (Screen 9) — populated once the run reaches 'summary'.
   const [reportPutterRows, setReportPutterRows] = useState([])
@@ -199,6 +203,19 @@ export default function RegimenRunPage() {
       .catch(() => {}) // non-critical — the card just omits the form line on failure
   }, [session.fsmStatus, user.id])
 
+  // Best-effort and non-gating: Quick Play/Start remains immediately usable.
+  // Whatever profile is available at Start is frozen into crash recovery;
+  // a late network response never changes an active run's opponent.
+  useEffect(() => {
+    if (session.fsmStatus !== FSM_STATES.READY_DEFAULT || !regimenId) return
+    let cancelled = false
+    setAvailableGhostProfile(null)
+    fetchGhostPacingProfile(user.id, regimenId)
+      .then((profile) => { if (!cancelled) setAvailableGhostProfile(profile) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [session.fsmStatus, regimenId, user.id])
+
   // Session Summary data: putter breakdown needs this run's putt_events
   // (gesture-captured only, per the data-split rule — may still be mid-sync
   // for an offline finish, in which case this simply under-counts until the
@@ -261,6 +278,7 @@ export default function RegimenRunPage() {
 
   const currentSetIndex = session.sessionState?.stage.regimenSetIndex ?? 0
   const currentSet = sets[currentSetIndex]
+  const ghostComparison = compareGhostPace(session.ghostCurrentEvents, session.ghostProfile)
 
   const activePutter = allDiscs.find((d) => d.id === activePutterDiscId) ?? null
   const suggestedSwapDisc = swapSuggestionDismissed
@@ -284,6 +302,7 @@ export default function RegimenRunPage() {
       sessionType: 'regimen',
       parentIds: { regimenRunId: newRunId, regimenId },
       activeRegimenSnapshot: { regimen, sets },
+      ghostProfile: availableGhostProfile,
       initialStage: stageFromSet(sets[0], 0),
       parentWriteRow: {
         id: newRunId,
@@ -606,6 +625,7 @@ export default function RegimenRunPage() {
               onEdit={() => setShowEditDrawer(true)}
             />
           }
+          ghostPace={<GhostPaceCard profile={session.ghostProfile} comparison={ghostComparison} />}
           stackTracker={
             <StackTracker
               volumePlanned={session.sessionState.stage.volumePlanned}

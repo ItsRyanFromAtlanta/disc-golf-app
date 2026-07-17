@@ -6,6 +6,8 @@ import {
   applySetProfileDefaults,
   applySetSmartPredictionCard,
   applySetCrashRecoveryBuffer,
+  applyAppendGhostCurrentEvent,
+  applyRemoveGhostCurrentEvent,
   applyClearCrashRecoveryBuffer,
   applyEnqueueParentWrite,
   applyEnqueueSummaryWrite,
@@ -63,10 +65,35 @@ describe('migrateOrResetState', () => {
     }
 
     const migrated = migrateOrResetState(v1)
-    expect(migrated.schemaVersion).toBe(2)
+    expect(migrated.schemaVersion).toBe(3)
     expect(migrated.crashRecoveryBuffer.activityId).toBeNull()
     expect(migrated.crashRecoveryBuffer.parentIds.freeformSessionId).toBe('session-1')
+    expect(migrated.crashRecoveryBuffer.ghostProfile).toBeNull()
+    expect(migrated.crashRecoveryBuffer.ghostCurrentEvents).toEqual([])
     expect(migrated.outbox).toEqual(v1.outbox)
+  })
+
+  it('upgrades v2 while preserving active capture and adding ghost defaults', () => {
+    const v2 = { ...defaultInstantLaunchState(), schemaVersion: 2 }
+    delete v2.crashRecoveryBuffer.ghostProfile
+    delete v2.crashRecoveryBuffer.ghostCurrentEvents
+    v2.outbox.puttEvents = [{ id: 'pending' }]
+    const migrated = migrateOrResetState(v2)
+    expect(migrated.schemaVersion).toBe(3)
+    expect(migrated.crashRecoveryBuffer.ghostProfile).toBeNull()
+    expect(migrated.crashRecoveryBuffer.ghostCurrentEvents).toEqual([])
+    expect(migrated.outbox.puttEvents).toEqual([{ id: 'pending' }])
+  })
+})
+
+describe('ghost pacing recovery diagnostics', () => {
+  it('appends and removes current events without touching the sporting outbox', () => {
+    const original = applySetCrashRecoveryBuffer(defaultInstantLaunchState(), { ghostProfile: { sourceRunId: 'ghost' } })
+    const appended = applyAppendGhostCurrentEvent(original, { id: 'putt-1', outcome: 'make' })
+    expect(appended.crashRecoveryBuffer.ghostCurrentEvents).toEqual([{ id: 'putt-1', outcome: 'make' }])
+    expect(appended.outbox.puttEvents).toEqual([])
+    const removed = applyRemoveGhostCurrentEvent(appended, 'putt-1')
+    expect(removed.crashRecoveryBuffer.ghostCurrentEvents).toEqual([])
   })
 })
 

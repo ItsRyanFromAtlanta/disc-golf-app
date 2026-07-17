@@ -121,7 +121,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Gamified drills: JYLY, Around the World | NEXT UP | Regimen engine generalization (drill_type + rules_config jsonb) |
 | Clutch simulator (randomized rest timers) | NEXT UP | Adopts TDD's 2-8min randomization; existing pressure scoring |
 | Miss tendency diagnostics (9-zone heat grid) | SHIPPED | D4 checkpoint 1: completed-visible real-time events only, capture coverage shown, and repeated-vector callouts require three matching misses |
-| Ghost pacing engine | BACKLOG | Elevated from LATER; TDD's HistoricalPacingProfile concept, manual-timestamp version |
+| Ghost pacing engine | SHIPPED | D4 checkpoint 4: frozen highest-score same-regimen profile, InstantLaunch v3 recovery, three-event floor, and real-time-only attempt/time/make deltas |
 | Voice callouts / Match Mode coaching | BACKLOG | Browser SpeechSynthesis; adopts TDD intervention-threshold rule (never coach off single events) |
 | Acoustic make-detection prototype (Web Audio FFT) | BACKLOG | Experimental spike; success gate >90% agreement with manual entry outdoors |
 | Tournament noise overlay (cognitive load training) | BACKLOG | Background audio loops; cheap once drills exist |

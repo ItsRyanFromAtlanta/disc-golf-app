@@ -53,7 +53,8 @@ groups exact attributed discs, exposes attribution coverage and Wilson uncertain
 distance-adjusted delta to shared distance bands with at least 10 attempts. Explicit immutable
 new-putter experiment markers and a before/after engine shipped 2026-07-16 as checkpoint 3. Marker
 windows end at the next marker, both sides require 10 attributed attempts, and small-sample Wilson
-intervals remain visible. Ghost pacing and drill generalization are the next checkpoint.
+intervals remain visible. Schema-free best-run ghost pacing shipped as checkpoint 4 with a frozen,
+crash-recoverable profile and a three-event intervention floor. Drill generalization is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 
