@@ -40,6 +40,7 @@ describe('migrateOrResetState', () => {
     const state = { ...defaultInstantLaunchState(), profileDefaults: { favoritePutterDiscId: 'putter-1' } }
     const migrated = migrateOrResetState(state)
     expect(migrated.profileDefaults.favoritePutterDiscId).toBe('putter-1')
+    expect(migrated.profileDefaults.quickPlayRegimenId).toBeNull()
     expect(migrated.profileDefaults.inputModeDefault).toBe('tap')
   })
 

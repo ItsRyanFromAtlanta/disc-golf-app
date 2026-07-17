@@ -1,5 +1,26 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase D item 1 PLAY ordering and Quick Play
+
+**What:** Reordered PLAY around the approved activity-first contract: true active/crash recovery, Quick
+Play, routine selection with Free Play, routine creation, suggested next session, recent activity, and
+History. Quick Play defaults to the system Level-1 regimen, exposes an adjacent device-local default
+selector, and falls back deterministically when a saved routine is unavailable.
+
+**Offline contract:** Dexie v12 adds ordered `regimenSets`. A scoped regimen repository caches system
+plus current-user custom routines and their stages, prunes stale scoped rows, and falls back locally when
+remote reads fail. PLAY, regimen selection, and regimen setup now use that boundary. Active recovery is
+computed independently of history so it never waits on a network-backed suggestion. No remote migration.
+
+**Verified:** 397 tests pass across 51 files; production build and diff checks pass; lint retains the
+four pre-existing warnings. Anonymous mobile and desktop checks reached the protected PLAY login boundary
+without runtime errors, error overlay, or horizontal overflow. Authenticated PLAY rendering remains
+unexercised in the isolated browser session.
+
+**Next:** Phase D item 2 — adaptive stage fatigue check-ins and session factors/effort.
+
+---
+
 ## 2026-07-16 — Shipped Phase C item 5 disc/bag comparison cohorts
 
 **What:** Extended the shipped J2 `/bag/compare` flow with a source-aware comparison layer. Personal

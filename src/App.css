@@ -2744,6 +2744,69 @@
   margin: 16px 0;
 }
 
+.quick-play-card {
+  background: var(--color-highlight-soft);
+  border: 2px solid var(--color-highlight);
+  border-radius: 10px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.quick-play-copy {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.quick-play-copy h2,
+.quick-play-copy p {
+  margin: 0;
+}
+
+.quick-play-card label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.quick-play-card select {
+  min-height: 48px;
+  width: 100%;
+}
+
+.quick-play-card .start-button {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 80px;
+  text-align: center;
+}
+
+.play-section-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.play-section-heading h2,
+.play-suggestion-card h2 {
+  margin: 0;
+}
+
+.play-suggestion-card {
+  border-top: 2px solid var(--color-border-default);
+  padding-top: 16px;
+}
+
+@media (max-width: 520px) {
+  .play-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .hero-card {
   display: flex;
   flex-direction: column;

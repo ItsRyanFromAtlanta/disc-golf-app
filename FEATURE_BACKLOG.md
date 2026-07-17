@@ -130,14 +130,14 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 
 | Feature | Status | Notes |
 |---|---|---|
-| Dexie.js + TanStack Query staged local-first repository | IN PROGRESS | Skeleton shipped and discs exercise it; extend entity-by-entity, InstantLaunch folds in last |
+| Dexie.js + TanStack Query staged local-first repository | IN PROGRESS | Discs and D1 regimen metadata/sets exercise it; extend entity-by-entity, InstantLaunch folds in last |
 | Discs: role (primary/backup/situational putter), wear_score, total_chain_hits | SHIPPED | Layer 1 schema; supersedes earlier profile-columns putter-role proposal |
 | Bag 35-disc capacity hard interlock | SHIPPED | Layer 1 schema (CHECK) + Layer 3 UI (disabled Add + blue/orange/rust states) — capacityTier() in lib/bags.js |
 | Routine 100-putt hard interlock + rules_config/drill_type | SHIPPED | Layer 1 schema — this IS the Track 2.3 regimen-engine generalization |
 | 4-tab app nav (Play / Bags / Stats / Pro) | SUPERSEDED | Replace with PLAY / DISCS / ME; add COURSES when directory ships |
 | Splash + auth overhaul (email 6-digit OTP, Apple/Google SSO, anonymous guest) | SHIPPED | Layer 2, Screens 1–2; SSO + anonymous sign-in need enabling in Supabase dashboard — see DEVLOG 2026-07-05 |
 | Zero-typing onboarding (goal cards, putter provisioning, haptic test) | SHIPPED | Layer 2, Screen 3 |
-| Dashboard hub (instant-replay hero, 3-way STANDARD/CUSTOM/NEW launchpad) | SHIPPED | Layer 3, Screen 4 — CLONE & TWEAK and the planning drawer are disabled stubs pending Layer 4's builder |
+| Dashboard hub (instant-replay hero, 3-way STANDARD/CUSTOM/NEW launchpad) | SHIPPED | D1 revision shipped 2026-07-16: true resume → Quick Play → select/create → suggestion → recent/history order, device-local default selector, Level-1 fallback, and offline regimen/set cache |
 | Bag manager (My Bags / Putters / Universe + ghost-slot wishlist) | SHIPPED | Layer 3, Screen 5; client-side tabs at `/bag`, no new routes; retail bridge (Ghost Slot → Pro-Shop) parked |
 | Putter lineup (role swimlanes, Bézier flight curve, wear slider + odometer alert) | SHIPPED | Layer 3, Screen 6 |
 | Custom routine builder (stage stacking, live max-score preview, 100-putt totalizer) | SHIPPED | Layer 4, Screen 7 — reuses regimenScoring.js engine unmodified; blueprint per-stage First bonus omitted (no engine column) |

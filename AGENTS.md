@@ -150,6 +150,12 @@ outbox behind `src/lib/repository/activityRepository.js`. Its InstantLaunch brid
 unwired until A7: InstantLaunch remains authoritative for live putt capture, batch summaries, and its
 proven putt outbox; lifecycle mirroring must never synthesize or relocate those facts.
 
+Phase D D1 adds Dexie v12 `regimenSets` beside the existing `regimens` store and the scoped
+`src/lib/repository/regimenRepository.js` remote-first/local-fallback boundary. Quick Play stores its
+device-local `quickPlayRegimenId` in InstantLaunch profile defaults; a missing/archived preference falls
+back to the system Level-1 regimen, then the lowest system level. Active recovery remains local and must
+never wait for history or regimen network reads.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

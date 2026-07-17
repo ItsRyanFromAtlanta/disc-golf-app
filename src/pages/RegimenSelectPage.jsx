@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { mostRecentRegimenId } from '../lib/insights'
+import { regimenRepository } from '../lib/repository/regimenRepository'
 
 export default function RegimenSelectPage() {
   const { user, signOut } = useAuth()
@@ -12,16 +13,13 @@ export default function RegimenSelectPage() {
   const [suggestedId, setSuggestedId] = useState(null)
 
   useEffect(() => {
-    supabase
-      .from('putting_regimens')
-      .select('*')
-      .order('difficulty', { ascending: true })
-      .then(({ data, error }) => {
-        if (error) setError(error.message)
-        else setRegimens(data)
-        setLoading(false)
-      })
-  }, [])
+    let cancelled = false
+    regimenRepository.list(user.id)
+      .then((data) => { if (!cancelled) setRegimens(data) })
+      .catch((loadError) => { if (!cancelled) setError(loadError.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [user.id])
 
   // Light-touch smart-prediction surface — just enough to highlight "last
   // time you did this one," not a rebuild of this page. A direct query for

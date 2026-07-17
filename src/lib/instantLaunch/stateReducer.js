@@ -10,6 +10,7 @@ export function defaultInstantLaunchState() {
     schemaVersion: INSTANT_LAUNCH_SCHEMA_VERSION,
     profileDefaults: {
       favoritePutterDiscId: null,
+      quickPlayRegimenId: null,
       quickModPresets: [],
       diagnosticModeDefault: false,
       // Scoring Canvas (Screen 8): tap is primary per the signed-off input

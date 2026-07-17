@@ -239,6 +239,13 @@ export class AppDatabase extends Dexie {
       discCosmeticUnlocks: 'id, user_id, disc_id, tier, threshold, [disc_id+tier]',
       discOdometerOutbox: 'id, userId, discId, metric, status, createdAt, idempotencyKey',
     })
+
+    // Phase D D1: the existing regimen metadata cache gains ordered set rows
+    // so Quick Play and regimen setup can resolve from IndexedDB after a
+    // successful online load instead of gating a cold PWA launch on network.
+    this.version(12).stores({
+      regimenSets: 'id, regimen_id, set_order, [regimen_id+set_order]',
+    })
   }
 }
 

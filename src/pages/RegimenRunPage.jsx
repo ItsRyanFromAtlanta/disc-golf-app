@@ -14,6 +14,7 @@ import { makeTerritoryPct } from '../lib/instantLaunch/sessionReducer'
 import { GESTURE_CONFIG } from '../lib/gestureEngine/config'
 import { FSM_STATES } from '../lib/instantLaunch/fsm'
 import { fetchUserDiscs } from '../lib/discLocker'
+import { regimenRepository } from '../lib/repository/regimenRepository'
 import { awardPostSession } from '../lib/gamification/badgeEvaluatorService'
 import { celebrationEventsFor } from '../lib/gamification/celebration'
 import { XP_SOURCE } from '../lib/gamification/constants'
@@ -162,28 +163,28 @@ export default function RegimenRunPage() {
       return
     }
 
+    let cancelled = false
     async function load() {
       setLoading(true)
       setError(null)
-      const [{ data: regimenData, error: regimenError }, { data: setsData, error: setsError }] = await Promise.all([
-        supabase.from('putting_regimens').select('*').eq('id', regimenId).single(),
-        supabase
-          .from('putting_regimen_sets')
-          .select('*')
-          .eq('regimen_id', regimenId)
-          .order('set_order', { ascending: true }),
-      ])
-      if (regimenError || setsError) {
-        setError((regimenError || setsError).message)
-        setLoading(false)
+      try {
+        const snapshot = await regimenRepository.getWithSets(regimenId, user.id)
+        if (!cancelled) {
+          setRegimen(snapshot.regimen)
+          setSets(snapshot.sets)
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError.message)
+          setLoading(false)
+        }
         return
       }
-      setRegimen(regimenData)
-      setSets(setsData)
-      setLoading(false)
+      if (!cancelled) setLoading(false)
     }
     load()
-  }, [regimenId, session.fsmStatus, session.activeRegimenSnapshot, session.parentIds])
+    return () => { cancelled = true }
+  }, [regimenId, session.fsmStatus, session.activeRegimenSnapshot, session.parentIds, user.id])
 
   useEffect(() => {
     if (session.fsmStatus !== FSM_STATES.READY_DEFAULT) return

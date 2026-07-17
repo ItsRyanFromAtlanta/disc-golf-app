@@ -1,5 +1,23 @@
 import { supabase } from './supabaseClient'
 
+export async function fetchRegimensWithSets() {
+  const { data: regimens, error: regimenError } = await supabase
+    .from('putting_regimens')
+    .select('*')
+    .order('difficulty', { ascending: true })
+  if (regimenError) throw regimenError
+
+  const regimenIds = (regimens ?? []).map((regimen) => regimen.id)
+  if (regimenIds.length === 0) return { regimens: [], sets: [] }
+  const { data: sets, error: setsError } = await supabase
+    .from('putting_regimen_sets')
+    .select('*')
+    .in('regimen_id', regimenIds)
+    .order('set_order', { ascending: true })
+  if (setsError) throw setsError
+  return { regimens: regimens ?? [], sets: sets ?? [] }
+}
+
 // Custom-routine data layer (Screen 7). Thin wrappers over Supabase in the same
 // style as discLocker.js. A custom routine is a putting_regimens row (user_id set)
 // plus putting_regimen_sets rows; both are RLS-scoped to the owner.

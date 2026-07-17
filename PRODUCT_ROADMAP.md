@@ -114,7 +114,8 @@ Recommended model: GPT-5.3-Codex medium for UI; GPT-5.6 high for scoring/merge a
 
 Recommended model: GPT-5.3-Codex medium; GPT-5.6 high for metric/report engines.
 
-1. Revised PLAY ordering and Level-1 Quick Play default with profile/default selector.
+1. **COMPLETE 2026-07-16.** Revised PLAY ordering and Level-1 Quick Play default with a device-local
+   profile/default selector and offline regimen/set cache.
 2. Adaptive stage fatigue check-ins, editable putter/weather/external factors, end-session perceived
    effort, and user-disableable round-turn prompt.
 3. ME career summary, Profile/Settings split, contextual notification preferences, goals pause/history,

@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-16
 
-- **Active phase:** Phase C items 1–3 are complete; continue with Phase C item 4 Bag Resonance.
+- **Active phase:** Phase C is complete and Phase D item 1 is shipped; continue with Phase D item 2.
 - **Approved:** Phase A shell/navigation, lifecycle, notification, scrolling/sheets, accessibility,
   repository/transaction, migration-order, test-gate, and A1–A10 walkthrough are complete. A8 recovery
   (RPCs + versioned metric registry, Dexie v3 audited outbox, Recently Deleted restore) and the A9/A10
@@ -162,8 +162,20 @@ Last updated: 2026-07-16
   effect cleanup, and responsive summary layout. Anonymous mobile and desktop browser checks loaded the
   app and protected comparison route without runtime errors, overlay, or horizontal overflow; authenticated
   cohort and bag data remain unexercised in the isolated browser session. Graphify was refreshed.
-- **Resume point:** Phase D item 1 — revised PLAY ordering and Level-1 Quick Play default with the
-  profile/default selector. Manual catalog population remains owner-driven.
+- **Phase D item 1 shipped 2026-07-16:** PLAY now orders true active/crash recovery first, then Quick
+  Play, routine selection/Free Play, routine creation, a separate suggested-next-session card, recent
+  activity, and History. Quick Play resolves a valid device-local default, then the system Level-1
+  regimen, then the lowest system level, with explicit unavailable handling. Dexie v12 adds ordered
+  `regimenSets`; the PLAY list, regimen selector, and run setup now read remote-first with a scoped local
+  fallback. The local resume path no longer waits for history/network data. No remote schema or route change.
+- **Item D1 verification:** 397 tests pass across 51 files; production build and diff checks pass; lint
+  retains four existing warnings. React review added request cleanup, semantic controls, an 80pt Quick
+  Play action, and 320px-safe stacking. Anonymous mobile and desktop browser checks reached the protected
+  PLAY login boundary without runtime errors, overlay, or horizontal overflow; authenticated PLAY data
+  remains unexercised in the isolated browser session.
+- **Resume point:** Phase D item 2 — adaptive stage fatigue check-ins, editable putter/weather/external
+  factors, end-session perceived effort, and a user-disableable round-turn prompt. Manual catalog
+  population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.
