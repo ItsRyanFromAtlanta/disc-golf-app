@@ -1,5 +1,27 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase C item 5 disc/bag comparison cohorts
+
+**What:** Extended the shipped J2 `/bag/compare` flow with a source-aware comparison layer. Personal
+reality keeps effective per-copy overrides; Official catalog explicitly removes those overrides; Community
+benchmark is eligibility-gated and currently reports a truthful unavailable state when no attributed sample
+meets the minimum threshold. A bag-context selector adds capacity, speed-class, occupied-cell, missing-data,
+and near-duplicate summaries without an opaque composite score.
+
+**Key decisions:** Existing side-by-side tables and flight curves remain the comparison core. Source labels
+and attribution are visible before the numbers. Community cohorts require at least 10 attributed rounds or
+throws, and unavailable community data falls back to official catalog numbers with an explanation. Bag
+context is derived from existing bag/disc reads; no schema or route changes were needed.
+
+**Verified:** 389 tests pass across 49 files; production build and diff checks pass; lint retains the four
+pre-existing warnings. Anonymous mobile and desktop browser checks loaded the app and protected comparison
+route without runtime errors, error overlay, or horizontal overflow. Authenticated cohort data remains
+unexercised in the isolated browser session.
+
+**Next:** Phase D item 1 — revised PLAY ordering and Level-1 Quick Play default.
+
+---
+
 ## 2026-07-16 — Shipped Phase C item 4 Bag Resonance
 
 **What:** Added a pure, schema-free Bag Resonance contract and panel below Flight Spectrum. The panel

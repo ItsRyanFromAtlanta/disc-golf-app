@@ -30,7 +30,7 @@ consolidation, atomic grouped bag editing, and the accessible current-reality/of
 Phase C items 1–4 shipped 2026-07-16: collection-first DISCS/profile consolidation, atomic grouped
 bag editing, accessible current-reality/official Flight Spectrum, and the schema-free Bag Resonance draft
 with transparent component presets and capacity-neutral ghost gaps. Phase C item 5 disc/bag comparisons
-is next.
+shipped 2026-07-16; Phase D item 1 is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

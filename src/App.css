@@ -2142,6 +2142,60 @@
   color: var(--color-text-secondary);
 }
 
+.disc-compare-source-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.disc-compare-source-buttons button {
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  min-height: 40px;
+  padding: 6px 10px;
+}
+
+.disc-compare-source-buttons button[aria-pressed='true'] {
+  background: var(--color-secondary-accent);
+  color: var(--color-text-inverse);
+}
+
+.disc-compare-bag-select {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.disc-compare-bag-select select {
+  flex: 1;
+}
+
+.disc-compare-bag-summary {
+  border-top: 2px solid var(--color-border-default);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 12px;
+}
+
+.disc-compare-bag-summary strong {
+  color: var(--color-secondary-accent);
+}
+
+@media (max-width: 520px) {
+  .disc-compare-bag-select {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .disc-compare-bag-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
 .disc-compare-notice,
 .disc-compare-alerts {
   margin-bottom: 0;

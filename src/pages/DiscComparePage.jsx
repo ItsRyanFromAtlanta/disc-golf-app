@@ -1,13 +1,17 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDiscList } from '../lib/repository/discRepository'
+import { fetchBags, fetchBagDiscs } from '../lib/discLocker'
 import {
+  buildBagComparison,
   buildDiscComparison,
+  COMPARISON_SOURCES,
   COMPARE_MAX,
   COMPARE_MIN,
   FLIGHT_AXES,
   NEAR_IDENTICAL_AXIS_DELTA,
+  resolveCommunityCohort,
 } from '../lib/discCompare'
 import { stabilityClass, stabilityColor } from '../lib/discFilters'
 import { FlightCurveOverlay } from '../components/putterLineup/FlightCurve'
@@ -60,6 +64,9 @@ function InvalidCompareState({ message }) {
 export default function DiscComparePage() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
+  const [source, setSource] = useState('personal')
+  const [selectedBagId, setSelectedBagId] = useState('')
+  const [bagContexts, setBagContexts] = useState(null)
   const queryIds = useMemo(() => {
     const ids = searchParams
       .getAll('ids')
@@ -80,6 +87,21 @@ export default function DiscComparePage() {
     [discs, requestedIds],
   )
 
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([fetchBags(user.id)]).then(([bags]) => (
+      Promise.all(bags.map((bag) => fetchBagDiscs(bag.id))).then((bagDiscs) => {
+        if (cancelled) return
+        const contexts = bags.map((bag, index) => ({ bag, discs: bagDiscs[index] }))
+        setBagContexts(contexts)
+        setSelectedBagId((previous) => previous || contexts[0]?.bag.id || '')
+      })
+    )).catch(() => {
+      if (!cancelled) setBagContexts([])
+    })
+    return () => { cancelled = true }
+  }, [user.id])
+
   if (discsQuery.error && !discsQuery.data) return <p className="form-error">{discsQuery.error.message}</p>
   if (!discs) return <p className="loading">Loading...</p>
   if (queryIds.length < COMPARE_MIN) {
@@ -89,7 +111,11 @@ export default function DiscComparePage() {
     return <InvalidCompareState message="One or more selected discs could not be found in your locker." />
   }
 
-  const comparison = buildDiscComparison(selected)
+  const community = resolveCommunityCohort([])
+  const activeSource = source === 'community' && community.status !== 'ready' ? 'official' : source
+  const comparison = buildDiscComparison(selected, { source: activeSource })
+  const activeBag = bagContexts?.find((context) => context.bag.id === selectedBagId) ?? null
+  const bagSummary = activeBag ? buildBagComparison(activeBag.discs, activeBag.bag.capacity) : null
   const rowsById = new Map(comparison.rows.map((row) => [String(row.discId), row]))
   const missingIds = requestedIds.filter((id) => !selected.some((disc) => String(disc.id) === id))
   const truncatedCount = queryIds.length - requestedIds.length
@@ -108,6 +134,36 @@ export default function DiscComparePage() {
       </header>
 
       <p className="disc-compare-intro">Effective flight numbers are shown below. Per-disc overrides are marked explicitly.</p>
+
+      <section className="disc-compare-panel disc-compare-source-panel" aria-labelledby="comparison-source-title">
+        <div className="disc-compare-panel-heading">
+          <h2 id="comparison-source-title">Comparison source</h2>
+          <span>Every result is attributed</span>
+        </div>
+        <div className="disc-compare-source-buttons" role="group" aria-label="Comparison source">
+          {Object.values(COMPARISON_SOURCES).map((candidate) => (
+            <button
+              key={candidate.id}
+              type="button"
+              aria-pressed={source === candidate.id}
+              onClick={() => setSource(candidate.id)}
+            >
+              {candidate.label}
+            </button>
+          ))}
+        </div>
+        {source === 'community' && community.status !== 'ready' ? (
+          <p className="disc-compare-notice" role="status">
+            Community benchmark unavailable: {community.reason} Showing official catalog numbers instead.
+          </p>
+        ) : (
+          <p className="log-time">
+            {COMPARISON_SOURCES[activeSource].label}: {activeSource === 'personal'
+              ? 'your selected physical discs and their effective flight numbers.'
+              : 'manufacturer catalog flight numbers; personal overrides are intentionally excluded.'}
+          </p>
+        )}
+      </section>
 
       {truncatedCount > 0 && (
         <p className="disc-compare-notice">Comparison is capped at {COMPARE_MAX} discs; {truncatedCount} extra selection(s) were ignored.</p>
@@ -148,6 +204,36 @@ export default function DiscComparePage() {
             </span>
           ))}
         </div>
+      </section>
+
+      <section className="disc-compare-panel disc-compare-bag-panel" aria-labelledby="bag-summary-title">
+        <div className="disc-compare-panel-heading">
+          <h2 id="bag-summary-title">Bag context</h2>
+          <span>Transparent coverage summary</span>
+        </div>
+        {bagContexts?.length ? (
+          <>
+            <label className="disc-compare-bag-select">
+              Bag
+              <select value={selectedBagId} onChange={(event) => setSelectedBagId(event.target.value)}>
+                {bagContexts.map(({ bag }) => <option key={bag.id} value={bag.id}>{bag.name}</option>)}
+              </select>
+            </label>
+            {bagSummary && (
+              <div className="disc-compare-bag-summary">
+                <strong>{bagSummary.discCount}/{bagSummary.capacity ?? '—'} discs</strong>
+                <span>{bagSummary.speedClasses.join(', ') || 'No speed classes yet'}</span>
+                <span>{bagSummary.occupiedCells.length} occupied flight cells</span>
+                <span>{bagSummary.missingFlightProfiles} missing flight profiles</span>
+                <span>{bagSummary.nearIdenticalPairs.length} near-duplicate pairs</span>
+              </div>
+            )}
+          </>
+        ) : bagContexts === null ? (
+          <p className="loading">Loading bag context...</p>
+        ) : (
+          <p className="log-time">Bag context is unavailable; the disc comparison above remains usable.</p>
+        )}
       </section>
 
       <section className="disc-compare-panel">

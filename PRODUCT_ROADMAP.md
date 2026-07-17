@@ -107,8 +107,8 @@ Recommended model: GPT-5.3-Codex medium for UI; GPT-5.6 high for scoring/merge a
 4. **COMPLETE 2026-07-16.** Bag Resonance first draft with transparent coverage, speed-ladder, and
    separation component scores; Balanced, Coverage-first, and Minimal redundancy presets; ghost gaps
    never count toward physical disc capacity.
-5. Disc/bag comparisons using personal, official, and eligible community cohorts with graceful cohort
-   broadening and explicit attribution.
+5. **COMPLETE 2026-07-16.** Disc/bag comparisons using personal, official, and eligibility-gated
+   community cohorts with graceful fallback and explicit attribution.
 
 ## Phase D — PLAY, ME, reports, and contextual analytics
 

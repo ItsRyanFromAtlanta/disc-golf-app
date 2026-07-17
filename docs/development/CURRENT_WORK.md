@@ -150,9 +150,20 @@ Last updated: 2026-07-16
   button labeling. Anonymous mobile (390×844) and desktop (1280×800) browser checks loaded content with
   no runtime errors, overlay, or horizontal overflow; authenticated resonance interaction remains
   unexercised in the isolated browser session. Graphify refresh remains required after commit.
-- **Resume point:** Phase C item 5 disc/bag comparisons. Extend the shipped comparison foundation with
-  personal, official, and eligible community cohorts, graceful cohort broadening, and explicit attribution.
-  Manual catalog population remains owner-driven.
+- **Phase C item 5 shipped 2026-07-16:** Extended the shipped J2 `/bag/compare` screen with attributed
+  Personal reality, Official catalog, and eligibility-gated Community benchmark source states. Personal
+  comparisons use effective per-copy numbers; official comparisons intentionally exclude overrides. When
+  community data is unavailable, the UI explains the minimum sample/attribution requirement and falls
+  back to official numbers. A bag-context selector now summarizes capacity, speed classes, occupied flight
+  cells, missing profiles, and near-duplicate pairs without introducing an opaque score. No schema or
+  route change.
+- **Item 5 verification:** 389 tests pass across 49 files; production build and diff checks pass; lint
+  retains four existing warnings. React review passed source-button keyboard semantics, stable keys,
+  effect cleanup, and responsive summary layout. Anonymous mobile and desktop browser checks loaded the
+  app and protected comparison route without runtime errors, overlay, or horizontal overflow; authenticated
+  cohort and bag data remain unexercised in the isolated browser session. Graphify was refreshed.
+- **Resume point:** Phase D item 1 — revised PLAY ordering and Level-1 Quick Play default with the
+  profile/default selector. Manual catalog population remains owner-driven.
 
 Update this file at each major commit/push. A fresh Codex task should be able to resume using this file,
 `AGENTS.md`, and the single relevant spec without replaying previous conversations.
