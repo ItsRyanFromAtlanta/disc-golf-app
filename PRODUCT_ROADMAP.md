@@ -121,10 +121,9 @@ Recommended model: GPT-5.3-Codex medium; GPT-5.6 high for metric/report engines.
 3. **COMPLETE 2026-07-16.** ME career summary, Profile/Settings split, contextual notification
    preferences, goals pause/history, weekly deterministic report snapshots/version history, and
    complete activity history/corrections.
-4. **CHECKPOINTS 1–4 COMPLETE 2026-07-16.** Distance confidence/heat, completed-visible miss tendency,
-   longitudinal physical-putter comparisons, and immutable new-putter before/after markers; next:
-   JYLY/Around-the-World, then clutch/voice features. Best-run ghost pacing is also shipped with
-   InstantLaunch recovery and real-time-only timing.
+4. **CHECKPOINTS 1–5 COMPLETE 2026-07-16.** Distance confidence/heat, completed-visible miss tendency,
+   longitudinal physical-putter comparisons, immutable new-putter before/after markers, best-run ghost
+   pacing, and versioned JYLY/Around-the-World drill execution are shipped. Next: clutch/voice features.
 
 ## Phase E — Courses, rounds, and interoperability
 

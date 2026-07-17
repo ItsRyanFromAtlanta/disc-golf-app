@@ -54,7 +54,9 @@ distance-adjusted delta to shared distance bands with at least 10 attempts. Expl
 new-putter experiment markers and a before/after engine shipped 2026-07-16 as checkpoint 3. Marker
 windows end at the next marker, both sides require 10 attributed attempts, and small-sample Wilson
 intervals remain visible. Schema-free best-run ghost pacing shipped as checkpoint 4 with a frozen,
-crash-recoverable profile and a three-event intervention floor. Drill generalization is next.
+crash-recoverable profile and a three-event intervention floor. Checkpoint 5 ships versioned JYLY and
+Around-the-World rules, grouped selection, append-only repeated-station facts, and locally recoverable
+state-machine progress.
 
 ## Phase A execution sessions — approved 2026-07-12
 
@@ -355,6 +357,7 @@ Absorbs the "Dual-Pace Scoring Canvas" interaction spec (velocity-gated gestures
 - **Design rule (unchanged):** summary tables stay authoritative for existing stats; putt_events feeds new diagnostics; backfill nothing
 
 ### 2.3 Gamified drills: JYLY + Around the World — ratio: ★★★★☆ (VH value / M effort)
+- **Status:** SHIPPED 2026-07-16 (Phase D4 checkpoint 5)
 - **What:** classic known drills as new structured modes with their real scoring rules, step-back/advance logic
 - **Schema:** generalize regimen engine — add `rules_config jsonb` + `drill_type` to `putting_regimens` (fixed-set regimens = one drill_type; JYLY laddering = another); runs/run_sets tables reused
 - **UI:** drills appear in regimen selection grouped by type; run-through UI driven by rules_config state machine

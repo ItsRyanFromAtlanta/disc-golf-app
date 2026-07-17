@@ -6,6 +6,7 @@ import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
 import { decayWeightedForm, distanceDropOff, putterBreakdown } from '../lib/insights'
 import { compareGhostPace } from '../lib/ghostPacing'
 import { computeSetScore, computeCompletionBonus, inferPressurePuttMade } from '../lib/regimenScoring'
+import { DRILL_TYPES, drillKind, nextDrillStage, scoreDrillStage, validateDrillConfig } from '../lib/drillEngine'
 import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
@@ -49,9 +50,10 @@ function stageDistanceFt(regimenSet) {
   return Math.round((regimenSet.distance_feet_min + regimenSet.distance_feet_max) / 2)
 }
 
-function stageFromSet(regimenSet, index) {
+function stageFromSet(regimenSet, index, regimen = null, progress = {}) {
+  const classic = [DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD].includes(drillKind(regimen))
   return {
-    label: `Set ${index + 1}`,
+    label: classic ? `Station ${index + 1}` : `Set ${index + 1}`,
     distanceFt: stageDistanceFt(regimenSet),
     volumePlanned: regimenSet.reps_required,
     historicalAvgMakePct: null,
@@ -60,6 +62,8 @@ function stageFromSet(regimenSet, index) {
     // denormalized onto each putt_events row for this stage so 2.5's
     // miss-tendency diagnostics can group by set without re-joining.
     regimenSetOrder: regimenSet.set_order,
+    drillAttemptsSoFar: progress.attemptsSoFar ?? 0,
+    drillRunningTotal: progress.runningTotal ?? 0,
   }
 }
 
@@ -129,6 +133,7 @@ export default function RegimenRunPage() {
   )
 
   const session = useInstantLaunchSession(writeAdapter, user.id)
+  const recoveredRunningTotal = session.sessionState?.stage.drillRunningTotal
   const audio = usePuttAudio()
   const haptics = usePuttHaptics()
 
@@ -139,6 +144,14 @@ export default function RegimenRunPage() {
   useEffect(() => {
     setInputMode(session.profileDefaults.inputModeDefault)
   }, [session.profileDefaults.inputModeDefault])
+
+  // Drill progress rides inside the persisted stage snapshot, so a killed PWA
+  // resumes the correct score/attempt cap without a network read.
+  useEffect(() => {
+    if (session.fsmStatus !== FSM_STATES.ACTIVE_SESSION || !session.sessionState) return
+    setRunningTotal(recoveredRunningTotal ?? 0)
+    setPhase('running')
+  }, [session.fsmStatus, recoveredRunningTotal, session.sessionState])
 
   useEffect(() => {
     audio.setSilenced(silenced)
@@ -286,6 +299,11 @@ export default function RegimenRunPage() {
     : suggestBackupSwap({ weatherCondition, windMph, discs: allDiscs, activePutterDiscId })
 
   function handleStart() {
+    const contract = validateDrillConfig(regimen, sets)
+    if (!contract.valid) {
+      setError(contract.reason)
+      return
+    }
     setStarting(true)
     setBatchRibbonConfirming(false)
     setRunCompleted(true)
@@ -303,7 +321,7 @@ export default function RegimenRunPage() {
       parentIds: { regimenRunId: newRunId, regimenId },
       activeRegimenSnapshot: { regimen, sets },
       ghostProfile: availableGhostProfile,
-      initialStage: stageFromSet(sets[0], 0),
+      initialStage: stageFromSet(sets[0], 0, regimen),
       parentWriteRow: {
         id: newRunId,
         _op: 'insert',
@@ -372,13 +390,25 @@ export default function RegimenRunPage() {
   function handleFinishStage() {
     setBatchRibbonConfirming(false)
     const stageState = session.sessionState
-    const isLastSet = currentSetIndex === sets.length - 1
+    const baseRunningTotal = stageState.stage.drillRunningTotal ?? runningTotal
+    const attemptsSoFar = (stageState.stage.drillAttemptsSoFar ?? 0) + stageState.tally.attempts
     const pressurePuttMade = inferPressurePuttMade(stageState.tally.makes, stageState.tally.attempts)
-    const { points, cleanSet } = computeSetScore(regimen, currentSet, {
+    const { points, cleanSet } = scoreDrillStage(
+      regimen,
+      { makes: stageState.tally.makes, attempts: stageState.tally.attempts },
+      () => computeSetScore(regimen, currentSet, {
+        makes: stageState.tally.makes,
+        attempts: stageState.tally.attempts,
+        longestStreak: stageState.longestStreak,
+        pressurePuttMade,
+      }),
+    )
+    const transition = nextDrillStage({
+      regimen,
+      currentIndex: currentSetIndex,
+      setCount: sets.length,
       makes: stageState.tally.makes,
-      attempts: stageState.tally.attempts,
-      longestStreak: stageState.longestStreak,
-      pressurePuttMade,
+      attemptsSoFar,
     })
 
     const summaryRow = {
@@ -412,14 +442,15 @@ export default function RegimenRunPage() {
       },
     ])
 
-    if (isLastSet) {
-      const finalTotal = runningTotal + points + computeCompletionBonus(regimen, true)
+    if (transition.completed || transition.exhausted) {
+      const finalTotal = baseRunningTotal + points + computeCompletionBonus(regimen, transition.completed)
       setRunningTotal(finalTotal)
+      setRunCompleted(transition.completed)
       audio.announceStage(currentSetIndex + 1, sets.length, null)
       session.endSession(() => summaryRow, {
         id: regimenRunId,
         _op: 'update',
-        completed: true,
+        completed: transition.completed,
         completed_at: new Date().toISOString(),
         total_score: finalTotal,
         weather_condition: weatherCondition,
@@ -429,11 +460,16 @@ export default function RegimenRunPage() {
       })
       setPhase('summary')
     } else {
-      setRunningTotal((prev) => prev + points)
-      const nextSet = sets[currentSetIndex + 1]
-      audio.announceStage(currentSetIndex + 1, sets.length, stageDistanceFt(nextSet))
-      session.advanceStage(stageFromSet(nextSet, currentSetIndex + 1), () => summaryRow)
-      if (triggerReason) setFatiguePrompt({ reason: triggerReason, stageIndex: currentSetIndex + 1 })
+      const nextRunningTotal = baseRunningTotal + points
+      setRunningTotal(nextRunningTotal)
+      const nextIndex = transition.nextIndex
+      const nextSet = sets[nextIndex]
+      audio.announceStage(nextIndex + 1, sets.length, stageDistanceFt(nextSet))
+      session.advanceStage(stageFromSet(nextSet, nextIndex, regimen, {
+        attemptsSoFar,
+        runningTotal: nextRunningTotal,
+      }), () => summaryRow)
+      if (triggerReason) setFatiguePrompt({ reason: triggerReason, stageIndex: completedSets.length + 1 })
     }
   }
 
@@ -668,7 +704,9 @@ export default function RegimenRunPage() {
               />
             ) : (
               <button type="button" className="start-button" onClick={handleFinishStage}>
-                {currentSetIndex === sets.length - 1 ? 'Finish regimen' : 'Finish set & next'}
+                {drillKind(regimen) === DRILL_TYPES.AROUND_THE_WORLD
+                  ? 'Resolve station'
+                  : currentSetIndex === sets.length - 1 ? 'Finish regimen' : 'Finish set & next'}
               </button>
             )
           })()}

@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 5 classic drill engine
+
+**What:** Added versioned JYLY and Around-the-World rules as shared system regimens. Selection now
+groups classic drills separately. JYLY scores 100 fixed putts by makes; Around the World advances on a
+make, steps back on a miss, finishes on the final-station make, and stops incomplete at 100 attempts.
+
+**Persistence/recovery:** Existing owner-scoped runs and append-only run-set rows remain authoritative;
+revisiting an Around-the-World station creates another history fact rather than rewriting one. Current
+station, attempt count, and running score ride in the InstantLaunch stage snapshot. Batch capture still
+creates summary facts only and never synthesizes `putt_events`.
+
+**Schema:** Added an idempotent seed migration for the two drills and their stations. System regimen
+identity is now unique by case-insensitive name because several system modes can share a difficulty.
+No new table or client grant was introduced.
+
+**Next:** D4 checkpoint 6 — clutch simulator, followed by thresholded voice coaching.
+
+---
+
 ## 2026-07-16 — Phase D item 4 checkpoint 4 ghost pacing
 
 **What:** Added a compact live best-run ghost to active regimen scoring. It reports attempts ahead/

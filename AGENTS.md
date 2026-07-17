@@ -213,6 +213,12 @@ real-time events (newest completion breaks score ties). The profile freezes at S
 v3 retains it plus current diagnostic progress across recovery without duplicating sporting facts.
 Comparison begins after three current real-time attempts; batch summaries never receive invented timing.
 
+Phase D D4 checkpoint 5 generalizes the regimen engine for versioned classic drills. JYLY is a fixed
+100-putt, one-point-per-make drill; Around the World advances on a make, steps back on a miss, and is
+bounded at 100 attempts. Both reuse owner-scoped regimen runs and append-only run-set facts, including
+repeated station visits. The active station, running score, and attempt count remain in the local
+InstantLaunch stage snapshot for offline recovery; batch capture still writes summaries only.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
