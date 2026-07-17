@@ -109,7 +109,18 @@ export async function fetchPracticeInsights(userId) {
       .eq('user_id', userId),
   ])
   if (discsResult.error) throw discsResult.error
-  return { ...history, puttEvents: [...freeformEvents, ...regimenEvents], discs: discsResult.data ?? [] }
+  const markersResult = await supabase
+    .from('practice_experiment_markers')
+    .select('id, disc_id, marker_type, effective_at, label, notes, created_at')
+    .eq('user_id', userId)
+    .order('effective_at', { ascending: false })
+  if (markersResult.error) throw markersResult.error
+  return {
+    ...history,
+    puttEvents: [...freeformEvents, ...regimenEvents],
+    discs: discsResult.data ?? [],
+    experimentMarkers: markersResult.data ?? [],
+  }
 }
 
 export function sessionAggregate(session) {

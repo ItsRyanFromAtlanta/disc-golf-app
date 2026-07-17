@@ -201,6 +201,12 @@ Wilson intervals, and computes a transparent distance-adjusted delta only from d
 by at least two putters. The adjusted delta remains withheld until a putter has 10 shared-distance
 attempts; batch summaries are never attributed or synthesized, and the UI never crowns a winner.
 
+Phase D D4 checkpoint 3 adds append-only `practice_experiment_markers` for new-putter boundaries.
+Markers are owner-scoped, tied to a physical disc, and insert-only; corrections create a new marker.
+Before/after evidence uses only attributed events from completed-visible activities, treats each marker's
+window as ending at the next marker, requires 10 attempts on both sides, and shows Wilson intervals for
+small samples. Batch summaries and unselected events never become experiment evidence.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

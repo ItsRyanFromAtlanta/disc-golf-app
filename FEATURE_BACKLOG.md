@@ -36,13 +36,13 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Confidence intervals on make % | SHIPPED | Wilson band until n ≥ 30 per distance/split |
 | Distance heat profile | NEXT UP | Practice volume vs weakness by distance; the gap = blind spot |
 | Putter tracking (link sessions to discs table) | SHIPPED | D4 checkpoint 2 compares exact physical discs, exposes attribution coverage/Wilson uncertainty, and adjusts only across shared distance bands with sufficient evidence |
-| Experiment markers | NEXT UP | First-class immutable new-putter markers plus before/after comparison; grip experiments deferred by product decision |
+| Experiment markers | SHIPPED | D4 checkpoint 3: append-only new-putter boundaries, 10-attempt before/after floor, and Wilson intervals; grip experiments deferred by product decision |
 | Distance-weighted practice load (intensity) | BACKLOG | Athlete/periodization framing; correlate pre-tournament load with results once round data exists |
 | Monthly narrative recaps | BACKLOG | Auto-generated chapter summaries of a season |
 | "What moved the needle" attribution | BACKLOG | Which regimen difficulty correlates with subsequent improvement; needs months of data |
 | Rust indicator | BACKLOG | Days-since-last-session nudge; correlate layoffs with dips |
 | Session quality composite score | REJECTED | Opaque composite conflicts with interpretable, takeaway-first metric policy |
-| Before/after date-range comparison | BACKLOG | Generalization of experiment markers |
+| Before/after date-range comparison | SHIPPED | D4 checkpoint 3: marker-window comparison shipped; arbitrary date-range generalization remains a later extension |
 | Ghost comparison (race your past best mid-run) | LATER (deliberate) | Pays off more once social exists |
 | Shareable session cards | LATER (deliberate) | Social-phase feature; organic marketing |
 | Head-to-head / league leaderboards | LATER (deliberate) | Social phase; regimen scores already comparable across users by design |

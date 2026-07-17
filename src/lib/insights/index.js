@@ -15,6 +15,7 @@ export { distanceDropOff, DROP_OFF_WARN_THRESHOLD_PCT } from './dropOff'
 export { putterBreakdown } from './putterBreakdown'
 export { missTendency, MISS_TENDENCY_MIN_PATTERN_MISSES } from './missTendency'
 export { putterComparison, PUTTER_COMPARISON_MIN_SHARED_ATTEMPTS } from './putterComparison'
+export { experimentComparison, EXPERIMENT_MIN_SIDE_ATTEMPTS } from './experimentComparison'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
 export {

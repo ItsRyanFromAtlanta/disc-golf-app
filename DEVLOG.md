@@ -1,5 +1,23 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 3 experiment markers
+
+**What:** Added `/practice/stats` experiment markers for recording when a physical new putter enters
+rotation, plus a before/after comparison card. Marker windows end at the next marker, so overlapping
+experiments do not silently contaminate one another.
+
+**Persistence/security:** Added append-only `practice_experiment_markers` with owner-scoped RLS,
+owner-verified disc insertion, idempotency keys, and no authenticated update/delete grants. Marker
+corrections are new rows. No existing practice event is rewritten.
+
+**Evidence contract:** Before/after metrics use only completed-visible, attributed real-time events.
+Batch summaries and unselected events remain outside the denominator. Both sides require 10 attempts;
+Wilson intervals remain visible for small samples. No opaque score or causal claim is presented.
+
+**Next:** D4 checkpoint 4 — ghost pacing, followed by drill generalization.
+
+---
+
 ## 2026-07-16 — Phase D item 4 checkpoint 2 physical-putter comparisons
 
 **What:** Added longitudinal physical-putter evidence to `/practice/stats`. Exact attributed disc IDs

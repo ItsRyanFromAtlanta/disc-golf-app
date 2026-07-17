@@ -51,7 +51,9 @@ miss direction from batch summaries, and requires three same-vector misses befor
 pattern. Phase D item 4 checkpoint 2 shipped 2026-07-16: longitudinal physical-putter comparison now
 groups exact attributed discs, exposes attribution coverage and Wilson uncertainty, and limits its
 distance-adjusted delta to shared distance bands with at least 10 attempts. Explicit immutable
-new-putter experiment markers and a before/after engine are the next checkpoint.
+new-putter experiment markers and a before/after engine shipped 2026-07-16 as checkpoint 3. Marker
+windows end at the next marker, both sides require 10 attributed attempts, and small-sample Wilson
+intervals remain visible. Ghost pacing and drill generalization are the next checkpoint.
 
 ## Phase A execution sessions — approved 2026-07-12
 

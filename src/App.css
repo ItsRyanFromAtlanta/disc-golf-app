@@ -1394,6 +1394,19 @@
 .putter-distance-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .putter-distance-list li { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px; border: var(--border-width) solid var(--color-border-default); border-radius: 6px; }
 .putter-distance-list small { grid-column: 1 / -1; color: var(--color-text-secondary); }
+.experiment-marker-panel { margin-top: 30px; padding-top: 16px; border-top: var(--border-width) solid var(--color-border-default); }
+.experiment-marker-form, .experiment-card { display: grid; gap: 12px; }
+.experiment-marker-form { padding: 14px; border: var(--border-width) solid var(--color-border-default); background: var(--color-bg-surface); }
+.experiment-marker-form label { display: grid; gap: 5px; font-weight: 700; }
+.field-optional { color: var(--color-text-secondary); font-weight: 400; }
+.experiment-list { display: grid; gap: 12px; margin-top: 14px; }
+.experiment-card { padding: 14px; border: var(--border-width) solid var(--color-border-default); background: var(--color-bg-surface-alt); }
+.experiment-card > header, .experiment-result { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.experiment-card h3 { margin: 0; }
+.experiment-card header span:not(.status-chip), .experiment-result span { display: block; color: var(--color-text-secondary); font-size: 12px; }
+.experiment-result { padding-top: 10px; border-top: var(--border-width) solid var(--color-border-default); }
+.experiment-result strong { font-family: var(--font-display); font-size: 20px; }
+.experiment-notes { margin: 0; color: var(--color-text-secondary); }
 
 .detail-date {
   margin: 8px 0 16px;
