@@ -38,8 +38,8 @@ and a cross-device round-turn preference. Phase D item 3 checkpoint 1 shipped 20
 notification-preference, goal lifecycle/event, and immutable timezone-windowed weekly-report contracts;
 owner-scoped RLS/indexes/grants; atomic goal RPCs; Dexie v14 mirrors; and pure goal/report functions.
 The ME career summary is shipped with evidence-backed practice telemetry, a sparse-data-safe five-axis
-radar, rating/identity context, and a physical-disc trusted-putter audit. Profile/Settings separation is
-the next D3 checkpoint.
+radar, rating/identity context, and a physical-disc trusted-putter audit. Profile/Settings separation
+and contextual notification preferences are shipped; goal lifecycle UI is the next D3 checkpoint.
 
 ## Phase A execution sessions — approved 2026-07-12
 

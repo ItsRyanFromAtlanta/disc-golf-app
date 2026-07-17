@@ -7,6 +7,7 @@
 .history-detail-page,
 .profile-page,
 .career-page,
+.settings-page,
 .confidence-map-page,
 .bag-page,
 .bag-locker-page,
@@ -98,6 +99,11 @@
 .career-radar-legend li, .career-trusted { display: flex; justify-content: space-between; gap: 12px; }
 .career-radar-legend strong, .career-trusted span { color: var(--color-text-secondary); font-size: 13px; text-align: right; }
 .career-trusted { margin-top: 12px; }
+.settings-note { color: var(--color-text-secondary); font-size: 14px; }
+.settings-timezone { display: grid; gap: 8px; padding: 12px 0; }
+.settings-timezone span { display: grid; gap: 3px; }
+.settings-timezone small { color: var(--color-text-secondary); }
+.settings-timezone input { min-height: 44px; padding: 8px 10px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text-primary); }
 
 .lost-found-page {
   display: grid;

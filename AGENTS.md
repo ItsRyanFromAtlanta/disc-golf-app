@@ -90,6 +90,7 @@ J1 ships the first sibling tree under the COURSES section:
 /rounds/:roundId/summary → total, relative-to-par, and finalization
 /profile                 → ME career summary
 /profile/details         → editable player profile
+/profile/settings        → device/cross-device preferences and optional notification categories
 ```
 
 **App-level nav is PLAY / DISCS / COURSES / ME** after the J1 directory shipped (the approved base
@@ -170,6 +171,11 @@ parents plus immutable `goal_events`, and immutable versioned `weekly_report_sna
 Monday–Sunday calendar window, IANA timezone, exact UTC bounds, calculation version, source cutoff,
 sample counts, metrics, and deterministic highlights. Goal create/transition RPCs are atomic,
 idempotent, version-checked, and preserve pause/resume/completion history.
+
+Phase D D3 checkpoint 3 splits editable player identity/calibration at `/profile/details` from
+preferences at `/profile/settings`. Device-only disc-card flair remains local; round-turn prompt,
+reporting timezone, and optional notification categories persist cross-device. Preference hydration
+runs before notification production, while critical sync/data-safety alerts cannot be disabled.
 
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the

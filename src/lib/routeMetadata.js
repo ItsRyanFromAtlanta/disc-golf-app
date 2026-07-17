@@ -250,6 +250,16 @@ const APP_ROUTES = [
     scrollKey: 'discs-root',
   },
   {
+    id: 'settings',
+    match: /^\/profile\/settings$/,
+    section: 'me',
+    shell: SHELL_TYPES.STANDARD,
+    title: 'Settings',
+    showActivityPill: true,
+    preserveNestedState: true,
+    scrollKey: 'me-settings',
+  },
+  {
     id: 'profile-details',
     match: /^\/profile\/details$/,
     section: 'me',

@@ -1,5 +1,25 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 3 checkpoint 3 Profile/Settings split
+
+**What:** Kept the ME tab as the career summary, retained editable identity/throwing/calibration/private
+fields at `/profile/details`, and moved preferences to `/profile/settings`. Settings now owns local
+disc-card presentation, cross-device round-turn prompts, validated IANA reporting timezone, and
+category-level optional notification controls.
+
+**Notification contract:** Added a remote-first/local-fallback settings repository over the D3
+`notification_preferences` table and Dexie mirror. App-shell startup hydrates those rows before
+notification producers run. Missing categories default on; explicit opt-outs suppress non-critical
+category notifications; critical sync/data-safety alerts always bypass opt-outs.
+
+**Verified:** 417 tests pass across 60 files. Focused tests cover defaults, IANA timezone validation,
+optional suppression, critical-alert bypass, and route metadata. Lint/build retain only the four
+pre-existing lint warnings and existing large-chunk warning.
+
+**Next:** D3 checkpoint 4 — goal creation, pause/resume/completion, and immutable event history UI.
+
+---
+
 ## 2026-07-16 — Phase D item 3 checkpoint 2 ME career summary
 
 **What:** Replaced the ME tab's profile form landing page with a career-wide summary and retained the
