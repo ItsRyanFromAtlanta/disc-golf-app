@@ -32,6 +32,12 @@ describe('route metadata contract', () => {
     })
   })
 
+  it('keeps goal lifecycle management nested under ME', () => {
+    expect(resolveRouteMetadata('/profile/goals')).toMatchObject({
+      id: 'goals', section: 'me', title: 'Goals', preserveNestedState: true,
+    })
+  })
+
   it('keeps the locker compatibility route inside the collection-first DISCS section', () => {
     expect(resolveRouteMetadata('/bag/locker')).toMatchObject({ id: 'disc-collection', section: 'discs' })
     expect(resolveRouteMetadata('/bag')).toMatchObject({ id: 'discs-root', title: 'Discs' })

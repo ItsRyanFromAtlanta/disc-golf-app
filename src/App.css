@@ -8,6 +8,7 @@
 .profile-page,
 .career-page,
 .settings-page,
+.goals-page,
 .confidence-map-page,
 .bag-page,
 .bag-locker-page,
@@ -104,6 +105,19 @@
 .settings-timezone span { display: grid; gap: 3px; }
 .settings-timezone small { color: var(--color-text-secondary); }
 .settings-timezone input { min-height: 44px; padding: 8px 10px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text-primary); }
+.goal-create-form, .goal-lifecycle-card { display: grid; gap: 10px; padding: 16px; margin-bottom: 18px; border: var(--border-width) solid var(--color-border-default); border-radius: 10px; background: var(--color-bg-surface); }
+.goal-create-form h2, .goal-lifecycle-card h3 { margin: 0; }
+.goal-create-form input, .goal-create-form select { min-height: 48px; padding: 8px 10px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text-primary); }
+.goal-lifecycle-list { display: grid; gap: 12px; }
+.goal-lifecycle-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.goal-lifecycle-head > div { display: grid; gap: 4px; }
+.goal-lifecycle-card p { margin: 0; color: var(--color-text-secondary); }
+.goal-lifecycle-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.goal-lifecycle-actions button { min-height: 44px; }
+.goal-cancel { border: var(--border-width) solid var(--color-negative); border-radius: 8px; background: transparent; color: var(--color-negative); }
+.goal-event-list { display: grid; gap: 8px; padding-left: 20px; }
+.goal-event-list li { padding-left: 4px; }
+.goal-event-list time { display: block; color: var(--color-text-secondary); font-size: 13px; }
 
 .lost-found-page {
   display: grid;

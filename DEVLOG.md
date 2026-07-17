@@ -1,5 +1,24 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 3 checkpoint 4 goal lifecycle UI
+
+**What:** Added `/profile/goals` for measurable rating, practice-frequency, putting-volume, and
+consistency targets. Players can create goals, pause/resume active work, complete or cancel goals, and
+inspect each goal's immutable status timeline.
+
+**Persistence/security:** Reads hydrate goal parents/events into the existing Dexie v14 mirrors and
+fall back locally if the remote read fails. Mutations use only `goal_create`/`goal_transition`; the UI
+never writes goal tables directly. Transitions send the currently-read version, generate unique event
+idempotency keys, and reload authoritative rows after success. Terminal goals expose no invalid actions.
+
+**Verified:** 421 tests pass across 61 files; production build passes. Focused coverage verifies the
+goal domain, RPC arguments, and route contract. The one new hook warning was removed so lint retains
+only the four pre-existing warnings.
+
+**Next:** D3 checkpoint 5 — deterministic weekly report generation and immutable version history UI.
+
+---
+
 ## 2026-07-16 — Phase D item 3 checkpoint 3 Profile/Settings split
 
 **What:** Kept the ME tab as the career summary, retained editable identity/throwing/calibration/private

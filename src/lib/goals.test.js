@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canTransitionGoal, goalProgress, transitionGoal } from './goals'
+import { availableGoalActions, canTransitionGoal, goalProgress, transitionGoal } from './goals'
 
 describe('goal lifecycle', () => {
   it('allows pause/resume and rejects terminal transitions', () => {
@@ -18,5 +18,11 @@ describe('goal lifecycle', () => {
     expect(goalProgress(50, 100)).toBe(0.5)
     expect(goalProgress(120, 100)).toBe(1)
     expect(goalProgress(1, 0)).toBeNull()
+  })
+
+  it('exposes only valid user actions for each lifecycle state', () => {
+    expect(availableGoalActions('active')).toEqual(['paused', 'completed', 'cancelled'])
+    expect(availableGoalActions('paused')).toEqual(['active', 'completed', 'cancelled'])
+    expect(availableGoalActions('completed')).toEqual([])
   })
 })

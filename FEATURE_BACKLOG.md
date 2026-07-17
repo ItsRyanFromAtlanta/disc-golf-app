@@ -72,7 +72,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 |---|---|---|
 | Player profile expansion (throwing identity, calibration, goals) | SHIPPED | D3 checkpoint 3 splits editable player fields from device and cross-device Settings |
 | ME career summary | SHIPPED | Takeaway-first identity/rating context, lifetime practice telemetry, sparse-data-safe skill radar, and attributed trusted-putter audit shipped in D3 checkpoint 2 |
-| Goal pause/resume/history contracts | IN PROGRESS | D3 checkpoint 1 schema, atomic lifecycle RPCs, Dexie mirrors, and pure rules shipped; UI follows |
+| Goal pause/resume/history contracts | SHIPPED | D3 checkpoint 4 adds measurable creation, valid lifecycle actions, version-conflict protection, and immutable event history UI |
 | Immutable deterministic weekly reports | IN PROGRESS | D3 checkpoint 1 versioned Monday–Sunday snapshot contract shipped; generation and ME/History UI follow |
 | Contextual notification preferences | SHIPPED | Owner-scoped Settings UI hydrates before optional producers; critical sync/data-safety alerts remain mandatory |
 | Disc molds reference table + locker migration | SHIPPED | Extend with normalized plastic/run/stamp variants and moderation |

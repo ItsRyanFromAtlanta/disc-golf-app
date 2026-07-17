@@ -39,7 +39,9 @@ notification-preference, goal lifecycle/event, and immutable timezone-windowed w
 owner-scoped RLS/indexes/grants; atomic goal RPCs; Dexie v14 mirrors; and pure goal/report functions.
 The ME career summary is shipped with evidence-backed practice telemetry, a sparse-data-safe five-axis
 radar, rating/identity context, and a physical-disc trusted-putter audit. Profile/Settings separation
-and contextual notification preferences are shipped; goal lifecycle UI is the next D3 checkpoint.
+and contextual notification preferences are shipped. Goal creation, pause/resume/completion/
+cancellation, optimistic version checks, and immutable history
+UI are shipped; weekly deterministic report generation/version UI is the next D3 checkpoint.
 
 ## Phase A execution sessions — approved 2026-07-12
 

@@ -9,6 +9,13 @@ export const GOAL_STATUSES = Object.freeze({
   ACTIVE: 'active', PAUSED: 'paused', COMPLETED: 'completed', CANCELLED: 'cancelled',
 })
 
+export const GOAL_DEFINITIONS = Object.freeze([
+  { type: GOAL_TYPES.TARGET_RATING, label: 'Target rating', unit: 'rating', suffix: 'rating' },
+  { type: GOAL_TYPES.PRACTICE_FREQUENCY, label: 'Practice frequency', unit: 'sessions_per_week', suffix: 'sessions/week' },
+  { type: GOAL_TYPES.PUTTING_VOLUME, label: 'Putting volume', unit: 'putts_per_week', suffix: 'putts/week' },
+  { type: GOAL_TYPES.CONSISTENCY, label: 'Consistency', unit: 'percent', suffix: '%' },
+])
+
 const TRANSITIONS = Object.freeze({
   active: new Set(['paused', 'completed', 'cancelled']),
   paused: new Set(['active', 'completed', 'cancelled']),
@@ -36,4 +43,10 @@ export function transitionGoal(goal, nextStatus, occurredAt) {
 export function goalProgress(currentValue, targetValue) {
   if (!Number.isFinite(currentValue) || !Number.isFinite(targetValue) || targetValue <= 0) return null
   return Math.min(1, Math.max(0, currentValue / targetValue))
+}
+
+export function availableGoalActions(status) {
+  if (status === GOAL_STATUSES.ACTIVE) return ['paused', 'completed', 'cancelled']
+  if (status === GOAL_STATUSES.PAUSED) return ['active', 'completed', 'cancelled']
+  return []
 }

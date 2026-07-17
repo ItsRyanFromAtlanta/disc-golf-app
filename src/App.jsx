@@ -16,6 +16,7 @@ import ConfidenceMapPage from './pages/ConfidenceMapPage'
 import ProfilePage from './pages/ProfilePage'
 import CareerHubPage from './pages/CareerHubPage'
 import SettingsPage from './pages/SettingsPage'
+import GoalsPage from './pages/GoalsPage'
 import TrophyRoomPage from './pages/TrophyRoomPage'
 import BagPage from './pages/BagPage'
 import BagLockerPage from './pages/BagLockerPage'
@@ -76,6 +77,7 @@ function App() {
           <Route index element={<CareerHubPage />} />
           <Route path="details" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="goals" element={<GoalsPage />} />
           <Route path="trophies" element={<TrophyRoomPage />} />
         </Route>
         <Route path="/bag">

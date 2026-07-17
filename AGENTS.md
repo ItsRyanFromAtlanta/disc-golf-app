@@ -91,6 +91,7 @@ J1 ships the first sibling tree under the COURSES section:
 /profile                 → ME career summary
 /profile/details         → editable player profile
 /profile/settings        → device/cross-device preferences and optional notification categories
+/profile/goals           → measurable goals, lifecycle actions, and immutable status history
 ```
 
 **App-level nav is PLAY / DISCS / COURSES / ME** after the J1 directory shipped (the approved base
@@ -176,6 +177,10 @@ Phase D D3 checkpoint 3 splits editable player identity/calibration at `/profile
 preferences at `/profile/settings`. Device-only disc-card flair remains local; round-turn prompt,
 reporting timezone, and optional notification categories persist cross-device. Preference hydration
 runs before notification production, while critical sync/data-safety alerts cannot be disabled.
+
+Phase D D3 checkpoint 4 adds `/profile/goals`. Reads are remote-first with Dexie fallback; creation and
+pause/resume/completion/cancellation use only the atomic public RPCs. Every transition sends the
+currently-read version and the UI reloads authoritative goal parents plus immutable `goal_events`.
 
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
