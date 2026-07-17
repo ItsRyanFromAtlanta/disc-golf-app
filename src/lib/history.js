@@ -100,11 +100,16 @@ async function fetchPuttEventsForParents(userId, column, parentIds) {
 
 export async function fetchPracticeInsights(userId) {
   const history = metricEligibleHistory(await fetchHistory(userId))
-  const [freeformEvents, regimenEvents] = await Promise.all([
+  const [freeformEvents, regimenEvents, discsResult] = await Promise.all([
     fetchPuttEventsForParents(userId, 'freeform_session_id', history.sessions.map((row) => row.id)),
     fetchPuttEventsForParents(userId, 'regimen_run_id', history.runs.map((row) => row.id)),
+    supabase
+      .from('discs')
+      .select('id, nickname, manufacturer, mold, plastic, role, status, moldInfo:disc_molds(mold_name, manufacturer)')
+      .eq('user_id', userId),
   ])
-  return { ...history, puttEvents: [...freeformEvents, ...regimenEvents] }
+  if (discsResult.error) throw discsResult.error
+  return { ...history, puttEvents: [...freeformEvents, ...regimenEvents], discs: discsResult.data ?? [] }
 }
 
 export function sessionAggregate(session) {

@@ -48,7 +48,10 @@ Phase D item 4 checkpoint 1 shipped 2026-07-16: `/practice/stats` now enforces c
 metric eligibility and combines the shipped Wilson distance-confidence view with a 9-zone miss-
 tendency grid over real-time diagnostic events. It exposes zoned/total capture coverage, never derives
 miss direction from batch summaries, and requires three same-vector misses before naming a repeated
-pattern. Longitudinal physical-putter comparison is the next checkpoint.
+pattern. Phase D item 4 checkpoint 2 shipped 2026-07-16: longitudinal physical-putter comparison now
+groups exact attributed discs, exposes attribution coverage and Wilson uncertainty, and limits its
+distance-adjusted delta to shared distance bands with at least 10 attempts. Explicit immutable
+new-putter experiment markers and a before/after engine are the next checkpoint.
 
 ## Phase A execution sessions — approved 2026-07-12
 

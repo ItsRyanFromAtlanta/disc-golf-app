@@ -35,8 +35,8 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Cadence fingerprint | SHIPPED | Integrate into ME/weekly reports when supported by samples |
 | Confidence intervals on make % | SHIPPED | Wilson band until n ≥ 30 per distance/split |
 | Distance heat profile | NEXT UP | Practice volume vs weakness by distance; the gap = blind spot |
-| Putter tracking (link sessions to discs table) | NEXT UP | "Did switching putters help" with data |
-| Experiment markers | BACKLOG | First-class new-putter markers only for now; grip experiments deferred by product decision |
+| Putter tracking (link sessions to discs table) | SHIPPED | D4 checkpoint 2 compares exact physical discs, exposes attribution coverage/Wilson uncertainty, and adjusts only across shared distance bands with sufficient evidence |
+| Experiment markers | NEXT UP | First-class immutable new-putter markers plus before/after comparison; grip experiments deferred by product decision |
 | Distance-weighted practice load (intensity) | BACKLOG | Athlete/periodization framing; correlate pre-tournament load with results once round data exists |
 | Monthly narrative recaps | BACKLOG | Auto-generated chapter summaries of a season |
 | "What moved the needle" attribution | BACKLOG | Which regimen difficulty correlates with subsequent improvement; needs months of data |

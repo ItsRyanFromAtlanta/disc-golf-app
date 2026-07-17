@@ -1377,6 +1377,23 @@
 .miss-heat-cell span { color: var(--color-text-secondary); font-size: 10px; text-transform: capitalize; }
 .miss-heat-cell strong { font-family: var(--font-display); font-size: 20px; }
 .miss-band .confidence-band-caveat { margin-top: 10px; color: var(--color-text-secondary); font-size: 13px; }
+.putter-comparison { margin-top: 30px; }
+.putter-attribution-coverage { padding: 12px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-surface); }
+.putter-comparison-list { display: grid; gap: 14px; }
+.putter-comparison-card { display: grid; gap: 12px; padding: 14px; border: var(--border-width) solid var(--color-border-default); border-radius: 10px; background: var(--color-bg-surface); }
+.putter-comparison-card > header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.putter-comparison-card h3, .putter-comparison-card p { margin: 0; }
+.putter-comparison-card > header > div { display: grid; gap: 3px; }
+.putter-comparison-card > header span { color: var(--color-text-secondary); font-size: 12px; }
+.putter-comparison-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.putter-comparison-summary > div { padding: 10px 8px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-surface-alt); }
+.putter-comparison-summary strong, .putter-comparison-summary span { display: block; }
+.putter-comparison-summary strong { font-family: var(--font-display); font-size: 20px; }
+.putter-comparison-summary span { margin-top: 3px; color: var(--color-text-secondary); font-size: 11px; }
+.putter-comparison-card summary { min-height: 44px; padding: 10px 0; cursor: pointer; font-weight: 700; }
+.putter-distance-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.putter-distance-list li { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px; border: var(--border-width) solid var(--color-border-default); border-radius: 6px; }
+.putter-distance-list small { grid-column: 1 / -1; color: var(--color-text-secondary); }
 
 .detail-date {
   margin: 8px 0 16px;

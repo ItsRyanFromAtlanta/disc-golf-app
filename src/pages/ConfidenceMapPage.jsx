@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchPracticeInsights, distanceSamples } from '../lib/history'
-import { confidenceMap, missTendency, WILSON_MIN_N_FOR_HIDING, LOCK_IN_LOWER_BOUND } from '../lib/insights'
+import { confidenceMap, missTendency, putterComparison, WILSON_MIN_N_FOR_HIDING, LOCK_IN_LOWER_BOUND } from '../lib/insights'
 import MissTendencyGrid from '../components/MissTendencyGrid'
+import PutterComparison from '../components/PutterComparison'
 
 const ZONE_LABELS = {
   'lock-in': 'Lock-in',
@@ -26,6 +27,7 @@ export default function ConfidenceMapPage() {
 
   const bands = useMemo(() => (data ? confidenceMap(distanceSamples(data)) : null), [data])
   const misses = useMemo(() => (data ? missTendency(data.puttEvents) : null), [data])
+  const putters = useMemo(() => (data ? putterComparison(data.puttEvents, data.discs) : null), [data])
 
   if (error) return <p className="form-error">{error}</p>
   if (!bands) return <p className="loading">Loading...</p>
@@ -82,6 +84,7 @@ export default function ConfidenceMapPage() {
         </ul>
       )}
       <MissTendencyGrid report={misses} />
+      <PutterComparison report={putters} />
     </section>
   )
 }

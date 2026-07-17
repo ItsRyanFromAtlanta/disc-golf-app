@@ -195,6 +195,12 @@ miss grid reads genuine real-time `putt_events.miss_zone` facts, reports zone-ca
 infers direction from batch summaries, and withholds a repeated-vector callout until at least three
 same-zone misses occur within a distance band.
 
+Phase D D4 checkpoint 2 adds longitudinal physical-putter comparison to `/practice/stats`. It groups
+only completed-visible real-time events by exact `putter_disc_id`, reports attribution coverage and
+Wilson intervals, and computes a transparent distance-adjusted delta only from distance bands shared
+by at least two putters. The adjusted delta remains withheld until a putter has 10 shared-distance
+attempts; batch summaries are never attributed or synthesized, and the UI never crowns a winner.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

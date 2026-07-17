@@ -1,5 +1,26 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 2 physical-putter comparisons
+
+**What:** Added longitudinal physical-putter evidence to `/practice/stats`. Exact attributed disc IDs
+remain separate even when molds match. Each card shows overall conversion, attempts, Wilson uncertainty
+for small samples, shared-distance adjustment, and expandable per-distance evidence.
+
+**Evidence contract:** Only completed-visible real-time events participate. The surface reports what
+share of eligible events contains `putter_disc_id`; unselected and batch-entered putts remain honestly
+unattributed. Distance adjustment pools only bands represented by at least two physical putters and is
+withheld below 10 shared-band attempts. The result describes evidence and never declares a best putter.
+No schema change was needed.
+
+**Verified:** 432 tests pass across 64 files, including exact-disc grouping, shared-band adjustment,
+attribution coverage, insufficient evidence, and single-disc fallback. Production build and diff checks
+pass. Lint retains only the four pre-existing warnings; the existing bundle-size advisory remains
+unchanged.
+
+**Next:** D4 checkpoint 3 — immutable new-putter experiment markers and before/after comparison.
+
+---
+
 ## 2026-07-16 — Phase D item 4 checkpoint 1 miss-tendency analytics
 
 **What:** Consolidated the existing distance-confidence surface and a new 9-zone miss-tendency grid
