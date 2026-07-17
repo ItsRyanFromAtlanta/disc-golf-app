@@ -3,7 +3,7 @@
 // localStorage directly — storage.js is the only impure caller, which is
 // what keeps this fully vitest-testable (no jsdom in this repo's vitest
 // config, so `localStorage` itself isn't available under test).
-export const INSTANT_LAUNCH_SCHEMA_VERSION = 1
+export const INSTANT_LAUNCH_SCHEMA_VERSION = 2
 
 export function defaultInstantLaunchState() {
   return {
@@ -25,6 +25,7 @@ export function defaultInstantLaunchState() {
     crashRecoveryBuffer: {
       hasActiveSession: false,
       sessionType: null, // 'freeform' | 'regimen' | null
+      activityId: null, // Phase A lifecycle mirror; populated by the A4 bridge
       parentIds: { regimenRunId: null, freeformSessionId: null, regimenId: null },
       // Cached so a killed-and-relaunched PWA can resume ACTIVE_SESSION with
       // zero network dependency (no re-fetching the regimen/sets to render
@@ -41,12 +42,35 @@ export function defaultInstantLaunchState() {
   }
 }
 
-// Guards against a shape mismatch from a previous app version's blob —
-// resets to a fresh default rather than trying to migrate or crash on
-// unexpected shape.
+// V1 is the shipped InstantLaunch shape. A4 adds only activityId, so preserve
+// every recovery snapshot and pending capture write during that upgrade. Any
+// unknown shape still resets rather than risking malformed capture state.
 export function migrateOrResetState(rawParsed) {
-  if (!rawParsed || rawParsed.schemaVersion !== INSTANT_LAUNCH_SCHEMA_VERSION) return defaultInstantLaunchState()
-  return rawParsed
+  if (!rawParsed || ![1, INSTANT_LAUNCH_SCHEMA_VERSION].includes(rawParsed.schemaVersion)) {
+    return defaultInstantLaunchState()
+  }
+
+  const defaults = defaultInstantLaunchState()
+  return {
+    ...defaults,
+    ...rawParsed,
+    schemaVersion: INSTANT_LAUNCH_SCHEMA_VERSION,
+    profileDefaults: { ...defaults.profileDefaults, ...rawParsed.profileDefaults },
+    smartPredictionCard: { ...defaults.smartPredictionCard, ...rawParsed.smartPredictionCard },
+    crashRecoveryBuffer: {
+      ...defaults.crashRecoveryBuffer,
+      ...rawParsed.crashRecoveryBuffer,
+      parentIds: {
+        ...defaults.crashRecoveryBuffer.parentIds,
+        ...rawParsed.crashRecoveryBuffer?.parentIds,
+      },
+      currentStage: {
+        ...defaults.crashRecoveryBuffer.currentStage,
+        ...rawParsed.crashRecoveryBuffer?.currentStage,
+      },
+    },
+    outbox: { ...defaults.outbox, ...rawParsed.outbox },
+  }
 }
 
 export function applySetProfileDefaults(state, partial) {

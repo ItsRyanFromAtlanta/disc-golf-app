@@ -391,6 +391,135 @@
   text-decoration: none;
 }
 
+.history-toolbar,
+.activity-detail-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-deleted-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.history-row-ghost {
+  position: relative;
+  border: var(--border-width) dashed var(--color-border-default);
+  opacity: 0.72;
+}
+
+.history-row-ghost::before {
+  content: '◌ Hidden';
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.history-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 8px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.history-sync-pending {
+  border-color: var(--color-secondary-accent);
+  color: var(--color-secondary-accent);
+}
+
+.history-sync-attention {
+  border-color: var(--color-negative);
+  color: var(--color-negative);
+}
+
+.notification-bell-button {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: var(--border-width) solid var(--color-bg-primary);
+  border-radius: 999px;
+  background: var(--color-negative);
+  color: var(--color-text-inverse);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+}
+
+.notification-row-unread {
+  border-color: var(--color-secondary-accent);
+  color: var(--color-text-primary);
+  background: var(--color-secondary-accent-soft);
+}
+
+.notification-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notification-copy span {
+  font-size: 14px;
+}
+
+.notification-action {
+  margin-top: 0;
+}
+
+.notification-resolve {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  color: var(--color-secondary-accent);
+}
+
+.notifications-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
 /* Personal-best badge: sunburst orange only works here as a solid fill with
    dark text on top (~5.9:1) — as plain foreground text/icon color it fails
    contrast against every background token (see confidence-band-zone below
@@ -878,17 +1007,101 @@
 /* App shell + bottom tab bar */
 
 .app-shell {
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   background: var(--color-bg-primary);
+  overflow: hidden;
 }
 
-.app-shell-content {
+.screen-scroll-region {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   /* Leave room for the fixed tab bar (56px) + its own safe-area padding
      below, so the last bit of scrollable content is never hidden behind it. */
   padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+.app-shell-standard-content {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.active-activity-shell {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.global-header {
+  min-height: calc(56px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-primary);
+  flex-shrink: 0;
+}
+
+.global-header-leading,
+.global-header-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.global-header-leading {
+  gap: 6px;
+}
+
+.global-header-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.global-header-icon-button {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.active-activity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: var(--border-width) solid var(--color-positive);
+  border-radius: 999px;
+  color: var(--color-positive);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.active-activity-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-positive);
 }
 
 .tab-bar {
@@ -901,6 +1114,60 @@
   background: var(--color-bg-surface);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 10;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(26, 29, 26, 0.38);
+}
+
+.sheet-host {
+  width: 100%;
+  max-height: min(78dvh, 640px);
+  overflow-y: auto;
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  border: var(--border-width) solid var(--color-border-default);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  background: var(--color-bg-primary);
+}
+
+.sheet-host-handle {
+  width: 44px;
+  height: 4px;
+  margin: 0 auto 8px;
+  border-radius: 999px;
+  background: var(--color-border-default);
+}
+
+.sheet-host-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sheet-host-header h2 {
+  margin: 0;
+}
+
+.sheet-host-content {
+  padding: 12px 0;
+}
+
+.sheet-empty-state {
+  color: var(--color-text-secondary);
+}
+
+.toast-host {
+  position: fixed;
+  right: 16px;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
 }
 
 .tab-bar-item {
@@ -2302,6 +2569,23 @@
   text-align: center;
 }
 
+.activity-detail-status {
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.history-hide-button {
+  min-height: 44px;
+  margin-top: 28px;
+  border: var(--border-width) solid var(--color-negative);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-negative);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 /* ============================================================
    Trophy Room (Screen 12) — XP bar, pursuits, trophy wall
    ============================================================ */
@@ -2583,6 +2867,142 @@
 .badge-inspect-earned {
   font-weight: 600;
   color: var(--color-positive);
+}
+
+.admin-catalog-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  text-align: left;
+}
+
+.admin-batch-list,
+.admin-candidate-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-batch-row {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+}
+
+.admin-batch-row-selected {
+  border-color: var(--color-secondary-accent);
+}
+
+.admin-candidate-section {
+  margin-top: 24px;
+}
+
+.admin-candidate-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-candidate-section-header .btn-primary {
+  width: auto;
+  min-height: 44px;
+  padding: 0 18px;
+  margin-top: 0;
+}
+
+.admin-candidate-row {
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--color-bg-surface);
+}
+
+.admin-candidate-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.admin-candidate-status {
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.admin-candidate-status-approved {
+  color: var(--color-positive);
+}
+
+.admin-candidate-status-rejected {
+  color: var(--color-negative);
+}
+
+.admin-candidate-fields {
+  background: var(--color-bg-primary);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.admin-candidate-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+.admin-candidate-reason {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.admin-candidate-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-candidate-actions button {
+  flex: 1;
+  min-height: 44px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-bg-primary);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+.admin-candidate-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.admin-error {
+  color: var(--color-negative);
 }
 
 .badge-inspect-progress {

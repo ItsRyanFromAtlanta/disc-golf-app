@@ -1,8 +1,689 @@
 # Dev Log
 
+## 2026-07-14 — Planned 3 jump-ahead features + reconciled stale Track 1 status (handoff to coding model)
+
+**What:** Produced an executable handoff plan for three genuinely-unbuilt features and fixed the
+documentation drift that would have misled the coding model. Discovered while scoping "next steps" that
+Track 1 (1A player profile, 1B disc molds + locker migration, 1C bags/flight chart, 1E bag/disc manager
+UI) is **already shipped** — live schema + built UI (`ProfilePage`, `BagPage`, `BagLockerPage`,
+`DiscCard`) — but `DEVELOPMENT_PLAN.md` still read "NEXT UP / schema to generate."
+**Decisions (owner):** build three features **ahead of roadmap phase order** (deliberate, documented) —
+J1 Round logging + quick-course under a **new COURSES tab** (front-runs Phase E; owner picked the
+quick-course scope over full course directory), J2 Disc comparison view (Phase C), J3 Game-flair disc
+cards (Phase B cosmetic). Round logging's schema is 100% ready (1.5 groundwork applied); only an RLS
+migration + offline-first `roundRepository`/`roundLog.js` (mirroring `discRepository`/`discLocker`) are
+new.
+**Doc changes (this commit):** `DEVELOPMENT_PLAN.md` — marked 1A/1B/1C/1E SHIPPED, added a "Jump-ahead
+features (J1–J3)" section with per-feature specs, files, reuse, and models. `FEATURE_BACKLOG.md` — 1E →
+SHIPPED, disc-comparison + game-flair + round-logging rows → IN PROGRESS. `PRODUCT_ROADMAP.md` — note
+that the jump is a deliberate owner decision, not a sequencing violation.
+**Handoff:** Full plan at `~/.claude/plans/1a-2yes-bright-pelican.md`. Coding model builds J1→J2→J3
+(J2/J3 independent), running the per-feature gate and updating DEVLOG/CURRENT_WORK/FEATURE_BACKLOG as it
+goes. Recommended models: GPT-5.6 high (J1 round state/schema), GPT-5.3-Codex medium (J2, J3).
+
+## 2026-07-14 — Executed the catalog-ingestion teardown (code + functions + DB)
+
+**What:** Carried out the scrap decided the day before. Removed the entire ingestion surface from the
+repo (26 files, ~5k lines): both Edge Function dirs, all `_shared/catalog*`+`mvp*` modules,
+`AdminCatalogReviewPage.jsx`, `src/lib/catalogAdmin.js`, `src/lib/catalog/*`, the dead
+`src/lib/repository/catalogRepository.js`, and the `/admin/catalog` route in `App.jsx`. Deleted the
+`catalog-ingestion` and `catalog-ingestion-admin` Edge Functions from the live project. Applied a DB
+teardown migration (`20260714120000`) that dropped the ingestion-only tables
+(`catalog_import_batches/candidates/artifacts/candidate_reviews`, `private.catalog_ingestion_admins`),
+the ingestion RPCs and their private helpers (enumerated by exact name via a `pg_proc` DO block — no
+`catalog_%` wildcard, so no foundation/submission helper was caught).
+**Preserved (verified via list_tables before + after):** the catalog foundation — `manufacturers` (4),
+`disc_molds` (36), `discs` (20), `catalog_sources` (4) — and the whole submission flow
+(`catalog_submissions`/`_reviews`/`_evidence`), plastics/runs/stamps, `user_disc_configurations`. Row
+counts unchanged. `discs.mold_id` FK intact.
+**Verified:** 333 unit tests pass (34 files), build + lint clean, app loads in-browser with the route
+gone and no console errors. Migration applied cleanly on the second attempt.
+**Gotcha:** the first apply rolled back atomically — Supabase blocks direct `DELETE` on
+`storage.objects`/`storage.buckets` (`storage.protect_delete`). Removed the bucket-delete from the
+migration; the empty `catalog-import-raw` bucket (0 objects, confirmed) is left for a one-click dashboard
+deletion since the CLI only manages objects, not buckets, and bucket deletion needs the Management API.
+**Follow-up left for owner:** delete the empty `catalog-import-raw` Storage bucket from the dashboard.
+
+## 2026-07-13 — Scrapped catalog ingestion; discs to be populated manually
+
+**Decision:** Abandon the automated catalog-ingestion effort. `disc_molds` will be populated **manually**
+by the owner, later (add-disc UI or an owner-supplied one-time seed SQL), not by a manufacturer-site
+scraper. Trigger: the first live crawl proved the pipeline works end-to-end (auth, CORS, fetch,
+throttle, staging boundary all correct) but the parser couldn't read MVP's current live page — flight
+numbers now live in prose ("flight numbers of 2 | 5 | -0.5 | 0.5") with no `data-flight` attribute, so
+all 4 targets failed with `mvp_flight_numbers_missing` and 0 batches staged. Maintaining a scraper
+against a site we don't control isn't worth it for a solo catalog.
+**What changed:** Documentation only. Added a standing "population policy" note to `DEVELOPMENT_PLAN.md`
+§1B (disc molds section); flipped the three `FEATURE_BACKLOG.md` disc-universe ingestion rows to
+REJECTED with reasoning preserved, and added a new BACKLOG row for manual population.
+**Parked, not deleted:** The `catalog-ingestion` / `catalog-ingestion-admin` Edge Functions (both live,
+CORS fix included), all `supabase/functions/_shared/catalog*`/`mvp*` modules, `src/pages/AdminCatalogReviewPage.jsx`,
+`src/lib/catalogAdmin.js`, and the `catalog_*` staging tables + `private.catalog_ingestion_admins`
+allowlist remain in place, out of scope. Removing them (and revoking the admin grant) is a separate
+cleanup to run only if the owner asks.
+**Next:** Track 1 resumes at 1A (player profile) / 1B disc-molds schema + migration whenever the owner
+is ready to hand-populate; the migration step still derives molds from manually-entered discs.
+
+## 2026-07-13 — Admin allowlist granted; fixed CORS header gap blocking the review UI
+
+**What:** The project owner granted their account into `private.catalog_ingestion_admins` (manual SQL,
+per the documented handoff). First real signed-in visit to `/admin/catalog` then failed with
+`catalog_admin_operation_failed` — but the Edge Function logs showed only the OPTIONS preflight
+arriving, never the POST. Root cause: `supabase.functions.invoke()` always sends `apikey` and
+`x-client-info` headers, but both catalog Edge Functions' `Access-Control-Allow-Headers` allowed only
+`authorization, content-type`, so the browser passed the preflight but blocked the actual request
+client-side. Added `apikey, x-client-info` to the CORS allowlist in `catalogIngestionAdminHandler.js`
+and `catalogIngestionFunction.js`.
+**Verified:** 416 unit tests pass. Redeployed `catalog-ingestion-admin` (version 3); browser-confirmed
+the signed-in admin happy path now works end-to-end — `/admin/catalog` authenticates, calls
+`list_batches`, and renders the legitimate "No staged batches" empty state. A direct authed `fetch`
+also returns `200 {"result":[]}`, confirming the allowlist grant itself.
+**Handoff:** `catalog-ingestion` carries the same fix locally but has NOT been redeployed yet — redeploy
+it before triggering the first admin crawl. The review → promote flow remains unexercised because zero
+batches are staged; the next milestone is redeploy + first live crawl to stage a batch, then a full
+review/promote pass, then the `disc_molds` migration script.
+
+## 2026-07-13 — Redeployed catalog-ingestion-admin with the review UI's read ops
+
+**What:** Redeployed `catalog-ingestion-admin` (version 2) carrying the `list_batches`/`list_candidates`
+operations and the refactored handler factory.
+**Verified:** Live smoke test with `{operation: 'list_batches'}` and no bearer token still returns 401.
+**Handoff:** Phase B Track 1B ingestion pipeline (B1.5–B1.7 scope) is now complete end-to-end: schema,
+staging RPC/store, protected Edge Functions, conditional fetch, bounded crawl, and admin review UI. The
+admin allowlist is still empty — grant your own account access to `private.catalog_ingestion_admins`
+when ready to actually exercise the review/promote flow, then the next real milestone is the
+`disc_molds` migration script once a batch has been promoted through it.
+
+## 2026-07-13 — Added the catalog admin review UI
+
+**What:** Built the first admin-facing screen for the B1.7 pipeline: `/admin/catalog`, reachable only
+by direct URL (not linked from the player-facing PLAY/DISCS/ME nav), gated by `ProtectedRoute` plus a
+server-side allowlist check. Extended `catalog-ingestion-admin` with two read-only operations —
+`list_batches` and `list_candidates` — that reuse the existing `catalog_assert_ingestion_admin` RPC for
+authorization before querying with the service-role client; no new migration or RLS policy was needed
+since `catalog_import_batches`/`catalog_import_candidates` already had zero policies (service-role only)
+and the assert-RPC already existed. Refactored the previously-monolithic `catalog-ingestion-admin`
+`index.ts` into a dependency-injected `createCatalogAdminHandler` factory (`catalogIngestionAdminHandler.js`),
+matching `catalog-ingestion`'s testable pattern; the existing `review`/`promote` RPC dispatch is
+unchanged. Added `src/lib/catalogAdmin.js` (first client-side use of `supabase.functions.invoke`) and
+`AdminCatalogReviewPage.jsx`: lists staged batches, lets an admin approve/reject/needs-changes each
+candidate with a required reason, and promotes a fully-reviewed batch.
+**Verified:** 416 unit tests pass (13 new), production build passes, lint retains only the four
+pre-existing warnings, graphify refreshed to 1,406 nodes and 2,944 edges. Confirmed in the browser that
+an unauthenticated request to `/admin/catalog` redirects away (`ProtectedRoute` working). Could not
+browser-verify the signed-in-but-not-admin "unauthorized" render or the reviewer happy path — guest
+sign-in in this dev environment doesn't complete (no auth network call fires; appears unrelated to this
+change) and no admin test-account session was available. The 401/403/400 gating logic itself has full
+unit coverage in `catalogIngestionAdminHandler.test.js`.
+**Handoff:** The admin allowlist (`private.catalog_ingestion_admins`) is still empty — nobody, including
+the project owner, can use this screen's write actions yet. Adding an allowlist row is a deliberate,
+security-sensitive step left for the user to take explicitly (not done here). Once granted, worth a
+manual pass through the review → promote flow in the real browser.
+
+## 2026-07-13 — Redeployed catalog-ingestion with crawl mode
+
+**What:** Redeployed `catalog-ingestion` (version 3) carrying the crawl-mode handler/contract changes
+and the new `mvpCatalogCrawl.js`, added to the flattened deploy file set with its import rewritten to
+the flat `./mvpCatalogAdapter.js` path (the local source correctly uses `./adapters/mvpCatalogAdapter.js`
+— these differ by design, see the deploy convention notes in earlier entries).
+**Verified:** Live smoke test with a `{mode: 'crawl', jobId: 'smoke-test'}` body and no bearer token
+still returns 401 `catalog_admin_auth_required` — auth is checked before mode routing, as designed.
+**Handoff:** B1.7-scope ingestion work (staging RPC/store, protected Edge Function, conditional fetch,
+crawler) is now complete and deployed end-to-end. Next: the admin review UI — there is currently zero
+UI for reviewing/promoting staged candidates, only the RPC/Edge Function layer.
+
+## 2026-07-12 — Added bounded, admin-triggered MVP crawl mode
+
+**What:** Added `mvpCatalogCrawl.js`, a server-only orchestrator that stages a curated list of four
+official MVP product pages (Watt, Terra, Volt, Photon) sequentially through the existing single-page
+staging pipeline, unchanged. Each page gets its own `catalog_sources` row and checksum-addressed batch
+(no contract changes needed — a crawl target is just a `source.url` variation), so 304 replay and
+per-page failure isolation both work for free: one broken product page returns `{status: 'failed',
+error}` in the results array without blocking the other three. One fetcher/store instance is shared
+across the run so the existing per-host delay throttle applies across all pages. This is explicitly
+not a scheduled/recurring job — it only runs when an admin sends `{mode: 'crawl', jobId}` to the
+already-authenticated `catalog-ingestion` Edge Function, which now branches on `mode` before the
+existing admin-allowlist check. No dynamic link discovery from a listing page — the target list is a
+maintained constant, consistent with the project's "bounded, not ongoing scraping" ingestion principle.
+**Verified:** 403 unit tests pass (10 new), production build passes, lint retains only the four
+pre-existing warnings, graphify refreshed to 1,382 nodes and 2,897 edges.
+**Boundary:** No canonical write, no cron/pg_cron job, no admin allowlist change. Not yet deployed to
+the live Edge Function.
+
+## 2026-07-12 — Redeployed catalog-ingestion with conditional-fetch replay
+
+**What:** Redeployed the `catalog-ingestion` Edge Function (version 2) carrying the conditional-fetch
+fix, using the same flattened-directory deploy convention as before. Only `mvpCatalogFetcher.js`,
+`catalogIngestionStore.js`, `catalogIngestionStage.js`, and `catalogIngestionFunction.js` changed
+content from the prior deployment; the other 11 files were redeployed unchanged.
+**Verified:** Live smoke test confirms an unauthenticated POST still returns 401
+(`catalog_admin_auth_required`).
+**Handoff:** Both the deployment and the underlying fix are now shipped end-to-end. Next: crawler/
+scheduler automation, then the admin review UI.
+
+## 2026-07-12 — Wired real conditional-fetch (304) replay
+
+**What:** Replaced the stubbed 304 handler in `mvpCatalogFetcher.js`, which hashed an empty body and
+so could never match a real staged batch's checksum, with genuine conditional-fetch support. Added
+`store.findLatestBatch()` to look up the most recent staged batch (and its `etag`/`last_modified` from
+`catalog_import_artifacts`) for a source+adapter before fetching. `catalogIngestionStage.js` now calls
+`ensureSource`/`findLatestBatch` before `fetcher.fetch`, forwarding a `conditional` object; the fetcher
+sends `If-None-Match`/`If-Modified-Since` and, on a real 304, replays the prior checksum instead of
+hashing nothing, so the existing exact-match `findBatch` lookup now correctly resolves to `status:
+'existing'`. A 304 received without a conditional request throws the new
+`not_modified_without_conditional_request` code — an anomalous-upstream case, not a design gap.
+**Verified:** 397 unit tests pass (7 new), production build passes, lint retains only the four
+pre-existing warnings, graphify refreshed to 1,371 nodes and 2,874 edges. No database migration was
+needed — `etag`/`last_modified` columns already existed on `catalog_import_artifacts`.
+**Boundary:** No Edge Function redeploy yet — this is application code sitting behind the already-live
+`catalog-ingestion` function; redeploy is a deliberate separate step. No canonical write or admin
+allowlist change.
+
+## 2026-07-12 — Deployed protected catalog-ingestion Edge Function
+
+**What:** Redeployed the `catalog-ingestion` Edge Function after the prior Codex platform usage-limit
+rejection cleared. The function's source tree (`index.ts` plus 14 shared modules spanning
+`supabase/functions/_shared`, `_shared/adapters`, and `src/lib/catalog`) was flattened into a single
+sibling directory for the deploy payload, with cross-directory relative imports rewritten to flat
+`./module.js` specifiers — the same convention the earlier `catalog-ingestion-admin` deploy used, since
+Edge Function bundles don't preserve the repo's actual directory structure. No source logic changed.
+**Verified:** JWT verification is enabled; an unauthenticated POST returns 401
+(`catalog_admin_auth_required`). Full gates re-run clean: 390 unit tests pass, production build passes,
+lint retains only the four pre-existing warnings, graphify refreshed to 1,370 nodes and 2,873 edges.
+**Handoff:** Both `catalog-ingestion` and `catalog-ingestion-admin` are now live. Remaining B1.7-scope
+ingestion work: real conditional-fetch (304) replay using last-known source checksum/etag instead of the
+current stub, then the crawler/scheduler automation, then the admin review UI.
+
+## 2026-07-12 — Added transactional catalog staging boundary
+
+**What:** Added the append-only B1.9 staging migrations, including a service-only source resolver,
+an explicit ingestion-admin preflight, and an allowlist-checked transactional RPC that inserts a
+staged batch, checksum-addressed raw-artifact metadata, and normalized candidates atomically. Added
+the Supabase Storage/RPC store with exact-byte verification, non-upserted uploads, conflict reads,
+and cleanup on transaction failure, plus a protected `catalog-ingestion` handler and Edge Function
+entrypoint. Canonical review and promotion remain separate.
+**Verified:** The focused store/handler/staging suite passes (17 tests). The live RPC was exercised
+inside a rollback-only transaction: batch, artifact, candidate, source, and temporary allowlist
+rows appeared together and all residue returned to zero after rollback. The Supabase CLI and
+`pg_dump` were unavailable, so no automated backup was produced; the required manual-backup
+reminder remains active. Deployment was attempted with JWT verification enabled but was rejected by
+the Codex usage limit before the platform created the function.
+**Handoff:** Re-run the protected `catalog-ingestion` deployment after platform capacity returns,
+then run the full test/build/graphify/commit gates. Do not add an admin allowlist row casually and
+do not perform remote production ingestion until a reviewer is explicitly granted access.
+
+## 2026-07-12 — Added bounded MVP product-page fetch and parser
+
+**What:** Added a pure parser for one official MVP product page and a server-only fetcher that
+revalidates the official host on every redirect, enforces timeout/size/content-type limits, honors
+minimum host delay, computes the SHA-256 of the exact response bytes, and emits the existing parsed
+adapter payload plus raw-byte/artifact metadata. The staging orchestrator now forwards those raw bytes
+to the injected persistence boundary.
+**Verified:** Focused parser/fetch/staging tests pass (13); full suite passes (381); production build
+passes; lint retains only the four pre-existing warnings; graphify refreshed to 1,326 nodes and 2,774
+edges. The parser ignores scripts and page prose, extracts only product title, class, flight ratings,
+dimensions, and official source URL, and rejects non-product or incomplete pages.
+**Boundary:** No Storage upload, staging-table write, migration, canonical write, or Edge Function was
+added. The concrete fetcher exposes a 304 envelope but does not invent a prior checksum; conditional
+replay remains behind the existing injected orchestrator contract until the transactional store can
+supply last-known source state.
+**Handoff:** Create the migration-backed transactional staging RPC/store only after the required
+automated backup, then add the protected `catalog-ingestion` Edge Function around this verified path.
+
+## 2026-07-12 — Wired the official MVP adapter through staging
+
+**What:** Added `mvpCatalogStaging.js`, a server-only composition that selects the official MVP
+adapter, binds its host allowlist, and invokes the generic staging orchestrator with the existing
+pure `runManufacturerAdapter` contract. The generic orchestrator now rejects an adapter-version
+mismatch before any network or persistence call.
+**Verified:** The injected staging harness passes the real official MVP payload through mocked fetch
+and storage boundaries, creates checksum-addressed raw-artifact and candidate persistence rows,
+replays an existing checksum batch without a second write, rejects a 304 without an existing batch,
+and rejects a stale adapter version before fetch. Full suite: 376 tests; production build passes;
+lint retains only the four pre-existing warnings; graphify refreshed to 1,297 nodes and 2,712 edges.
+**Boundary:** No concrete remote fetcher, Storage client, canonical write, admin allowlist change, or
+database migration was added. The next environment-specific binding must remain server-only and
+explicitly reviewed before promotion.
+
+## 2026-07-12 — Added bounded official MVP source adapter snapshot
+
+**What:** Added the server-only `mvp-catalog` adapter at version `1.0.0` with a bounded
+source snapshot for Photon, Terra, Volt, and Watt. Each candidate carries the official product-page
+URL, source class/dimension evidence, manufacturer identity, flight numbers, and a
+`manufacturer_verified` confidence level. Candidates are sorted by normalized identity for stable
+staging row order.
+**Boundary:** The adapter consumes a server-owned parsed payload and validates the official
+`mvpdiscsports.com` host. It does not fetch pages, copy images or prose, write Supabase rows, or
+authorize canonical promotion. The existing non-production fixture remains separate.
+**Verified:** 373 tests pass; production build passes; lint retains only the four pre-existing
+warnings; and graphify refreshed to 1,289 nodes and 2,683 edges. Official source references are the
+[MVP retail placards](https://mvpdiscsports.com/mvp-retail-placards/)
+and the individual [Photon](https://mvpdiscsports.com/discs/photon/),
+[Terra](https://mvpdiscsports.com/discs/terra/), [Volt](https://mvpdiscsports.com/discs/volt/), and
+[Watt](https://mvpdiscsports.com/discs/watt/) pages.
+**Handoff:** Keep live fetching, scheduling, admin review UI, and any canonical promotion behind
+the existing server-only and explicit-review gates.
+
+## 2026-07-12 — Open-dataset source check completed without adoption
+
+**Finding:** A public 2020 PDGA-approved-disc CSV is mirrored in an R package, but the checked
+listing does not establish a sufficiently clear dataset license/provenance chain for canonical
+ingestion. The PDGA Developer Program is currently closed and its stated restrictions prohibit
+storing data returned by its API.
+**Decision:** Do not copy or promote that dataset. Continue with attributed official manufacturer
+sources, checksum-bound raw artifacts, explicit review, and the existing server-only staging boundary.
+No external dataset, migration, admin allowlist entry, or canonical catalog write was added.
+**Handoff:** The next bounded slice is an official manufacturer-source adapter review; crawler,
+scheduler, and admin UI remain out of scope.
+
+## 2026-07-12 — Added bounded non-production MVP catalog fixture
+
+**What:** Added a deterministic MVP manufacturer payload and adapter fixture with two representative
+mold candidates, production-shaped lowercase adapter metadata, fixture-only evidence, and an explicit
+approved review record. The fixture runs through the existing pure adapter contract and remains below
+the staging/canonical-write boundary.
+**Boundary:** The source is `fixture.example`, the reviewer principal is explicitly
+`fixture-reviewer:non-production`, and no Supabase rows, Storage objects, admin allowlist entries, or
+canonical writes were added.
+**Verified:** Focused adapter/ingestion tests pass (13 tests); full suite passes (370 tests), build
+passes, lint retains only the four pre-existing warnings, and graphify refreshed to 1,272 nodes,
+2,643 edges, and 75 communities.
+**Handoff:** Perform the open-dataset/source check before any production adapter or reviewer access.
+
+## 2026-07-12 — Phase B B1.8 admin review and canonical promotion applied
+
+**What:** Added the service-only `catalog_review_candidate` and
+`catalog_promote_import_batch` RPCs, entity-specific static promotion allowlists, dependency-ordered
+canonical writes, natural-identity conflict handling, candidate/alias/actor provenance links, and
+the authenticated `catalog-ingestion-admin` Edge Function with JWT verification. Promotion requires
+explicit review dispositions, a checksum-matched raw artifact, and one atomic transaction; exact
+accepted-batch retries return idempotently.
+**Security:** Anonymous/authenticated function execution is denied; the deployed Edge Function rejects
+an unauthenticated request with HTTP 401; the admin allowlist remains empty after rollback tests. Raw
+artifacts are required by a database batch-closure trigger, and missing-artifact promotion rolls back
+canonical writes, provenance, and candidate state together.
+**Backup:** Fresh follow-on backup is outside Git at
+`C:\tmp\disc-golf-app-backups\20260712-212738`; custom archive 1,117 entries, 672,507 bytes,
+SHA-256 `581462507D65312A20FF362A1A191C2F8F4D134B913D39716247B71441EE7A89`. The CLI-first dump
+attempt fell back to PostgreSQL 17 `pg_dump` because Docker Desktop is unavailable.
+**Verified:** Linked error-level DB lint returned zero results; migration ledger contains all three
+B1.8 versions; successful review → promotion → retry and missing-artifact rollback transaction tests
+passed with zero residue; the Edge Function is ACTIVE with `verify_jwt=true`; 368 unit tests, build,
+and lint passed, with only the four pre-existing lint warnings. Graphify refreshed to 1,263 nodes,
+2,622 edges, and 72 communities.
+**Handoff:** Run one bounded non-production manufacturer fixture with an explicit review record before
+granting a production reviewer access. Crawler, scheduler, and admin UI remain out of scope.
+
+## 2026-07-12 — Phase B B1.7 candidate/artifact persistence applied
+
+**What:** Added and applied the append-only candidate/artifact persistence boundary plus advisor
+indexes. `catalog_import_artifacts` stores checksum-bound raw-response metadata; `catalog_import_candidates`
+stores normalized identity/fields/evidence with server-computed checksums and validation/dedup/review
+state; `catalog_import_candidate_reviews` is append-only audit history. A private ingestion-admin
+allowlist and private `catalog-import-raw` Storage bucket complete the server-only boundary.
+**Security:** RLS is enabled with no ordinary-client policies/grants; service_role is the only table
+caller. Candidate source fields are immutable after staging, review history cannot be updated/deleted,
+and raw object paths are `raw/<sha256>.raw`.
+**Backup:** Fresh pre-index backup is outside Git at
+`C:\tmp\disc-golf-app-backups\20260712-202618`; custom archive 1,085 entries, 612,325 bytes,
+SHA-256 `17CFD4E5A1CE87D181BF0CA77B11BB6AFD98F1C71AA107EA63E31B8BDED2486B`; schema/data dumps are
+also non-empty.
+**Verified:** Rollback-only SQL and live constraint/trigger tests passed; anon/authenticated reads are
+denied while service_role reads succeed; linked error-level DB lint returned zero results; scoped
+advisors show no new catalog FK findings; 364 unit tests, production build, and lint passed (only the
+four pre-existing warnings remain). The Supabase MCP runner recorded remote UTC migration versions,
+so local filenames were reconciled to `20260713002434` and `20260713002750`.
+**Handoff:** The admin review/promotion operation remains a separate gate; no canonical catalog write
+path or Edge Function entrypoint was added.
+
+## 2026-07-12 — Vercel project link and stale-branch diagnosis
+
+**What:** Linked the workspace to the Discology Vercel project `disc-golf-app` (`prj_1IfaHXl5q4UFOgxwYXPAZASKL0Lg`)
+through the authenticated CLI and verified the connected Vercel project/deployment list. Vercel is
+connected to the GitHub repository `ItsRyanFromAtlanta/disc-golf-app` and the preview branch
+`codex/phase-b-disc-foundation`.
+**Finding:** The latest Vercel preview is commit `fa36652`; this workspace is three commits ahead locally,
+so Vercel cannot deploy the current Codex work until the branch is pushed. The generated `.vercel` link
+metadata and OIDC environment file are ignored; no secret values were printed.
+**Boundary:** No push, redeploy, environment-variable mutation, or production change was performed.
+
+## 2026-07-12 — Phase B B1.7 server-only fetch and staging contracts
+
+**What:** Implemented the first approved B1.7 slice: persisted adapter keys now use lowercase
+slugs, server-only fetch policy primitives enforce HTTPS/host/response/redirect limits, and a
+dependency-injected staging orchestrator composes fetch, adapter, and persistence boundaries.
+The orchestrator supports existing-batch replay and 304 handling but has no canonical-write path.
+**Verified:** 26 focused catalog/ingestion tests; 359 total unit tests; production build passes;
+lint retains the four pre-existing warnings. No migration SQL, Edge Function entrypoint, service-role
+credential, or canonical catalog write was added.
+**Handoff:** Candidate/artifact schema and the admin promotion operation remain separate migration,
+security, and rollback review gates.
+
+## 2026-07-12 — Phase B B1.7 remote adapter/server-ingestion design approved
+
+**What:** Recorded the approved design boundary following B1.6. Remote fetching and adapter
+execution are server-only; the browser repository remains canonical-read/owner-write only. The
+design specifies allowlisted HTTPS fetching, immutable private raw artifacts, checksummed staged
+candidates, idempotent import batches, separate admin promotion, and atomic dependency-ordered
+canonical writes.
+**Key decision:** staged candidates cannot use `catalog_entity_sources` because that table requires
+an existing canonical FK. A future append-only candidate/artifact migration is required. Adapter
+keys will use the database-compatible slug form (`mvp-catalog`) rather than the dotted test key
+(`mvp.catalog`).
+**Boundary:** This checkpoint adds documentation only. No Edge Function, migration SQL, service-role
+path, or canonical catalog write was added.
+
+## 2026-07-12 — Phase B B1.6 repository and manufacturer-adapter contracts
+
+**What:** Added framework-free catalog repository and manufacturer-adapter contracts over the applied
+B1.5 schema. Canonical catalog entities are read-only through the client boundary with cache fallback;
+private configurations and draft/needs-changes submissions/evidence use owner-scoped payloads, stable
+client IDs, and the existing durable outbox. Canonical, import-batch, and review writes are intentionally
+not exposed.
+**Adapter boundary:** A versioned pure adapter registry normalizes manufacturer payloads into staged
+candidates with deterministic identity keys, supported-field declarations, evidence snapshots, source
+references, confidence, capture time, and SHA-256 checksums. Adapters have no Supabase/network dependency
+and cannot write canonical rows.
+**Verified:** 13 focused contract tests; 346 total unit tests; production build passes; lint retains the
+four pre-existing warnings. No migration or canonical catalog write was added. Graphify AST refresh was
+attempted but its incremental run requested semantic extraction for changed docs/images and stopped because
+no graphify API key is configured.
+**Handoff:** Stop at the B1.6 contract checkpoint. Remote adapter/server-ingestion wiring requires a new
+design review before implementation.
+
+## 2026-07-12 — Phase B B1.5 catalog foundation applied
+
+**What:** Applied and recorded the reviewed catalog foundation plus two append-only advisor index
+migrations after a verified automated backup.
+
+**Verified:** Four manufacturers link all 36 molds; 13 new tables have RLS; no test rows remain.
+Rollback-only tests passed authenticated reads, canonical-write denial, owner CRUD, cross-user isolation,
+submission transition, and submitted-row immutability. Advisors have no new catalog FK findings;
+`catalog_import_batches` intentionally remains client-inaccessible with RLS/no policy/no grant.
+
+## 2026-07-12 — Automated pre-migration backup policy
+
+**What:** Replaced the repeated manual-confirmation gate with CLI-first automated backup: Supabase dump
+when Docker is available, verified `pg_dump` fallback through pgpass otherwise, and a non-blocking
+reminder only when neither route works.
+
+**Verified:** The immediate Phase B backup is outside Git at
+`C:\tmp\disc-golf-app-backups\20260712-190157`. Its custom archive contains 875 entries and is 512,096
+bytes with SHA-256 `07135CED94F78FFE53D8BBAFCC43A99F6AA0ADED81FB1A5B2AFDD2F9517A77B6`;
+separate schema/data dumps are also non-empty.
+
+## 2026-07-12 — Reproducible Supabase CLI and psql connection
+
+**What:** Installed PostgreSQL 17 command-line tools without the local server, pinned Supabase CLI
+`2.109.1` as a project dev dependency, authenticated and linked the workspace to `disc-golf-app`, and
+configured the standard user-level pgpass entry.
+
+**Verified:** `npx supabase migration list` reads remote history; direct `psql` reaches Postgres 17.6 as
+the hosted `postgres` role and returns the expected 36 molds. No credential value entered repository
+files or command output.
+
+## 2026-07-12 — Phase B B1.1–B1.4 catalog audit, draft, and review
+
+**What:** Approved the normalized mold/plastic/run/stamp catalog and moderation design, confirmed the
+fresh manual backup, audited the live DISCS schema/data/RLS/grants, and generated the unapplied
+`phase_b_catalog_foundation` migration plus review/recovery packet.
+
+**Key decisions:** Preserve all 36 mold UUIDs and compatibility fields; replace direct canonical inserts
+with owner-scoped submissions; use typed provenance foreign keys with an exactly-one-target constraint;
+keep adapters and review writes server-side; seed future representative data against the actively
+exercised account rather than the larger but activity-empty disc account.
+
+**Audit:** No mold duplicates, missing flight data, or missing legacy provenance. All 36 mold plastic
+arrays are empty; 18 of 20 physical discs have plastic text. Existing mold policies use deprecated
+`auth.role()` and broad grants, which the draft replaces with explicit `TO authenticated` reads and
+least-privilege submission/configuration access.
+
+**Review:** B1.4 tightened cross-manufacturer mold/plastic integrity, composite submission ownership,
+submission status transitions, evidence destination checks, and the legacy `created_by` FK index.
+The final 105-statement draft passes PostgreSQL syntax parsing with `pglast` 8.2.
+
+**Boundary:** The reviewed migration remains unapplied. A fresh backup re-confirmation and explicit
+apply approval are still required before any remote database change.
+
 Newest entries first. One entry per meaningful unit of work. Keep entries short: what, why, decisions, gotchas.
 
 ---
+
+## 2026-07-12 — Phase A A10 release candidate closed
+
+**What:** Closed A10 after the automated equivalence, RLS, build/lint, browser, accessibility,
+authenticated notification-route, and reload-persistence gates passed. The user also reported that
+the independent authenticated-session/real-device check passed.
+**Evidence boundary:** The second-session/device result is explicitly user-reported; Codex did not
+directly observe that session or collect its device/OS metadata. The two-tab same-session limitation
+therefore remains documented rather than silently reclassified as independent evidence.
+**Handoff:** Phase A is complete. Stop at the Phase B DISCS data-foundation planning boundary; confirm
+a fresh manual Supabase backup before any migration or FK-restructuring work.
+
+## 2026-07-12 — Phase A A10 equivalence and release gates (in progress)
+
+**What:** Added five deterministic equivalence tests covering Dexie reload durability, exactly-once replay,
+concurrent offline starts, reconnect convergence, and crash-bridge identity preservation. Hardened one
+order-sensitive Dexie assertion to test the contract rather than iteration order.
+**Database:** After fresh backup confirmation, applied `phase_a_a10_indexes` with a covering
+`notifications(activity_id, user_id)` index; live verification confirms the index exists and the notification
+foreign-key advisor finding is cleared.
+**Verified:** 333 tests pass, build passes, browser landing/protected-route smoke passes, and lint retains
+only the four pre-existing warnings. A signed-in browser smoke also completes a freeform session and opens
+the notification sheet in its expected empty state; direct `/notifications` navigation and reload/session
+persistence also pass. Independent cross-device coverage remains deferred because this task has one signed-in
+browser session.
+
+---
+
+## 2026-07-12 — Phase A A9 notification foundation (in progress)
+
+**What:** Added the durable notification migration/RPC contract, Dexie v4 mirror and local outbox adapter,
+deterministic activity/sync notification producers, and the shared-header bell badge with accessible sheet/deep-link UI.
+**Decisions:** The first surface is deliberately limited to actionable activity review and poisoned-sync attention.
+Unresolved dedupe keys update the existing row while preserving its read state, preventing badge noise.
+**Verified:** Migration applied to the backed-up project; RLS, table grants, and public/private RPC ACLs were
+checked live. 328 tests pass; lint retains only the four pre-existing warnings; production build passes.
+Authenticated cross-device/browser verification remains because the project lacks a valid test session.
+**Browser:** Local Vite verification confirms the landing page renders without a Vite error overlay and
+unauthenticated `/notifications` redirects to login. The authenticated list and cross-device cases remain
+blocked on a valid test session.
+**Negative DB verification:** Live rollback checks confirm `anon` cannot execute the notification RPC and
+the `authenticated` role without a JWT is rejected as unauthenticated, both with zero data residue.
+
+---
+
+## 2026-07-12 — Phase A A8 history and recovery client
+
+**What:** Completed A8 with a Dexie v3 audit store and ordered recovery outbox, canonical activity-led
+history, offline-first hide/restore and practice-detail correction, sync/incomplete status badges, and a
+30-day Recently Deleted restore surface. Detail edits now use the audited recovery path instead of
+direct typed-table updates.
+**Decisions:** Activities own visibility and lifecycle presentation while typed practice tables remain
+the sporting-fact authority. Hidden activities are removed before metric inputs are assembled; restore
+therefore recalculates them naturally. Pending local state wins over remote hydration, and local-only
+activities render without synthesized attempts, makes, or events.
+**Verified:** 324 tests pass, including atomic rollback, ordered RPC mapping, optimistic hydration,
+canonical history, and route metadata. Lint retains only four pre-existing warnings and the production
+build passes. `agent-browser` is installed globally and verifies non-blank, error-overlay-free landing
+and history-route navigation; unauthenticated routes correctly redirect to login. Local Supabase rejects
+anonymous sign-in, so a valid test session is still needed for authenticated history interaction. A9 is
+next; switch to GPT-5.6 Terra medium for that normal UI/persistence slice.
+
+## 2026-07-12 — Phase A A8 server and metric contracts
+
+**What:** After fresh backup confirmation, added and applied the A8 history/recovery RPC migration.
+Authenticated public invoker wrappers call private owner/version/idempotency-validating functions for
+hide/restore and audited practice notes/tags correction. Added a versioned pure-JavaScript metric
+registry that declares sources, windows, exclusions, confidence, inputs, and capture requirements.
+**Decisions:** Typed tables remain authoritative; corrections atomically update the current notes/tags
+and append previous/new audit values. Valid incomplete practice facts remain metric-eligible; hidden or
+nonterminal/empty activities do not. Ordered-event metrics reject batch summaries. Legacy typed-table
+grants remain until A10 because InstantLaunch still uses the staged direct parent writer.
+**Verified:** Live rollback tests passed positive, retry, stale, invalid-state/source, cross-user,
+idempotency-reuse, and audit-ID collision cases for freeform and regimen paths, with zero residue.
+Anonymous RPC and direct authenticated activity/audit writes are denied; advisors have no new A8
+findings. All 315 tests, lint (four pre-existing warnings), and production build pass. Switch to Terra
+medium for the A8 client/history UI slice.
+
+## 2026-07-12 — Phase A A7 practice lifecycle integration
+
+**What:** Wired freeform and regimen InstantLaunch sessions into the A4 activity repository using the
+existing parent UUID as the activity identity. Added a stable installation ID, ordered lifecycle RPC
+sync, local completion/incomplete transitions, route-aware pause/resume, and active shell/PLAY resume
+surfaces.
+**Decisions:** Lifecycle rows flush before typed parent/summary/gesture queues to satisfy A6 owner FKs;
+InstantLaunch remains authoritative for batch summaries and real gesture events, with no synthesized
+`putt_events`. Regimen metadata carries its route identity for resume links. No schema or Supabase
+migration was needed.
+**Verified:** 310 unit tests pass, including Dexie lifecycle sync ordering and RPC argument mapping;
+production build passes; lint retains only the four pre-existing warnings. A8 owns history correction,
+hidden/restore, and metric treatment.
+
+## 2026-07-12 — Phase A A6 server lifecycle applied and verified
+
+**What:** Applied the A5 activity envelope/backfill, A6 lifecycle RPCs, and the FK-index advisor
+follow-up to Supabase after fresh backup confirmation. Added public invoker wrappers over private
+security-definer implementations, authenticated-only reads, and serialized lifecycle writes.
+**Verified:** Backfill counts match the audit; no orphan or duplicate-current rows remain. Live tests
+covered RLS isolation, anonymous/direct-DML denial, stale/cross-user/admin rejection, idempotent retry,
+round confirmation, replacement, supplied event IDs, and concurrent starts. Advisors report no new
+public security-definer or A5 owner-FK findings; existing unrelated warnings remain baseline debt.
+**Boundary:** A6 is complete. A7 may wire the local repository into freeform practice, then regimen;
+hide/restore/correction remain A8 scope.
+
+## 2026-07-12 — Phase A A6 server lifecycle RPC draft
+
+**What:** Rechecked the live Supabase project and added the CLI-generated
+`20260712195448_phase_a_activity_lifecycle_rpc.sql` draft. It exposes authenticated invoker wrappers
+for draft creation and lifecycle transitions while keeping the privileged implementation in a
+non-exposed schema.
+**Decisions:** Per-user advisory transaction locks serialize starts and replacement closes. RPCs enforce
+auth ownership, expected state/version, canonical commands/sources, supplied event IDs, idempotency, and
+atomic activity/event writes. Practice replacement auto-closes; round replacement requires confirmation.
+Client RPCs reject `admin_repair`; hide/restore/correction remain A8 scope.
+**Boundary:** The A5 and A6 migrations are both unapplied. Fresh backup confirmation, remote apply,
+authenticated negative/concurrency/retry tests, and advisor verification remain before A6 completion.
+
+## 2026-07-12 — Phase A A5 live schema audit and migration draft
+
+**What:** Confirmed a fresh manual Supabase backup; audited the live project’s tables, ownership,
+RLS, grants, indexes, advisor findings, practice/round relationships, and historical test data. Added
+the unapplied `activities`, `activity_state_events`, and `audit_events` migration draft plus the A6
+review/recovery packet.
+**Decisions:** Reuse specialized domain UUIDs as activity IDs and enforce owner-consistent composite
+foreign keys. Backfill only authoritative facts, classify empty legacy rows as drafts, and fabricate no
+pause/resume history. New lifecycle tables expose authenticated reads only; A6 must add hardened,
+serialized RPC writes. Existing unrelated advisor warnings remain baseline debt.
+**Verified:** No ownership mismatches, exclusive-parent violations, or cross-table UUID collisions were
+found. No remote migration or data change was performed. The local Supabase CLI scaffold was generated
+and the migration was created through the CLI as required.
+
+## 2026-07-12 — Phase A A4 transactional local activity repository
+
+**What:** Upgraded the local database to Dexie v2 with `activities` and append-only
+`activityStateEvents`; added an ordered lifecycle outbox with dependency, retry, error, and poison
+metadata; implemented the local activity repository and active subscription; and added an unwired
+InstantLaunch recovery bridge plus a lossless v1→v2 state migration.
+**Decisions:** Activity/state-event/outbox writes commit in one Dexie transaction. Practice replacement
+closes the prior practice and starts the replacement atomically; rounds remain unchanged until explicit
+confirmation. Each transition depends on the previous lifecycle idempotency key. InstantLaunch still
+owns real-time putt capture and its existing outbox; A7 will wire the bridge into practice screens only
+after the full pause/resume/finalize flow is exercised.
+**Verified:** 34 focused A4 tests cover real IndexedDB schema upgrade, concurrent starts, single-active
+enforcement, idempotent retries, ordered dependencies, delayed/poisoned attempts, live subscriptions,
+lossless InstantLaunch recovery, and rollback at every partial-write boundary—including failure after
+closing a replaced practice. Full suite: 304 tests; build passes; lint has four pre-existing warnings.
+No Supabase migration, remote lifecycle RPC, or UI change.
+
+## 2026-07-12 — Phase A A3 pure local lifecycle engine
+
+**What:** Added the framework-free `src/lib/activityLifecycle/` contract: canonical lifecycle/type/
+source/reason constants, named timing and retention policies, a complete transition table, an
+optimistic-concurrency-aware pure reducer, append-only state-event payload construction, and a pure
+start planner that distinguishes atomic practice replacement from required round confirmation.
+**Decisions:** `hidden_at` remains visibility rather than lifecycle state; old `incomplete` activities
+remain terminal; drafts can only become active through `start` (the first meaningful sporting fact);
+already-satisfied commands do not increment versions or emit duplicate state events. Repository-level
+idempotency-key storage, Dexie atomicity, and the InstantLaunch bridge remain A4 scope.
+**Verified:** 32 focused lifecycle tests and 280 full tests pass; production build passes; lint reports
+only the four pre-existing warnings. No migration, persistence, Supabase, or UI changes.
+
+## 2026-07-12 — Phase A A2 shared application shell
+
+**What:** Replaced the implicit document scroll/four-tab framing with the shared A2 shell: route-aware
+standard and active shells, global header, accessible notification empty-state sheet, toast host,
+scroll region, safe-area-aware fixed PLAY/DISCS/ME tab bar, per-route scroll restoration, and approved
+current-tab scroll-to-top/root behavior.
+**Boundary:** No activity state, lifecycle repository, notification persistence, or database work was
+added. The bell intentionally hosts only an empty state until A9; the activity pill remains hidden until
+A7 connects a real activity. Existing `/practice`, `/bag`, `/profile`, and legacy routes remain valid.
+**Verified:** 248 tests, lint with only four pre-existing warnings, and production build pass. Local
+browser smoke check was clean, but anonymous auth is disabled in the connected environment, so the
+authenticated shell still needs real-account/device verification.
+
+## 2026-07-12 — Phase A A1 route metadata and shell audit
+
+**What:** Audited the shipped routes, AppShell/TabBar, scroll ownership, onboarding/crash-recovery
+redirects, and current compatibility alias. Added framework-free `src/lib/routeMetadata.js` plus tests
+that classify all current route families under approved PLAY/DISCS/ME sections, identify active capture,
+preservation and scroll behavior, and resolve `/regimens` to its supported nested route.
+**Decision:** A1 intentionally does not change rendered navigation or add a header/scroll host. The
+existing four-tab UI remains until A2 consumes the contract, avoiding a partial shell migration.
+**Verified:** 20 focused route/navigation/crash-recovery tests, lint (four existing warnings only), and
+production build pass. No database work.
+
+## 2026-07-12 — Phase A shell and lifecycle walkthrough approved
+
+**What:** Completed and consolidated the pre-code walkthrough for PLAY/DISCS/ME shell behavior,
+active-activity pill, notification overlay, tab scroll/root rules, activity lifecycle, interruption and
+offline behavior, scrolling/sheets/safe areas, accessibility, repository and transaction boundaries,
+conflict policy, migration ordering, tests, reviews, and A1–A10 implementation sessions.
+**Decisions:** First meaningful fact activates a draft; navigation pauses; backgrounding has a tunable
+60-second grace; new practice atomically closes the previous practice with constrained Undo; rounds
+require confirmation; old incomplete activities are correctable but not reactivated; local finalization
+never waits for the network; UI never writes lifecycle state directly.
+**Scope:** Documentation only. No application code or database migration changed.
+
+## 2026-07-11 — Production documentation and development-operations baseline
+
+**What:** Rebuilt the repository entry-point and added production-grade contribution, security,
+changelog, review, context-efficiency, integration, testing, environment, release, backup/restore,
+incident, iOS-readiness, field-testing, and ADR documentation.
+**Tooling:** Verified Graphify 0.9.6 and RTK 0.43.0 are installed. Graphify remains the generated code
+map; RTK remains Claude-hook/manual-only; Composio is optional and least-privilege rather than a Codex
+dependency. Generated Graphify/native build output is ignored.
+**Workflow:** Small reviewed branches, checkpoint commits, pushes after green major stages, protected
+`main`, risk-based review gates, and explicit fresh-task/handoff points replace context-heavy long
+threads. No application or schema code changed.
+
+## 2026-07-11 — Phase A contracts + Codex/OpenAI workflow migration
+
+**What:** Documented the approved activity lifecycle, audit/provenance, metric registry, shared shell,
+notification, offline-transition, browser-E2E, and PWA contracts in `PHASE_A_ARCHITECTURE.md`; added
+`CODEX_WORKFLOW.md` and token-efficient project Codex defaults.
+**Model policy:** GPT-5.3-Codex medium for normal implementation; GPT-5.6 high for architecture,
+migrations, security/RLS, synchronization, and complex engines; GPT-5.4 mini low only for bounded
+mechanical tasks with normal verification.
+**Setup:** Supabase MCP was already configured. Official OpenAI Docs MCP installation was attempted but
+Windows blocked launching `codex.exe`; the one-time manual command is recorded in `CODEX_WORKFLOW.md`.
+No application or schema code changed.
+
+## 2026-07-11 — Whole-product roadmap reconciliation
+
+**What:** Added `PRODUCT_ROADMAP.md` as the current sequencing/disposition authority and reconciled
+the expansion bundle, original blueprint, shipped implementation, and backlog.
+**Decisions:** PLAY / DISCS / ME replaces PLAY / BAGS / STATS / PRO; statistics become contextual with
+ME as the career summary; existing `disc_molds`/`discs` are extended instead of adding a parallel
+Universe/Warehouse tree; postponed work now has explicit revisit triggers.
+**Docs:** Updated `DEVELOPMENT_PLAN.md`, `SCREEN_SPECS.md`, `AGENTS.md`, and `FEATURE_BACKLOG.md` while
+preserving superseded/rejected history. No application or schema code changed.
+
+## 2026-07-11 — Expansion planning: community mold statistics backlog
+
+**What:** Added opt-in, anonymized community mold statistics as a deliberate later feature.
+**Decision:** Personal physical-disc performance stays private by default; community aggregates require explicit consent and minimum-sample/privacy thresholds, and remain separate from personal coaching metrics.
+**Scope:** Documentation only; no application or schema code changed.
 
 ## 2026-07-11 — Screen 12 code review + fix pass (Trophy Room hardening)
 

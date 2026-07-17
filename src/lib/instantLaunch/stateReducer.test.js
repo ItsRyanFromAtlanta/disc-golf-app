@@ -19,6 +19,7 @@ describe('defaultInstantLaunchState', () => {
     const state = defaultInstantLaunchState()
     expect(state.schemaVersion).toBe(INSTANT_LAUNCH_SCHEMA_VERSION)
     expect(state.crashRecoveryBuffer.hasActiveSession).toBe(false)
+    expect(state.crashRecoveryBuffer.activityId).toBeNull()
     expect(state.outbox).toEqual({ parentWrites: [], summaryWrites: [], puttEvents: [] })
   })
 })
@@ -29,15 +30,42 @@ describe('migrateOrResetState', () => {
     expect(migrateOrResetState(undefined)).toEqual(defaultInstantLaunchState())
   })
 
-  it('resets on a schema version mismatch (old shape from a future/past app version)', () => {
+  it('resets on an unknown schema version', () => {
     expect(migrateOrResetState({ schemaVersion: 999, outbox: { garbage: true } })).toEqual(
       defaultInstantLaunchState(),
     )
   })
 
-  it('passes through a matching schema version unchanged', () => {
+  it('normalizes a matching schema version without losing fields', () => {
     const state = { ...defaultInstantLaunchState(), profileDefaults: { favoritePutterDiscId: 'putter-1' } }
-    expect(migrateOrResetState(state)).toBe(state)
+    const migrated = migrateOrResetState(state)
+    expect(migrated.profileDefaults.favoritePutterDiscId).toBe('putter-1')
+    expect(migrated.profileDefaults.inputModeDefault).toBe('tap')
+  })
+
+  it('upgrades v1 without losing crash recovery or pending capture writes', () => {
+    const v1 = {
+      ...defaultInstantLaunchState(),
+      schemaVersion: 1,
+      crashRecoveryBuffer: {
+        hasActiveSession: true,
+        sessionType: 'freeform',
+        parentIds: { freeformSessionId: 'session-1' },
+        currentStage: { setOrder: 1, distanceFt: 20, sequenceCounter: 3 },
+        lastUpdatedAt: '2026-07-12T12:00:00.000Z',
+      },
+      outbox: {
+        parentWrites: [{ id: 'session-1' }],
+        summaryWrites: [{ id: 'summary-1' }],
+        puttEvents: [{ id: 'putt-1' }],
+      },
+    }
+
+    const migrated = migrateOrResetState(v1)
+    expect(migrated.schemaVersion).toBe(2)
+    expect(migrated.crashRecoveryBuffer.activityId).toBeNull()
+    expect(migrated.crashRecoveryBuffer.parentIds.freeformSessionId).toBe('session-1')
+    expect(migrated.outbox).toEqual(v1.outbox)
   })
 })
 

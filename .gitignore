@@ -30,3 +30,14 @@ dev-dist
 
 # Local DB backups (may contain user data / PII — never commit)
 db_backups/
+
+# Generated code-graph artifacts (rebuild with Graphify; never authoritative)
+graphify-out/
+
+# Native build output (once Capacitor shells are added)
+ios/App/DerivedData/
+android/.gradle/
+android/app/build/
+
+.vercel
+.env*

@@ -2,39 +2,55 @@
 
 Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (deliberate)` | `REJECTED`
 
+Current sequencing, merge/rejection decisions, and revisit triggers are authoritative in
+`PRODUCT_ROADMAP.md` (2026-07-11 reconciliation). Historical sections remain for the reasoning trail;
+entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating that roadmap.
+
+## Engineering and production operations
+
+| Feature | Status | Notes |
+|---|---|---|
+| GitHub CI (test, lint, build) | IN PROGRESS | Workflow added; enable protected-branch required checks after the first successful remote run |
+| Browser E2E baseline | SHIPPED | Phase A A10 browser, authenticated-route, reload, and notification smoke gates passed 2026-07-12 |
+| Phase A release candidate and independent-session field gate | SHIPPED | A10 closed 2026-07-12; the independent authenticated-session/real-device result is user-reported, with Codex-observation limits recorded in CURRENT_WORK.md |
+| Existing React lint-warning cleanup | BACKLOG | Four pre-existing warnings: three hook dependency findings and one Fast Refresh export finding; address as touched or in a bounded cleanup review |
+| Production bundle code splitting | BACKLOG | Current main JS is ~740 KB minified / ~213 KB gzip; profile routes and split meaningful feature trees before public/mobile beta |
+| Native privacy manifest and SDK audit | LATER (deliberate) | Required at Capacitor/iOS build phase; reconcile every SDK and actual collection before TestFlight |
+| Protected `main` + required PR review/checks | NEXT UP | Configure after the CI workflow succeeds remotely; `main` auto-deploys to Vercel |
+
 ## Session history & insights
 
 | Feature | Status | Notes |
 |---|---|---|
-| Unified history feed (freeform + regimens interleaved, day-grouped, filter chips) | IN PROGRESS | v1 history build |
-| Detail views per session/run | IN PROGRESS | Per-distance / per-set breakdowns |
-| Session notes | IN PROGRESS | Optional free text, both session types |
-| One-tap tag chips | IN PROGRESS | Starter vocab: windy, indoor, outdoor, tired, new-putter, pre-tournament, experimenting. Free-text tags allowed, lowercase-kebab |
-| Practice streak counter | IN PROGRESS | Consecutive days with ≥1 session; shown at top of history |
-| PB badges | IN PROGRESS | New best score on a regimen; new make-% high at a distance (min 10 attempts to qualify) |
-| Volume ledger | IN PROGRESS | Putts this week / month / lifetime |
-| Fatigue curve | IN PROGRESS | Make % by set position across all regimen runs |
-| Pressure differential | IN PROGRESS | Pressure-putt make % vs regular make % ("clutch factor") |
-| Decay-weighted current form | IN PROGRESS | Exponentially weighted recent make %; shown beside lifetime for trend gap |
-| Cadence fingerprint | IN PROGRESS | Performance by time-of-day and by gap-since-last-session |
-| Confidence intervals on make % | IN PROGRESS | Wilson interval; show band until n ≥ 30 per distance |
+| Unified history feed (freeform + regimens interleaved, day-grouped, filter chips) | SHIPPED | Extend with auto-closed activities, soft deletion, corrections, provenance, and audit recovery |
+| Detail views per session/run | SHIPPED | Extend into the complete activity-history model |
+| Session notes | SHIPPED | Optional free text, both session types |
+| One-tap tag chips | SHIPPED | Extend with canonical session factors (putter, weather, conditions) |
+| Practice streak counter | SHIPPED | Consecutive days with ≥1 session; shown contextually in ME/PLAY |
+| PB badges | SHIPPED | New best score on a regimen; new make-% high at a distance (min 10 attempts) |
+| Volume ledger | SHIPPED | Putts this week / month / lifetime |
+| Fatigue curve | SHIPPED | Extend with adaptive stage check-ins and round-turn prompts |
+| Pressure differential | SHIPPED | Contextual metric; no standalone Stats tab |
+| Decay-weighted current form | SHIPPED | Contextual recent-vs-lifetime metric; no opaque composite score |
+| Cadence fingerprint | SHIPPED | Integrate into ME/weekly reports when supported by samples |
+| Confidence intervals on make % | SHIPPED | Wilson band until n ≥ 30 per distance/split |
 | Distance heat profile | NEXT UP | Practice volume vs weakness by distance; the gap = blind spot |
 | Putter tracking (link sessions to discs table) | NEXT UP | "Did switching putters help" with data |
-| Experiment markers | BACKLOG | First-class change markers (stance, grip, disc); before/after stat splits with sample-size honesty |
+| Experiment markers | BACKLOG | First-class new-putter markers only for now; grip experiments deferred by product decision |
 | Distance-weighted practice load (intensity) | BACKLOG | Athlete/periodization framing; correlate pre-tournament load with results once round data exists |
 | Monthly narrative recaps | BACKLOG | Auto-generated chapter summaries of a season |
 | "What moved the needle" attribution | BACKLOG | Which regimen difficulty correlates with subsequent improvement; needs months of data |
 | Rust indicator | BACKLOG | Days-since-last-session nudge; correlate layoffs with dips |
-| Session quality composite score | BACKLOG | Single comparable number per session; design carefully to avoid gaming |
+| Session quality composite score | REJECTED | Opaque composite conflicts with interpretable, takeaway-first metric policy |
 | Before/after date-range comparison | BACKLOG | Generalization of experiment markers |
 | Ghost comparison (race your past best mid-run) | LATER (deliberate) | Pays off more once social exists |
 | Shareable session cards | LATER (deliberate) | Social-phase feature; organic marketing |
 | Head-to-head / league leaderboards | LATER (deliberate) | Social phase; regimen scores already comparable across users by design |
-| Post-session AI insight | LATER (deliberate) | Background AI (Opus 4.8); needs its own design pass: prompt, cost model, trigger rules |
-| Weekly AI digest | LATER (deliberate) | Same design pass as above |
+| Post-session AI insight | LATER (deliberate) | Future OpenAI background analysis; needs prompt, cost, privacy, trigger, and eval design |
+| Weekly AI digest | REJECTED | Deterministic weekly reports ship first; optional AI narrative may be reconsidered later |
 | Long-horizon AI pattern detection | LATER (deliberate) | Day-of-week effects, practice-vs-tournament correlation; needs round data |
 | Conditions auto-capture (weather) | BACKLOG | Reuse planned round-weather integration |
-| XP/levels gamification | REJECTED | Points system already provides stakes; avoids Duolingo-ification |
+| XP/levels gamification (historical rejection) | SUPERSEDED | Later blueprint decision shipped XP/levels/Trophy Room; retained to preserve decision history |
 | Public-by-default social features | REJECTED | Social is opt-in, later phase |
 | Dashboard sprawl (charts for everything) | REJECTED | Few high-signal views over widget walls |
 
@@ -42,11 +58,11 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 
 | Feature | Status | Notes |
 |---|---|---|
-| Round logging tree (/rounds: courses, holes, scores) | BACKLOG | Schema already exists (rounds, round_holes, courses, holes) |
-| Live caddie chat (Sonnet 5, server-side) | BACKLOG | Schema exists (live_sessions, caddie_recommendations); needs server-side API layer |
+| Round logging tree (/rounds: courses, holes, scores) | IN PROGRESS | J1 (jump-ahead ahead of roadmap Phase E, owner decision 2026-07-14). New COURSES tab + quick-course flow; schema ready (all empty), needs RLS migration + roundRepository. See DEVELOPMENT_PLAN §J1 |
+| Live caddie chat (OpenAI Responses API, server-side) | BACKLOG | Schema exists; build after rounds/course prep and approve safety/cost/context policy |
 | Course prep views | BACKLOG | |
-| Stats tab (app-level) | BACKLOG | History insights may graduate into it |
-| Bottom tab bar app nav | BACKLOG | Waiting until ≥2 feature areas exist |
+| Stats tab (app-level) | REJECTED | Statistics are contextual; ME is the career-wide summary |
+| Bottom tab bar app nav | SHIPPED | Revise from PLAY/BAGS/STATS/PRO to approved PLAY/DISCS/ME; add COURSES later |
 | PWA deploy + on-course testing | BACKLOG | |
 | Capacitor wrap (app stores, native GPS/camera) | LATER (deliberate) | Wider-audience phase |
 
@@ -54,15 +70,17 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 
 | Feature | Status | Notes |
 |---|---|---|
-| Player profile expansion (throwing identity, calibration, goals) | NEXT UP | Phase A; schema generated. Value+source pattern on calibration fields |
-| Disc molds reference table + locker migration | NEXT UP | Phase B; insert-open/update-closed RLS; seed via manufacturer-site import (Infinite Discs fallback); Opus 4.8 for migration |
+| Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Extend into ME/Profile/Settings and approved preference taxonomy |
+| Disc molds reference table + locker migration | SHIPPED | Extend with normalized plastic/run/stamp variants and moderation |
 | Multiple bags + membership + flight chart | SHIPPED | Phase C; locker/bag split; partial unique index for default bag |
-| Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | IN PROGRESS | 1E — locker=inventory, bags=loadouts; grid/list toggle; minimal cards v1; tab bar: Practice/Bag/Profile |
-| Game-flair card mode (rarity borders, equip animations, stat-block cards) | BACKLOG | Deliberately deferred from 1E |
-| Disc comparison view (side-by-side stats) | BACKLOG | Natural inventory extension |
-| Disc universe: MVP/Axiom/Streamline + Innova seed | IN PROGRESS | Manufacturer-site import with attribution (source_url/source_name/scraped_at on disc_molds); Innova running via Claude Code addendum |
-| Disc universe: full ingestion pipeline (1F) | BACKLOG | Per-manufacturer adapters w/ user-provided URL hints; raw payload staging; dedup review queue; check open datasets before scraping more brands; image URLs only (no copying manufacturer photos); polite crawling |
-| Disc universe: remaining manufacturers (Discraft, Trilogy, Discmania, long tail) | BACKLOG | One bounded session per manufacturer; Opus for pipeline skeleton, Sonnet per adapter |
+| Bag & disc manager UI (inventory/loadout UX) + bottom tab bar | SHIPPED | 1E — locker=inventory, bags=loadouts; grid/list toggle; minimal cards v1; tab bar shipped. Scope met; see DEVELOPMENT_PLAN §1E |
+| Game-flair card mode (rarity borders, equip animations, stat-block cards) | IN PROGRESS | J3 (jump-ahead, DEVELOPMENT_PLAN). Opt-in flair variant on DiscCard + discFlair.js tier logic, Settings toggle |
+| Disc comparison view (side-by-side stats) | IN PROGRESS | J2 (jump-ahead, DEVELOPMENT_PLAN). Personal-cohort v1: /bag/compare, reuse effectiveFlightNumbers + FlightCurve |
+| Disc universe: manual disc/mold population | BACKLOG | REPLACES the scrapped automated seed. Owner populates `disc_molds` by hand later — add-disc UI or an owner-supplied one-time seed SQL. No scraping, no attribution-import pipeline. See DEVELOPMENT_PLAN.md §1B population policy. |
+| Disc universe: MVP/Axiom/Streamline + Innova seed (automated import) | REJECTED | SCRAPPED 2026-07-13. Was: manufacturer-site import with attribution; bounded official MVP snapshot adapter covering four molds. Abandoned — owner will populate discs manually instead. Live crawl proved the pipeline works end-to-end but the parser can't read MVP's current live page format (flight numbers moved to prose, no `data-flight` attr); not worth maintaining a scraper against a site we don't control. |
+| Disc universe: full ingestion pipeline (1F) | REJECTED | SCRAPPED 2026-07-13. Built and deployed: B1.5–B1.7 server-only staging RPC/store, official MVP adapter, bounded product-page fetch/parser, conditional fetch, bounded crawl, review→promote RPCs, provenance, raw-artifact guard, admin JWT boundary, admin review UI. All functional (CORS fix verified end-to-end). Code + `catalog_*` tables + Edge Functions PARKED in place (not deleted — ask owner before removing). Reason: manual population chosen over maintaining automated ingestion. |
+| Disc universe: remaining manufacturers (Discraft, Trilogy, Discmania, long tail) | REJECTED | SCRAPPED 2026-07-13 with the ingestion pipeline it depended on. Manual population covers any manufacturer without per-manufacturer adapter work. |
+| Opt-in community mold statistics | LATER (deliberate) | Aggregate anonymized performance by catalog mold only after explicit consent; personal physical-disc data stays private by default. Apply minimum-sample/privacy thresholds and keep community benchmarks separate from personal recommendations. |
 | Disc wear timeline (condition change history) | BACKLOG | Current-state-only in v1 |
 | Slot analysis ("no stable fairway in this bag") | BACKLOG | Derived view over bag + effective flight numbers |
 | Per-disc usage stats | BACKLOG | Needs round data linking discs to holes |
@@ -71,7 +89,7 @@ Status values: `SHIPPED` | `IN PROGRESS` | `NEXT UP` | `BACKLOG` | `LATER (delib
 | PDGA rating auto-sync | BACKLOG | No official public API; manual entry for now |
 | Grip styles, practice availability, season goals fields | BACKLOG | Profile v2 candidates |
 | Height/weight/fitness metrics | REJECTED | Caddie, not a fitness app |
-| Round-history import from other apps | REJECTED | Huge scope; separate product decision if ever |
+| Generic round-history import from other apps | LATER (deliberate) | UDisc is approved separately; other providers require explicit format/provenance review |
 
 ## Practice depth — web-viable features from sensor/drills TDD (ranked 2026-07-03)
 
@@ -101,11 +119,11 @@ divergences, and reasoning: `SCREEN_SPECS.md`. Execution sequencing: `DEVELOPMEN
 
 | Feature | Status | Notes |
 |---|---|---|
-| Dexie.js + TanStack Query staged local-first repository | NEXT UP | Layer 1; behind a repository interface, InstantLaunch folds in last |
+| Dexie.js + TanStack Query staged local-first repository | IN PROGRESS | Skeleton shipped and discs exercise it; extend entity-by-entity, InstantLaunch folds in last |
 | Discs: role (primary/backup/situational putter), wear_score, total_chain_hits | SHIPPED | Layer 1 schema; supersedes earlier profile-columns putter-role proposal |
 | Bag 35-disc capacity hard interlock | SHIPPED | Layer 1 schema (CHECK) + Layer 3 UI (disabled Add + blue/orange/rust states) — capacityTier() in lib/bags.js |
 | Routine 100-putt hard interlock + rules_config/drill_type | SHIPPED | Layer 1 schema — this IS the Track 2.3 regimen-engine generalization |
-| 4-tab app nav (Play / Bags / Stats / Pro) | SHIPPED | Layer 1 |
+| 4-tab app nav (Play / Bags / Stats / Pro) | SUPERSEDED | Replace with PLAY / DISCS / ME; add COURSES when directory ships |
 | Splash + auth overhaul (email 6-digit OTP, Apple/Google SSO, anonymous guest) | SHIPPED | Layer 2, Screens 1–2; SSO + anonymous sign-in need enabling in Supabase dashboard — see DEVLOG 2026-07-05 |
 | Zero-typing onboarding (goal cards, putter provisioning, haptic test) | SHIPPED | Layer 2, Screen 3 |
 | Dashboard hub (instant-replay hero, 3-way STANDARD/CUSTOM/NEW launchpad) | SHIPPED | Layer 3, Screen 4 — CLONE & TWEAK and the planning drawer are disabled stubs pending Layer 4's builder |
@@ -174,3 +192,10 @@ All features below assume native Swift/iOS (Vision, CoreML, ARKit, watchOS, Heal
 | CV disc variant recognition (stamp/color masking) | Bag system + manual selection solves this at 2% of cost |
 | Hardware volume-button silence override | Web cannot intercept volume buttons; on-screen pill ships in 2.2c |
 | Full haptic vocabulary (frequency/intensity-specific patterns, iOS haptics) | Vibration API too crude; requires native haptic engines via Capacitor |
+# 2026-07-12 checkpoint note
+
+The Phase B catalog-ingestion pipeline now has the transactional staging RPC, authenticated
+allowlist preflight, exact-byte Storage/RPC store, and protected `catalog-ingestion` function
+source, now deployed live (JWT-protected, confirmed 401 on an unauthenticated request) after the
+earlier Codex platform usage-limit rejection cleared. Full test/build/lint/graphify gates re-ran
+clean; canonical review/promotion remains separate and no admin allowlist row was added.

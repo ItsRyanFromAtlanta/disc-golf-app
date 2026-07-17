@@ -32,6 +32,23 @@ describe('heroCardState', () => {
     })
   })
 
+  it('surfaces a Dexie active activity when the crash buffer is empty', () => {
+    expect(
+      heroCardState(defaultInstantLaunchState(), true, {
+        id: 'run-1',
+        type: 'putting_regimen',
+        state: 'paused',
+        metadata: { regimenId: 'reg-1' },
+      }),
+    ).toEqual({
+      kind: 'active-activity',
+      activityId: 'run-1',
+      activityType: 'putting_regimen',
+      regimenId: 'reg-1',
+      state: 'paused',
+    })
+  })
+
   it('prompts for a first session on a brand-new account', () => {
     expect(heroCardState(defaultInstantLaunchState(), false)).toEqual({ kind: 'first-session' })
   })

@@ -1,10 +1,27 @@
 import { supabase } from './supabaseClient'
+import { activityRepository } from './repository/activityRepository'
+
+export const HISTORY_VISIBILITY = Object.freeze({
+  VISIBLE: 'visible',
+  HIDDEN: 'hidden',
+  ALL: 'all',
+})
+
+export const RECENTLY_DELETED_DAYS = 30
 
 // Single fetch powering the history feed, header strip, and insights panel.
 // Client-side merge of the two entry types is fine at current volume; a
 // Postgres UNION view is the upgrade path if it ever gets slow (see CLAUDE.md).
-export async function fetchHistory(userId) {
-  const [sessionsResult, runsResult] = await Promise.all([
+export async function fetchHistory(userId, { visibility = HISTORY_VISIBILITY.VISIBLE, now = new Date() } = {}) {
+  const [activitiesResult, sessionsResult, runsResult] = await Promise.all([
+    supabase
+      .from('activities')
+      .select(
+        'id, user_id, type, state, version, has_meaningful_fact, needs_review, hidden_at, metadata, created_at, updated_at, create_idempotency_key, last_lifecycle_idempotency_key',
+      )
+      .eq('user_id', userId)
+      .in('state', ['completed', 'incomplete'])
+      .order('updated_at', { ascending: false }),
     supabase
       .from('putt_sessions')
       .select(
@@ -21,9 +38,34 @@ export async function fetchHistory(userId) {
       .order('started_at', { ascending: false }),
   ])
 
+  if (activitiesResult.error) throw activitiesResult.error
   if (sessionsResult.error) throw sessionsResult.error
   if (runsResult.error) throw runsResult.error
-  return { sessions: sessionsResult.data, runs: runsResult.data }
+
+  let activities = (activitiesResult.data ?? []).map((activity) => ({ ...activity, sync_state: 'synced' }))
+  try {
+    await activityRepository.hydrateActivities(activitiesResult.data ?? [])
+    activities = await activityRepository.listHistoryWithSync(userId, { includeHidden: true })
+  } catch {
+    // History is already network-backed; an unavailable IndexedDB mirror
+    // should degrade to remote rows rather than blanking a valid feed.
+  }
+
+  const cutoff = now.getTime() - RECENTLY_DELETED_DAYS * 24 * 60 * 60 * 1000
+  const selectedActivities = activities.filter((activity) => {
+    if (visibility === HISTORY_VISIBILITY.ALL) return true
+    if (visibility === HISTORY_VISIBILITY.HIDDEN) {
+      return activity.hidden_at && new Date(activity.hidden_at).getTime() >= cutoff
+    }
+    return !activity.hidden_at
+  })
+  const selectedIds = new Set(selectedActivities.map((activity) => activity.id))
+
+  return {
+    activities: selectedActivities,
+    sessions: (sessionsResult.data ?? []).filter((session) => selectedIds.has(session.id)),
+    runs: (runsResult.data ?? []).filter((run) => selectedIds.has(run.id)),
+  }
 }
 
 export function sessionAggregate(session) {
@@ -50,6 +92,38 @@ export function regimenRunAggregate(run) {
   const cleanSets = sets.filter((s) => s.clean_set).length
   const longestStreak = sets.reduce((max, s) => Math.max(max, s.longest_streak ?? 0), 0)
   return { makes, attempts, cleanSets, totalSets: sets.length, longestStreak }
+}
+
+export function activityHistoryEntries({ activities = [], sessions = [], runs = [] }) {
+  const sessionsById = new Map(sessions.map((session) => [session.id, session]))
+  const runsById = new Map(runs.map((run) => [run.id, run]))
+
+  return activities
+    .filter((activity) => ['putting_freeform', 'putting_regimen'].includes(activity.type))
+    .map((activity) => {
+      if (activity.type === 'putting_freeform') {
+        const session = sessionsById.get(activity.id) ?? null
+        return {
+          type: 'freeform',
+          id: activity.id,
+          at: session?.created_at ?? activity.created_at,
+          activity,
+          session,
+          aggregate: sessionAggregate(session ?? {}),
+        }
+      }
+
+      const run = runsById.get(activity.id) ?? null
+      return {
+        type: 'regimen',
+        id: activity.id,
+        at: run?.started_at ?? activity.created_at,
+        activity,
+        run,
+        aggregate: regimenRunAggregate(run ?? {}),
+      }
+    })
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
 }
 
 // Flat {makes, attempts, at} samples from both entry types, for insights.

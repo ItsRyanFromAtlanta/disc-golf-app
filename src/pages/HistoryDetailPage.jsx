@@ -6,6 +6,8 @@ import { fetchHistory, sessionAggregate, regimenRunAggregate, distanceSamples } 
 import { distanceDropOff, putterBreakdown } from '../lib/insights'
 import { fetchUserDiscs } from '../lib/discLocker'
 import SessionReport from '../components/sessionReport/SessionReport'
+import { useHistoryRecovery } from '../hooks/useHistoryRecovery'
+import { SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
 
 const BASELINE_WINDOW_DAYS = 30
 
@@ -25,8 +27,10 @@ export default function HistoryDetailPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isFreeform = type === 'freeform'
+  const recovery = useHistoryRecovery()
 
   const [entry, setEntry] = useState(null)
+  const [activity, setActivity] = useState(null)
   const [puttEvents, setPuttEvents] = useState([])
   const [discsById, setDiscsById] = useState(new Map())
   const [baselineSamples, setBaselineSamples] = useState([])
@@ -67,6 +71,12 @@ export default function HistoryDetailPage() {
       }
 
       setEntry(entryData)
+      const activityData = allHistory.activities.find((row) => row.id === id)
+      if (!activityData) {
+        setError('Activity history record was not found.')
+        return
+      }
+      setActivity(activityData)
       setPuttEvents(eventsData ?? [])
       setDiscsById(new Map(discs.map((d) => [d.id, d])))
 
@@ -88,13 +98,27 @@ export default function HistoryDetailPage() {
   }, [type, id, user.id, isFreeform])
 
   async function saveNotesTags({ notes, tags }) {
-    const table = isFreeform ? 'putt_sessions' : 'putting_regimen_runs'
-    const { error: saveError } = await supabase.from(table).update({ notes, tags }).eq('id', id)
-    if (saveError) throw saveError
+    const result = await recovery.correctPracticeDetails(
+      activity,
+      { notes: entry.notes, tags: entry.tags ?? [] },
+      { notes, tags },
+    )
+    setEntry((current) => ({ ...current, notes, tags }))
+    setActivity({ ...result.activity, sync_state: result.syncState })
+  }
+
+  async function hideActivity() {
+    if (!window.confirm('Hide this activity from History and statistics? You can restore it for 30 days.')) return
+    try {
+      await recovery.hide(activity)
+      navigate('/practice/history')
+    } catch (hideError) {
+      setError(hideError.message ?? 'Could not hide this activity.')
+    }
   }
 
   if (error) return <p className="form-error">{error}</p>
-  if (!entry) return <p className="loading">Loading...</p>
+  if (!entry || !activity) return <p className="loading">Loading...</p>
 
   const title = isFreeform ? 'Freeform session' : (entry.putting_regimens?.name ?? 'Regimen run')
   const at = isFreeform ? entry.created_at : entry.started_at
@@ -123,6 +147,14 @@ export default function HistoryDetailPage() {
 
   const putterRows = putterBreakdown(puttEvents).map((p) => ({ ...p, label: discLabel(discsById.get(p.putterDiscId)) }))
   const dropOffRows = distanceDropOff(todaySamples, baselineSamples)
+  const syncState =
+    recovery.syncStatus === SYNC_STATUS.FAILED
+      ? 'needs_attention'
+      : activity.sync_state === 'pending'
+        ? recovery.syncStatus === SYNC_STATUS.SYNCED
+          ? 'synced'
+          : 'pending'
+        : activity.sync_state
 
   return (
     <SessionReport
@@ -133,6 +165,8 @@ export default function HistoryDetailPage() {
         </Link>
       }
       at={at}
+      lifecycleState={activity.state}
+      syncState={syncState}
       completed={isFreeform ? null : entry.completed}
       totalScore={isFreeform ? null : entry.total_score}
       hero={hero}
@@ -142,6 +176,8 @@ export default function HistoryDetailPage() {
       notes={entry.notes}
       tags={entry.tags}
       onSaveNotesTags={saveNotesTags}
+      onHide={hideActivity}
+      onRetrySync={recovery.syncStatus === SYNC_STATUS.FAILED ? recovery.retrySync : null}
       onReplay={() => navigate(isFreeform ? '/practice/freeform' : `/practice/regimens/${entry.regimen_id}/run`)}
       onDashboard={() => navigate('/practice')}
     />

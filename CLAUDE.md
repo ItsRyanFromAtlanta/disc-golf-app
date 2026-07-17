@@ -1,5 +1,9 @@
 # Disc Golf Manager & Caddie App
 
+> Compatibility note (2026-07-11): Codex is the active development environment. `AGENTS.md`,
+> `PRODUCT_ROADMAP.md`, `PHASE_A_ARCHITECTURE.md`, and `CODEX_WORKFLOW.md` are authoritative for
+> current work. Historical Claude-specific language below is superseded where it conflicts.
+
 ## What this is
 A mobile-first web app (React + Vite, Capacitor-ready) with three core pillars:
 1. **Live round mode** — active caddie assistance during a round (club/shot picks, hole strategy)
@@ -13,10 +17,10 @@ Built multi-tenant from day one (Supabase auth + RLS) to avoid a rebuild later.
 ## Tech stack
 - **Frontend:** React + Vite, mobile-first responsive CSS, structured to add Capacitor later for App/Play Store distribution
 - **Backend:** Supabase (Postgres, auth, storage, RLS)
-- **AI:** Claude API called server-side only (never client-side — protects API keys)
-  - Live-round chat: **Sonnet 5** — fast, conversational, cost-effective for real-time use
-  - Background jobs (course data prep, post-round analysis): **Opus 4.8** — deeper reasoning, latency-tolerant
-- **Dev tool:** Claude Code CLI
+- **AI:** OpenAI Responses API called server-side only (never client-side — protects API keys)
+  - Live-round chat: **GPT-5.6 Luna, low reasoning**
+  - Background jobs: **GPT-5.6 Sol, high reasoning**
+- **Dev tool:** Codex desktop/CLI
 
 ## Data model
 See `supabase_schema.sql` for full schema. Key tables:
@@ -58,10 +62,8 @@ The app uses nested feature trees. Putting practice is the first tree:
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
 Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
 
-**App-level nav is a 4-tab bottom bar: PLAY / BAGS / STATS / PRO** (adopted from
-`MASTER_PROJECT_BLUEPRINT.md`, 2026-07-05). `/practice` becomes the PLAY tab's dashboard hub;
-`/practice/stats` (confidence map + analytics) moves under STATS; profile + settings live under PRO.
-Bags keeps its own tree unchanged. Build order for this migration: see `DEVELOPMENT_PLAN.md` Layer 1.
+**App-level nav targets PLAY / DISCS / ME**, adding COURSES when the course directory ships.
+Statistics live with their subject and ME provides the career-wide summary; no standalone Stats tab.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
@@ -121,31 +123,33 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 ## Documentation conventions (maintain throughout dev)
 - `MASTER_PROJECT_BLUEPRINT.md` — **design authority** for the 21-screen product vision: full wireframes, ergonomic rules, logic-governance specs (competition engine, UDisc parser, XP ledger), and the reference `DATABASE_SCHEMA.md`/`TASKS.md` (written for a greenfield Expo stack — this repo absorbs its screens/rules/schema concepts into the shipped Vite+Supabase stack, it does not execute that TASKS.md literally). Added 2026-07-05.
 - `SCREEN_SPECS.md` — the **integration layer** over the blueprint: per-screen status (in-scope/parked), REUSE vs NET-NEW file mapping, and explicit divergences from the blueprint's literal spec (stack, schema, OTP digit count, PDGA scraping, Screen 8 input model, etc.), with reasoning. Read this before building any of the 21 screens.
-- `CLAUDE.md` (this file) — living architecture doc; update whenever routes, schema, or conventions change
+- `AGENTS.md` — living architecture and Codex instruction authority
+- `PRODUCT_ROADMAP.md` — current sequencing/disposition authority
+- `PHASE_A_ARCHITECTURE.md` — current phase contracts
+- `CODEX_WORKFLOW.md` — model, token-efficiency, command, and plugin/MCP guidance
 - `DEVELOPMENT_PLAN.md` — the tracks/layers execution plan with per-feature dev needs and sequencing; consult before starting any new feature
-- `DEVLOG.md` — one entry per meaningful unit of work: what, why, key decisions, gotchas. Newest first. Update at the end of every Claude Code work session.
+- `DEVLOG.md` — one entry per meaningful unit of work: what, why, key decisions, gotchas. Newest first.
 - `FEATURE_BACKLOG.md` — all ideated features with status (SHIPPED / IN PROGRESS / NEXT UP / BACKLOG / LATER / REJECTED). Move items as status changes; never delete rejected items — the reasoning is part of the record.
 - Schema files are append-only history; never edit a previously-run schema file, add a new one. New concepts from the blueprint are absorbed as additive columns/tables on the existing schema (e.g. `discs.role`, `discs.wear_score`), never as a wholesale schema replacement.
-- Commit at every working checkpoint within a session; push to GitHub at session end (Vercel auto-deploys from main).
-- **Before any migration or FK-restructuring session: take a manual database backup** (Supabase dashboard backup or pg_dump). Claude Code must confirm the backup exists before running migration SQL.
-- Every task states its recommended model up front: **Sonnet 5** default for UI/CRUD work; **Opus 4.8** for migrations, schema design passes, rules engines, and DSP/algorithmic work. When resuming a plan that spans multiple work sessions, confirm the active model matches the recommendation for the current section before proceeding.
+- Commit at every working checkpoint; push green major stages to a feature branch and merge through the
+  reviewed production workflow because `main` auto-deploys.
+- **Before any migration or FK-restructuring session: take a manual database backup** (Supabase dashboard backup or pg_dump). Codex must confirm the backup exists before running migration SQL.
+- Every task states its recommended OpenAI model/reasoning level up front; see `CODEX_WORKFLOW.md`.
 - Plan-first rule: iterate and agree on designs in conversation BEFORE generating files, schemas, or prompts. Always prompt for approval before file generation.
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
 
 ## Current build focus
-Executing the blueprint integration plan (see `SCREEN_SPECS.md` + `DEVELOPMENT_PLAN.md` Layers 0–5):
-Layer 0 docs alignment (in progress) → Layer 1 foundation (schema absorption, Dexie/TanStack skeleton,
-4-tab bar) → Layer 2 front-door (Splash/Auth/Onboarding) → Layer 3 hubs (Dashboard/Bag/Putter lineup) →
-Layer 4 execution engine (routine builder, scoring canvas, session summary) → Layer 5 analytics +
-progression (analytics tower, career hub, trophy room, UDisc ingestion). Social, hardware, and utility
-screens (14–21 minus what's absorbed into Layer 5) are deliberately parked — see `SCREEN_SPECS.md`.
-Session history v1 is SHIPPED. Native sensor-fusion features remain parked on the Native iOS Roadmap in
-FEATURE_BACKLOG.md.
+Execute Phase A from `PHASE_A_ARCHITECTURE.md` and `DEVELOPMENT_PLAN.md` A1–A10: shell/route contract →
+shared shell → local lifecycle → Dexie/InstantLaunch bridge → reviewed database lifecycle → practice →
+history/recovery → notifications → offline release gate. Navigation is PLAY / DISCS / ME; COURSES is
+added with its directory and statistics remain contextual. Earlier blueprint Layers 1–4 are shipped
+history, not the current execution sequence. Social, hardware, native sensors, and other parked work
+remain governed by `PRODUCT_ROADMAP.md` and `FEATURE_BACKLOG.md`.
 
 ## Conventions
 - All user-owned tables use Row Level Security scoped to `auth.uid()`
 - Course/hole data is shared/community — readable by all authenticated users
-- Never commit Supabase keys or Anthropic API keys — use environment variables
+- Never commit Supabase or OpenAI API keys — use environment variables
 - Prefer small, composable React components over large page files
 - Distance in feet, scores relative to par unless stated otherwise
 - When adding a new data table: state the ideal column format (types, constraints, indexes) in

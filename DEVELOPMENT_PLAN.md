@@ -1,11 +1,80 @@
 # Development Plan
 
-Last updated: 2026-07-05
+Last updated: 2026-07-12
 Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
-`FEATURE_BACKLOG.md` (full feature status), `DEVLOG.md` (work record)
+`PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
+status), `DEVLOG.md` (work record)
 
-## ACTIVE PLAN: Blueprint integration (Layers 0–5)
+## ACTIVE PLAN: 2026-07-11 product-wide reconciliation
+
+`PRODUCT_ROADMAP.md` supersedes the execution order in the 2026-07-05 Layers below. Layers 1–4 are
+shipped history; Layer 5's standalone Analytics/Career screens are replaced by contextual statistics
+and the ME career dashboard. Current sequence: production/shared contracts → DISCS data foundation →
+DISCS experience/intelligence → PLAY/ME/report integration → courses/rounds/interoperability. Every
+parked item has an explicit revisit trigger in `PRODUCT_ROADMAP.md`.
+
+The approved bottom navigation is **PLAY / DISCS / ME**; add **COURSES** when the course directory
+ships. Do not build a standalone Stats tab.
+
+Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GPT-5.6 high** for
+architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
+Sonnet/Opus labels below are preserved only as historical records of completed work.
+
+## Phase A execution sessions — approved 2026-07-12
+
+Authoritative behavior: `PHASE_A_ARCHITECTURE.md`. Implement in this order; each numbered session is a
+reviewable checkpoint, not permission to perform later sessions early.
+
+1. **A1 — shell audit and route contract** (`GPT-5.3-Codex`, medium, COMPLETE 2026-07-12): mapped
+   routes, shell/scroll/recovery behavior; added tested `src/lib/routeMetadata.js` compatibility
+   contract and retained the `/regimens` alias. No database work or rendered-navigation change.
+2. **A2 — shared shell implementation** (`GPT-5.3-Codex`, medium, COMPLETE 2026-07-12): added
+   GlobalHeader, ScreenScrollRegion, SheetHost, ToastHost, PLAY/DISCS/ME TabBar, ActiveActivityShell,
+   safe-area layout, per-route scroll restoration, and current-tab scroll/root behavior. Existing URLs
+   and feature pages remain compatible. Local browser smoke check passed; authenticated mobile/device
+   verification remains required because anonymous auth is disabled in the connected environment.
+3. **A3 — pure local lifecycle engine** (`GPT-5.6` high design; `GPT-5.3-Codex` medium build,
+   COMPLETE 2026-07-12): added lifecycle/type/source/reason constants, named policies, an
+   optimistic-concurrency-aware transition table/reducer, practice-replacement/round-confirmation
+   planning, and exhaustive valid/invalid/idempotency tests. No migration or persistence work.
+4. **A4 — Dexie repository and InstantLaunch bridge** (`GPT-5.6`, high, COMPLETE 2026-07-12):
+   added Dexie v2 activity/state-event stores, ordered diagnostic lifecycle outbox storage, a
+   transactional repository with the single-active invariant and atomic replacement, lossless
+   InstantLaunch v1→v2 migration, and an unwired recovery bridge that preserves proven capture.
+   Real IndexedDB upgrade/concurrency/rollback/retry tests use `fake-indexeddb`.
+5. **A5 — live schema audit and migration design** (`GPT-5.6`, high, COMPLETE 2026-07-12): confirmed
+   the manual backup; audited live schema/RLS/indexes/test data; drafted the unapplied append-only
+   activity migration and recovery packet. No remote SQL was applied.
+6. **A6 — server lifecycle and RLS** (`GPT-5.6`, high, COMPLETE 2026-07-12): applied the activity
+   envelope/backfill, hardened serialized RPCs with public invoker wrappers, owner-FK indexes, and the
+   replacement/concurrency contract. Live ownership/forgery/concurrency/retry tests and advisors pass;
+   unrelated historical advisor findings remain baseline debt.
+   Update handoff/docs, commit, push, and clear context.
+7. **A7 — practice integration** (`GPT-5.3-Codex`, medium, COMPLETE 2026-07-12): freeform and regimen
+   now mirror stable parent UUIDs into Dexie, finalize/mark incomplete offline-first, and flush lifecycle
+   RPCs before typed parent/summary/gesture rows. Gesture-event versus batch-summary ownership remains
+   unchanged; route pause/resume, stable installation IDs, active pill, and PLAY resume card are shipped.
+8. **A8 — history and recovery** (`GPT-5.6` Sol high audit/metric review; Sol medium UI by user
+   selection, COMPLETE 2026-07-12): audited visibility/correction RPCs are applied and live-verified;
+   the metric registry fixes eligibility/capture contracts; unified activity history now ships local
+   hide/restore/correction, incomplete and sync states, Recently Deleted, and metric exclusion/recovery.
+9. **A9 — notifications** (`GPT-5.6 Terra`, medium, COMPLETE 2026-07-12): actionable notification persistence, bell/badge/
+   overlay/dedup/deep links; activity-review and sync categories first; deterministic weekly-report hook.
+10. **A10 — offline equivalence and release candidate** (`GPT-5.6 Sol`, high, COMPLETE 2026-07-12):
+    crash/reload/reconnect and concurrent-device tests; remove only proven duplicate ownership; full
+    unit/lint/build/RLS/browser/accessibility/device gates; final high-risk review and release documentation.
+    The independent authenticated-session/real-device gate was reported passed by the user; Codex did not
+    directly observe that second session or collect its device metadata. Phase A is now closed at the
+    documentation and planning boundary; Phase B began with design review only, and the B1.7/B1.8
+    candidate/artifact plus admin review/promotion checkpoints are now applied and verified.
+
+Mandatory reviews: route contract before A2; transition table before A4; migration before and after
+A6; the first practice mode before integrating the second; audit/statistics before closing A8; full
+offline/security review before release. Push green branches after major checkpoints; merge only through
+the reviewed production workflow.
+
+## Historical active plan: Blueprint integration (Layers 0–5)
 
 As of 2026-07-05 this supersedes Tracks 1–2's execution as the primary sequencing (Tracks 1–4 below are
 kept as historical record; most of what they describe is either shipped or absorbed into a Layer).
@@ -70,20 +139,35 @@ Four tracks. Tracks 1–2 are sequential build work; Track 3 is an experimental 
 
 ## Track 1 — Foundation data (committed, in flight)
 
-### 1A. Player profile expansion — NEXT UP
+### 1A. Player profile expansion — SHIPPED
 - **Schema:** `phase_a_profile_schema.sql` (generated) — handedness, per-throw confidence + max distance (value+source pattern), C1 comfort, specialty_shots[], target_rating, units, private injury_notes
 - **UI:** sectioned profile page at `/profile` (Identity / Throwing / Calibration / Goals), edit-in-place per section; first-login nudge when throwing profile empty
 - **Rules:** injury_notes never selected in any shared/social view (convention + query discipline)
 - **Model:** Sonnet 5 · **Effort:** S · **Test:** save/reload each section; check constraints reject bad enums
 
-### 1B. Disc molds reference + locker migration
+### 1B. Disc molds reference + locker migration — SHIPPED
+
+> **⚠️ Population policy (decided 2026-07-13): automated catalog ingestion is SCRAPPED.**
+> Do NOT build, extend, run, or re-plan a manufacturer-site scraper / server ingestion pipeline to
+> populate `disc_molds`. The owner will populate discs **manually, later**. Standing instructions for
+> any future session touching this section:
+> - **Populate `disc_molds` by hand**, when the owner is ready — either a hand-written one-time seed
+>   SQL migration (curated mold specs the owner supplies) or the existing manual add-disc UI. There is
+>   no seed-import dependency and no scraping step anymore.
+> - **The migration step below is still valid** (it derives molds from discs the owner already entered),
+>   but it is no longer blocked on or preceded by any automated seed.
+> - **The existing Phase B catalog-ingestion code is parked, not deleted** — the `catalog-ingestion` /
+>   `catalog-ingestion-admin` Edge Functions, `supabase/functions/_shared/catalog*`/`mvp*` modules,
+>   `src/pages/AdminCatalogReviewPage.jsx`, `src/lib/catalogAdmin.js`, and the `catalog_*` staging tables
+>   remain in place but are out of scope. Don't build on them. (Ask the owner before removing any of it.)
+
 - **Schema (to generate):** `disc_molds` (shared; insert-open, update-closed RLS; unique on lower(manufacturer), lower(mold_name); nullable enrichment: image_url, pdga_approved_date, production_status, plastics[], diameter, rim width) + `discs` alterations (mold_id FK, nickname, weight_grams, color, override flight numbers, photo_url, acquired_on, provenance, status lifecycle)
 - **Migration:** script creating molds from distinct (manufacturer, mold) pairs in existing discs, linking copies, moving manual numbers to overrides where they differ from stock. **Model: Opus 4.8** — destructive-adjacent data work
-- **Seed:** import script pulling mold specs from manufacturer sites (MVP/Axiom/Streamline first), Infinite Discs as fallback; one-time seed, not ongoing scraping; manual entry always available
+- **Seed:** ~~import script pulling mold specs from manufacturer sites~~ **(scrapped — see population policy above).** Discs/molds are populated manually by the owner; manual entry via the add-disc UI is the standing path, with an optional owner-supplied one-time seed SQL if a bulk load is wanted.
 - **UI:** `/bag/locker`, `/bag/discs/new` (search molds → pick/create → customize), `/bag/discs/:id`
 - **Effort:** M–L · **Test:** migration dry-run against copy of data; effective-flight-number coalesce unit tests
 
-### 1C. Bags + membership + flight chart
+### 1C. Bags + membership + flight chart — SHIPPED
 - **Schema (to generate):** `bags` (name, description, bag_type, is_default via partial unique index, capacity) + `bag_discs` join (unique pair, RLS via bag ownership)
 - **Tandem accommodation:** add nullable `bag_id` FK to `rounds` ("which bag was I carrying") — enables per-bag performance stats and caddie context later
 - **Rules:** disc can be in multiple bags; lost/retired/sold excluded from bag views, memberships preserved
@@ -104,7 +188,7 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Needs:** Vercel account + GitHub repo connection (auto-deploy on push to main); env vars (Supabase URL/anon key) set in Vercel dashboard; `vite-plugin-pwa` for manifest + basic service worker (app-shell caching only — NOT offline data, that's 2.2's buffering)
 - **Model:** Sonnet 5 · **Effort:** S · **Test:** install to phone home screen; full auth + logging flow on cellular, not just wifi
 
-### 1E. Bag & Disc Manager UI + app-level navigation
+### 1E. Bag & Disc Manager UI + app-level navigation — SHIPPED
 - **Concept:** game-inventory mental model — **locker = inventory** (all owned discs), **bags = loadouts** (equipped subsets), **profile = character sheet**, **flight chart = stat coverage**. Future round tracking selects a loadout whose disc attributes are all referenceable.
 - **App nav:** bottom tab bar ships now — Practice / Bag / Profile — replacing header-icon navigation. Rounds and Caddie tabs added as those areas are built (5-tab cap matches full roadmap; "More" tab absorbs overflow if ever needed).
 - **Locker UI:** grid ⇄ list toggle via peripheral icon (persist preference). Cards are clean/minimal in v1: name/nickname, flight numbers, photo thumbnail, stability accent, status. Search + filter (manufacturer, speed class, stability, status) + sort (speed, stability, recently added).
@@ -113,6 +197,71 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Deferred game flair (backlog):** rarity-style borders, equip animations, full stat-block card mode.
 - **Model:** Sonnet 5 · **Effort:** M · **Test:** grid/list toggle persists; equip/unequip reflects in both locker and bag views; search/filter correct on effective numbers
 - **Note:** 1C shipped schema + possibly partial UI with no navigation entry point — session must first audit what exists at /bag routes and wire or build accordingly.
+
+---
+
+## Jump-ahead features — out of roadmap sequence (owner decision 2026-07-14)
+
+These three were selected by the owner to build **ahead of their `PRODUCT_ROADMAP.md` phase**, a
+deliberate, documented jump (not a sequencing violation). Each is safe to build now because its schema is
+already live and it is self-contained. **1A/1B/1C/1E above are SHIPPED** — do not rebuild them; the older
+"NEXT UP / to generate" wording was stale. Detailed handoff plan: `~/.claude/plans/1a-2yes-bright-pelican.md`.
+Recommended build order: J1 → J2 → J3 (J2/J3 are independent). Each feature runs the full per-session
+gate (build + lint + `vitest run` + `graphify update .` + DEVLOG entry + working-checkpoint commit on a
+feature branch; `main` auto-deploys). State + verify the recommended model at the start of each.
+
+### J1. Round logging + quick-course (new COURSES tab) — front-runs roadmap Phase E
+- **Model: GPT-5.6 high** (round state + schema/RLS) · **Effort:** L
+- **Schema:** already exists, all tables empty, **no new columns** — `courses`, `layouts`, `holes`,
+  `rounds`, `round_holes`, `course_aliases` (1.5 groundwork applied: `rounds.layout_id/external_source/
+  external_ref/bag_id`, first-class `layouts`, `holes.layout_id`, sparse-nullable `round_holes`). Only DB
+  work is a new **RLS-policy migration** (take a manual backup first): `courses`/`layouts`/`holes` =
+  community read-all-authenticated, insert-open (`created_by = auth.uid()`), update-creator-only (mirror
+  `disc_molds`); `rounds`/`round_holes` = owner-scoped to `auth.uid()`; `course_aliases` = insert-open/
+  update-closed.
+- **Data layer (mirror the shipped offline-first pattern):** new `src/lib/roundLog.js` (Supabase query
+  functions, single source of query shape — mirrors `src/lib/discLocker.js`) with `fetchRounds`,
+  `fetchRound` (join `round_holes`+`holes`+optional disc), `createRound`, `updateRound`, `upsertRoundHole`,
+  and course helpers `fetchCourses`, `fetchCourse`, `createCourseWithLayout({name,location,holes})`
+  (quick-course: course + default layout + N holes), `fetchLayoutHoles`. Use client-id upsert on
+  `onConflict:'id'` for idempotent replay (copy `upsertDisc`). New `src/lib/repository/roundRepository.js`
+  mirroring `discRepository.js` (`useRoundList/useCreateRound/useUpdateRound`). `dexieDb.js`: add
+  `version(5)` carrying v4 tables unchanged + `rounds: 'id, user_id, course_id, status, [user_id+status]'`
+  and `roundHoles: 'id, round_id, hole_id'`.
+- **Pure logic:** `src/lib/rounds.js` (+ `rounds.test.js`): `roundTotal`, `parTotal`, `relativeToPar`
+  (handle sparse rounds), `formatRelativeToPar` (`E`/`+3`/`-2`).
+- **Routes** under the new COURSES tab (inside `AppShell`): `/courses` (root: directory + Add course + My
+  rounds), `/courses/new` (quick-course), `/courses/:courseId` (detail + Start round), `/rounds` (history),
+  `/rounds/new` (pick course/layout + bag), `/rounds/:roundId` (active scorecard), `/rounds/:roundId/summary`
+  (finalize). New pages: `CoursesPage`, `CourseFormPage`, `CourseDetailPage`, `RoundsPage`, `RoundStartPage`,
+  `RoundScorecardPage`, `RoundSummaryPage`.
+- **Shell/nav:** add a **COURSES** tab to `src/components/AppShell.jsx` (between DISCS and ME → PLAY /
+  DISCS / COURSES / ME; Tabler outline icon); register routes in `src/App.jsx` like the `/bag` tree.
+- **Reuse:** `fetchBags` for bag pick; `useDiscList`/`DiscCard` for per-hole disc; field-screen ergonomics
+  (primary controls in viewport, secondary in sheets; TTFP not network-gated).
+- **Verify:** create quick course → start round → enter scores → finalize; total + relative-to-par correct
+  and match unit tests; reload mid-round persists (Dexie); second user can't read the round (RLS).
+
+### J2. Disc comparison view — front-runs roadmap Phase C item 5
+- **Model: GPT-5.3-Codex medium** · **Effort:** S · **No new schema.**
+- Add a **Compare multi-select mode** to `src/pages/BagLockerPage.jsx` (reuse the existing `addToBag`
+  picker toggle) → "Compare (n)" navigates to `/bag/compare?ids=…` (cap 2–4). New `/bag/compare` route +
+  `src/pages/DiscComparePage.jsx`.
+- Reuse `effectiveFlightNumbers` (`src/lib/discs.js`), `stabilityClass`/`stabilityColor`
+  (`src/lib/discFilters.js`), and overlaid `FlightCurve` (`src/components/putterLineup/FlightCurve.jsx`).
+  Side-by-side table + curves. Pure `src/lib/discCompare.js` (+ test) for per-axis min/max highlight and
+  near-identical-disc "gap" flags — derived only, no opaque composite (roadmap rule).
+- **Verify:** select 2–3 discs → numbers equal `effectiveFlightNumbers`, curves overlay, override axis shows.
+
+### J3. Game-flair disc cards — front-runs roadmap Phase B item 5 / deferred backlog
+- **Model: GPT-5.3-Codex medium** · **Effort:** S.
+- Extend `src/components/DiscCard.jsx` with a `flair` variant (default OFF → today's minimal card is
+  byte-identical): rarity border, stat-block layout, subtle mount/equip animation. Pure `src/lib/discFlair.js`
+  (+ test) `discTier(disc)` from an available signal for v1 (role/wear_score/status) — note the real
+  cosmetic-tier **unlock events (Phase B item 5) are unbuilt** and are the eventual backing source.
+- Opt-in via a **Settings toggle** stored through the `src/lib/viewPreference.js` pattern. CSS in
+  `src/App.css` honoring "Sun-Drenched Topo" (no pure black/white, ≥2px borders, Oswald, theme-correct).
+- **Verify:** toggle on → rarity styling renders and is correct in light+dark; toggle off → identical to today.
 
 ---
 
@@ -214,7 +363,7 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
 **Confirmed future destination (next planning cycle after the above):** course catalog, round management, and UDisc CSV import — the Track 1.5 groundwork exists specifically so these land on prepared schema. Import design notes: UDisc exports score-only CSVs (per-hole scores + par row per layout, no disc/putt data); importer must be idempotent via external_source/external_ref; course matching via course_aliases; verify exact current CSV format at build time. Related backlog: data export (own-your-data CSV — build as importer rehearsal), weather auto-capture shipping WITH round management v1 (round creation is the natural capture point), same-day practice↔round linkage (derivable, insights lib join).
 
 ## Standing conventions (apply to every work session)
-- State recommended model at task start: **Sonnet 5** default for UI/CRUD; **Opus 4.8** for migrations, schema design passes, rules engines, DSP
-- End every Claude Code session updating `DEVLOG.md` and `FEATURE_BACKLOG.md` statuses
+- State the current OpenAI model/reasoning recommendation at task start; see `CODEX_WORKFLOW.md`.
+- End every Codex session updating `DEVLOG.md` and `FEATURE_BACKLOG.md` statuses when work changes them.
 - Schema files are append-only; new file per change
 - New derived stats go in `lib/insights/` as tested pure functions
