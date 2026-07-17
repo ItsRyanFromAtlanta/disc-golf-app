@@ -1,5 +1,62 @@
 # Dev Log
 
+## 2026-07-17 — Phase E E1 authenticated release gate
+
+**What:** Merged PR #2 to `main`, applied the five pending Phase D migrations in dependency order,
+and verified production RLS, grants, immutable policy shape, goal RPC exposure, additive columns, and
+classic-drill seeds. Rebased E1 onto the released foundation, opened draft PR #3, and ran the export
+from an authenticated E1 Vercel preview session.
+
+**Why:** E1 must prove that the signed-in user's authoritative Supabase account can be exported only
+after every declared source table exists in production; a local or partial-cache success is not a
+release substitute.
+
+**Key decisions:** The production rollout used reviewed append-only migrations without automated
+backup commands. The authenticated preview reached the explicit `Export ready` state with no console
+errors. The in-app browser isolated its generated download from the normal Downloads/temp filesystem,
+so filesystem-level archive inspection was unavailable; deterministic manifest/CSV inventory and
+formula hardening remain covered by focused tests rather than being overstated as manually inspected.
+
+**Verification:** PR #2 and all five migrations completed successfully. Production smoke confirmed RLS
+on all six new owner tables, no anon table/RPC access, intended authenticated privileges, and all three
+seeded drills. E1 passes 467 tests across 71 files, lint with four documented baseline warnings, build,
+GitHub CI, and Vercel preview deployment. The authenticated export completed and reported `Export ready`.
+
+**Next:** Merge PR #3 and confirm its production Vercel deployment, then begin E2 shipped-J1
+round/course reconciliation.
+
+---
+
+## 2026-07-16 — Phase E E1 structured data export (local green, release gated)
+
+**What:** Opened draft PR #2 for the accumulated Phase A–D branch, created stacked branch
+`codex/phase-e-data-export`, and added a focused own-your-data export panel to `/profile/settings`.
+The client reads owner/owner-derived Supabase rows in deterministic 500-row pages, follows only the
+shared course/regimen/tag/badge/catalog references needed to interpret those facts, and creates a
+versioned ZIP of formula-safe UTF-8 CSVs plus `manifest.json` and a scope README. Added pinned,
+dependency-free `fflate@0.8.3` for browser ZIP creation.
+
+**Why:** Phase E requires export before import. A stable, transparent archive is both a data-sovereignty
+feature and the fixture contract for later UDisc/import rehearsals.
+
+**Key decisions:** Supabase is authoritative; the exporter never substitutes a partial Dexie cache.
+Any unavailable table or network page aborts the export. The manifest explicitly excludes unsynced or
+device-only facts and private photo binaries while exporting photo metadata/Storage paths. CSV strings
+that could execute as spreadsheet formulas are neutralized. Shared community data is exported only
+when referenced by the owner's facts.
+
+**Verification:** 467 tests across 71 files pass; lint passes with the same four documented baseline
+warnings; production build and `git diff --check` pass. A live read-only Supabase audit confirmed RLS
+and authenticated SELECT grants on every currently-applied table in the source map. The in-app browser
+reached the local settings route but had no signed-in session. Production also still lacks the Phase D
+fatigue/preferences/goals/reports/experiment migrations carried by PR #2, so authenticated download
+smoke and SHIPPED status correctly remain gated until that PR is reviewed, merged, and rolled out.
+
+**Next:** Review/merge PR #2, apply and smoke its Phase D migrations, then run an authenticated E1 ZIP
+download/manifest audit before marking E1 shipped and beginning E2 J1 round/course reconciliation.
+
+---
+
 ## 2026-07-16 — Phase D item 4 checkpoint 7 Match Mode voice coaching
 
 **What:** Added opt-in Match Mode to regimen and freeform launchers. Every five genuine real-time

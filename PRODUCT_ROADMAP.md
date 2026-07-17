@@ -131,7 +131,10 @@ Recommended model: GPT-5.3-Codex medium; GPT-5.6 high for metric/report engines.
 
 Recommended model: GPT-5.6 high for schema/import/round state; GPT-5.3-Codex medium for UI.
 
-1. Data export first; then course directory/layout viewer, round creation/recording/finalization,
+1. **E1 IMPLEMENTED LOCALLY 2026-07-16; RELEASE GATED.** Data export first: remote-authoritative,
+   paginated, formula-safe CSVs in a versioned ZIP from `/profile/settings`. PR #2 and the pending
+   Phase D migrations must land before authenticated download smoke and SHIPPED status. Then harden
+   the already-shipped course directory/layout viewer and round creation/recording/finalization,
    activity-only rounds, group scorecard groundwork, weather, bag snapshot, and course preparation.
 2. UDisc import after verifying the current export format. Imports always affect statistics; XP and
    cosmetic rewards apply only when deduplicated data arrives within seven calendar days of the event.

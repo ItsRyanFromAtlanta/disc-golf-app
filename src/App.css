@@ -103,6 +103,15 @@
 .career-radar-legend strong, .career-trusted span { color: var(--color-text-secondary); font-size: 13px; text-align: right; }
 .career-trusted { margin-top: 12px; }
 .settings-note { color: var(--color-text-secondary); font-size: 14px; }
+
+.data-export-panel .settings-note {
+  max-width: 64ch;
+  line-height: 1.5;
+}
+
+.data-export-status {
+  margin: 12px 0 0;
+}
 .settings-timezone { display: grid; gap: 8px; padding: 12px 0; }
 .settings-timezone span { display: grid; gap: 3px; }
 .settings-timezone small { color: var(--color-text-secondary); }
