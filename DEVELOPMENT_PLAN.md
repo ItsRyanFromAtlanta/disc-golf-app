@@ -43,7 +43,12 @@ and contextual notification preferences are shipped. Goal creation, pause/resume
 cancellation, optimistic version checks, and immutable history UI are shipped. Phase D item 3 is
 complete: `/profile/reports` now generates the latest completed DST-aware Monday–Sunday window from
 completed visible activity, inserts immutable superseding versions, and exposes remote-first/Dexie-
-fallback version history. Phase D item 4 scope reconciliation is next.
+fallback version history. Phase D item 4 scope reconciliation is complete.
+Phase D item 4 checkpoint 1 shipped 2026-07-16: `/practice/stats` now enforces completed-visible
+metric eligibility and combines the shipped Wilson distance-confidence view with a 9-zone miss-
+tendency grid over real-time diagnostic events. It exposes zoned/total capture coverage, never derives
+miss direction from batch summaries, and requires three same-vector misses before naming a repeated
+pattern. Longitudinal physical-putter comparison is the next checkpoint.
 
 ## Phase A execution sessions — approved 2026-07-12
 

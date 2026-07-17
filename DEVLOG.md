@@ -1,5 +1,26 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 1 miss-tendency analytics
+
+**What:** Consolidated the existing distance-confidence surface and a new 9-zone miss-tendency grid
+under `/practice/stats`. Each distance band shows observed directional counts, zoned-versus-total
+real-time capture coverage, a small-sample caveat, and a repeated-vector callout only after three
+same-zone misses.
+
+**Evidence contract:** History still retains incomplete activity for recovery, while the new shared
+metric-eligibility filter admits only completed, visible lifecycle parents and their typed rows. Miss
+analytics query only those eligible regimen/freeform parents. They read genuine `putt_events` facts;
+unzoned real-time misses remain in the coverage denominator and batch summaries never synthesize
+direction. No schema change was needed.
+
+**Verified:** 429 tests pass across 63 files, including metric eligibility, distance grouping, capture
+coverage, the three-miss intervention floor, and empty evidence. Production build and diff checks pass.
+Lint retains only the four pre-existing warnings; the existing bundle-size advisory remains unchanged.
+
+**Next:** D4 checkpoint 2 — longitudinal physical-putter comparison with distance and sample context.
+
+---
+
 ## 2026-07-16 — Phase D item 3 checkpoint 5 deterministic weekly reports
 
 **What:** Added `/profile/reports` and a ME entry point for manually generating the latest completed

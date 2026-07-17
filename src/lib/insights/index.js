@@ -13,6 +13,7 @@ export {
 export { regimenPBRunIds, distancePBSessionIds, DISTANCE_PB_MIN_ATTEMPTS } from './pbs'
 export { distanceDropOff, DROP_OFF_WARN_THRESHOLD_PCT } from './dropOff'
 export { putterBreakdown } from './putterBreakdown'
+export { missTendency, MISS_TENDENCY_MIN_PATTERN_MISSES } from './missTendency'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
 export {

@@ -189,6 +189,12 @@ visible lifecycle sources, and inserts a new immutable snapshot version with an 
 link. Report history reads remote-first with Dexie fallback; generation never relies on a partial local
 cache and never overwrites an earlier version.
 
+Phase D D4 checkpoint 1 consolidates contextual practice analytics at `/practice/stats`. Distance
+confidence and miss-tendency evidence include only completed, visible lifecycle parents. The 9-zone
+miss grid reads genuine real-time `putt_events.miss_zone` facts, reports zone-capture coverage, never
+infers direction from batch summaries, and withholds a repeated-vector callout until at least three
+same-zone misses occur within a distance band.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

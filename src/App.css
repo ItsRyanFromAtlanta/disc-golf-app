@@ -1364,6 +1364,20 @@
   color: var(--color-text-secondary);
 }
 
+.miss-tendency { margin-top: 30px; }
+.miss-capture-coverage { padding: 12px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-surface); }
+.miss-band-list { display: grid; gap: 16px; }
+.miss-band { padding: 14px; border: var(--border-width) solid var(--color-border-default); border-radius: 10px; background: var(--color-bg-surface); }
+.miss-band > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.miss-band h3, .miss-band p { margin: 0; }
+.miss-band > header span { color: var(--color-text-secondary); font-size: 13px; }
+.miss-pattern { margin-top: 8px !important; }
+.miss-heat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+.miss-heat-cell { display: grid; min-height: 62px; align-content: center; justify-items: center; gap: 3px; padding: 5px; border: var(--border-width) solid var(--color-border-default); border-radius: 6px; background-color: rgba(140, 45, 25, var(--miss-heat-opacity)); text-align: center; }
+.miss-heat-cell span { color: var(--color-text-secondary); font-size: 10px; text-transform: capitalize; }
+.miss-heat-cell strong { font-family: var(--font-display); font-size: 20px; }
+.miss-band .confidence-band-caveat { margin-top: 10px; color: var(--color-text-secondary); font-size: 13px; }
+
 .detail-date {
   margin: 8px 0 16px;
 }
