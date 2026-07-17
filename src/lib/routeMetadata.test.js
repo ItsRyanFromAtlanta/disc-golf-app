@@ -20,6 +20,12 @@ describe('route metadata contract', () => {
     expect(resolveRouteMetadata('/courses')).toMatchObject({ id: 'courses-root', section: 'courses', scrollKey: 'courses-root' })
   })
 
+  it('keeps profile editing nested under the ME career summary', () => {
+    expect(resolveRouteMetadata('/profile/details')).toMatchObject({
+      id: 'profile-details', section: 'me', title: 'Profile', preserveNestedState: true,
+    })
+  })
+
   it('keeps the locker compatibility route inside the collection-first DISCS section', () => {
     expect(resolveRouteMetadata('/bag/locker')).toMatchObject({ id: 'disc-collection', section: 'discs' })
     expect(resolveRouteMetadata('/bag')).toMatchObject({ id: 'discs-root', title: 'Discs' })

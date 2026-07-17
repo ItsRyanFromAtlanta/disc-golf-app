@@ -1,5 +1,25 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 3 checkpoint 2 ME career summary
+
+**What:** Replaced the ME tab's profile form landing page with a career-wide summary and retained the
+existing editor at `/profile/details`. The summary presents identity/rating context, lifetime putts,
+conversion, session count, a five-axis SVG skill radar, Trophy Room access, and a trusted-putter audit.
+
+**Evidence rules:** All metrics are pure derivations from existing practice summaries, weather context,
+inventory roles, odometer totals, and real-time `putt_events`. Sparse radar axes say “Insufficient data.”
+The trusted-putter score is `total_chain_hits × attributed accuracy`; batch totals are excluded because
+they cannot identify a physical disc. No PDGA verification, scraped rating, or division benchmark is
+claimed while those sources remain unavailable.
+
+**Verified:** 413 tests pass across 58 files; lint retains only four pre-existing warnings and the
+production build passes with its existing large-chunk warning. Browser verification reached the
+protected login boundary; no authenticated browser session was available to inspect live career data.
+
+**Next:** D3 checkpoint 3 — complete the Profile/Settings split and wire contextual preferences.
+
+---
+
 ## 2026-07-16 — Phase D item 3 checkpoint 1 contracts
 
 **What:** Added the persistence and pure-domain foundation for contextual notification preferences,

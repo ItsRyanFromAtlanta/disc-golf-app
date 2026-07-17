@@ -6,6 +6,7 @@
 .history-page,
 .history-detail-page,
 .profile-page,
+.career-page,
 .confidence-map-page,
 .bag-page,
 .bag-locker-page,
@@ -26,6 +27,77 @@
   padding: 32px 20px;
   text-align: left;
 }
+
+.career-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.career-identity,
+.career-panel {
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-bg-surface);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.career-identity {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.career-identity h1,
+.career-identity p,
+.career-panel h2 { margin: 0; }
+.career-identity p,
+.career-note { color: var(--color-text-secondary); }
+.career-avatar { font-size: 32px; }
+.career-linked-badge {
+  border: var(--border-width) solid var(--color-secondary-accent);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--color-secondary-accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.career-rating { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; }
+.career-rating > span:last-of-type { text-align: right; }
+.career-progress {
+  grid-column: 1 / -1;
+  height: 12px;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 999px;
+  background: var(--color-bg-surface-alt);
+}
+.career-progress span { display: block; height: 100%; background: var(--color-secondary-accent); }
+
+.career-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 20px; }
+.career-stat-grid article {
+  min-width: 0;
+  padding: 12px 8px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  text-align: center;
+}
+.career-stat-grid strong { display: block; font-family: var(--font-display); font-size: 22px; }
+.career-stat-grid span { color: var(--color-text-secondary); font-size: 12px; }
+.career-radar-wrap { display: grid; gap: 12px; margin-top: 12px; }
+.career-radar { width: 100%; max-height: 240px; }
+.career-radar-grid, .career-radar-axis { fill: none; stroke: var(--color-border-default); stroke-width: 2; }
+.career-radar-value { fill: rgba(43, 95, 108, 0.28); stroke: var(--color-secondary-accent); stroke-width: 3; }
+.career-radar-legend { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.career-radar-legend li, .career-trusted { display: flex; justify-content: space-between; gap: 12px; }
+.career-radar-legend strong, .career-trusted span { color: var(--color-text-secondary); font-size: 13px; text-align: right; }
+.career-trusted { margin-top: 12px; }
 
 .lost-found-page {
   display: grid;

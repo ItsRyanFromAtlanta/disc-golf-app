@@ -88,6 +88,8 @@ J1 ships the first sibling tree under the COURSES section:
 /rounds/new              → course/layout/bag selection
 /rounds/:roundId         → offline-first scorecard
 /rounds/:roundId/summary → total, relative-to-par, and finalization
+/profile                 → ME career summary
+/profile/details         → editable player profile
 ```
 
 **App-level nav is PLAY / DISCS / COURSES / ME** after the J1 directory shipped (the approved base
