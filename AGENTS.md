@@ -162,6 +162,13 @@ or a sampled 20-point stage drop; skipping never blocks scoring. Practice parent
 external factors and optional 1–10 perceived effort. `profiles.round_turn_prompt_enabled` is the
 cross-device round-turn preference; a one-round dismissal remains local UI state.
 
+Phase D D3 checkpoint 1 adds Dexie v14 mirrors for `notificationPreferences`, `goals`, `goalEvents`,
+and `weeklyReportSnapshots`. Server contracts use owner-scoped `notification_preferences`, mutable goal
+parents plus immutable `goal_events`, and immutable versioned `weekly_report_snapshots` that store the
+Monday–Sunday calendar window, IANA timezone, exact UTC bounds, calculation version, source cutoff,
+sample counts, metrics, and deterministic highlights. Goal create/transition RPCs are atomic,
+idempotent, version-checked, and preserve pause/resume/completion history.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

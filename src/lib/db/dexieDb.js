@@ -252,6 +252,15 @@ export class AppDatabase extends Dexie {
     this.version(13).stores({
       practiceFatigueCheckins: 'id, user_id, putt_session_id, regimen_run_id, recorded_at',
     })
+
+    // Phase D D3 checkpoint 1: cross-device preference mirrors, mutable goal
+    // parents with immutable events, and immutable weekly report versions.
+    this.version(14).stores({
+      notificationPreferences: '[user_id+category], user_id, category, updated_at',
+      goals: 'id, user_id, goal_type, status, [user_id+status], updated_at',
+      goalEvents: 'id, user_id, goal_id, idempotency_key, [goal_id+occurred_at]',
+      weeklyReportSnapshots: 'id, user_id, week_start, version, [user_id+week_start], [week_start+version]',
+    })
   }
 }
 

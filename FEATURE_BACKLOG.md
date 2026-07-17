@@ -71,6 +71,9 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Feature | Status | Notes |
 |---|---|---|
 | Player profile expansion (throwing identity, calibration, goals) | SHIPPED | Extend into ME/Profile/Settings and approved preference taxonomy |
+| Goal pause/resume/history contracts | IN PROGRESS | D3 checkpoint 1 schema, atomic lifecycle RPCs, Dexie mirrors, and pure rules shipped; UI follows |
+| Immutable deterministic weekly reports | IN PROGRESS | D3 checkpoint 1 versioned Monday–Sunday snapshot contract shipped; generation and ME/History UI follow |
+| Contextual notification preferences | IN PROGRESS | D3 checkpoint 1 owner-scoped preference contract shipped; Settings UI and producer filtering follow |
 | Disc molds reference table + locker migration | SHIPPED | Extend with normalized plastic/run/stamp variants and moderation |
 | Multiple bags + membership + flight chart | SHIPPED | Phase C; locker/bag split; partial unique index for default bag |
 | Flight Spectrum | SHIPPED | Phase C item 3 (2026-07-16): wear-adjusted current-reality default, official manufacturer toggle, deterministic proximity clusters, accessible capacity-neutral ghost diamonds, legend/details, and missing-data states |

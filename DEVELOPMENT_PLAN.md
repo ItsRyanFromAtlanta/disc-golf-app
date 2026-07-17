@@ -34,7 +34,10 @@ shipped 2026-07-16. Phase D item 1 shipped 2026-07-16 with revised PLAY ordering
 Level-1 Quick Play fallback, a device-local default selector, and Dexie v12 regimen/set caching.
 Phase D item 2 shipped 2026-07-16 with pattern-gated stage fatigue check-ins, canonical session
 factors, perceived effort, weather context, immutable owner-scoped observations, Dexie v13 mirroring,
-and a cross-device round-turn preference. Phase D item 3 is next.
+and a cross-device round-turn preference. Phase D item 3 checkpoint 1 shipped 2026-07-16:
+notification-preference, goal lifecycle/event, and immutable timezone-windowed weekly-report contracts;
+owner-scoped RLS/indexes/grants; atomic goal RPCs; Dexie v14 mirrors; and pure goal/report functions.
+The ME UI remains the next D3 checkpoint.
 
 ## Phase A execution sessions — approved 2026-07-12
 

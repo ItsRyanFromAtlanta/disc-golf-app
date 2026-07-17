@@ -1,5 +1,35 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 3 checkpoint 1 contracts
+
+**What:** Added the persistence and pure-domain foundation for contextual notification preferences,
+goal pause/resume/history, and deterministic weekly reports. Goal types are bounded to rating, practice
+frequency, putting volume, and consistency with matching units and one active goal per type.
+
+**Data contract:** Added owner-scoped `notification_preferences`, `goals`, immutable `goal_events`, and
+immutable versioned `weekly_report_snapshots`. Weekly versions preserve Monday–Sunday dates, the IANA
+timezone used, exact UTC bounds, calculation version, source cutoff, samples, metrics, and highlights.
+Atomic goal RPCs enforce ownership, optimistic versioning, valid transitions, idempotency, and active-goal
+uniqueness. Dexie v14 mirrors all four entity families without changing InstantLaunch capture authority.
+
+**Pure rules:** Added deterministic goal transitions/progress and weekly report aggregation. Reports
+count both freeform/regimen summary rows, preserve the batch-vs-event data rule, and include completed
+round count without AI narrative.
+
+**Tooling note:** The pinned Supabase CLI again failed to create a migration because its Windows path
+handler treats the existing migrations directory as an error. The append-only file therefore uses the
+repository timestamp convention. Local DB lint could not connect because no local Postgres stack was
+running. No production database mutation was performed.
+
+**Verified:** 410 tests pass across 57 files; production build, diff checks, and Graphify refresh pass.
+Lint retains only the four pre-existing warnings. Static migration tests cover RLS enablement, owner
+predicates, owner indexes, immutable grants, private-function boundaries, optimistic version checks,
+and ordinary-client update/delete denial for event/report rows.
+
+**Next:** D3 checkpoint 2 — ME career summary at the `/profile` tab root.
+
+---
+
 ## 2026-07-16 — Shipped Phase D item 2 session context and fatigue check-ins
 
 **What:** Extended both active practice canvases with editable canonical factors while preserving the
