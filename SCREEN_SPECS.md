@@ -278,7 +278,10 @@ clear-cache.
   modal (clears the Dexie/InstantLaunch buffer only, never server data; blocked while writes pending).
 - **Divergence:** "local database sync controls" = the staged Dexie/TanStack repository + InstantLaunch
   buffer (Layer 1), not a separate concept — same honesty note as v1. Data export here also covers
-  Screen 19's export use case; the legal/purge half of Screen 19 stays parked.
+  Screen 19's export use case; the legal/purge half of Screen 19 stays parked. Phase E E1 ships the
+  export slice first inside existing `/profile/settings` rather than blocking data portability on the
+  rest of this control tower. Its ZIP contains remote-authoritative, paginated, deterministic CSVs and
+  a versioned manifest; unsynced local facts and private photo binaries are explicit exclusions.
 - **Dependency:** equipment-milestone markers need `discs.role` change timestamps (Layer 1); sync
   ledger needs the Layer 1 Dexie/TanStack skeleton to have something real to report.
 

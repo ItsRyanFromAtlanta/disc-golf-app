@@ -418,6 +418,31 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
 
 **Confirmed future destination (next planning cycle after the above):** course catalog, round management, and UDisc CSV import — the Track 1.5 groundwork exists specifically so these land on prepared schema. Import design notes: UDisc exports score-only CSVs (per-hole scores + par row per layout, no disc/putt data); importer must be idempotent via external_source/external_ref; course matching via course_aliases; verify exact current CSV format at build time. Related backlog: data export (own-your-data CSV — build as importer rehearsal), weather auto-capture shipping WITH round management v1 (round creation is the natural capture point), same-day practice↔round linkage (derivable, insights lib join).
 
+---
+
+## Phase E — Courses, rounds, and interoperability
+
+### E1. Structured own-your-data export — LOCAL GREEN; RELEASE GATED 2026-07-16
+- **Surface:** a focused `DataExportPanel` in existing `/profile/settings`; do not build a duplicate
+  global settings route merely to satisfy the blueprint's Screen 10 grouping.
+- **Authority:** Supabase remote only under the current user's RLS session. Ordered `.range()` pages
+  avoid the Data API row cap; any table/network failure aborts instead of producing a partial archive.
+- **Format:** deterministic UTF-8 CSVs, formula-injection protection, stable row/column ordering, and
+  a versioned `manifest.json` inside a client-built ZIP. These files become importer fixtures later.
+- **Scope:** all user-owned/owner-derived facts plus only shared courses, layouts, holes, regimens,
+  tags, badges, and catalog entities referenced by those facts. Server administration is excluded;
+  photo metadata is included while binary objects remain a separately disclosed exclusion.
+- **Verification:** 467 tests across 71 files, lint with the four known baseline warnings, and build
+  pass. Live schema audit confirms every currently-applied export table has RLS and authenticated
+  SELECT. Authenticated download smoke remains gated because PR #2 has not yet landed the Phase D
+  migrations for fatigue, preferences, goals/events, reports, and experiment markers.
+- **Model:** GPT-5.3-Codex medium for implementation; GPT-5.6 high for the RLS/schema audit.
+
+### E2. Shipped J1 round/course reconciliation — NEXT AFTER E1 RELEASE
+- Audit and harden the existing course/layout and offline round routes rather than rebuilding them.
+- Then add weather, activity-only rounds, group-scorecard groundwork, bag snapshot verification, and
+  course preparation in separately committed green checkpoints.
+
 ## Standing conventions (apply to every work session)
 - State the current OpenAI model/reasoning recommendation at task start; see `CODEX_WORKFLOW.md`.
 - End every Codex session updating `DEVLOG.md` and `FEATURE_BACKLOG.md` statuses when work changes them.

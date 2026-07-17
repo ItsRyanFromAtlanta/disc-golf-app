@@ -232,6 +232,14 @@ events; interventions require three consecutive same-zone/same-distance-band mis
 across consecutive five-attempt windows, with a five-attempt cooldown. Batch summaries never become
 coaching evidence, undo retracts evidence, and the shared silence control cancels/suppresses speech.
 
+Phase E E1 adds structured own-your-data export under `/profile/settings`. It reads the authoritative
+Supabase account through the signed-in user's RLS session in ordered 500-row pages, includes only
+referenced shared course/regimen/catalog rows, and produces deterministic formula-safe UTF-8 CSV files
+inside a ZIP with a versioned manifest. It never falls back to a partial Dexie cache: offline, failed,
+or unavailable table reads abort the whole export. The manifest explicitly excludes unsynced/device-only
+facts and private photo binaries while retaining `disc_photos` metadata and Storage paths. Phase D's
+pending server migrations must be applied before E1's authenticated release smoke can pass.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
@@ -259,8 +267,8 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
 
 ## Current build focus
-Executing `PRODUCT_ROADMAP.md`: production/shared contracts → DISCS data foundation → DISCS
-experience/intelligence → PLAY/ME/reports → courses/rounds/interoperability. Bottom navigation is
+Executing `PRODUCT_ROADMAP.md` Phase E, beginning with the E1 own-your-data export release gate before
+course/round hardening and interoperability. Bottom navigation is
 PLAY / DISCS / COURSES / ME now that the course directory ships; no standalone Stats tab. Existing
 Layers 1–4 and Trophy Room are shipped foundations to extend, not rebuild. Social, commerce,
 native/hardware, experimental capture, AI narrative, advanced sync UI, and PDGA automation remain

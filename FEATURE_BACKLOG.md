@@ -188,7 +188,7 @@ into the blueprint integration and are cross-referenced there).
 | UDisc CSV round import | BACKLOG | Score-only data; idempotent via provenance; verify current CSV format at build time |
 | Course catalog UI | SHIPPED | J1 COURSES directory, quick-course form, layout/hole detail |
 | Round management UI (/rounds tree) | SHIPPED | J1 round setup, offline scorecard, history, and finalization; weather remains future work |
-| Data export (own-your-data CSV) | BACKLOG | Cheap trust-builder; build as importer rehearsal |
+| Data export (own-your-data CSV) | IN PROGRESS | E1 local implementation: remote-authoritative paginated RLS reads, referenced shared rows, deterministic formula-safe CSV ZIP + manifest in ME settings; release gated on PR #2, pending Phase D migrations, and authenticated download smoke |
 | Same-day practice↔round linkage | BACKLOG | Derivable by date; insights lib join, no schema |
 
 ## Native iOS Roadmap (parked — requires platform decision)

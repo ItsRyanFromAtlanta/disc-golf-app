@@ -4,6 +4,7 @@ import { fetchProfile, upsertProfileFields } from '../lib/profile'
 import { getFlairMode, setFlairMode } from '../lib/viewPreference'
 import { NOTIFICATION_PREFERENCE_CATEGORIES, isValidIanaTimezone, preferenceMap } from '../lib/notificationPreferences'
 import { settingsRepository } from '../lib/repository/settingsRepository'
+import DataExportPanel from '../components/DataExportPanel'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -50,5 +51,6 @@ export default function SettingsPage() {
       <p className="settings-note">Critical sync and data-safety alerts always remain on.</p>
       {NOTIFICATION_PREFERENCE_CATEGORIES.map((category) => <label className="preference-toggle" htmlFor={`notification-${category.id}`} key={category.id}><span className="preference-toggle-copy"><strong>{category.label}</strong><small>{category.description}</small></span><input id={`notification-${category.id}`} type="checkbox" checked={enabledByCategory.get(category.id) ?? true} onChange={(event) => toggleCategory(category.id, event.target.checked).catch((err) => setError(err.message))} /></label>)}
     </section>
+    <DataExportPanel />
   </section>
 }
