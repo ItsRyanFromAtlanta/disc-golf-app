@@ -7,6 +7,7 @@ import { decayWeightedForm, distanceDropOff, putterBreakdown } from '../lib/insi
 import { compareGhostPace } from '../lib/ghostPacing'
 import { computeSetScore, computeCompletionBonus, inferPressurePuttMade } from '../lib/regimenScoring'
 import { DRILL_TYPES, drillKind, nextDrillStage, scoreDrillStage, validateDrillConfig } from '../lib/drillEngine'
+import { createClutchDeadline, showClutchNotification } from '../lib/clutchTimer'
 import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
@@ -37,6 +38,7 @@ import { fatigueCheckinTrigger } from '../lib/fatigueCheckin'
 import { fatigueCheckinRepository } from '../lib/repository/fatigueCheckinRepository'
 import { fetchGhostPacingProfile } from '../lib/repository/ghostPacingRepository'
 import GhostPaceCard from '../components/puttingCanvas/GhostPaceCard'
+import ClutchTimerPanel from '../components/puttingCanvas/ClutchTimerPanel'
 
 const BASELINE_WINDOW_DAYS = 30
 
@@ -51,7 +53,7 @@ function stageDistanceFt(regimenSet) {
 }
 
 function stageFromSet(regimenSet, index, regimen = null, progress = {}) {
-  const classic = [DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD].includes(drillKind(regimen))
+  const classic = [DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD, DRILL_TYPES.CLUTCH].includes(drillKind(regimen))
   return {
     label: classic ? `Station ${index + 1}` : `Set ${index + 1}`,
     distanceFt: stageDistanceFt(regimenSet),
@@ -64,6 +66,8 @@ function stageFromSet(regimenSet, index, regimen = null, progress = {}) {
     regimenSetOrder: regimenSet.set_order,
     drillAttemptsSoFar: progress.attemptsSoFar ?? 0,
     drillRunningTotal: progress.runningTotal ?? 0,
+    clutchStatus: progress.clutchStatus ?? null,
+    clutchDueAt: progress.clutchDueAt ?? null,
   }
 }
 
@@ -99,6 +103,7 @@ export default function RegimenRunPage() {
   const [completedSets, setCompletedSets] = useState([])
   const [runningTotal, setRunningTotal] = useState(0)
   const [regimenRunId, setRegimenRunId] = useState(null)
+  const [clutchDistanceFt, setClutchDistanceFt] = useState(20)
 
   // Screen 8: mid-round adjustments. allDiscs backs both the active-putter
   // label and the weather->backup swap suggestion; activePutterDiscId is
@@ -291,6 +296,7 @@ export default function RegimenRunPage() {
 
   const currentSetIndex = session.sessionState?.stage.regimenSetIndex ?? 0
   const currentSet = sets[currentSetIndex]
+  const isClutch = drillKind(regimen) === DRILL_TYPES.CLUTCH
   const ghostComparison = compareGhostPace(session.ghostCurrentEvents, session.ghostProfile)
 
   const activePutter = allDiscs.find((d) => d.id === activePutterDiscId) ?? null
@@ -316,12 +322,19 @@ export default function RegimenRunPage() {
     setExternalFactors([])
     setPerceivedEffort(null)
     setFatiguePrompt(null)
+    const clutchSetIndex = isClutch
+      ? Math.max(0, sets.findIndex((set) => stageDistanceFt(set) === clutchDistanceFt))
+      : 0
+    const initialSet = sets[clutchSetIndex]
+    const clutchProgress = isClutch
+      ? { clutchStatus: 'resting', clutchDueAt: createClutchDeadline(Date.now()).dueAt }
+      : {}
     session.startSession({
       sessionType: 'regimen',
       parentIds: { regimenRunId: newRunId, regimenId },
       activeRegimenSnapshot: { regimen, sets },
       ghostProfile: availableGhostProfile,
-      initialStage: stageFromSet(sets[0], 0, regimen),
+      initialStage: stageFromSet(initialSet, clutchSetIndex, regimen, clutchProgress),
       parentWriteRow: {
         id: newRunId,
         _op: 'insert',
@@ -336,7 +349,7 @@ export default function RegimenRunPage() {
   function handleGestureMake() {
     audio.playMake()
     haptics.vibrateMake()
-    session.gestureMake(new Date().toISOString(), currentSet ? stageDistanceFt(currentSet) : null, activePutterDiscId)
+    session.gestureMake(new Date().toISOString(), currentSet ? stageDistanceFt(currentSet) : null, activePutterDiscId, isClutch)
   }
 
   // Sound/haptic feedback fires immediately regardless of diagnostic mode —
@@ -352,13 +365,23 @@ export default function RegimenRunPage() {
     if (diagnosticMode) {
       setPendingMiss({ occurredAt, distanceFt })
     } else {
-      session.gestureMiss(occurredAt, distanceFt, null, activePutterDiscId)
+      session.gestureMiss(occurredAt, distanceFt, null, activePutterDiscId, isClutch)
     }
   }
 
   function handleResolveMissZone(missZone) {
-    if (pendingMiss) session.gestureMiss(pendingMiss.occurredAt, pendingMiss.distanceFt, missZone, activePutterDiscId)
+    if (pendingMiss) session.gestureMiss(pendingMiss.occurredAt, pendingMiss.distanceFt, missZone, activePutterDiscId, isClutch)
     setPendingMiss(null)
+  }
+
+  function handleClutchReady() {
+    haptics.vibrateMake()
+    void showClutchNotification().catch(() => false)
+    session.advanceStage({
+      ...session.sessionState.stage,
+      label: 'Putt now',
+      clutchStatus: 'putt_now',
+    }, null)
   }
 
   function handleUndo() {
@@ -610,20 +633,51 @@ export default function RegimenRunPage() {
       </header>
 
       {session.fsmStatus === FSM_STATES.READY_DEFAULT && (
-        <SessionLauncher
-          userId={user.id}
-          title="Ready when you are"
-          suggestion={{ currentFormPct }}
-          presets={session.profileDefaults.quickModPresets}
-          favoritePutterId={session.profileDefaults.favoritePutterDiscId}
-          onSelectPutter={(discId) => session.updateProfileDefaults({ favoritePutterDiscId: discId })}
-          onSelectPreset={() => {}}
-          onStart={handleStart}
-          starting={starting}
+        <>
+          {isClutch && (
+            <section className="clutch-setup">
+              <h2>Choose your pressure distance</h2>
+              <div className="clutch-distance-options" aria-label="Pressure putt distance">
+                {sets.map((set) => {
+                  const distance = stageDistanceFt(set)
+                  return (
+                    <button
+                      key={set.id}
+                      type="button"
+                      aria-pressed={clutchDistanceFt === distance}
+                      onClick={() => setClutchDistanceFt(distance)}
+                    >
+                      {distance} ft
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+          <SessionLauncher
+            userId={user.id}
+            title={isClutch ? 'Start the randomized rest' : 'Ready when you are'}
+            suggestion={{ currentFormPct }}
+            presets={session.profileDefaults.quickModPresets}
+            favoritePutterId={session.profileDefaults.favoritePutterDiscId}
+            onSelectPutter={(discId) => session.updateProfileDefaults({ favoritePutterDiscId: discId })}
+            onSelectPreset={() => {}}
+            onStart={handleStart}
+            starting={starting}
+          />
+        </>
+      )}
+
+      {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState?.stage.clutchStatus === 'resting' && (
+        <ClutchTimerPanel
+          dueAt={session.sessionState.stage.clutchDueAt}
+          distanceFt={session.sessionState.stage.distanceFt}
+          onReady={handleClutchReady}
+          onExit={handleAbandon}
         />
       )}
 
-      {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState && (
+      {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState && session.sessionState.stage.clutchStatus !== 'resting' && (
         <PuttingCanvas
           contextBar={
             <CanvasContextBar
@@ -658,7 +712,7 @@ export default function RegimenRunPage() {
               suggestedSwapDisc={suggestedSwapDisc}
               onAcceptSwap={handleAcceptSwap}
               onDismissSwap={() => setSwapSuggestionDismissed(true)}
-              onEdit={() => setShowEditDrawer(true)}
+              onEdit={isClutch ? null : () => setShowEditDrawer(true)}
             />
           }
           ghostPace={<GhostPaceCard profile={session.ghostProfile} comparison={ghostComparison} />}
@@ -692,6 +746,13 @@ export default function RegimenRunPage() {
           }
           batchRibbon={(() => {
             const remaining = session.sessionState.stage.volumePlanned - session.sessionState.tally.attempts
+            if (isClutch) {
+              return remaining > 0 ? (
+                <p className="regimen-rule-summary">Record the real pressure putt with Make or Miss.</p>
+              ) : (
+                <button type="button" className="start-button" onClick={handleFinishStage}>Finish pressure putt</button>
+              )
+            }
             return remaining > 0 || batchRibbonConfirming ? (
               <BatchRibbon
                 volumePlanned={remaining}

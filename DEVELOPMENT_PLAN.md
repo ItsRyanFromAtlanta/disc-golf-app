@@ -364,6 +364,7 @@ Absorbs the "Dual-Pace Scoring Canvas" interaction spec (velocity-gated gestures
 - **Model:** Sonnet 5; Opus 4.8 for the rules-engine design pass · **Prereqs:** 2.2 (per-putt entry makes drill state machines clean)
 
 ### 2.4 Clutch simulator — ratio: ★★★★☆ (H value / S–M effort)
+- **Status:** SHIPPED 2026-07-16 (Phase D4 checkpoint 6)
 - **What:** randomized rest timers (2–8 min) then a "putt now" alert for a single pressure putt; scored with existing pressure mechanics
 - **Needs:** drill_type in 2.3's engine; browser Notification permission + fallback in-app alarm; logs to putt_events with pressure flag
 - **Model:** Sonnet 5 · **Prereqs:** 2.2, 2.3 engine

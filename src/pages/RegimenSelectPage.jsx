@@ -59,7 +59,7 @@ export default function RegimenSelectPage() {
           <h2>{group.label}</h2>
           <ul className="regimen-list">
             {group.regimens.map((regimen) => {
-              const classic = [DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD].includes(drillKind(regimen))
+              const classic = [DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD, DRILL_TYPES.CLUTCH].includes(drillKind(regimen))
               return (
                 <li key={regimen.id} className="regimen-card">
                   <div className="regimen-card-header">
@@ -74,7 +74,9 @@ export default function RegimenSelectPage() {
                     <p className="regimen-rule-summary">
                       {drillKind(regimen) === DRILL_TYPES.JYLY
                         ? '100 putts · score every make'
-                        : `10 stations · ${regimen.rules_config?.max_attempts ?? 100} attempt cap`}
+                        : drillKind(regimen) === DRILL_TYPES.CLUTCH
+                          ? 'One pressure putt · randomized 2–8 min rest'
+                          : `10 stations · ${regimen.rules_config?.max_attempts ?? 100} attempt cap`}
                     </p>
                   ) : (
                     <dl className="regimen-stats">

@@ -791,6 +791,67 @@
   text-transform: uppercase;
 }
 
+.clutch-setup {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.clutch-distance-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.clutch-distance-options button {
+  min-height: 56px;
+  border: var(--border-width) solid var(--color-border-default);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.clutch-distance-options button[aria-pressed='true'] {
+  border-color: var(--color-border-focus);
+  background: var(--color-accent-secondary);
+  color: var(--color-text-inverse);
+}
+
+.clutch-timer-panel {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  text-align: center;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-bg-surface);
+}
+
+.clutch-eyebrow {
+  color: var(--color-accent-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.clutch-countdown {
+  margin: 0;
+  font-size: clamp(64px, 22vw, 112px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.clutch-alert-button {
+  min-height: 80px;
+}
+
 .regimen-card {
   border: var(--border-width) solid var(--color-border-default);
   border-radius: 8px;

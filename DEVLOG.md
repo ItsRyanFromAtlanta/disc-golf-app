@@ -1,5 +1,28 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 6 clutch simulator
+
+**What:** Added Clutch Simulator as a classic drill: choose 15/20/25/33 feet, start a randomized
+2–8 minute rest, then record one pressure putt. The deadline is generated once and persisted; reload,
+background throttling, and overdue resume cannot reroll or extend it.
+
+**Alerts/capture:** The in-app alarm is authoritative. System notification permission is requested
+only from an explicit tap and delivery is best-effort while browser execution is available; guaranteed
+closed-app delivery remains a future server-push/native concern. Batch and tally-edit paths are hidden.
+Only genuine tap/gesture capture writes `putt_events.is_pressure = true`.
+
+**Schema:** Added `putt_events.is_pressure boolean not null default false`, an owner/time partial index,
+and an idempotent shared Clutch regimen seed with four one-putt distances. Existing owner RLS and Data
+API grants continue to govern the altered table; no new exposed table was created.
+
+**Verified:** 453 tests pass across 68 files, including deadline bounds/overdue recovery, notification
+permission gating, drill completion, and InstantLaunch outbox behavior. Production build and diff checks
+pass. Lint retains only the four pre-existing warnings; the bundle-size advisory is unchanged.
+
+**Next:** Thresholded voice callouts / Match Mode coaching.
+
+---
+
 ## 2026-07-16 — Phase D item 4 checkpoint 5 classic drill engine
 
 **What:** Added versioned JYLY and Around-the-World rules as shared system regimens. Selection now

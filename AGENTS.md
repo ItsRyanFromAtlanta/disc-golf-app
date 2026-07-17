@@ -219,6 +219,12 @@ bounded at 100 attempts. Both reuse owner-scoped regimen runs and append-only ru
 repeated station visits. The active station, running score, and attempt count remain in the local
 InstantLaunch stage snapshot for offline recovery; batch capture still writes summaries only.
 
+Phase D D4 checkpoint 6 adds a one-attempt Clutch Simulator with selectable 15/20/25/33-foot
+distances and a frozen randomized 2–8 minute deadline. The in-app deadline/recovery alarm is
+authoritative; optional system notifications are permission-gated and best-effort while browser
+execution remains available. Clutch capture is real-time only, writes `putt_events.is_pressure = true`,
+and hides batch/edit paths so no pressure event is synthesized from a summary.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

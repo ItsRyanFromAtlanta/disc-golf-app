@@ -119,7 +119,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Web haptics (capability-detected, Android only) | SHIPPED | 2.2c — Vibration API; simplified patterns; silent no-op on iOS |
 | Per-putt capture layer (tap entry, miss zones, timestamps, input_source) | SHIPPED | 2.2c — putt_events table live; THE enabler: drills, diagnostics, pacing, voice, and future sensor inputs all feed one table |
 | Gamified drills: JYLY, Around the World | SHIPPED | D4 checkpoint 5: versioned rules_config state machine, grouped selection, repeated-station history, 100-attempt guard, and offline progress recovery |
-| Clutch simulator (randomized rest timers) | NEXT UP | Adopts TDD's 2-8min randomization; existing pressure scoring |
+| Clutch simulator (randomized rest timers) | SHIPPED | D4 checkpoint 6: selectable distance, frozen 2–8min deadline, resume-safe in-app alarm, optional system alert, and genuine pressure-event attribution |
 | Miss tendency diagnostics (9-zone heat grid) | SHIPPED | D4 checkpoint 1: completed-visible real-time events only, capture coverage shown, and repeated-vector callouts require three matching misses |
 | Ghost pacing engine | SHIPPED | D4 checkpoint 4: frozen highest-score same-regimen profile, InstantLaunch v3 recovery, three-event floor, and real-time-only attempt/time/make deltas |
 | Voice callouts / Match Mode coaching | BACKLOG | Browser SpeechSynthesis; adopts TDD intervention-threshold rule (never coach off single events) |

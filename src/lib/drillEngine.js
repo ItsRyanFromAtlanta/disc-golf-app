@@ -3,6 +3,7 @@ export const DRILL_TYPES = Object.freeze({
   CUSTOM: 'custom',
   JYLY: 'jyly',
   AROUND_THE_WORLD: 'around_the_world',
+  CLUTCH: 'clutch',
 })
 
 const SUPPORTED_VERSION = 1
@@ -14,7 +15,7 @@ export function drillKind(regimen) {
 export function validateDrillConfig(regimen, sets) {
   const kind = drillKind(regimen)
   if (!Array.isArray(sets) || sets.length === 0) return { valid: false, reason: 'A drill needs at least one station.' }
-  if (![DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD].includes(kind)) return { valid: true, kind }
+  if (![DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD, DRILL_TYPES.CLUTCH].includes(kind)) return { valid: true, kind }
 
   const config = regimen?.rules_config
   if (!config || config.version !== SUPPORTED_VERSION || config.kind !== kind) {
@@ -31,12 +32,15 @@ export function validateDrillConfig(regimen, sets) {
       return { valid: false, reason: 'Around the World needs a maximum of 10–100 attempts.' }
     }
   }
+  if (kind === DRILL_TYPES.CLUTCH && !sets.every((set) => set.reps_required === 1)) {
+    return { valid: false, reason: 'Clutch distances must contain one pressure putt each.' }
+  }
   return { valid: true, kind }
 }
 
 export function scoreDrillStage(regimen, stageResult, fallbackScore) {
   const kind = drillKind(regimen)
-  if ([DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD].includes(kind)) {
+  if ([DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD, DRILL_TYPES.CLUTCH].includes(kind)) {
     return { points: stageResult.makes, cleanSet: stageResult.attempts > 0 && stageResult.makes === stageResult.attempts }
   }
   return fallbackScore()
@@ -44,6 +48,7 @@ export function scoreDrillStage(regimen, stageResult, fallbackScore) {
 
 export function nextDrillStage({ regimen, currentIndex, setCount, makes, attemptsSoFar }) {
   const kind = drillKind(regimen)
+  if (kind === DRILL_TYPES.CLUTCH) return { completed: true, exhausted: false, nextIndex: null }
   if (kind !== DRILL_TYPES.AROUND_THE_WORLD) {
     return currentIndex >= setCount - 1
       ? { completed: true, exhausted: false, nextIndex: null }
@@ -68,6 +73,7 @@ export function drillGroupLabel(regimen) {
   switch (drillKind(regimen)) {
     case DRILL_TYPES.JYLY:
     case DRILL_TYPES.AROUND_THE_WORLD:
+    case DRILL_TYPES.CLUTCH:
       return 'Classic drills'
     case DRILL_TYPES.CUSTOM:
       return 'Custom routines'

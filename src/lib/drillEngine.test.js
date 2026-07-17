@@ -37,4 +37,11 @@ describe('drillEngine', () => {
     expect(drillGroupLabel({})).toBe('Scored regimens')
     expect(validateDrillConfig(around, sets).valid).toBe(true)
   })
+
+  it('completes a clutch drill after its selected pressure putt', () => {
+    const clutch = { drill_type: DRILL_TYPES.CLUTCH, rules_config: { version: 1, kind: DRILL_TYPES.CLUTCH } }
+    expect(validateDrillConfig(clutch, [{ reps_required: 1 }]).valid).toBe(true)
+    expect(nextDrillStage({ regimen: clutch, currentIndex: 2, setCount: 4, makes: 0, attemptsSoFar: 1 }).completed).toBe(true)
+    expect(drillGroupLabel(clutch)).toBe('Classic drills')
+  })
 })

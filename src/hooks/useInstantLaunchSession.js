@@ -118,7 +118,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
   // sessionType/parentIds fresh off the persisted blob rather than closing
   // over React state, since gestureMake/gestureMiss are memoized once and
   // would otherwise see a stale sessionType/parentIds after startSession.
-  function buildPuttEventRow({ id, outcome, missZone, distanceFt, occurredAt, sequence, putterDiscId }) {
+  function buildPuttEventRow({ id, outcome, missZone, distanceFt, occurredAt, sequence, putterDiscId, isPressure }) {
     const { sessionType, parentIds } = readInstantLaunchState().crashRecoveryBuffer
     const parentFk =
       sessionType === 'regimen'
@@ -139,6 +139,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       // lets the Session Summary's putter-performance breakdown (and an
       // ad-hoc mid-round SWAP) attribute makes/misses to the right disc.
       putter_disc_id: putterDiscId ?? null,
+      is_pressure: isPressure === true,
     }
   }
 
@@ -245,7 +246,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     mirrorPromiseRef.current = mirrorActiveActivity(state).finally(() => schedulerRef.current?.notifyOutboxChanged())
   }, [mirrorActiveActivity])
 
-  const gestureMake = useCallback((occurredAt, distanceFt, putterDiscId = null) => {
+  const gestureMake = useCallback((occurredAt, distanceFt, putterDiscId = null, isPressure = false) => {
     const id = crypto.randomUUID()
     const next = sessionReducer(sessionStateRef.current, { type: 'GESTURE_MAKE', id, occurredAt })
     setSession(next)
@@ -258,6 +259,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
         occurredAt,
         sequence: next.nextSequence - 1,
         putterDiscId,
+        isPressure,
       })
       const withEvent = applyEnqueuePuttEvent(s, row)
       const withGhostProgress = applyAppendGhostCurrentEvent(withEvent, row)
@@ -267,7 +269,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     schedulerRef.current?.notifyOutboxChanged()
   }, [])
 
-  const gestureMiss = useCallback((occurredAt, distanceFt, missZone = null, putterDiscId = null) => {
+  const gestureMiss = useCallback((occurredAt, distanceFt, missZone = null, putterDiscId = null, isPressure = false) => {
     const id = crypto.randomUUID()
     const next = sessionReducer(sessionStateRef.current, { type: 'GESTURE_MISS', id, occurredAt, missZone })
     setSession(next)
@@ -280,6 +282,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
         occurredAt,
         sequence: next.nextSequence - 1,
         putterDiscId,
+        isPressure,
       })
       const withEvent = applyEnqueuePuttEvent(s, row)
       const withGhostProgress = applyAppendGhostCurrentEvent(withEvent, row)
