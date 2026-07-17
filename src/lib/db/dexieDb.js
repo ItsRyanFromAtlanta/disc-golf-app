@@ -246,6 +246,12 @@ export class AppDatabase extends Dexie {
     this.version(12).stores({
       regimenSets: 'id, regimen_id, set_order, [regimen_id+set_order]',
     })
+
+    // Phase D D2: immutable fatigue observations are mirrored locally; parent
+    // session context remains on the existing regimenRuns/puttSessions rows.
+    this.version(13).stores({
+      practiceFatigueCheckins: 'id, user_id, putt_session_id, regimen_run_id, recorded_at',
+    })
   }
 }
 

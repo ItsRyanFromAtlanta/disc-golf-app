@@ -25,11 +25,11 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Unified history feed (freeform + regimens interleaved, day-grouped, filter chips) | SHIPPED | Extend with auto-closed activities, soft deletion, corrections, provenance, and audit recovery |
 | Detail views per session/run | SHIPPED | Extend into the complete activity-history model |
 | Session notes | SHIPPED | Optional free text, both session types |
-| One-tap tag chips | SHIPPED | Extend with canonical session factors (putter, weather, conditions) |
+| One-tap tag chips | SHIPPED | Canonical session factors and editable weather context shipped in D2 |
 | Practice streak counter | SHIPPED | Consecutive days with ≥1 session; shown contextually in ME/PLAY |
 | PB badges | SHIPPED | New best score on a regimen; new make-% high at a distance (min 10 attempts) |
 | Volume ledger | SHIPPED | Putts this week / month / lifetime |
-| Fatigue curve | SHIPPED | Extend with adaptive stage check-ins and round-turn prompts |
+| Fatigue curve | SHIPPED | D2 adds pattern-gated adaptive stage check-ins and a user-disableable round-turn prompt |
 | Pressure differential | SHIPPED | Contextual metric; no standalone Stats tab |
 | Decay-weighted current form | SHIPPED | Contextual recent-vs-lifetime metric; no opaque composite score |
 | Cadence fingerprint | SHIPPED | Integrate into ME/weekly reports when supported by samples |

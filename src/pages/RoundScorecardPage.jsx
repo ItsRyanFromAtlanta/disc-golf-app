@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useDiscList } from '../lib/repository/discRepository'
 import { flushRoundOutbox, loadRound, saveRoundHole } from '../lib/repository/roundRepository'
 import { formatRelativeToPar, relativeToPar, roundTotal } from '../lib/rounds'
+import { fetchProfile, upsertProfileFields } from '../lib/profile'
 
 function sortedHoles(round) {
   return [...(round.layout?.holes ?? round.holes ?? [])].sort((a, b) => {
@@ -54,11 +55,18 @@ export default function RoundScorecardPage() {
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
   const [savingHoleId, setSavingHoleId] = useState(null)
+  const [roundTurnPromptEnabled, setRoundTurnPromptEnabled] = useState(true)
+  const [roundTurnDismissed, setRoundTurnDismissed] = useState(false)
 
   useEffect(() => {
     let active = true
     setLoading(true)
     setError(null)
+    fetchProfile(user.id)
+      .then((profile) => {
+        if (active) setRoundTurnPromptEnabled(profile?.round_turn_prompt_enabled ?? true)
+      })
+      .catch(() => undefined)
     flushRoundOutbox(user.id)
       .catch(() => undefined)
       .then(() => loadRound(roundId, user.id))
@@ -86,6 +94,13 @@ export default function RoundScorecardPage() {
     [hasScore, round],
   )
   const discs = discsQuery.data ?? []
+  const frontNineComplete = useMemo(() => {
+    const front = round?.holes?.filter((hole) => hole.hole_number <= 9) ?? []
+    return front.length >= 9 && front.every((hole) => {
+      const row = round?.round_holes?.find((value) => value.hole_id === hole.id)
+      return row?.score !== null && row?.score !== ''
+    })
+  }, [round])
 
   function rowFor(hole) {
     return round?.round_holes.find((row) => row.hole_id === hole.id)
@@ -148,6 +163,21 @@ export default function RoundScorecardPage() {
       </div>
 
       {notice && <p className="form-info">{notice}</p>}
+      {roundTurnPromptEnabled && frontNineComplete && !roundTurnDismissed && (
+        <aside className="round-turn-prompt" aria-label="Round turn check-in">
+          <strong>At the turn</strong>
+          <p>Take a breath, check your pace, and reset your target for the back nine.</p>
+          <button type="button" className="chip" onClick={() => setRoundTurnDismissed(true)}>Got it</button>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => {
+              setRoundTurnPromptEnabled(false)
+              upsertProfileFields(user.id, { round_turn_prompt_enabled: false }).catch(() => setNotice('Preference will retry when you reconnect.'))
+            }}
+          >Don’t show this again</button>
+        </aside>
+      )}
       {discsQuery.error && <p className="form-error">Disc list unavailable; scores still save without a disc.</p>}
 
       <ol className="scorecard-hole-list">

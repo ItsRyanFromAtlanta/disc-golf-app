@@ -7,6 +7,8 @@ const INPUT_MODES = [
   { key: 'panic', label: 'Panic' },
 ]
 
+const SESSION_FACTORS = ['indoor', 'outdoor', 'tired', 'new-putter', 'pre-tournament', 'experimenting']
+
 function syncStatusLabel(status) {
   switch (status) {
     case 'synced':
@@ -43,6 +45,8 @@ export default function CanvasContextBar({
   onChangeInputMode,
   syncStatus,
   onExit,
+  externalFactors = [],
+  onToggleFactor,
 }) {
   return (
     <div className="canvas-context-bar">
@@ -78,6 +82,18 @@ export default function CanvasContextBar({
             isActive={(m) => inputMode === m.key}
             onSelect={(m) => onChangeInputMode(m.key)}
           />
+        </div>
+      )}
+      {onToggleFactor && (
+        <div className="canvas-context-bar-row factor-chip-row" aria-label="Session factors">
+          {SESSION_FACTORS.map((factor) => (
+            <button
+              key={factor}
+              type="button"
+              className={`chip ${externalFactors.includes(factor) ? 'chip-active' : ''}`}
+              onClick={() => onToggleFactor(factor)}
+            >{factor}</button>
+          ))}
         </div>
       )}
     </div>

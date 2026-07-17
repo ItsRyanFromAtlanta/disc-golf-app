@@ -156,6 +156,12 @@ device-local `quickPlayRegimenId` in InstantLaunch profile defaults; a missing/a
 back to the system Level-1 regimen, then the lowest system level. Active recovery remains local and must
 never wait for history or regimen network reads.
 
+Phase D D2 adds Dexie v13 `practiceFatigueCheckins` and the immutable owner-scoped
+`practice_fatigue_checkins` table. Check-ins occur only at stage boundaries after three trailing misses
+or a sampled 20-point stage drop; skipping never blocks scoring. Practice parent rows retain canonical
+external factors and optional 1–10 perceived effort. `profiles.round_turn_prompt_enabled` is the
+cross-device round-turn preference; a one-round dismissal remains local UI state.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

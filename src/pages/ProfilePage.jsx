@@ -80,6 +80,18 @@ export default function ProfilePage() {
             }}
           />
         </label>
+        <label className="preference-toggle" htmlFor="round-turn-prompt">
+          <span className="preference-toggle-copy">
+            <strong>Round-turn check-in</strong>
+            <small>Show a brief pace and focus reminder after the front nine.</small>
+          </span>
+          <input
+            id="round-turn-prompt"
+            type="checkbox"
+            checked={profile.round_turn_prompt_enabled ?? true}
+            onChange={(event) => saveFields({ round_turn_prompt_enabled: event.target.checked }).catch((err) => setError(err.message))}
+          />
+        </label>
       </section>
 
       {nudgeVisible && (

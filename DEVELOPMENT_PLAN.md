@@ -32,7 +32,9 @@ bag editing, accessible current-reality/official Flight Spectrum, and the schema
 with transparent component presets and capacity-neutral ghost gaps. Phase C item 5 disc/bag comparisons
 shipped 2026-07-16. Phase D item 1 shipped 2026-07-16 with revised PLAY ordering, deterministic
 Level-1 Quick Play fallback, a device-local default selector, and Dexie v12 regimen/set caching.
-Phase D item 2 is next.
+Phase D item 2 shipped 2026-07-16 with pattern-gated stage fatigue check-ins, canonical session
+factors, perceived effort, weather context, immutable owner-scoped observations, Dexie v13 mirroring,
+and a cross-device round-turn preference. Phase D item 3 is next.
 
 ## Phase A execution sessions — approved 2026-07-12
 

@@ -30,6 +30,9 @@ import EditTallyDrawer from '../components/puttingCanvas/EditTallyDrawer'
 import BatchRibbon from '../components/puttingCanvas/BatchRibbon'
 import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePicker'
 import SessionReport from '../components/sessionReport/SessionReport'
+import FatigueCheckin from '../components/puttingCanvas/FatigueCheckin'
+import { fatigueCheckinTrigger } from '../lib/fatigueCheckin'
+import { fatigueCheckinRepository } from '../lib/repository/fatigueCheckinRepository'
 
 const BASELINE_WINDOW_DAYS = 30
 
@@ -100,6 +103,9 @@ export default function RegimenRunPage() {
   const [windMph, setWindMph] = useState(null)
   const [swapSuggestionDismissed, setSwapSuggestionDismissed] = useState(false)
   const [showEditDrawer, setShowEditDrawer] = useState(false)
+  const [externalFactors, setExternalFactors] = useState([])
+  const [perceivedEffort, setPerceivedEffort] = useState(null)
+  const [fatiguePrompt, setFatiguePrompt] = useState(null)
 
   // Session Summary (Screen 9) — populated once the run reaches 'summary'.
   const [reportPutterRows, setReportPutterRows] = useState([])
@@ -271,6 +277,9 @@ export default function RegimenRunPage() {
     setRunningTotal(0)
     setCompletedSets([])
     setCelebrationEvents([]) // clear the previous session's banner before this one starts
+    setExternalFactors([])
+    setPerceivedEffort(null)
+    setFatiguePrompt(null)
     session.startSession({
       sessionType: 'regimen',
       parentIds: { regimenRunId: newRunId, regimenId },
@@ -366,6 +375,12 @@ export default function RegimenRunPage() {
       points_earned: points,
     }
 
+    const triggerReason = fatigueCheckinTrigger({
+      outcomes: stageState.events.map((event) => event.outcome),
+      stage: { makes: stageState.tally.makes, attempts: stageState.tally.attempts },
+      previousStages: completedSets,
+    })
+
     setCompletedSets((prev) => [
       ...prev,
       {
@@ -390,6 +405,8 @@ export default function RegimenRunPage() {
         total_score: finalTotal,
         weather_condition: weatherCondition,
         wind_mph: windMph,
+        external_factors: externalFactors,
+        perceived_effort: perceivedEffort,
       })
       setPhase('summary')
     } else {
@@ -397,7 +414,24 @@ export default function RegimenRunPage() {
       const nextSet = sets[currentSetIndex + 1]
       audio.announceStage(currentSetIndex + 1, sets.length, stageDistanceFt(nextSet))
       session.advanceStage(stageFromSet(nextSet, currentSetIndex + 1), () => summaryRow)
+      if (triggerReason) setFatiguePrompt({ reason: triggerReason, stageIndex: currentSetIndex + 1 })
     }
+  }
+
+  async function handleFatigueResponse(rating) {
+    const prompt = fatiguePrompt
+    setFatiguePrompt(null)
+    if (!prompt) return
+    await fatigueCheckinRepository.record({
+      id: crypto.randomUUID(), user_id: user.id, putt_session_id: null, regimen_run_id: regimenRunId,
+      stage_index: prompt.stageIndex, trigger_reason: prompt.reason, fatigue_rating: rating,
+      skipped: rating == null, recorded_at: new Date().toISOString(),
+      idempotency_key: `fatigue:${regimenRunId}:${prompt.stageIndex}`,
+    })
+  }
+
+  function toggleFactor(factor) {
+    setExternalFactors((current) => current.includes(factor) ? current.filter((value) => value !== factor) : [...current, factor])
   }
 
   // Voluntary early exit — distinct from finishing a stage. Finalizes the
@@ -488,6 +522,16 @@ export default function RegimenRunPage() {
         putterRows={putterRows}
         dropOffRows={reportDropOffRows}
         celebrationEvents={celebrationEvents}
+        externalFactors={externalFactors}
+        perceivedEffort={perceivedEffort}
+        weatherCondition={weatherCondition}
+        windMph={windMph}
+        contextEditable
+        onChangeContext={({ factors, effort }) => {
+          setExternalFactors(factors)
+          setPerceivedEffort(effort)
+          supabase.from('putting_regimen_runs').update({ external_factors: factors, perceived_effort: effort }).eq('id', regimenRunId)
+        }}
         onSaveNotesTags={async ({ notes, tags }) => {
           const { error: saveError } = await supabase
             .from('putting_regimen_runs')
@@ -543,6 +587,8 @@ export default function RegimenRunPage() {
               onChangeInputMode={setInputMode}
               syncStatus={session.syncStatus}
               onExit={handleAbandon}
+              externalFactors={externalFactors}
+              onToggleFactor={toggleFactor}
             />
           }
           toolbar={
@@ -608,6 +654,7 @@ export default function RegimenRunPage() {
           })()}
         />
       )}
+      {fatiguePrompt && <FatigueCheckin reason={fatiguePrompt.reason} onRespond={handleFatigueResponse} />}
 
       {pendingMiss && (
         <DiagnosticZonePicker

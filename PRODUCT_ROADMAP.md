@@ -116,8 +116,8 @@ Recommended model: GPT-5.3-Codex medium; GPT-5.6 high for metric/report engines.
 
 1. **COMPLETE 2026-07-16.** Revised PLAY ordering and Level-1 Quick Play default with a device-local
    profile/default selector and offline regimen/set cache.
-2. Adaptive stage fatigue check-ins, editable putter/weather/external factors, end-session perceived
-   effort, and user-disableable round-turn prompt.
+2. **COMPLETE 2026-07-16.** Adaptive stage fatigue check-ins, editable putter/weather/external
+   factors, end-session perceived effort, and user-disableable round-turn prompt.
 3. ME career summary, Profile/Settings split, contextual notification preferences, goals pause/history,
    weekly deterministic report snapshots, and complete activity history/corrections.
 4. Distance heat map, miss tendency, putter comparisons, new-putter experiment markers, before/after

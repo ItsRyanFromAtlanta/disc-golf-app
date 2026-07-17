@@ -1,5 +1,29 @@
 # Dev Log
 
+## 2026-07-16 — Shipped Phase D item 2 session context and fatigue check-ins
+
+**What:** Extended both active practice canvases with editable canonical factors while preserving the
+existing putter/weather controls and exact per-putt putter attribution. Added optional 1–10 perceived
+effort to the unified post-session report, weather/factor/effort context to history detail, and a
+cross-device Profile toggle for the non-blocking front-nine round-turn prompt.
+
+**Data and offline contract:** Added constrained parent fields plus immutable owner-scoped
+`practice_fatigue_checkins` with parent-ownership RLS checks, explicit grants, indexes, idempotency keys,
+and rollback notes. Dexie v13 mirrors fatigue observations before best-effort remote insertion. The pure
+trigger requires three trailing misses or a sampled 20-point drop; one putt never triggers coaching and
+skipping never blocks scoring or finalization.
+
+**Verified:** 402 tests pass across 54 files; production build and diff checks pass. Lint retains only
+the four pre-existing warnings. Desktop and 390×844 browser checks reached the protected login boundary
+without console errors or horizontal overflow. The pinned Supabase CLI's migration generator failed on
+the existing migrations directory, so the approved append-only file was created with the repository
+timestamp convention.
+
+**Next:** Phase D item 3 — ME career summary, Profile/Settings split, notification preferences, goals,
+weekly deterministic reports, and complete history/corrections.
+
+---
+
 ## 2026-07-16 — Shipped Phase D item 1 PLAY ordering and Quick Play
 
 **What:** Reordered PLAY around the approved activity-first contract: true active/crash recovery, Quick
