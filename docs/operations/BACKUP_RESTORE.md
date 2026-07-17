@@ -1,13 +1,10 @@
-# Backup and Restore
+# Database Recovery and Migration Safety
 
-- Before migrations/FK changes, automate a timestamped backup: try `supabase db dump --linked`, then
-  use `pg_dump` through pgpass when the CLI dump cannot run (for example, when Docker is unavailable).
-- Verify non-zero output, inspect the custom archive with `pg_restore --list`, and record path, size,
-  and SHA-256 without printing contents or credentials. This satisfies the backup gate without another
-  confirmation prompt. If neither route is available, give a non-blocking manual-backup reminder.
-- Store backups outside Git under `C:\tmp\disc-golf-app-backups\<timestamp>` for an immediate migration
-  checkpoint or in an encrypted managed store for durable retention.
-- Test restore procedures against a non-production project at planned release milestones.
+- Codex does not run database backup commands or request manual backup confirmation. Production backup
+  and restore policy is managed by the owner outside development sessions.
+- Database changes use append-only migrations with reviewed rollback notes, ownership/RLS negative
+  tests, advisors, and post-apply smoke checks.
+- Never commit database dumps or credentials if the owner creates them through another workflow.
 - User-facing bag/disc state restore creates a new version; it never rewrites history. Preview added,
   removed, and ghost-placeholder records before apply.
 - Soft-deleted activities remain recoverable and auditable until the documented privacy-purge action.

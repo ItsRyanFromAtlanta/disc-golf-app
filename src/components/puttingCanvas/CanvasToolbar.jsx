@@ -32,9 +32,11 @@ export default function CanvasToolbar({
         <button type="button" className="chip canvas-toolbar-chip" onClick={() => setShowWeatherDrawer((v) => !v)}>
           🌬️ {!weatherCondition || weatherCondition === 'clear' ? 'Weather' : weatherCondition}
         </button>
-        <button type="button" className="link-button" onClick={onEdit}>
-          📝 Edit
-        </button>
+        {onEdit && (
+          <button type="button" className="link-button" onClick={onEdit}>
+            📝 Edit
+          </button>
+        )}
       </div>
 
       {showSwapDrawer && (

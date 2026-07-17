@@ -2,27 +2,34 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchBags, fetchBagDiscs, fetchUserDiscs } from '../lib/discLocker'
-import { bagViewDiscs, flightChartPoints, capacityTier } from '../lib/bags'
-import FlightChart from '../components/FlightChart'
+import { bagViewDiscs, capacityTier } from '../lib/bags'
+import FlightSpectrum from '../components/FlightSpectrum'
+import BagResonance from '../components/BagResonance'
 import ChipGroup from '../components/ChipGroup'
 import PutterLineup from '../components/putterLineup/PutterLineup'
 import UniverseBrowser from '../components/discUniverse/UniverseBrowser'
+import BagLockerPage from './BagLockerPage'
+import { loadGhostSlots } from '../lib/repository/discTaxonomyRepository'
 
 const TABS = [
-  { key: 'mybags', label: 'My Bags' },
+  { key: 'collection', label: 'Collection' },
+  { key: 'mybags', label: 'Bags' },
   { key: 'putters', label: '🎯 Putters' },
   { key: 'universe', label: 'Universe' },
 ]
 
 export default function BagPage() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('mybags')
+  const [tab, setTab] = useState('collection')
   const [bags, setBags] = useState(null)
   const [selectedBagId, setSelectedBagId] = useState(null)
   const [discs, setDiscs] = useState([])
   const [allDiscs, setAllDiscs] = useState(null)
+  const [baggedDiscIds, setBaggedDiscIds] = useState(new Set())
   const [error, setError] = useState(null)
   const [loadingDiscs, setLoadingDiscs] = useState(false)
+  const [ghostSlots, setGhostSlots] = useState([])
+  const [ghostError, setGhostError] = useState(null)
 
   useEffect(() => {
     fetchBags(user.id)
@@ -30,6 +37,10 @@ export default function BagPage() {
         setBags(data)
         const defaultBag = data.find((b) => b.is_default) ?? data[0]
         setSelectedBagId(defaultBag?.id ?? null)
+        return Promise.all(data.map((bag) => fetchBagDiscs(bag.id)))
+      })
+      .then((bagDiscs) => {
+        setBaggedDiscIds(new Set(bagDiscs.flat().map((disc) => disc.id)))
       })
       .catch((err) => setError(err.message))
   }, [user.id])
@@ -51,12 +62,31 @@ export default function BagPage() {
       .finally(() => setLoadingDiscs(false))
   }, [selectedBagId])
 
+  useEffect(() => {
+    let cancelled = false
+    if (!selectedBagId) {
+      setGhostSlots([])
+      setGhostError(null)
+      return () => { cancelled = true }
+    }
+    setGhostError(null)
+    loadGhostSlots(selectedBagId)
+      .then((rows) => { if (!cancelled) setGhostSlots(rows) })
+      .catch((err) => {
+        if (!cancelled) {
+          setGhostSlots([])
+          setGhostError(err.message)
+        }
+      })
+    return () => { cancelled = true }
+  }, [selectedBagId])
+
   if (error) return <p className="form-error">{error}</p>
   if (!bags) return <p className="loading">Loading...</p>
 
   const header = (
     <header className="practice-header">
-      <h1>Bag</h1>
+      <h1>Discs</h1>
     </header>
   )
 
@@ -69,6 +99,30 @@ export default function BagPage() {
       onSelect={(t) => setTab(t.key)}
     />
   )
+
+  if (tab === 'collection') {
+    const active = (allDiscs ?? []).filter((disc) => disc.status === 'in_locker')
+    const lost = (allDiscs ?? []).filter((disc) => disc.status === 'lost')
+    const recent = [...(allDiscs ?? [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3)
+    return (
+      <section className="bag-page discs-hub-page">
+        {header}
+        {tabHeader}
+        <div className="discs-hub-summary" aria-label="Collection summary">
+          <div><strong>{allDiscs?.length ?? 0}</strong><span>Total discs</span></div>
+          <div><strong>{active.length}</strong><span>Active</span></div>
+          <div><strong>{baggedDiscIds.size}</strong><span>Bagged</span></div>
+          <div><strong>{lost.length}</strong><span>Lost</span></div>
+        </div>
+        <div className="discs-hub-actions">
+          <Link to="/bag/lost-found" className="link-button">Lost &amp; Found</Link>
+          <Link to="/bag/compare" className="link-button">Compare</Link>
+        </div>
+        {recent.length > 0 && <p className="log-time">Recently added: {recent.map((disc) => disc.nickname || disc.moldInfo?.mold_name || disc.mold).join(', ')}</p>}
+        <BagLockerPage embedded />
+      </section>
+    )
+  }
 
   if (tab === 'putters') {
     return (
@@ -104,8 +158,6 @@ export default function BagPage() {
   }
 
   const selectedBag = bags.find((b) => b.id === selectedBagId)
-  const discsWithMolds = discs.filter((d) => d.moldInfo).map((disc) => ({ disc, mold: disc.moldInfo }))
-  const points = flightChartPoints(discsWithMolds)
   const cap = selectedBag?.capacity ?? 35
   const tier = capacityTier(discs.length, cap)
 
@@ -128,6 +180,9 @@ export default function BagPage() {
         </Link>
         <Link to="/bag/locker" className="link-button">
           Locker
+        </Link>
+        <Link to="/bag/lost-found" className="link-button">
+          Lost &amp; Found
         </Link>
       </div>
 
@@ -157,13 +212,16 @@ export default function BagPage() {
         </p>
       )}
 
+      {ghostError && <p className="form-error">Desired slots unavailable: {ghostError}</p>}
+      <FlightSpectrum discs={discs} ghostSlots={ghostSlots} />
+      <BagResonance discs={discs} ghostSlots={ghostSlots} capacity={cap} />
+
       {loadingDiscs ? (
         <p className="loading">Loading...</p>
       ) : discs.length === 0 ? (
         <p>No discs in this bag yet.</p>
       ) : (
         <>
-          <FlightChart points={points} />
           <ul className="putt-log-list">
             {discs.map((disc) => (
               <li key={disc.id}>

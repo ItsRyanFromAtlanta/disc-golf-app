@@ -1,5 +1,616 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 7 Match Mode voice coaching
+
+**What:** Added opt-in Match Mode to regimen and freeform launchers. Every five genuine real-time
+attempts it can announce running make percentage and an available best-run make delta. Coaching
+intervenes only after three consecutive same-zone misses in one distance band or a 30-point decline
+across consecutive five-attempt windows, with a five-attempt intervention cooldown.
+
+**Evidence/recovery:** Enabling Match Mode enables diagnostic capture by default, and the preference
+freezes at Start. InstantLaunch v4 stores a diagnostic-only event snapshot and spoken/intervention
+cursors across recovery. Batch totals never enter the evaluator, undo retracts the latest diagnostic
+event, and the putt outbox remains the sole sporting-fact authority.
+
+**Audio:** The existing SpeechSynthesis/silence channel now accepts deterministic callouts. Silencing
+cancels queued speech and suppresses new speech. Wording reports observed patterns and recommends a
+generic reset without asserting an unsupported mechanical cause. No schema or network dependency.
+
+**Verified:** 460 tests pass across 69 files, including pattern thresholds, distance-band matching,
+sustained-drop windows, cooldowns, milestones/ghost deltas, undo-safe diagnostics, and v1–v3 to v4
+recovery migration. Production build and diff checks pass. Lint retains only the four pre-existing
+warnings; the bundle-size advisory is unchanged.
+
+**Next:** Phase E begins with data export before further course/round interoperability work.
+
+---
+
+## 2026-07-16 — Phase D item 4 checkpoint 6 clutch simulator
+
+**What:** Added Clutch Simulator as a classic drill: choose 15/20/25/33 feet, start a randomized
+2–8 minute rest, then record one pressure putt. The deadline is generated once and persisted; reload,
+background throttling, and overdue resume cannot reroll or extend it.
+
+**Alerts/capture:** The in-app alarm is authoritative. System notification permission is requested
+only from an explicit tap and delivery is best-effort while browser execution is available; guaranteed
+closed-app delivery remains a future server-push/native concern. Batch and tally-edit paths are hidden.
+Only genuine tap/gesture capture writes `putt_events.is_pressure = true`.
+
+**Schema:** Added `putt_events.is_pressure boolean not null default false`, an owner/time partial index,
+and an idempotent shared Clutch regimen seed with four one-putt distances. Existing owner RLS and Data
+API grants continue to govern the altered table; no new exposed table was created.
+
+**Verified:** 453 tests pass across 68 files, including deadline bounds/overdue recovery, notification
+permission gating, drill completion, and InstantLaunch outbox behavior. Production build and diff checks
+pass. Lint retains only the four pre-existing warnings; the bundle-size advisory is unchanged.
+
+**Next:** Thresholded voice callouts / Match Mode coaching.
+
+---
+
+## 2026-07-16 — Phase D item 4 checkpoint 5 classic drill engine
+
+**What:** Added versioned JYLY and Around-the-World rules as shared system regimens. Selection now
+groups classic drills separately. JYLY scores 100 fixed putts by makes; Around the World advances on a
+make, steps back on a miss, finishes on the final-station make, and stops incomplete at 100 attempts.
+
+**Persistence/recovery:** Existing owner-scoped runs and append-only run-set rows remain authoritative;
+revisiting an Around-the-World station creates another history fact rather than rewriting one. Current
+station, attempt count, and running score ride in the InstantLaunch stage snapshot. Batch capture still
+creates summary facts only and never synthesizes `putt_events`.
+
+**Schema:** Added an idempotent seed migration for the two drills and their stations. System regimen
+identity is now unique by case-insensitive name because several system modes can share a difficulty.
+No new table or client grant was introduced.
+
+**Next:** D4 checkpoint 6 — clutch simulator, followed by thresholded voice coaching.
+
+---
+
+## 2026-07-16 — Phase D item 4 checkpoint 4 ghost pacing
+
+**What:** Added a compact live best-run ghost to active regimen scoring. It reports attempts ahead/
+behind at the same elapsed time, seconds ahead/behind at the same attempt count, and makes ahead/behind
+at the same attempt count. Comparison starts after three current real-time attempts.
+
+**Selection/recovery:** A non-gating background query admits only completed-visible runs of the same
+regimen, requires five timed events, selects highest score, and uses newest completion as the tie-break.
+The available profile freezes at Start. InstantLaunch v3 preserves the profile and current diagnostic
+events across crash recovery while the existing putt outbox remains the sole sporting-fact authority.
+
+**Data boundary:** Batch summaries do not advance the ghost or receive synthetic timestamps. History
+failure never delays Start, and a late response never changes an active opponent. No schema change was
+needed.
+
+**Verified:** 442 tests pass across 66 files, including profile selection/ties, minimum evidence,
+attempt/time/make deltas, InstantLaunch v1/v2→v3 migration, diagnostic persistence, and outbox
+separation. Production build and diff checks pass. Lint retains only the four pre-existing warnings;
+the existing bundle-size advisory remains unchanged.
+
+**Next:** D4 checkpoint 5 — JYLY/Around-the-World drill-engine generalization.
+
+---
+
+## 2026-07-16 — Phase D item 4 checkpoint 3 experiment markers
+
+**What:** Added `/practice/stats` experiment markers for recording when a physical new putter enters
+rotation, plus a before/after comparison card. Marker windows end at the next marker, so overlapping
+experiments do not silently contaminate one another.
+
+**Persistence/security:** Added append-only `practice_experiment_markers` with owner-scoped RLS,
+owner-verified disc insertion, idempotency keys, and no authenticated update/delete grants. Marker
+corrections are new rows. No existing practice event is rewritten.
+
+**Evidence contract:** Before/after metrics use only completed-visible, attributed real-time events.
+Batch summaries and unselected events remain outside the denominator. Both sides require 10 attempts;
+Wilson intervals remain visible for small samples. No opaque score or causal claim is presented.
+
+**Next:** D4 checkpoint 4 — ghost pacing, followed by drill generalization.
+
+---
+
+## 2026-07-16 — Phase D item 4 checkpoint 2 physical-putter comparisons
+
+**What:** Added longitudinal physical-putter evidence to `/practice/stats`. Exact attributed disc IDs
+remain separate even when molds match. Each card shows overall conversion, attempts, Wilson uncertainty
+for small samples, shared-distance adjustment, and expandable per-distance evidence.
+
+**Evidence contract:** Only completed-visible real-time events participate. The surface reports what
+share of eligible events contains `putter_disc_id`; unselected and batch-entered putts remain honestly
+unattributed. Distance adjustment pools only bands represented by at least two physical putters and is
+withheld below 10 shared-band attempts. The result describes evidence and never declares a best putter.
+No schema change was needed.
+
+**Verified:** 432 tests pass across 64 files, including exact-disc grouping, shared-band adjustment,
+attribution coverage, insufficient evidence, and single-disc fallback. Production build and diff checks
+pass. Lint retains only the four pre-existing warnings; the existing bundle-size advisory remains
+unchanged.
+
+**Next:** D4 checkpoint 3 — immutable new-putter experiment markers and before/after comparison.
+
+---
+
+## 2026-07-16 — Phase D item 4 checkpoint 1 miss-tendency analytics
+
+**What:** Consolidated the existing distance-confidence surface and a new 9-zone miss-tendency grid
+under `/practice/stats`. Each distance band shows observed directional counts, zoned-versus-total
+real-time capture coverage, a small-sample caveat, and a repeated-vector callout only after three
+same-zone misses.
+
+**Evidence contract:** History still retains incomplete activity for recovery, while the new shared
+metric-eligibility filter admits only completed, visible lifecycle parents and their typed rows. Miss
+analytics query only those eligible regimen/freeform parents. They read genuine `putt_events` facts;
+unzoned real-time misses remain in the coverage denominator and batch summaries never synthesize
+direction. No schema change was needed.
+
+**Verified:** 429 tests pass across 63 files, including metric eligibility, distance grouping, capture
+coverage, the three-miss intervention floor, and empty evidence. Production build and diff checks pass.
+Lint retains only the four pre-existing warnings; the existing bundle-size advisory remains unchanged.
+
+**Next:** D4 checkpoint 2 — longitudinal physical-putter comparison with distance and sample context.
+
+---
+
+## 2026-07-16 — Phase D item 3 checkpoint 5 deterministic weekly reports
+
+**What:** Added `/profile/reports` and a ME entry point for manually generating the latest completed
+Monday–Sunday recap and auditing every immutable version. The report view surfaces putting volume and
+conversion, completed rounds, deterministic highlights, sample counts, timezone, calculation version,
+and source cutoff; superseded versions remain inspectable instead of being overwritten.
+
+**Determinism/persistence:** Pure calendar helpers convert the profile's IANA timezone into exact UTC
+bounds and re-evaluate offsets across DST transitions. Generation reads remote authoritative source
+rows, includes only completed non-hidden lifecycle parents, freezes a source cutoff, and inserts a new
+version linked through `supersedes_id`. A unique-version race refetches once before failing. History
+reads remote-first and mirrors immutable snapshots into the existing Dexie v14 store for offline
+fallback; generation intentionally never uses a potentially partial local cache.
+
+**Verified:** 425 tests pass across 62 files, including DST, source aggregation, supersession, and route
+contracts. Production build and `git diff --check` pass. Lint retains only the four pre-existing
+warnings; the existing bundle-size advisory remains unchanged.
+
+**Next:** Reconcile Phase D item 4 against shipped confidence-map/session-report foundations before
+planning its first checkpoint.
+
+---
+
+## 2026-07-16 — Phase D item 3 checkpoint 4 goal lifecycle UI
+
+**What:** Added `/profile/goals` for measurable rating, practice-frequency, putting-volume, and
+consistency targets. Players can create goals, pause/resume active work, complete or cancel goals, and
+inspect each goal's immutable status timeline.
+
+**Persistence/security:** Reads hydrate goal parents/events into the existing Dexie v14 mirrors and
+fall back locally if the remote read fails. Mutations use only `goal_create`/`goal_transition`; the UI
+never writes goal tables directly. Transitions send the currently-read version, generate unique event
+idempotency keys, and reload authoritative rows after success. Terminal goals expose no invalid actions.
+
+**Verified:** 421 tests pass across 61 files; production build passes. Focused coverage verifies the
+goal domain, RPC arguments, and route contract. The one new hook warning was removed so lint retains
+only the four pre-existing warnings.
+
+**Next:** D3 checkpoint 5 — deterministic weekly report generation and immutable version history UI.
+
+---
+
+## 2026-07-16 — Phase D item 3 checkpoint 3 Profile/Settings split
+
+**What:** Kept the ME tab as the career summary, retained editable identity/throwing/calibration/private
+fields at `/profile/details`, and moved preferences to `/profile/settings`. Settings now owns local
+disc-card presentation, cross-device round-turn prompts, validated IANA reporting timezone, and
+category-level optional notification controls.
+
+**Notification contract:** Added a remote-first/local-fallback settings repository over the D3
+`notification_preferences` table and Dexie mirror. App-shell startup hydrates those rows before
+notification producers run. Missing categories default on; explicit opt-outs suppress non-critical
+category notifications; critical sync/data-safety alerts always bypass opt-outs.
+
+**Verified:** 417 tests pass across 60 files. Focused tests cover defaults, IANA timezone validation,
+optional suppression, critical-alert bypass, and route metadata. Lint/build retain only the four
+pre-existing lint warnings and existing large-chunk warning.
+
+**Next:** D3 checkpoint 4 — goal creation, pause/resume/completion, and immutable event history UI.
+
+---
+
+## 2026-07-16 — Phase D item 3 checkpoint 2 ME career summary
+
+**What:** Replaced the ME tab's profile form landing page with a career-wide summary and retained the
+existing editor at `/profile/details`. The summary presents identity/rating context, lifetime putts,
+conversion, session count, a five-axis SVG skill radar, Trophy Room access, and a trusted-putter audit.
+
+**Evidence rules:** All metrics are pure derivations from existing practice summaries, weather context,
+inventory roles, odometer totals, and real-time `putt_events`. Sparse radar axes say “Insufficient data.”
+The trusted-putter score is `total_chain_hits × attributed accuracy`; batch totals are excluded because
+they cannot identify a physical disc. No PDGA verification, scraped rating, or division benchmark is
+claimed while those sources remain unavailable.
+
+**Verified:** 413 tests pass across 58 files; lint retains only four pre-existing warnings and the
+production build passes with its existing large-chunk warning. Browser verification reached the
+protected login boundary; no authenticated browser session was available to inspect live career data.
+
+**Next:** D3 checkpoint 3 — complete the Profile/Settings split and wire contextual preferences.
+
+---
+
+## 2026-07-16 — Phase D item 3 checkpoint 1 contracts
+
+**What:** Added the persistence and pure-domain foundation for contextual notification preferences,
+goal pause/resume/history, and deterministic weekly reports. Goal types are bounded to rating, practice
+frequency, putting volume, and consistency with matching units and one active goal per type.
+
+**Data contract:** Added owner-scoped `notification_preferences`, `goals`, immutable `goal_events`, and
+immutable versioned `weekly_report_snapshots`. Weekly versions preserve Monday–Sunday dates, the IANA
+timezone used, exact UTC bounds, calculation version, source cutoff, samples, metrics, and highlights.
+Atomic goal RPCs enforce ownership, optimistic versioning, valid transitions, idempotency, and active-goal
+uniqueness. Dexie v14 mirrors all four entity families without changing InstantLaunch capture authority.
+
+**Pure rules:** Added deterministic goal transitions/progress and weekly report aggregation. Reports
+count both freeform/regimen summary rows, preserve the batch-vs-event data rule, and include completed
+round count without AI narrative.
+
+**Tooling note:** The pinned Supabase CLI again failed to create a migration because its Windows path
+handler treats the existing migrations directory as an error. The append-only file therefore uses the
+repository timestamp convention. Local DB lint could not connect because no local Postgres stack was
+running. No production database mutation was performed.
+
+**Verified:** 410 tests pass across 57 files; production build, diff checks, and Graphify refresh pass.
+Lint retains only the four pre-existing warnings. Static migration tests cover RLS enablement, owner
+predicates, owner indexes, immutable grants, private-function boundaries, optimistic version checks,
+and ordinary-client update/delete denial for event/report rows.
+
+**Next:** D3 checkpoint 2 — ME career summary at the `/profile` tab root.
+
+---
+
+## 2026-07-16 — Shipped Phase D item 2 session context and fatigue check-ins
+
+**What:** Extended both active practice canvases with editable canonical factors while preserving the
+existing putter/weather controls and exact per-putt putter attribution. Added optional 1–10 perceived
+effort to the unified post-session report, weather/factor/effort context to history detail, and a
+cross-device Profile toggle for the non-blocking front-nine round-turn prompt.
+
+**Data and offline contract:** Added constrained parent fields plus immutable owner-scoped
+`practice_fatigue_checkins` with parent-ownership RLS checks, explicit grants, indexes, idempotency keys,
+and rollback notes. Dexie v13 mirrors fatigue observations before best-effort remote insertion. The pure
+trigger requires three trailing misses or a sampled 20-point drop; one putt never triggers coaching and
+skipping never blocks scoring or finalization.
+
+**Verified:** 402 tests pass across 54 files; production build and diff checks pass. Lint retains only
+the four pre-existing warnings. Desktop and 390×844 browser checks reached the protected login boundary
+without console errors or horizontal overflow. The pinned Supabase CLI's migration generator failed on
+the existing migrations directory, so the approved append-only file was created with the repository
+timestamp convention.
+
+**Next:** Phase D item 3 — ME career summary, Profile/Settings split, notification preferences, goals,
+weekly deterministic reports, and complete history/corrections.
+
+---
+
+## 2026-07-16 — Shipped Phase D item 1 PLAY ordering and Quick Play
+
+**What:** Reordered PLAY around the approved activity-first contract: true active/crash recovery, Quick
+Play, routine selection with Free Play, routine creation, suggested next session, recent activity, and
+History. Quick Play defaults to the system Level-1 regimen, exposes an adjacent device-local default
+selector, and falls back deterministically when a saved routine is unavailable.
+
+**Offline contract:** Dexie v12 adds ordered `regimenSets`. A scoped regimen repository caches system
+plus current-user custom routines and their stages, prunes stale scoped rows, and falls back locally when
+remote reads fail. PLAY, regimen selection, and regimen setup now use that boundary. Active recovery is
+computed independently of history so it never waits on a network-backed suggestion. No remote migration.
+
+**Verified:** 397 tests pass across 51 files; production build and diff checks pass; lint retains the
+four pre-existing warnings. Anonymous mobile and desktop checks reached the protected PLAY login boundary
+without runtime errors, error overlay, or horizontal overflow. Authenticated PLAY rendering remains
+unexercised in the isolated browser session.
+
+**Next:** Phase D item 2 — adaptive stage fatigue check-ins and session factors/effort.
+
+---
+
+## 2026-07-16 — Shipped Phase C item 5 disc/bag comparison cohorts
+
+**What:** Extended the shipped J2 `/bag/compare` flow with a source-aware comparison layer. Personal
+reality keeps effective per-copy overrides; Official catalog explicitly removes those overrides; Community
+benchmark is eligibility-gated and currently reports a truthful unavailable state when no attributed sample
+meets the minimum threshold. A bag-context selector adds capacity, speed-class, occupied-cell, missing-data,
+and near-duplicate summaries without an opaque composite score.
+
+**Key decisions:** Existing side-by-side tables and flight curves remain the comparison core. Source labels
+and attribution are visible before the numbers. Community cohorts require at least 10 attributed rounds or
+throws, and unavailable community data falls back to official catalog numbers with an explanation. Bag
+context is derived from existing bag/disc reads; no schema or route changes were needed.
+
+**Verified:** 389 tests pass across 49 files; production build and diff checks pass; lint retains the four
+pre-existing warnings. Anonymous mobile and desktop browser checks loaded the app and protected comparison
+route without runtime errors, error overlay, or horizontal overflow. Authenticated cohort data remains
+unexercised in the isolated browser session.
+
+**Next:** Phase D item 1 — revised PLAY ordering and Level-1 Quick Play default.
+
+---
+
+## 2026-07-16 — Shipped Phase C item 4 Bag Resonance
+
+**What:** Added a pure, schema-free Bag Resonance contract and panel below Flight Spectrum. The panel
+scores three explainable current-reality components: occupied flight coverage, speed-class ladder, and
+near-duplicate separation. Balanced, Coverage-first, and Minimal redundancy presets change only the
+weights shown to the player.
+
+**Key decisions:** Effective flight numbers and existing wear/override behavior remain the source of
+truth through Flight Spectrum helpers. Ghost slots are rendered as desired targets only: they are excluded
+from physical disc count, capacity/headroom, and actual coverage. Capacity is displayed independently so
+the score cannot silently imply that a bag is full or incomplete. The panel also renders for empty bags
+to preserve an honest zero-data state.
+
+**Verified:** 386 tests pass across 48 files; production build and diff checks pass; lint retains the
+four pre-existing warnings. Anonymous mobile (390×844) and desktop (1280×800) browser checks loaded
+without runtime errors, error overlay, or horizontal overflow. Authenticated bag interaction remains
+unexercised in the isolated browser session.
+
+**Next:** Phase C item 5 disc/bag comparisons.
+
+---
+
+## 2026-07-16 — Shipped Phase C item 3 Flight Spectrum
+
+**What:** Replaced the bag's basic speed/stability plot with an accessible Flight Spectrum. Current
+reality is the default and composes per-copy overrides with the existing wear adjustment; Official
+shows untouched manufacturer numbers. Nearby discs form deterministic clusters with visible counts and
+named member links. Persisted active ghost slots render as hollow dashed diamonds and are explicitly
+described as desired, capacity-neutral coverage. The legend, marker shapes, SVG titles, text details,
+and missing-data notices keep meaning independent of color. No schema change was required.
+
+**Verified:** 383 tests pass across 47 files, production build/diff pass, and lint retains four existing
+warnings. React review added stale-request cleanup and non-blocking ghost-slot errors. Anonymous mobile
+and desktop browser checks reached the protected login route with meaningful content, no error overlay,
+no runtime errors, and no horizontal overflow; the isolated session had no authenticated test login.
+
+**Next:** Phase C item 4 Bag Resonance first draft.
+
+---
+
+## 2026-07-16 — Shipped Phase C item 2 atomic bag editing
+
+**What:** Replaced immediate per-checkbox bag mutations with one draft-based metadata, main-bag, and
+membership save. The authenticated security-invoker RPC applies the group atomically, enforces the
+35-disc ceiling and ownership, and captures exactly one immutable version per idempotent save. Restore
+preview now names additions, removals, and unavailable placeholders and restores historical metadata
+plus eligible membership as a new version. Main-bag deletion atomically promotes an explicit
+replacement; the sole bag and direct main-bag deletion are protected. Private names remain owner-facing
+while external presentation uses the generic `Main Bag` contract.
+
+**Database:** Applied `phase_c_grouped_bag_save` and the append-only
+`phase_c_bag_delete_history_owner` follow-up. The first rollback smoke exposed an existing cascade
+defect where membership history lost its owner after the parent bag disappeared; the follow-up safely
+falls back to the physical disc owner. The repeated smoke passed with zero residue.
+
+**Verified:** 379 tests pass across 46 files, production build/diff pass, and lint retains four existing
+warnings. Live checks passed one-version save, retry idempotency, capacity rejection, direct-delete
+protection, restore provenance, foreign-owner denial, replacement promotion, authenticated-only RPC
+grants, and zero residue. Advisors added no C2 finding. Anonymous mobile/desktop browser checks reached
+the protected login redirect without errors or overflow; no authenticated browser session was available.
+
+**Next:** Phase C item 3 Flight Spectrum.
+
+---
+
+## 2026-07-16 — Shipped Phase C item 1 collection-first DISCS profiles
+
+**What:** Promoted `/bag` into a Collection/Bags/Putters/Universe DISCS hub with total, active,
+bagged, and lost counts, recent additions, and the existing locker embedded as the collection view.
+Add-disc now creates 1–10 distinct physical copies in one all-or-nothing operation. Disc detail adds
+contextual putting/round performance derived only from genuine records and one merged lifecycle,
+odometer, Lost & Found, and photo history. Existing `/bag/locker` links remain compatible. No schema
+change was required.
+
+**Verified:** 376 tests pass across 46 files, production build and diff checks pass, and lint retains
+only four pre-existing warnings. Graphify was refreshed. Mobile and desktop anonymous browser checks
+confirmed the protected-route login redirect with no runtime errors or horizontal overflow; the
+isolated browser had no authenticated test session for the private collection screen.
+
+**Next:** Phase C item 2 bag-editor consolidation, beginning with reconciliation of shipped version,
+restore, placeholder, capacity, and default-bag behavior.
+
+---
+
+## 2026-07-16 — Shipped Phase B item 5 disc odometers and permanent tiers
+
+**What:** Applied immutable owner-scoped throws, chain-hit, and airball events with source/reference/
+installation/correction provenance. An atomic RPC maintains non-negative cached totals and permanently
+unlocks rare, epic, and legendary cosmetics at 300, 1,000, and 5,000 chain hits. Direct total mutation
+is trigger-blocked. Dexie v11 adds offline replay and the disc profile now exposes totals, milestone
+progress, quick entry, correction, and immutable history. Batch summaries never synthesize events.
+
+**Verified:** 370 tests pass across 44 files, production build and diff checks pass, and lint retains
+only four pre-existing warnings. Rollback-only milestone crossing, idempotent replay, correction-to-zero
+with retained unlock, throws/airballs aggregation, cross-owner isolation, direct-write blocking,
+immutable grants, and zero-residue checks passed. Database lint/advisors report no B5 finding.
+
+**Next:** Phase C item 1 collection-first DISCS and rich physical-disc profile consolidation.
+
+---
+
+## 2026-07-15 — Shipped Phase B item 4 Lost & Found
+
+**What:** Applied private owner-scoped Lost & Found cases and immutable update timelines with optional
+course, browser GPS, area, notes, and contact evidence. Atomic RPCs mark an opened case's physical disc
+lost and return a recovered disc to the locker. The new DISCS route provides case history and resolution;
+Dexie v10 caches the timeline and replays idempotent offline operations. Cases never auto-archive.
+
+**Verified:** 362 tests pass across 42 files, production build and diff checks pass, and lint retains only
+the four pre-existing warnings. Rollback-only authenticated owner/foreign-user visibility, recovery
+atomicity, immutable client grants, and zero-residue checks passed. Linked database lint reports no new
+B4 finding; its only warning predates this work.
+
+**Next:** Phase B item 5 odometer and permanent cosmetic-tier unlock events.
+
+---
+
+## 2026-07-15 — Shipped Phase B item 3 private disc photos
+
+**What:** Applied `disc_photos`, the private image-only `disc-private-photos` bucket, owner-scoped
+metadata and Storage RLS, and security-invoker register/delete/restore RPCs. The shipped client provides
+front/back/side compression, signed display URLs, Dexie v9 Blob retry, immutable replacement history,
+legacy URL fallback, and 30-day recoverable removal.
+
+**Verified:** Rollback-only authenticated owner/foreign-user tests passed for metadata visibility,
+Storage path insert/visibility, RPC ownership rejection, replacement history, exact 30-day deletion,
+restore, and idempotent retry. Zero smoke rows remain. Advisors introduced no new security warning or
+missing foreign-key index; only the expected unused-index notice appears on the new empty table.
+
+**Next:** Phase B item 4 Lost & Found.
+
+---
+
+## 2026-07-15 — Removed Codex pre-migration backup gate
+
+**What:** Per owner direction, removed automated dump attempts and manual backup confirmation from
+active migration instructions, roadmap gates, release checks, and migration runbooks. Production
+backup policy is now explicitly owner-managed outside Codex sessions.
+
+**Migration safety retained:** Append-only migrations, reviewed rollback notes, fresh schema audits,
+ownership/RLS negative tests, advisors, and post-apply smoke checks remain required.
+
+---
+
+## 2026-07-15 — Phase B item 3 private photos local checkpoint
+
+**What:** Added an unapplied owner-scoped `disc_photos` migration and private image Storage contract
+for immutable front/back/side versions. The client compresses to bounded WebP derivatives, displays
+short-lived signed URLs, queues Blobs in Dexie v9 for offline retry, preserves legacy `photo_url` as a
+front-slot fallback, and supports replacement plus 30-day recoverable removal.
+
+**Migration gate:** Global Supabase CLI and `pg_dump` were unavailable, and the pinned CLI dump path
+required unavailable Docker Desktop. Per the owner's updated policy, backup attempts and confirmation
+are no longer migration gates; append-only SQL, rollback notes, RLS tests, and smoke checks remain.
+
+**Verified:** 358 tests pass across 41 files, production build and diff checks pass, and the new hook
+lint warning was fixed; four pre-existing lint warnings remain.
+
+**Next:** Apply the migration, run authenticated cross-owner Storage/RLS/RPC
+smoke tests and advisors, then close Phase B item 3.
+
+---
+
+## 2026-07-15 — Shipped Phase B 2B ghost slots and shot tags
+
+**What:** Persisted private, capacity-neutral bag ghost slots and added a physical-disc shot taxonomy.
+The dictionary includes 10 curated tags plus private custom tags; assignment removal writes a
+`removed_at` tombstone, while a partial unique index permits only one active disc/tag pair. Dexie v8
+mirrors active rows and tombstones. Bag management can persist/remove derived gaps and disc detail can
+assign, remove, or create tags.
+
+**Migration:** Owner confirmed a fresh manual backup. Applied owner-scoped RLS and least-privilege
+grants; anonymous access is absent. No social/community aggregation or caddie logic was added.
+
+**Verified:** 355 tests pass across 40 files, build and diff checks pass, lint retains four existing
+warnings, and rollback-only authenticated ghost/assignment/tombstone smoke passed with zero residue.
+Advisors found no new 2B security issue or missing foreign-key index.
+
+**Next:** Phase B item 3 private physical-disc photos.
+
+---
+
+## 2026-07-15 — Shipped Phase B 2A disc timelines and bag versions
+
+**What:** Added immutable owner-scoped physical-disc state events and immutable bag metadata/membership
+snapshots. Database triggers record status, role, wear, condition, and bag membership changes. Bag
+history is cached in Dexie v7; Manage Bags previews additions/removals/unavailable discs before an
+atomic restore that always creates a new version. New rounds capture `bag_version_id`.
+
+**Migration:** Owner confirmed a manual backup after automated dump failed for missing Docker/pg_dump.
+The foundation migration backfilled five bags and 22 memberships without changing current state. A
+rollback smoke found self-recursive bag-version INSERT RLS; an append-only follow-up removed that
+lookup and added both advisor-requested FK indexes.
+
+**Verified:** 353 tests pass across 39 files, lint retains only four existing warnings, production
+build and diff checks pass, and authenticated capture/restore passed rollback-only with zero smoke rows.
+
+**Next:** Ghost slots, shot tags, and reversible assignment tombstones complete Phase B item 2.
+
+---
+
+## 2026-07-15 — Shipped B2 read-only offline catalog repository
+
+**What:** Added a normalized catalog snapshot repository for manufacturers, molds, plastics,
+mold-plastic availability, runs, and stamps. Dexie v6 mirrors the shared reference rows and TanStack
+Query reads remote-first with a complete local fallback. Mold picker, Disc Universe search, onboarding
+putter selection, and URL-prefilled add-disc now share this boundary. Removed the stale direct
+`disc_molds` insert path because canonical tables are authenticated-read-only.
+
+**Data decision:** No schema or production-data writes. The live catalog currently contains four
+manufacturers and 36 molds; plastic/run/stamp rows remain empty. Representative cross-table fixtures
+are deterministic test data only, so the UI never presents invented canonical products.
+
+**Verified:** 351 tests pass across 38 files, production build and `git diff --check` pass, and lint
+retains only the four pre-existing warnings. Live Supabase checks confirm RLS plus authenticated SELECT,
+no authenticated INSERT, and no anonymous SELECT on all six cached canonical tables.
+
+**Next:** Phase B item 2 — physical-disc timelines and bag configuration versions/snapshots.
+
+---
+
+## 2026-07-15 — Shipped J3 game-flair disc cards
+
+**What:** Added an opt-in `DiscCard` flair variant for the locker. `discTier(disc)` is a pure, tested
+precedence function: archived status (`lost`/`retired`/`sold`) wins first, followed by `primary_putter`
+legendary, `situational_weather` epic, wear score ≥7 rare, and common fallback. The Profile preferences
+checkbox persists through the existing local-storage preference pattern and feeds every locker grid/list,
+compare-mode, and add-to-bag card. Flair cards add Topo rarity borders, Tier/Signal stat blocks, and a subtle
+mount animation guarded by `prefers-reduced-motion`; the default-off card markup/classes remain unchanged.
+
+**Verified:** 348 unit tests pass across 37 files, lint passes with only the four pre-existing warnings,
+production build passes, `git diff --check` passes, and `graphify update .` rebuilt the graph. Browser smoke
+reached the existing `/login` auth gate from `/profile`; the available guest action did not navigate, so an
+authenticated toggle/card interaction could not be exercised. No schema changes; the existing theme contract
+is light-only and no dark-mode variant was added.
+
+**Next:** Resume the roadmap's DISCS intelligence work.
+
+---
+
+## 2026-07-15 — Shipped J2 disc comparison view
+
+**What:** Added locker compare mode with a 2–4 disc cap, `/bag/compare?ids=…`, and the side-by-side
+comparison page. The page derives effective flight numbers, per-axis low/high highlights, explicit
+override markers, stability labels, a current-reality curve overlay, and no-meaningful-gap flags for
+disc pairs within ±1 on every populated flight axis. Added pure `discCompare.js` rules/tests and a
+small overlay export from `FlightCurve.jsx`; no schema changes.
+
+**Verified:** 342 unit tests pass across 36 files, lint passes with only the four pre-existing warnings,
+production build passes, `git diff --check` passes, and `graphify update .` rebuilt the graph. Browser
+smoke reached the existing `/login` auth gate from the protected compare route with zero console errors;
+an authenticated locker/compare interaction could not be exercised without a browser session, and no
+guest account was created.
+
+**Next:** J3 game-flair disc cards.
+
+## 2026-07-14 — Shipped J1 round logging + quick-course
+
+**What:** Built the new COURSES tree and round logger: course directory, quick-course creation,
+course/layout detail, round setup with optional bag, offline-first scorecard, round history, and
+finalization summary. Added `roundLog.js`, the Dexie v5 `rounds`/`roundHoles` stores, pure sparse-score
+helpers in `rounds.js`, route metadata/tests, the COURSES tab, and Sun-Drenched Topo field-screen styles.
+
+**Data contract:** Applied `20260714150000_phase_c_round_logging_rls.sql` to the live project. Courses,
+layouts, holes, and aliases are authenticated community-read with bounded inserts/updates; rounds and
+round holes are owner-scoped. The deployed composite `rounds(id,user_id) → activities(id,user_id)` FK was
+found during the smoke test and is now honored by the round repository: it creates the matching
+idempotent activity parent and drains lifecycle writes before round writes. No schema columns changed.
+
+**Verified:** 338 unit tests pass across 35 files, lint passes with only the four pre-existing warnings,
+production build passes, `git diff --check` passes, and `graphify update .` rebuilt the graph. Live SQL
+verification confirmed RLS/policies/indexes; an authenticated create/read/update/foreign-user visibility
+smoke passed inside a rollback-only transaction with zero rows left behind. The browser reached the
+existing login gate at `/courses` with no console errors; no guest account was created.
+
+**Migration note:** The bundled Supabase dump command could not create an automated backup because this
+environment lacks Docker, and `pg_dump` is unavailable. The required manual-backup reminder remains open
+for the next migration session; this J1 policy migration was applied within the approved scope.
+
+**Next:** J2 disc comparison view.
+
 ## 2026-07-14 — Planned 3 jump-ahead features + reconciled stale Track 1 status (handoff to coding model)
 
 **What:** Produced an executable handoff plan for three genuinely-unbuilt features and fixed the

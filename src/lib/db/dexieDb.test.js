@@ -9,8 +9,8 @@ afterEach(async () => {
   for (const database of databasesToDelete.splice(0)) await database.delete()
 })
 
-describe('AppDatabase v4 upgrade', () => {
-  it('preserves v1 cache/outbox rows while adding lifecycle and audit stores', async () => {
+describe('AppDatabase v14 upgrade', () => {
+  it('preserves v1 cache/outbox rows while adding lifecycle, audit, notification, and round stores', async () => {
     const name = `DexieUpgradeTest-${crypto.randomUUID()}`
     const legacy = new Dexie(name)
     legacy.version(1).stores({
@@ -32,14 +32,54 @@ describe('AppDatabase v4 upgrade', () => {
     databasesToDelete.push(upgraded)
     await upgraded.open()
 
-    expect(upgraded.verno).toBe(4)
+    expect(upgraded.verno).toBe(14)
+    expect(upgraded.practiceFatigueCheckins).toBeDefined()
     expect(await upgraded.discs.get('disc-1')).toMatchObject({ status: 'in_locker' })
     expect(await upgraded.outbox.toArray()).toEqual([
       expect.objectContaining({ table: 'discs', op: 'update', payload: { id: 'disc-1' } }),
     ])
     expect(upgraded.tables.map((table) => table.name)).toEqual(
-      expect.arrayContaining(['activities', 'activityStateEvents', 'auditEvents', 'notifications']),
+      expect.arrayContaining([
+        'activities',
+        'activityStateEvents',
+        'auditEvents',
+        'notifications',
+        'rounds',
+        'roundHoles',
+        'catalogManufacturers',
+        'catalogMolds',
+        'catalogPlastics',
+        'catalogMoldPlastics',
+        'catalogRuns',
+        'catalogStamps',
+        'discStateEvents',
+        'bagVersions',
+        'bagVersionDiscs',
+        'bagGhostSlots',
+        'shotTags',
+        'discShotTagAssignments',
+        'discPhotos',
+        'discPhotoUploads',
+        'lostFoundCases',
+        'lostFoundUpdates',
+        'lostFoundOutbox',
+        'discOdometerEvents',
+        'discCosmeticUnlocks',
+        'discOdometerOutbox',
+        'regimenSets',
+        'notificationPreferences',
+        'goals',
+        'goalEvents',
+        'weeklyReportSnapshots',
+      ]),
     )
+    expect(upgraded.lostFoundCases.schema.indexes.map((index) => index.name)).toContain('[user_id+status]')
+    expect(upgraded.lostFoundUpdates.schema.indexes.map((index) => index.name)).toContain('[case_id+occurred_at]')
+    expect(upgraded.discOdometerEvents.schema.indexes.map((index) => index.name)).toContain('[disc_id+occurred_at]')
+    expect(upgraded.discCosmeticUnlocks.schema.indexes.map((index) => index.name)).toContain('[disc_id+tier]')
+    expect(upgraded.regimenSets.schema.indexes.map((index) => index.name)).toContain('[regimen_id+set_order]')
+    expect(upgraded.goals.schema.indexes.map((index) => index.name)).toContain('[user_id+status]')
+    expect(upgraded.goalEvents.schema.indexes.map((index) => index.name)).toContain('[goal_id+occurred_at]')
     expect(upgraded.outbox.schema.indexes.map((index) => index.name)).toEqual(
       expect.arrayContaining(['dependencyKey', 'nextRetryAt', '[table+idempotencyKey]']),
     )

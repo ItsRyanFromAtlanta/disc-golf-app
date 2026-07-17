@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { upsertDisc, fetchMoldById } from '../lib/discLocker'
+import { createDiscCopies } from '../lib/discLocker'
+import { useCatalog } from '../lib/repository/catalogRepository'
 import MoldPicker from '../components/MoldPicker'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
@@ -33,24 +34,28 @@ export default function DiscFormPage() {
   const [mold, setMold] = useState(null)
   const [form, setForm] = useState(BLANK_FORM)
   const [saving, setSaving] = useState(false)
+  const [quantity, setQuantity] = useState(1)
   const [error, setError] = useState(null)
+  const catalog = useCatalog()
 
   // Universe tab hand-off (?mold=<id>&plastic=<name>): prefill the mold and
   // plastic fields rather than building a separate weight-selection drawer.
   useEffect(() => {
     const moldId = searchParams.get('mold')
     if (!moldId) return
-    fetchMoldById(moldId)
-      .then(setMold)
-      .catch((err) => setError(err.message))
+    if (catalog.data) {
+      const selected = catalog.data.molds.find((candidate) => candidate.id === moldId)
+      if (selected) setMold(selected)
+      else setError('That mold is no longer in the approved catalog.')
+    }
     const plastic = searchParams.get('plastic')
     if (plastic) setForm((prev) => ({ ...prev, plastic }))
-  }, [searchParams])
+  }, [catalog.data, searchParams])
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!mold) {
-      setError('Pick or create a mold first.')
+      setError('Pick an approved mold first.')
       return
     }
     setSaving(true)
@@ -59,7 +64,7 @@ export default function DiscFormPage() {
     const numOrNull = (v) => (v === '' ? null : Number(v))
 
     try {
-      const saved = await upsertDisc(user.id, null, {
+      const saved = await createDiscCopies(user.id, {
         mold_id: mold.id,
         manufacturer: mold.manufacturer,
         mold: mold.mold_name,
@@ -77,8 +82,8 @@ export default function DiscFormPage() {
         condition: form.condition.trim() || null,
         plastic: form.plastic.trim() || null,
         notes: form.notes.trim() || null,
-      })
-      navigate(`/bag/discs/${saved.id}`, { replace: true })
+      }, quantity)
+      navigate(saved.length === 1 ? `/bag/discs/${saved[0].id}` : '/bag', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -97,6 +102,12 @@ export default function DiscFormPage() {
 
       <form onSubmit={handleSubmit} className="putt-form">
         <MoldPicker selectedMold={mold} onSelect={setMold} />
+
+        <label htmlFor="quantity">Physical copies</label>
+        <select id="quantity" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))}>
+          {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => <option key={count} value={count}>{count}</option>)}
+        </select>
+        <p className="log-time">Each copy gets its own identity, photos, lifecycle, and odometer. Creation is all-or-nothing.</p>
 
         <label htmlFor="nickname">Nickname</label>
         <input
@@ -194,7 +205,7 @@ export default function DiscFormPage() {
         {error && <p className="form-error">{error}</p>}
 
         <button type="submit" disabled={saving}>
-          {saving ? 'Saving...' : 'Add disc'}
+          {saving ? 'Saving...' : `Add ${quantity} physical ${quantity === 1 ? 'disc' : 'discs'}`}
         </button>
       </form>
     </section>

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchProfile, upsertProfileFields, isThrowingProfileEmpty } from '../lib/profile'
 import EditableSection from '../components/EditableSection'
@@ -38,25 +37,6 @@ export default function ProfilePage() {
 
   return (
     <section className="profile-page">
-      <header className="practice-header">
-        <h1>Profile</h1>
-        <Link to="/practice" className="link-button">
-          Practice menu
-        </Link>
-      </header>
-
-      <Link to="/profile/trophies" className="mode-card">
-        <span className="mode-card-icon" aria-hidden="true">
-          🏆
-        </span>
-        <span className="mode-card-body">
-          <span className="mode-card-title">Trophy Room</span>
-          <span className="mode-card-description">XP, levels, and achievement badges</span>
-        </span>
-        <span className="mode-card-chevron" aria-hidden="true">
-          ›
-        </span>
-      </Link>
 
       {nudgeVisible && (
         <div className="nudge-banner">

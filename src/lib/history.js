@@ -68,6 +68,61 @@ export async function fetchHistory(userId, { visibility = HISTORY_VISIBILITY.VIS
   }
 }
 
+// History deliberately includes incomplete activities so the player can
+// review or repair them. Derived metrics have a stricter contract: only a
+// completed, currently-visible lifecycle parent may contribute evidence.
+export function metricEligibleHistory({ activities = [], sessions = [], runs = [] }) {
+  const eligibleIds = new Set(
+    activities
+      .filter((activity) => activity.state === 'completed' && !activity.hidden_at)
+      .map((activity) => activity.id),
+  )
+  return {
+    activities: activities.filter((activity) => eligibleIds.has(activity.id)),
+    sessions: sessions.filter((session) => eligibleIds.has(session.id)),
+    runs: runs.filter((run) => eligibleIds.has(run.id)),
+  }
+}
+
+const PUTT_EVENT_INSIGHT_SELECT =
+  'id, regimen_run_id, freeform_session_id, outcome, miss_zone, distance_ft, occurred_at, putter_disc_id'
+
+async function fetchPuttEventsForParents(userId, column, parentIds) {
+  if (parentIds.length === 0) return []
+  const { data, error } = await supabase
+    .from('putt_events')
+    .select(PUTT_EVENT_INSIGHT_SELECT)
+    .eq('user_id', userId)
+    .in(column, parentIds)
+  if (error) throw error
+  return data ?? []
+}
+
+export async function fetchPracticeInsights(userId) {
+  const history = metricEligibleHistory(await fetchHistory(userId))
+  const [freeformEvents, regimenEvents, discsResult] = await Promise.all([
+    fetchPuttEventsForParents(userId, 'freeform_session_id', history.sessions.map((row) => row.id)),
+    fetchPuttEventsForParents(userId, 'regimen_run_id', history.runs.map((row) => row.id)),
+    supabase
+      .from('discs')
+      .select('id, nickname, manufacturer, mold, plastic, role, status, moldInfo:disc_molds(mold_name, manufacturer)')
+      .eq('user_id', userId),
+  ])
+  if (discsResult.error) throw discsResult.error
+  const markersResult = await supabase
+    .from('practice_experiment_markers')
+    .select('id, disc_id, marker_type, effective_at, label, notes, created_at')
+    .eq('user_id', userId)
+    .order('effective_at', { ascending: false })
+  if (markersResult.error) throw markersResult.error
+  return {
+    ...history,
+    puttEvents: [...freeformEvents, ...regimenEvents],
+    discs: discsResult.data ?? [],
+    experimentMarkers: markersResult.data ?? [],
+  }
+}
+
 export function sessionAggregate(session) {
   const logs = session.putt_distance_logs ?? []
   const makes = logs.reduce((sum, l) => sum + l.makes, 0)

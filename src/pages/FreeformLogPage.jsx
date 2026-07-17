@@ -8,6 +8,7 @@ import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
 import { usePuttHaptics } from '../hooks/usePuttHaptics'
+import { evaluateMatchMode } from '../lib/matchModeCoach'
 import { syncRows, deleteRowById } from '../lib/instantLaunch/supabaseSync'
 import { makeTerritoryPct } from '../lib/instantLaunch/sessionReducer'
 import { GESTURE_CONFIG } from '../lib/gestureEngine/config'
@@ -28,6 +29,9 @@ import EditTallyDrawer from '../components/puttingCanvas/EditTallyDrawer'
 import BatchRibbon from '../components/puttingCanvas/BatchRibbon'
 import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePicker'
 import SessionReport from '../components/sessionReport/SessionReport'
+import FatigueCheckin from '../components/puttingCanvas/FatigueCheckin'
+import { fatigueCheckinTrigger } from '../lib/fatigueCheckin'
+import { fatigueCheckinRepository } from '../lib/repository/fatigueCheckinRepository'
 
 const DEFAULT_VOLUME = 10
 const BASELINE_WINDOW_DAYS = 30
@@ -84,6 +88,9 @@ export default function FreeformLogPage() {
   const [windMph, setWindMph] = useState(null)
   const [swapSuggestionDismissed, setSwapSuggestionDismissed] = useState(false)
   const [showEditDrawer, setShowEditDrawer] = useState(false)
+  const [externalFactors, setExternalFactors] = useState([])
+  const [perceivedEffort, setPerceivedEffort] = useState(null)
+  const [fatiguePrompt, setFatiguePrompt] = useState(null)
 
   // Session Summary (Screen 9) — freeform previously had no post-session
   // report at all; completedDistances mirrors RegimenRunPage's completedSets
@@ -107,6 +114,8 @@ export default function FreeformLogPage() {
 
   const session = useInstantLaunchSession(writeAdapter, user.id)
   const audio = usePuttAudio()
+  const speakCallout = audio.speakCallout
+  const markCoachingCallout = session.markCoachingCallout
   const haptics = usePuttHaptics()
 
   useEffect(() => {
@@ -120,6 +129,25 @@ export default function FreeformLogPage() {
   useEffect(() => {
     audio.setSilenced(silenced)
   }, [silenced, audio])
+
+  useEffect(() => {
+    if (!session.matchModeEnabled) return
+    const callout = evaluateMatchMode({
+      events: session.coachingEvents,
+      lastSpokenAttempt: session.coachingLastSpokenAttempt,
+      lastInterventionAttempt: session.coachingLastInterventionAttempt,
+    })
+    if (!callout) return
+    speakCallout(callout.message)
+    markCoachingCallout({ attempt: callout.attempt, intervention: callout.intervention })
+  }, [
+    session.matchModeEnabled,
+    session.coachingEvents,
+    session.coachingLastSpokenAttempt,
+    session.coachingLastInterventionAttempt,
+    markCoachingCallout,
+    speakCallout,
+  ])
 
   useEffect(() => {
     fetchUserDiscs(user.id)
@@ -259,10 +287,14 @@ export default function FreeformLogPage() {
     setPhase('running')
     setCompletedDistances([])
     setCelebrationEvents([]) // clear the previous session's banner before this one starts
+    setExternalFactors([])
+    setPerceivedEffort(null)
+    setFatiguePrompt(null)
     const newSessionId = crypto.randomUUID()
     setFreeformSessionId(newSessionId)
     session.startSession({
       sessionType: 'freeform',
+      matchModeEnabled: session.profileDefaults.matchModeEnabled,
       parentIds: { freeformSessionId: newSessionId },
       initialStage: stageAt(pendingDistance, DEFAULT_VOLUME),
       parentWriteRow: {
@@ -350,19 +382,37 @@ export default function FreeformLogPage() {
     const nextDistanceFt = Number(nextDistanceInput)
     if (!nextDistanceFt || nextDistanceFt <= 0) return
     setBatchRibbonConfirming(false)
+    const stageState = session.sessionState
+    const triggerReason = fatigueCheckinTrigger({
+      outcomes: stageState.events.map((event) => event.outcome),
+      stage: { makes: stageState.tally.makes, attempts: stageState.tally.attempts },
+      previousStages: completedDistances,
+    })
     captureCompletedDistance()
     audio.announceStage(1, 1, nextDistanceFt)
     session.advanceStage(stageAt(nextDistanceFt, DEFAULT_VOLUME), buildDistanceLogRow)
+    if (triggerReason) setFatiguePrompt({ reason: triggerReason, stageIndex: completedDistances.length + 1 })
     setNextDistanceInput('')
+  }
+
+  async function handleFatigueResponse(rating) {
+    const prompt = fatiguePrompt
+    setFatiguePrompt(null)
+    if (!prompt) return
+    await fatigueCheckinRepository.record({
+      id: crypto.randomUUID(), user_id: user.id, putt_session_id: freeformSessionId, regimen_run_id: null,
+      stage_index: prompt.stageIndex, trigger_reason: prompt.reason, fatigue_rating: rating,
+      skipped: rating == null, recorded_at: new Date().toISOString(),
+      idempotency_key: `fatigue:${freeformSessionId}:${prompt.stageIndex}`,
+    })
   }
 
   function handleEndSession() {
     setBatchRibbonConfirming(false)
     captureCompletedDistance()
     const weatherUpdate =
-      weatherCondition != null
-        ? { id: freeformSessionId, _op: 'update', weather_condition: weatherCondition, wind_mph: windMph }
-        : null
+      { id: freeformSessionId, _op: 'update', weather_condition: weatherCondition, wind_mph: windMph,
+        external_factors: externalFactors, perceived_effort: perceivedEffort }
     session.endSession(buildDistanceLogRow, weatherUpdate)
     loadTodaysLogs()
     setPhase('summary')
@@ -406,6 +456,16 @@ export default function FreeformLogPage() {
         putterRows={putterRows}
         dropOffRows={reportDropOffRows}
         celebrationEvents={celebrationEvents}
+        externalFactors={externalFactors}
+        perceivedEffort={perceivedEffort}
+        weatherCondition={weatherCondition}
+        windMph={windMph}
+        contextEditable
+        onChangeContext={({ factors, effort }) => {
+          setExternalFactors(factors)
+          setPerceivedEffort(effort)
+          supabase.from('putt_sessions').update({ external_factors: factors, perceived_effort: effort }).eq('id', freeformSessionId)
+        }}
         onSaveNotesTags={async ({ notes, tags }) => {
           const { error: saveError } = await supabase
             .from('putt_sessions')
@@ -444,6 +504,11 @@ export default function FreeformLogPage() {
           }}
           onStart={handleStart}
           starting={starting}
+          matchModeEnabled={session.profileDefaults.matchModeEnabled}
+          onToggleMatchMode={() => session.updateProfileDefaults({
+            matchModeEnabled: !session.profileDefaults.matchModeEnabled,
+            ...(!session.profileDefaults.matchModeEnabled ? { diagnosticModeDefault: true } : {}),
+          })}
         />
       )}
 
@@ -466,6 +531,9 @@ export default function FreeformLogPage() {
               onChangeInputMode={setInputMode}
               syncStatus={session.syncStatus}
               onExit={handleEndSession}
+              externalFactors={externalFactors}
+              onToggleFactor={(factor) => setExternalFactors((current) => current.includes(factor) ? current.filter((value) => value !== factor) : [...current, factor])}
+              matchModeEnabled={session.matchModeEnabled}
             />
           }
           toolbar={
@@ -547,6 +615,7 @@ export default function FreeformLogPage() {
           }
         />
       )}
+      {fatiguePrompt && <FatigueCheckin reason={fatiguePrompt.reason} onRespond={handleFatigueResponse} />}
 
       {pendingMiss && (
         <DiagnosticZonePicker

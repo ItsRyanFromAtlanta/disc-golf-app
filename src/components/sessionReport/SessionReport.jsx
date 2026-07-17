@@ -1,5 +1,6 @@
 import NotesTagsEditor from '../NotesTagsEditor'
 import CelebrationOverlay from './CelebrationOverlay'
+import SessionContextSummary from './SessionContextSummary'
 
 // Unified post-session / history-detail report — one component, two entry
 // points, so a just-finished session and the same session viewed later from
@@ -21,6 +22,12 @@ export default function SessionReport({
   celebrationEvents = [],
   notes,
   tags,
+  externalFactors = [],
+  perceivedEffort,
+  contextEditable = false,
+  onChangeContext,
+  weatherCondition,
+  windMph,
   onSaveNotesTags,
   onHide,
   onRetrySync,
@@ -82,6 +89,18 @@ export default function SessionReport({
           <div className="hero-scoreboard-bar-fill" style={{ width: `${heroPct}%` }} />
         </div>
       </div>
+
+      <SessionContextSummary
+        factors={externalFactors}
+        effort={perceivedEffort}
+        editable={contextEditable}
+        onChange={onChangeContext}
+      />
+      {(weatherCondition || windMph != null) && (
+        <p className="session-weather">
+          Weather: {weatherCondition ?? 'unspecified'}{windMph != null ? ` · ${windMph} mph wind` : ''}
+        </p>
+      )}
 
       {putterRows && putterRows.length > 0 && (
         <>

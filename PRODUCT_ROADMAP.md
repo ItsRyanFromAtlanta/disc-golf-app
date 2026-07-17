@@ -16,8 +16,8 @@ greenfield Expo schema literally.
 
 ## Product structure
 
-- Bottom navigation now targets **PLAY / DISCS / ME**. A **COURSES** tab is added when the course
-  directory ships. The standalone STATS destination is obsolete: statistics live with their subject,
+- Bottom navigation now targets **PLAY / DISCS / COURSES / ME** because the J1 course directory shipped
+  on 2026-07-14. The standalone STATS destination is obsolete: statistics live with their subject,
   while ME provides the career-wide summary.
 - PLAY prioritizes: resume unfinished activity → Quick Play → select routine → create routine →
   History. Only one activity may remain unfinished; starting another closes the previous activity as
@@ -65,47 +65,67 @@ device metadata.
 
 ## Phase B — DISCS data foundation
 
-Recommended model: GPT-5.6 high. Use the automated CLI/`pg_dump` backup policy before migration SQL.
+Recommended model: GPT-5.6 high. Review migration SQL and rollback notes before live apply.
 
-Phase B status: **IN PROGRESS** (2026-07-12). B1 catalog foundation, RLS, migration history, rollback-only
-ownership tests, B1.7 candidate/artifact persistence, and B1.8 admin review/promotion with advisor/lint
-follow-ups are applied and verified. Manufacturer fixtures, representative catalog data, and client
-repositories remain next.
+Phase B status: **COMPLETE** (2026-07-16). The retained B1 catalog foundation and least-privilege
+RLS are live; the automated ingestion/admin pipeline was subsequently scrapped and torn down in favor
+of manual curation. B2 ships the migration-free, read-only client repository: normalized Dexie v6
+caches for manufacturers/molds/plastics/mold-plastic links/runs/stamps, TanStack offline-first reads,
+and migrated mold selection/search/onboarding consumers. Manual representative catalog population
+remains owner-driven. Phase B 2A now ships immutable physical-disc events, bag versions/membership
+snapshots, preview-first restore, Dexie v7 mirrors, and round-to-bag-version capture. Phase B 2B adds
+capacity-neutral persisted ghost slots, a curated/private shot-tag dictionary, reversible assignment
+tombstones, Dexie v8 mirrors, and management UI. Item 2 is complete. Item 3's private-photo client,
+Dexie v9 queue, private Storage/RLS, signed display URLs, replacement history, and 30-day recovery are
+live and verified. Item 4 now adds private Lost & Found cases, immutable update timelines, optional
+course/GPS/notes/contact evidence, Dexie v10 offline replay, and atomic disc status transitions. Items
+3 and 4 are complete. Item 5 now ships immutable odometer deltas, guarded cached totals, Dexie v11
+offline replay, and permanent 300/1,000/5,000 chain-hit unlocks. All Phase B items are complete.
 
 1. Catalog variants for mold/plastic/run/stamp with source provenance; manufacturer adapters; private
    custom configurations; community submission and admin-review queue.
 2. Physical-disc timelines, bag configuration versions/snapshots, ghost-slot records, shot-tag
    dictionary/assignments, and reversible assignment tombstones.
-3. Supabase Storage/RLS for up to three private disc photos (front/back/side), compressed derivative,
-   offline queue, replacement history, and 30-day deletion recovery.
-4. Lost & Found case/update timeline with optional GPS/course/notes/contact; no timed auto-archive.
-5. Odometer events (`total_throws`, chain hits, airballs/manual corrections/import provenance) and
-   permanent cosmetic-tier unlock events.
+3. **COMPLETE 2026-07-15.** Supabase Storage/RLS for up to
+   three private disc photos (front/back/side), compressed derivative, offline queue, replacement
+   history, and 30-day deletion recovery.
+4. **COMPLETE 2026-07-15.** Lost & Found case/update timeline with optional GPS/course/notes/contact;
+   offline replay and no timed auto-archive.
+5. **COMPLETE 2026-07-16.** Odometer events (`total_throws`, chain hits, airballs/manual
+   corrections/import provenance) and permanent cosmetic-tier unlock events.
 
 ## Phase C — DISCS experience and intelligence
 
 Recommended model: GPT-5.3-Codex medium for UI; GPT-5.6 high for scoring/merge algorithms.
 
-1. Collection-first DISCS hub, quantity-first duplicate add, rich physical-disc profile, photo flow,
-   contextual performance, lifecycle, and history.
-2. Bag editor with grouped save/version, state-in-time preview/apply restore, unavailable placeholders,
-   one private main bag, and generic external label `Main Bag`.
-3. Flight Spectrum (wear-adjusted default, official toggle, clustering, accessible ghost styling).
-4. Bag Resonance first draft with component scores and presets; ghost gaps never count toward capacity.
-5. Disc/bag comparisons using personal, official, and eligible community cohorts with graceful cohort
-   broadening and explicit attribution.
+1. **COMPLETE 2026-07-16.** Collection-first DISCS hub, quantity-first duplicate add, rich
+   physical-disc profile, photo flow, contextual performance, lifecycle, and history.
+2. **COMPLETE 2026-07-16.** Bag editor with grouped save/version, state-in-time preview/apply restore,
+   unavailable placeholders, one private main bag, and generic external label `Main Bag`.
+3. **COMPLETE 2026-07-16.** Flight Spectrum (wear-adjusted default, official toggle, clustering,
+   accessible ghost styling).
+4. **COMPLETE 2026-07-16.** Bag Resonance first draft with transparent coverage, speed-ladder, and
+   separation component scores; Balanced, Coverage-first, and Minimal redundancy presets; ghost gaps
+   never count toward physical disc capacity.
+5. **COMPLETE 2026-07-16.** Disc/bag comparisons using personal, official, and eligibility-gated
+   community cohorts with graceful fallback and explicit attribution.
 
 ## Phase D — PLAY, ME, reports, and contextual analytics
 
 Recommended model: GPT-5.3-Codex medium; GPT-5.6 high for metric/report engines.
 
-1. Revised PLAY ordering and Level-1 Quick Play default with profile/default selector.
-2. Adaptive stage fatigue check-ins, editable putter/weather/external factors, end-session perceived
-   effort, and user-disableable round-turn prompt.
-3. ME career summary, Profile/Settings split, contextual notification preferences, goals pause/history,
-   weekly deterministic report snapshots, and complete activity history/corrections.
-4. Distance heat map, miss tendency, putter comparisons, new-putter experiment markers, before/after
-   engine, ghost pacing, JYLY/Around-the-World, then clutch/voice features.
+1. **COMPLETE 2026-07-16.** Revised PLAY ordering and Level-1 Quick Play default with a device-local
+   profile/default selector and offline regimen/set cache.
+2. **COMPLETE 2026-07-16.** Adaptive stage fatigue check-ins, editable putter/weather/external
+   factors, end-session perceived effort, and user-disableable round-turn prompt.
+3. **COMPLETE 2026-07-16.** ME career summary, Profile/Settings split, contextual notification
+   preferences, goals pause/history, weekly deterministic report snapshots/version history, and
+   complete activity history/corrections.
+4. **COMPLETE 2026-07-16 (CHECKPOINTS 1–7).** Distance confidence/heat, completed-visible miss tendency,
+   longitudinal physical-putter comparisons, immutable new-putter before/after markers, best-run ghost
+   pacing, versioned JYLY/Around-the-World execution, and a deadline-recoverable one-putt Clutch
+   Simulator are shipped. Opt-in Match Mode adds five-attempt make-rate/ghost callouts and thresholded,
+   cooldown-protected coaching from genuine real-time evidence. Phase D is complete; proceed to Phase E.
 
 ## Phase E — Courses, rounds, and interoperability
 

@@ -1,6 +1,7 @@
 import { liveQuery } from 'dexie'
 import { db as defaultDb } from '../db/dexieDb'
 import { dedupeNotifications, isBadgeEligible } from '../notifications'
+import { isOptionalNotificationEnabled } from '../notificationPreferences'
 
 export const NOTIFICATION_OUTBOX_TABLE = 'notifications'
 
@@ -21,6 +22,10 @@ function outboxRow(op, payload) {
 
 export function createNotificationRepository({ database = defaultDb } = {}) {
   async function upsert(notification) {
+    if (notification.priority !== 'critical') {
+      const preferences = await database.notificationPreferences.where('user_id').equals(notification.user_id).toArray()
+      if (!isOptionalNotificationEnabled(preferences, notification.category)) return null
+    }
     const existing = await database.notifications.where('user_id').equals(notification.user_id).toArray()
     const merged = dedupeNotifications(existing, notification)
     const current = merged.find((row) => row.dedupe_key === notification.dedupe_key && !row.resolved_at) ?? notification

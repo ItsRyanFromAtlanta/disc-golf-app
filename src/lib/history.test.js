@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activityHistoryEntries, sessionAggregate } from './history'
+import { activityHistoryEntries, metricEligibleHistory, sessionAggregate } from './history'
 
 describe('history helpers', () => {
   it('keeps activities canonical and preserves local-only pending rows without inventing facts', () => {
@@ -36,5 +36,22 @@ describe('history helpers', () => {
         ],
       }),
     ).toEqual({ makes: 11, attempts: 20, minDistance: 15, maxDistance: 25 })
+  })
+
+  it('keeps only completed visible parents and their typed rows for metrics', () => {
+    const result = metricEligibleHistory({
+      activities: [
+        { id: 'complete', state: 'completed', hidden_at: null },
+        { id: 'incomplete', state: 'incomplete', hidden_at: null },
+        { id: 'hidden', state: 'completed', hidden_at: '2026-07-16T12:00:00Z' },
+      ],
+      sessions: [{ id: 'complete' }, { id: 'incomplete' }],
+      runs: [{ id: 'hidden' }],
+    })
+    expect(result).toEqual({
+      activities: [{ id: 'complete', state: 'completed', hidden_at: null }],
+      sessions: [{ id: 'complete' }],
+      runs: [],
+    })
   })
 })

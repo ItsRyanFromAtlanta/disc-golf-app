@@ -10,6 +10,33 @@ export function bagIdsToUnsetForNewDefault(bags, targetBagId) {
   return bags.filter((b) => b.is_default && b.id !== targetBagId).map((b) => b.id)
 }
 
+export function bagDisplayName(bag, { external = false } = {}) {
+  if (external && bag?.is_default) return 'Main Bag'
+  return bag?.name ?? 'Bag'
+}
+
+export function buildBagDraft(bag, discIds = []) {
+  return {
+    name: bag.name,
+    description: bag.description ?? '',
+    bagType: bag.bag_type ?? '',
+    capacity: bag.capacity ?? 35,
+    makeDefault: bag.is_default,
+    discIds: [...discIds],
+  }
+}
+
+export function bagDraftHasChanges(bag, currentDiscIds, draft) {
+  const original = buildBagDraft(bag, currentDiscIds)
+  const sameMembers = [...original.discIds].sort().join('|') === [...draft.discIds].sort().join('|')
+  return original.name !== draft.name
+    || original.description !== draft.description
+    || original.bagType !== draft.bagType
+    || original.capacity !== draft.capacity
+    || original.makeDefault !== draft.makeDefault
+    || !sameMembers
+}
+
 // Bag views (the default bag, the bag switcher) only ever show discs that
 // are actually in rotation. Lost/retired/sold discs stay members of their
 // bags (memberships are preserved, per spec) but drop out of this view —

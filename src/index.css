@@ -178,3 +178,24 @@ code,
   line-height: 135%;
   padding: 4px 8px;
 }
+.fatigue-checkin,
+.round-turn-prompt,
+.session-context-summary {
+  border: 2px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  padding: 1rem;
+  margin-block: 1rem;
+}
+
+.fatigue-rating-row,
+.factor-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.session-context-summary label {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

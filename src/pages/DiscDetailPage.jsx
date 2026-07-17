@@ -4,6 +4,16 @@ import { useAuth } from '../context/AuthContext'
 import { fetchDisc, fetchBags, fetchDiscBagIds, addDiscToBag, removeDiscFromBag, upsertDisc } from '../lib/discLocker'
 import { effectiveFlightNumbers } from '../lib/discs'
 import EditableSection from '../components/EditableSection'
+import {
+  assignShotTag,
+  createShotTag,
+  loadDiscShotTags,
+  removeShotTagAssignment,
+} from '../lib/repository/discTaxonomyRepository'
+import { activeShotTagAssignments, assignedShotTags } from '../lib/discTaxonomy'
+import DiscPhotoManager from '../components/DiscPhotoManager'
+import DiscOdometerManager from '../components/DiscOdometerManager'
+import DiscProfileContext from '../components/DiscProfileContext'
 
 const STATUS_OPTIONS = ['in_locker', 'lost', 'retired', 'sold']
 
@@ -15,16 +25,22 @@ export default function DiscDetailPage() {
   const [bags, setBags] = useState(null)
   const [memberBagIds, setMemberBagIds] = useState(new Set())
   const [error, setError] = useState(null)
+  const [shotTags, setShotTags] = useState([])
+  const [shotTagAssignments, setShotTagAssignments] = useState([])
+  const [newShotTag, setNewShotTag] = useState('')
 
   async function loadAll() {
-    const [discData, bagsData, bagIds] = await Promise.all([
+    const [discData, bagsData, bagIds, taxonomy] = await Promise.all([
       fetchDisc(discId),
       fetchBags(user.id),
       fetchDiscBagIds(discId),
+      loadDiscShotTags(discId),
     ])
     setDisc(discData)
     setBags(bagsData)
     setMemberBagIds(new Set(bagIds))
+    setShotTags(taxonomy.tags)
+    setShotTagAssignments(taxonomy.assignments)
   }
 
   useEffect(() => {
@@ -53,6 +69,33 @@ export default function DiscDetailPage() {
     setDisc(updated)
   }
 
+  async function toggleShotTag(tag) {
+    try {
+      const active = activeShotTagAssignments(shotTagAssignments)
+      const assignment = active.find((row) => row.shot_tag_id === tag.id)
+      if (assignment) await removeShotTagAssignment(assignment)
+      else await assignShotTag(user.id, discId, tag.id)
+      const taxonomy = await loadDiscShotTags(discId)
+      setShotTagAssignments(taxonomy.assignments)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleCreateShotTag(e) {
+    e.preventDefault()
+    try {
+      const tag = await createShotTag(user.id, newShotTag)
+      setShotTags((current) => [...current, tag])
+      setNewShotTag('')
+      await assignShotTag(user.id, discId, tag.id)
+      const taxonomy = await loadDiscShotTags(discId)
+      setShotTagAssignments(taxonomy.assignments)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   if (error && !disc) return <p className="form-error">{error}</p>
   if (!disc) return <p className="loading">Loading...</p>
 
@@ -76,6 +119,26 @@ export default function DiscDetailPage() {
         {' · '}
         <span className={disc.status === 'in_locker' ? 'zone-badge' : 'abandoned-badge'}>{disc.status}</span>
       </p>
+
+      <p>
+        <Link to={`/bag/lost-found?disc=${discId}`} className="link-button">
+          {disc.status === 'lost' ? 'View Lost & Found case' : 'Report lost or view recovery history'}
+        </Link>
+      </p>
+
+      <DiscPhotoManager
+        userId={user.id}
+        discId={discId}
+        legacyPhotoUrl={disc.photo_url}
+        onError={setError}
+      />
+
+      <DiscOdometerManager
+        userId={user.id}
+        disc={disc}
+        onDiscUpdate={setDisc}
+        onError={setError}
+      />
 
       <h2>Flight numbers</h2>
       <table className="flight-compare-table">
@@ -105,6 +168,8 @@ export default function DiscDetailPage() {
         </tbody>
       </table>
 
+      <DiscProfileContext discId={discId} onError={setError} />
+
       <EditableSection
         title="Details"
         values={{
@@ -116,7 +181,6 @@ export default function DiscDetailPage() {
           status: disc.status ?? 'in_locker',
           acquired_on: disc.acquired_on ?? '',
           provenance: disc.provenance ?? '',
-          photo_url: disc.photo_url ?? '',
           notes: disc.notes ?? '',
         }}
         onSave={(draft) =>
@@ -129,15 +193,11 @@ export default function DiscDetailPage() {
             status: draft.status,
             acquired_on: draft.acquired_on || null,
             provenance: draft.provenance.trim() || null,
-            photo_url: draft.photo_url.trim() || null,
             notes: draft.notes.trim() || null,
           })
         }
         renderView={(v) => (
           <>
-            {v.photo_url && (
-              <img src={v.photo_url} alt={v.nickname || 'Disc photo'} className="disc-detail-photo" />
-            )}
             <dl className="profile-field-list">
               <div>
                 <dt>Nickname</dt>
@@ -229,13 +289,6 @@ export default function DiscDetailPage() {
               value={draft.provenance}
               onChange={(e) => setDraft({ ...draft, provenance: e.target.value })}
             />
-            <label htmlFor="d-photo">Photo URL</label>
-            <input
-              id="d-photo"
-              type="text"
-              value={draft.photo_url}
-              onChange={(e) => setDraft({ ...draft, photo_url: e.target.value })}
-            />
             <label htmlFor="d-notes">Notes</label>
             <textarea id="d-notes" rows={2} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
           </div>
@@ -312,6 +365,23 @@ export default function DiscDetailPage() {
           })}
         </ul>
       )}
+
+      <h2>Shot tags</h2>
+      <p className="log-time">Assigned: {assignedShotTags(shotTags, shotTagAssignments).map((tag) => tag.label).join(', ') || 'none'}</p>
+      <div className="chip-group">
+        {shotTags.map((tag) => {
+          const active = activeShotTagAssignments(shotTagAssignments).some((row) => row.shot_tag_id === tag.id)
+          return (
+            <button key={tag.id} type="button" className={`chip ${active ? 'chip-active' : ''}`} onClick={() => toggleShotTag(tag)}>
+              {tag.label}
+            </button>
+          )
+        })}
+      </div>
+      <form className="profile-section-actions" onSubmit={handleCreateShotTag}>
+        <input value={newShotTag} required placeholder="Custom shot tag" onChange={(e) => setNewShotTag(e.target.value)} />
+        <button type="submit">Add tag</button>
+      </form>
     </section>
   )
 }

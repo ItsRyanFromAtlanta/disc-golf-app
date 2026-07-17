@@ -3,6 +3,7 @@ import { isBadgeEligible } from '../lib/notifications'
 import { notificationRepository } from '../lib/repository/notificationRepository'
 import { createNotificationSyncAdapter } from '../lib/repository/notificationSync'
 import { produceActivityReviewNotifications, produceSyncAttentionNotification } from '../lib/notificationProducers'
+import { settingsRepository } from '../lib/repository/settingsRepository'
 
 export function useNotifications(userId) {
   const [notifications, setNotifications] = useState([])
@@ -16,10 +17,12 @@ export function useNotifications(userId) {
     // Producers are deterministic and deduped: an incomplete activity or a
     // poisoned outbox row can surface once without turning normal audit rows
     // into notification noise.
-    Promise.all([
-      produceActivityReviewNotifications({ userId }),
-      produceSyncAttentionNotification({ userId }),
-    ])
+    settingsRepository.listNotificationPreferences(userId)
+      .catch(() => [])
+      .then(() => Promise.all([
+        produceActivityReviewNotifications({ userId }),
+        produceSyncAttentionNotification({ userId }),
+      ]))
       .then(() => sync.flush())
       .then(() => sync.pull(userId))
       .catch(() => {})

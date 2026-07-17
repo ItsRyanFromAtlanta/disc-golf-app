@@ -26,6 +26,18 @@ See `supabase_schema.sql` for full schema. Key tables:
 - `rounds` / `round_holes` — user-owned round data
 - `live_sessions` — active caddie chat state (JSONB log) during a round
 - `caddie_recommendations` — logged AI suggestions per hole, tagged with model used
+- `disc_state_events` — immutable owner-scoped physical-disc status/role/wear/condition/bag timeline
+- `bag_versions` / `bag_version_discs` — immutable bag metadata/membership snapshots; restores create
+  a new current version and rounds may retain the exact `bag_version_id` selected at start
+- `bag_ghost_slots` — private capacity-neutral desired flight slots with reversible removal
+- `shot_tags` / `disc_shot_tag_assignments` — curated/private physical-disc taxonomy with assignment
+  tombstones; removing a tag never deletes its historical assignment row
+- `disc_photos` — owner-scoped immutable front/back/side photo versions; private Storage paths,
+  replacement history, and 30-day recoverable deletion
+- `lost_found_cases` / `lost_found_updates` — private owner-scoped recovery envelopes and immutable
+  location/sighting/contact timelines; atomic RPCs synchronize physical-disc lost/recovered status
+- `disc_odometer_events` / `disc_cosmetic_unlocks` — immutable owner-scoped throws/chain-hits/airballs
+  deltas and permanent 300/1,000/5,000 chain-hit tier unlocks; cached disc totals are RPC-maintained
 - `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
   RLS-enabled with no ordinary-client policies or grants, backed by the private
@@ -60,15 +72,33 @@ The app uses nested feature trees. Putting practice is the first tree:
 /practice/regimens/:id/run         → active regimen run-through with live scoring
 /practice/history                  → unified session history feed
 /practice/history/:type/:id        → session/run detail view (type = 'freeform' | 'regimen')
+/bag/lost-found                    → private offline-ready disc recovery cases and update timelines
 ```
 
 Future putting modes (games, challenges, drills) slot in as `/practice/<mode>`.
 Future feature areas (rounds, caddie, fieldwork) become sibling trees with the same pattern (e.g. `/rounds/...`).
 
-**App-level nav is PLAY / DISCS / ME** (approved 2026-07-11 and detailed in
-`PHASE_A_ARCHITECTURE.md`). Add COURSES only when the directory ships. `/practice` remains compatible
-while PLAY routes are introduced; statistics live with their subject and ME provides the career-wide
-summary. The earlier PLAY/BAGS/STATS/PRO blueprint navigation is historical, not current.
+J1 ships the first sibling tree under the COURSES section:
+
+```
+/courses                 → course directory + recent rounds
+/courses/new             → quick-course builder
+/courses/:courseId       → layout and hole detail
+/rounds                  → round history
+/rounds/new              → course/layout/bag selection
+/rounds/:roundId         → offline-first scorecard
+/rounds/:roundId/summary → total, relative-to-par, and finalization
+/profile                 → ME career summary
+/profile/details         → editable player profile
+/profile/settings        → device/cross-device preferences and optional notification categories
+/profile/goals           → measurable goals, lifecycle actions, and immutable status history
+/profile/reports         → deterministic weekly snapshots and immutable version history
+```
+
+**App-level nav is PLAY / DISCS / COURSES / ME** after the J1 directory shipped (the approved base
+shell remains PLAY / DISCS / ME; COURSES was added at its documented trigger). `/practice` remains
+compatible while PLAY routes are introduced; statistics live with their subject and ME provides the
+career-wide summary. The earlier PLAY/BAGS/STATS/PRO blueprint navigation is historical, not current.
 
 ### Practice menu design
 - Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
@@ -125,6 +155,83 @@ outbox behind `src/lib/repository/activityRepository.js`. Its InstantLaunch brid
 unwired until A7: InstantLaunch remains authoritative for live putt capture, batch summaries, and its
 proven putt outbox; lifecycle mirroring must never synthesize or relocate those facts.
 
+Phase D D1 adds Dexie v12 `regimenSets` beside the existing `regimens` store and the scoped
+`src/lib/repository/regimenRepository.js` remote-first/local-fallback boundary. Quick Play stores its
+device-local `quickPlayRegimenId` in InstantLaunch profile defaults; a missing/archived preference falls
+back to the system Level-1 regimen, then the lowest system level. Active recovery remains local and must
+never wait for history or regimen network reads.
+
+Phase D D2 adds Dexie v13 `practiceFatigueCheckins` and the immutable owner-scoped
+`practice_fatigue_checkins` table. Check-ins occur only at stage boundaries after three trailing misses
+or a sampled 20-point stage drop; skipping never blocks scoring. Practice parent rows retain canonical
+external factors and optional 1–10 perceived effort. `profiles.round_turn_prompt_enabled` is the
+cross-device round-turn preference; a one-round dismissal remains local UI state.
+
+Phase D D3 checkpoint 1 adds Dexie v14 mirrors for `notificationPreferences`, `goals`, `goalEvents`,
+and `weeklyReportSnapshots`. Server contracts use owner-scoped `notification_preferences`, mutable goal
+parents plus immutable `goal_events`, and immutable versioned `weekly_report_snapshots` that store the
+Monday–Sunday calendar window, IANA timezone, exact UTC bounds, calculation version, source cutoff,
+sample counts, metrics, and deterministic highlights. Goal create/transition RPCs are atomic,
+idempotent, version-checked, and preserve pause/resume/completion history.
+
+Phase D D3 checkpoint 3 splits editable player identity/calibration at `/profile/details` from
+preferences at `/profile/settings`. Device-only disc-card flair remains local; round-turn prompt,
+reporting timezone, and optional notification categories persist cross-device. Preference hydration
+runs before notification production, while critical sync/data-safety alerts cannot be disabled.
+
+Phase D D3 checkpoint 4 adds `/profile/goals`. Reads are remote-first with Dexie fallback; creation and
+pause/resume/completion/cancellation use only the atomic public RPCs. Every transition sends the
+currently-read version and the UI reloads authoritative goal parents plus immutable `goal_events`.
+
+Phase D D3 checkpoint 5 adds `/profile/reports`. Generation uses the profile's IANA timezone to freeze
+the latest completed Monday–Sunday window into exact DST-aware UTC bounds, includes only completed,
+visible lifecycle sources, and inserts a new immutable snapshot version with an explicit supersession
+link. Report history reads remote-first with Dexie fallback; generation never relies on a partial local
+cache and never overwrites an earlier version.
+
+Phase D D4 checkpoint 1 consolidates contextual practice analytics at `/practice/stats`. Distance
+confidence and miss-tendency evidence include only completed, visible lifecycle parents. The 9-zone
+miss grid reads genuine real-time `putt_events.miss_zone` facts, reports zone-capture coverage, never
+infers direction from batch summaries, and withholds a repeated-vector callout until at least three
+same-zone misses occur within a distance band.
+
+Phase D D4 checkpoint 2 adds longitudinal physical-putter comparison to `/practice/stats`. It groups
+only completed-visible real-time events by exact `putter_disc_id`, reports attribution coverage and
+Wilson intervals, and computes a transparent distance-adjusted delta only from distance bands shared
+by at least two putters. The adjusted delta remains withheld until a putter has 10 shared-distance
+attempts; batch summaries are never attributed or synthesized, and the UI never crowns a winner.
+
+Phase D D4 checkpoint 3 adds append-only `practice_experiment_markers` for new-putter boundaries.
+Markers are owner-scoped, tied to a physical disc, and insert-only; corrections create a new marker.
+Before/after evidence uses only attributed events from completed-visible activities, treats each marker's
+window as ending at the next marker, requires 10 attempts on both sides, and shows Wilson intervals for
+small samples. Batch summaries and unselected events never become experiment evidence.
+
+Phase D D4 checkpoint 4 adds schema-free best-run ghost pacing to active regimen runs. A background
+completed-visible history read selects the highest-scoring same-regimen run with at least five timed
+real-time events (newest completion breaks score ties). The profile freezes at Start and InstantLaunch
+v3 retains it plus current diagnostic progress across recovery without duplicating sporting facts.
+Comparison begins after three current real-time attempts; batch summaries never receive invented timing.
+
+Phase D D4 checkpoint 5 generalizes the regimen engine for versioned classic drills. JYLY is a fixed
+100-putt, one-point-per-make drill; Around the World advances on a make, steps back on a miss, and is
+bounded at 100 attempts. Both reuse owner-scoped regimen runs and append-only run-set facts, including
+repeated station visits. The active station, running score, and attempt count remain in the local
+InstantLaunch stage snapshot for offline recovery; batch capture still writes summaries only.
+
+Phase D D4 checkpoint 6 adds a one-attempt Clutch Simulator with selectable 15/20/25/33-foot
+distances and a frozen randomized 2–8 minute deadline. The in-app deadline/recovery alarm is
+authoritative; optional system notifications are permission-gated and best-effort while browser
+execution remains available. Clutch capture is real-time only, writes `putt_events.is_pressure = true`,
+and hides batch/edit paths so no pressure event is synthesized from a summary.
+
+Phase D D4 checkpoint 7 adds opt-in, device-local Match Mode voice coaching to regimen and freeform
+capture. The preference freezes at Start and InstantLaunch v4 retains diagnostic-only real-time events
+plus callout cursors across recovery. Informational make-rate/ghost callouts occur every five genuine
+events; interventions require three consecutive same-zone/same-distance-band misses or a 30-point drop
+across consecutive five-attempt windows, with a five-attempt cooldown. Batch summaries never become
+coaching evidence, undo retracts evidence, and the shared silence control cancels/suppresses speech.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
@@ -144,13 +251,9 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 - Schema files are append-only history; never edit a previously-run schema file, add a new one. New concepts from the blueprint are absorbed as additive columns/tables on the existing schema (e.g. `discs.role`, `discs.wear_score`), never as a wholesale schema replacement.
 - Commit at every working checkpoint. Push coherent green stages to a feature branch and use a reviewed
   pull request for `main` because `main` auto-deploys; direct production pushes require explicit approval.
-- **Before any migration or FK-restructuring session:** Codex should create and verify a timestamped
-  backup automatically when the connected tooling permits it: try `supabase db dump --linked` first,
-  then fall back to `pg_dump` through the configured pgpass connection. Store dumps outside Git and
-  report their path, size, and checksum without printing credentials or contents. A verified automated
-  backup satisfies the migration gate without another user confirmation. If neither backup path is
-  available, give a prominent non-blocking manual-backup reminder and continue only within the scope the
-  user already approved; do not repeatedly stop for backup confirmation.
+- Database changes use append-only migrations, reviewed rollback notes, ownership/RLS negative tests,
+  and post-apply smoke checks. Do not run automated backup commands or block migrations on manual
+  backup confirmation; the owner manages production backup policy outside Codex sessions.
 - Every task states its recommended model up front: **GPT-5.3-Codex medium** for normal UI/CRUD/test work; **GPT-5.6 high** for architecture, migrations, RLS/security, rules engines, synchronization, and complex algorithms. Use **GPT-5.4 mini low** only for bounded mechanical work with normal verification. Confirm the active model/reasoning level before starting a section.
 - Plan-first rule: iterate and agree on designs in conversation BEFORE generating files, schemas, or prompts. Always prompt for approval before file generation.
 - Coaching/AI design rule: intervention threshold — never surface coaching feedback off a single event; require a statistically meaningful pattern (e.g. ≥3 consecutive same-vector misses).
@@ -158,7 +261,7 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 ## Current build focus
 Executing `PRODUCT_ROADMAP.md`: production/shared contracts → DISCS data foundation → DISCS
 experience/intelligence → PLAY/ME/reports → courses/rounds/interoperability. Bottom navigation is
-PLAY / DISCS / ME, with COURSES added when its directory ships; no standalone Stats tab. Existing
+PLAY / DISCS / COURSES / ME now that the course directory ships; no standalone Stats tab. Existing
 Layers 1–4 and Trophy Room are shipped foundations to extend, not rebuild. Social, commerce,
 native/hardware, experimental capture, AI narrative, advanced sync UI, and PDGA automation remain
 parked only until their documented revisit triggers are satisfied.

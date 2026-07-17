@@ -1,6 +1,6 @@
 # Development Plan
 
-Last updated: 2026-07-12
+Last updated: 2026-07-16
 Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
 `PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
@@ -20,6 +20,43 @@ ships. Do not build a standalone Stats tab.
 Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GPT-5.6 high** for
 architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
 Sonnet/Opus labels below are preserved only as historical records of completed work.
+
+Phase B item 5 complete (2026-07-16): immutable `disc_odometer_events`, RPC-maintained throws/chain-hit/
+airball totals, permanent 300/1,000/5,000 chain-hit cosmetic unlocks, direct-total guards, Dexie v11
+offline replay, and disc-detail odometer/history UI are live and verified. Rollback-only milestone,
+idempotency, correction-retention, owner/foreign-user, direct-write, and zero-residue checks passed.
+Phase B is complete. Phase C items 1–3 shipped 2026-07-16: collection-first DISCS/profile
+consolidation, atomic grouped bag editing, and the accessible current-reality/official Flight Spectrum.
+Phase C items 1–4 shipped 2026-07-16: collection-first DISCS/profile consolidation, atomic grouped
+bag editing, accessible current-reality/official Flight Spectrum, and the schema-free Bag Resonance draft
+with transparent component presets and capacity-neutral ghost gaps. Phase C item 5 disc/bag comparisons
+shipped 2026-07-16. Phase D item 1 shipped 2026-07-16 with revised PLAY ordering, deterministic
+Level-1 Quick Play fallback, a device-local default selector, and Dexie v12 regimen/set caching.
+Phase D item 2 shipped 2026-07-16 with pattern-gated stage fatigue check-ins, canonical session
+factors, perceived effort, weather context, immutable owner-scoped observations, Dexie v13 mirroring,
+and a cross-device round-turn preference. Phase D item 3 checkpoint 1 shipped 2026-07-16:
+notification-preference, goal lifecycle/event, and immutable timezone-windowed weekly-report contracts;
+owner-scoped RLS/indexes/grants; atomic goal RPCs; Dexie v14 mirrors; and pure goal/report functions.
+The ME career summary is shipped with evidence-backed practice telemetry, a sparse-data-safe five-axis
+radar, rating/identity context, and a physical-disc trusted-putter audit. Profile/Settings separation
+and contextual notification preferences are shipped. Goal creation, pause/resume/completion/
+cancellation, optimistic version checks, and immutable history UI are shipped. Phase D item 3 is
+complete: `/profile/reports` now generates the latest completed DST-aware Monday–Sunday window from
+completed visible activity, inserts immutable superseding versions, and exposes remote-first/Dexie-
+fallback version history. Phase D item 4 scope reconciliation is complete.
+Phase D item 4 checkpoint 1 shipped 2026-07-16: `/practice/stats` now enforces completed-visible
+metric eligibility and combines the shipped Wilson distance-confidence view with a 9-zone miss-
+tendency grid over real-time diagnostic events. It exposes zoned/total capture coverage, never derives
+miss direction from batch summaries, and requires three same-vector misses before naming a repeated
+pattern. Phase D item 4 checkpoint 2 shipped 2026-07-16: longitudinal physical-putter comparison now
+groups exact attributed discs, exposes attribution coverage and Wilson uncertainty, and limits its
+distance-adjusted delta to shared distance bands with at least 10 attempts. Explicit immutable
+new-putter experiment markers and a before/after engine shipped 2026-07-16 as checkpoint 3. Marker
+windows end at the next marker, both sides require 10 attributed attempts, and small-sample Wilson
+intervals remain visible. Schema-free best-run ghost pacing shipped as checkpoint 4 with a frozen,
+crash-recoverable profile and a three-event intervention floor. Checkpoint 5 ships versioned JYLY and
+Around-the-World rules, grouped selection, append-only repeated-station facts, and locally recoverable
+state-machine progress.
 
 ## Phase A execution sessions — approved 2026-07-12
 
@@ -83,7 +120,7 @@ are stated below — **confirm the active model matches before starting a layer.
 
 - **Layer 0 — Documentation alignment** (Sonnet 5, IN PROGRESS): blueprint into repo, `SCREEN_SPECS.md`
   rewrite, this doc + `CLAUDE.md` + `FEATURE_BACKLOG.md` + `DEVLOG.md` updated.
-- **Layer 1 — Foundation** (Opus 4.8, manual DB backup first, COMPLETE): one append-only schema file (disc
+- **Layer 1 — Foundation** (Opus 4.8, COMPLETE): one append-only schema file (disc
   role/wear/odometer, bag capacity, profile PDGA/XP/level fields, weather columns, `putt_events.putter_disc_id`,
   routine `rules_config`/`drill_type`/100-putt CHECK, badges/badge_progress/xp_events tables, disc
   merge trigger); Dexie.js + TanStack Query repository skeleton (staged local-first, behind a
@@ -151,20 +188,21 @@ Four tracks. Tracks 1–2 are sequential build work; Track 3 is an experimental 
 > Do NOT build, extend, run, or re-plan a manufacturer-site scraper / server ingestion pipeline to
 > populate `disc_molds`. The owner will populate discs **manually, later**. Standing instructions for
 > any future session touching this section:
-> - **Populate `disc_molds` by hand**, when the owner is ready — either a hand-written one-time seed
->   SQL migration (curated mold specs the owner supplies) or the existing manual add-disc UI. There is
->   no seed-import dependency and no scraping step anymore.
+> - **Populate canonical catalog rows by hand**, when the owner is ready — through an owner-supplied,
+>   reviewed seed/data migration. Ordinary clients are read-only and no longer insert `disc_molds`.
+>   There is no seed-import dependency and no scraping step anymore.
 > - **The migration step below is still valid** (it derives molds from discs the owner already entered),
 >   but it is no longer blocked on or preceded by any automated seed.
-> - **The existing Phase B catalog-ingestion code is parked, not deleted** — the `catalog-ingestion` /
->   `catalog-ingestion-admin` Edge Functions, `supabase/functions/_shared/catalog*`/`mvp*` modules,
->   `src/pages/AdminCatalogReviewPage.jsx`, `src/lib/catalogAdmin.js`, and the `catalog_*` staging tables
->   remain in place but are out of scope. Don't build on them. (Ask the owner before removing any of it.)
+> - **The Phase B catalog-ingestion surface was torn down on 2026-07-14.** Its append-only migration
+>   history remains, but the Edge Functions, staging/admin client code, and ingestion-only live tables
+>   are gone. Do not revive them without a new owner decision.
 
 - **Schema (to generate):** `disc_molds` (shared; insert-open, update-closed RLS; unique on lower(manufacturer), lower(mold_name); nullable enrichment: image_url, pdga_approved_date, production_status, plastics[], diameter, rim width) + `discs` alterations (mold_id FK, nickname, weight_grams, color, override flight numbers, photo_url, acquired_on, provenance, status lifecycle)
 - **Migration:** script creating molds from distinct (manufacturer, mold) pairs in existing discs, linking copies, moving manual numbers to overrides where they differ from stock. **Model: Opus 4.8** — destructive-adjacent data work
-- **Seed:** ~~import script pulling mold specs from manufacturer sites~~ **(scrapped — see population policy above).** Discs/molds are populated manually by the owner; manual entry via the add-disc UI is the standing path, with an optional owner-supplied one-time seed SQL if a bulk load is wanted.
-- **UI:** `/bag/locker`, `/bag/discs/new` (search molds → pick/create → customize), `/bag/discs/:id`
+- **Seed:** ~~import script pulling mold specs from manufacturer sites~~ **(scrapped — see population policy above).** Canonical rows are populated manually by the owner through reviewed data changes.
+- **UI:** `/bag/locker`, `/bag/discs/new` (search approved molds → pick → customize), `/bag/discs/:id`
+- **B2 repository — SHIPPED 2026-07-15:** read-only normalized catalog snapshot behind TanStack Query
+  and Dexie v6, with offline fallback for mold picker, Universe search, onboarding, and URL handoff.
 - **Effort:** M–L · **Test:** migration dry-run against copy of data; effective-flight-number coalesce unit tests
 
 ### 1C. Bags + membership + flight chart — SHIPPED
@@ -194,7 +232,8 @@ Cheap accommodations that make the confirmed course-catalog / round-management /
 - **Locker UI:** grid ⇄ list toggle via peripheral icon (persist preference). Cards are clean/minimal in v1: name/nickname, flight numbers, photo thumbnail, stability accent, status. Search + filter (manufacturer, speed class, stability, status) + sort (speed, stability, recently added).
 - **Disc detail:** inspect view — full attributes, effective vs stock numbers, condition, bag memberships with one-tap equip/unequip per bag.
 - **Bag view:** loadout screen — disc list + flight chart coverage + capacity indicator if set; bag switcher; add-from-locker flow.
-- **Deferred game flair (backlog):** rarity-style borders, equip animations, full stat-block card mode.
+- **Game flair:** delivered in the J3 jump-ahead checkpoint below; cosmetic unlock events remain deferred to
+  roadmap Phase B item 5.
 - **Model:** Sonnet 5 · **Effort:** M · **Test:** grid/list toggle persists; equip/unequip reflects in both locker and bag views; search/filter correct on effective numbers
 - **Note:** 1C shipped schema + possibly partial UI with no navigation entry point — session must first audit what exists at /bag routes and wire or build accordingly.
 
@@ -210,12 +249,12 @@ Recommended build order: J1 → J2 → J3 (J2/J3 are independent). Each feature 
 gate (build + lint + `vitest run` + `graphify update .` + DEVLOG entry + working-checkpoint commit on a
 feature branch; `main` auto-deploys). State + verify the recommended model at the start of each.
 
-### J1. Round logging + quick-course (new COURSES tab) — front-runs roadmap Phase E
+### J1. Round logging + quick-course (new COURSES tab) — SHIPPED 2026-07-14; front-runs roadmap Phase E
 - **Model: GPT-5.6 high** (round state + schema/RLS) · **Effort:** L
 - **Schema:** already exists, all tables empty, **no new columns** — `courses`, `layouts`, `holes`,
   `rounds`, `round_holes`, `course_aliases` (1.5 groundwork applied: `rounds.layout_id/external_source/
   external_ref/bag_id`, first-class `layouts`, `holes.layout_id`, sparse-nullable `round_holes`). Only DB
-  work is a new **RLS-policy migration** (take a manual backup first): `courses`/`layouts`/`holes` =
+  work is a new **RLS-policy migration**: `courses`/`layouts`/`holes` =
   community read-all-authenticated, insert-open (`created_by = auth.uid()`), update-creator-only (mirror
   `disc_molds`); `rounds`/`round_holes` = owner-scoped to `auth.uid()`; `course_aliases` = insert-open/
   update-closed.
@@ -241,8 +280,12 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
   (primary controls in viewport, secondary in sheets; TTFP not network-gated).
 - **Verify:** create quick course → start round → enter scores → finalize; total + relative-to-par correct
   and match unit tests; reload mid-round persists (Dexie); second user can't read the round (RLS).
+  **Completed:** live policy migration applied, rollback-only authenticated RLS smoke passed, full local
+  test/build/lint gate passed, graph refreshed, and browser route smoke reached the auth gate without
+  console errors. The deployed composite round/activity FK is satisfied by the repository's matching
+  activity-parent lifecycle bridge.
 
-### J2. Disc comparison view — front-runs roadmap Phase C item 5
+### J2. Disc comparison view — SHIPPED 2026-07-15; front-runs roadmap Phase C item 5
 - **Model: GPT-5.3-Codex medium** · **Effort:** S · **No new schema.**
 - Add a **Compare multi-select mode** to `src/pages/BagLockerPage.jsx` (reuse the existing `addToBag`
   picker toggle) → "Compare (n)" navigates to `/bag/compare?ids=…` (cap 2–4). New `/bag/compare` route +
@@ -252,16 +295,26 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
   Side-by-side table + curves. Pure `src/lib/discCompare.js` (+ test) for per-axis min/max highlight and
   near-identical-disc "gap" flags — derived only, no opaque composite (roadmap rule).
 - **Verify:** select 2–3 discs → numbers equal `effectiveFlightNumbers`, curves overlay, override axis shows.
+  **Completed:** locker selection, capped compare route, pure comparison rules/tests, per-axis
+  min/max highlights, explicit override markers, stability labels, current-reality curve overlay, and
+  near-identical/no-gap flags are shipped. Full tests/build/lint gate passed, graph refreshed, and the
+  browser route smoke reached the auth gate without console errors.
 
-### J3. Game-flair disc cards — front-runs roadmap Phase B item 5 / deferred backlog
+### J3. Game-flair disc cards — SHIPPED 2026-07-15; front-runs roadmap Phase B item 5 / deferred backlog
 - **Model: GPT-5.3-Codex medium** · **Effort:** S.
 - Extend `src/components/DiscCard.jsx` with a `flair` variant (default OFF → today's minimal card is
   byte-identical): rarity border, stat-block layout, subtle mount/equip animation. Pure `src/lib/discFlair.js`
   (+ test) `discTier(disc)` from an available signal for v1 (role/wear_score/status) — note the real
   cosmetic-tier **unlock events (Phase B item 5) are unbuilt** and are the eventual backing source.
-- Opt-in via a **Settings toggle** stored through the `src/lib/viewPreference.js` pattern. CSS in
+- Opt-in via a **Profile preferences toggle** stored through the `src/lib/viewPreference.js` pattern. CSS in
   `src/App.css` honoring "Sun-Drenched Topo" (no pure black/white, ≥2px borders, Oswald, theme-correct).
-- **Verify:** toggle on → rarity styling renders and is correct in light+dark; toggle off → identical to today.
+- **Completed:** archived status → legendary primary putter → epic situational weather → rare wear score ≥7 →
+  common fallback precedence is pure-tested; all locker card modes receive the persisted preference; the Profile
+  preferences checkbox stores the opt-in flag; flair-on cards render tier borders, Tier/Signal stat blocks, and
+  reduced-motion-safe mount animation. No schema changes. Full tests/build/lint gate passed and the graph refreshed.
+  Browser smoke reached the existing `/login` gate from `/profile`; the available guest action did not navigate,
+  so an authenticated toggle/card interaction could not be exercised. The current app contract is light-only, so
+  verification uses the existing Sun-Drenched Topo tokens rather than adding a dark-theme variant.
 
 ---
 
@@ -304,12 +357,14 @@ Absorbs the "Dual-Pace Scoring Canvas" interaction spec (velocity-gated gestures
 - **Design rule (unchanged):** summary tables stay authoritative for existing stats; putt_events feeds new diagnostics; backfill nothing
 
 ### 2.3 Gamified drills: JYLY + Around the World — ratio: ★★★★☆ (VH value / M effort)
+- **Status:** SHIPPED 2026-07-16 (Phase D4 checkpoint 5)
 - **What:** classic known drills as new structured modes with their real scoring rules, step-back/advance logic
 - **Schema:** generalize regimen engine — add `rules_config jsonb` + `drill_type` to `putting_regimens` (fixed-set regimens = one drill_type; JYLY laddering = another); runs/run_sets tables reused
 - **UI:** drills appear in regimen selection grouped by type; run-through UI driven by rules_config state machine
 - **Model:** Sonnet 5; Opus 4.8 for the rules-engine design pass · **Prereqs:** 2.2 (per-putt entry makes drill state machines clean)
 
 ### 2.4 Clutch simulator — ratio: ★★★★☆ (H value / S–M effort)
+- **Status:** SHIPPED 2026-07-16 (Phase D4 checkpoint 6)
 - **What:** randomized rest timers (2–8 min) then a "putt now" alert for a single pressure putt; scored with existing pressure mechanics
 - **Needs:** drill_type in 2.3's engine; browser Notification permission + fallback in-app alarm; logs to putt_events with pressure flag
 - **Model:** Sonnet 5 · **Prereqs:** 2.2, 2.3 engine
@@ -325,6 +380,7 @@ Absorbs the "Dual-Pace Scoring Canvas" interaction spec (velocity-gated gestures
 - **Model:** Sonnet 5 · **Prereqs:** 2.2; elevated from LATER in backlog
 
 ### 2.7 Voice callouts (Match Mode) — ratio: ★★★☆☆ (M value / S effort)
+- **Status:** SHIPPED 2026-07-16 (Phase D4 checkpoint 7)
 - **What:** browser SpeechSynthesis announcing running %, pace deltas, and pattern-triggered coaching
 - **Design rule (adopted from TDD):** intervention threshold — never coach off a single event; require ≥3 consecutive same-vector misses or a sustained drop
 - **Model:** Sonnet 5 · **Prereqs:** 2.5 (needs miss data to say anything smart)
@@ -352,7 +408,7 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
 1. **1A** player profile (quick win, unblocks caddie context later)
 2. **2.1** confidence map (one-session win on shipped data)
 3. **1D** deploy + PWA baseline (get it on your phone BEFORE the big schema work; validate on cellular)
-4. **1B + 1.5** molds/locker migration + round/course groundwork (one big schema session, Opus 4.8; MANUAL DB BACKUP FIRST)
+4. **1B + 1.5** molds/locker migration + round/course groundwork (one big schema session, Opus 4.8)
 5. **1C** bags (+ bag_id on rounds)
 6. **1E** bag & disc manager UI + bottom tab bar (inventory/loadout experience; audits + completes 1C's UI)
 7. **2.2** per-putt capture (the enabler, + round_hole_id accommodation, + local buffering)

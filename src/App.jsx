@@ -14,13 +14,26 @@ import HistoryPage from './pages/HistoryPage'
 import HistoryDetailPage from './pages/HistoryDetailPage'
 import ConfidenceMapPage from './pages/ConfidenceMapPage'
 import ProfilePage from './pages/ProfilePage'
+import CareerHubPage from './pages/CareerHubPage'
+import SettingsPage from './pages/SettingsPage'
+import GoalsPage from './pages/GoalsPage'
+import WeeklyReportsPage from './pages/WeeklyReportsPage'
 import TrophyRoomPage from './pages/TrophyRoomPage'
 import BagPage from './pages/BagPage'
 import BagLockerPage from './pages/BagLockerPage'
 import BagManagePage from './pages/BagManagePage'
 import DiscFormPage from './pages/DiscFormPage'
 import DiscDetailPage from './pages/DiscDetailPage'
+import DiscComparePage from './pages/DiscComparePage'
+import LostFoundPage from './pages/LostFoundPage'
 import NotificationsPage from './pages/NotificationsPage'
+import CoursesPage from './pages/CoursesPage'
+import CourseFormPage from './pages/CourseFormPage'
+import CourseDetailPage from './pages/CourseDetailPage'
+import RoundsPage from './pages/RoundsPage'
+import RoundStartPage from './pages/RoundStartPage'
+import RoundScorecardPage from './pages/RoundScorecardPage'
+import RoundSummaryPage from './pages/RoundSummaryPage'
 import './App.css'
 
 function App() {
@@ -62,15 +75,32 @@ function App() {
           <Route path="stats" element={<ConfidenceMapPage />} />
         </Route>
         <Route path="/profile">
-          <Route index element={<ProfilePage />} />
+          <Route index element={<CareerHubPage />} />
+          <Route path="details" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="goals" element={<GoalsPage />} />
+          <Route path="reports" element={<WeeklyReportsPage />} />
           <Route path="trophies" element={<TrophyRoomPage />} />
         </Route>
         <Route path="/bag">
           <Route index element={<BagPage />} />
           <Route path="locker" element={<BagLockerPage />} />
+          <Route path="compare" element={<DiscComparePage />} />
+          <Route path="lost-found" element={<LostFoundPage />} />
           <Route path="manage" element={<BagManagePage />} />
           <Route path="discs/new" element={<DiscFormPage />} />
           <Route path="discs/:discId" element={<DiscDetailPage />} />
+        </Route>
+        <Route path="/courses">
+          <Route index element={<CoursesPage />} />
+          <Route path="new" element={<CourseFormPage />} />
+          <Route path=":courseId" element={<CourseDetailPage />} />
+        </Route>
+        <Route path="/rounds">
+          <Route index element={<RoundsPage />} />
+          <Route path="new" element={<RoundStartPage />} />
+          <Route path=":roundId/summary" element={<RoundSummaryPage />} />
+          <Route path=":roundId" element={<RoundScorecardPage />} />
         </Route>
       </Route>
 

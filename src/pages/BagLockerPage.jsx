@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { IconLayoutGrid, IconList } from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
 import { fetchBags, fetchBagDiscs, addDiscToBag, removeDiscFromBag } from '../lib/discLocker'
 import { useDiscList } from '../lib/repository/discRepository'
 import { filterDiscs, sortDiscs } from '../lib/discFilters'
-import { getViewMode, setViewMode } from '../lib/viewPreference'
+import { COMPARE_MAX, COMPARE_MIN } from '../lib/discCompare'
+import { getFlairMode, getViewMode, setViewMode } from '../lib/viewPreference'
 import DiscCard from '../components/DiscCard'
 import ChipGroup from '../components/ChipGroup'
 
 const STATUS_FILTERS = ['all', 'in_locker', 'lost', 'retired', 'sold']
 
-export default function BagLockerPage() {
+export default function BagLockerPage({ embedded = false }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const addToBagId = searchParams.get('addToBag')
 
@@ -35,6 +37,7 @@ export default function BagLockerPage() {
   const [error, setError] = useState(null)
   const displayError = error || discsQuery.error?.message || null
   const [viewMode, setViewModeState] = useState(getViewMode)
+  const [flairEnabled] = useState(getFlairMode)
 
   const [query, setQuery] = useState('')
   const [manufacturer, setManufacturer] = useState('all')
@@ -47,6 +50,8 @@ export default function BagLockerPage() {
   // Add/Added toggle per disc instead of navigating into disc detail.
   const [pickerBag, setPickerBag] = useState(null)
   const [pickerMemberIds, setPickerMemberIds] = useState(new Set())
+  const [compareMode, setCompareMode] = useState(false)
+  const [compareIds, setCompareIds] = useState([])
 
   useEffect(() => {
     if (!addToBagId) {
@@ -83,6 +88,31 @@ export default function BagLockerPage() {
     }
   }
 
+  function startCompareMode() {
+    setCompareMode(true)
+    setCompareIds([])
+    setError(null)
+  }
+
+  function cancelCompareMode() {
+    setCompareMode(false)
+    setCompareIds([])
+  }
+
+  function toggleCompareDisc(discId) {
+    setCompareIds((previous) => {
+      if (previous.includes(discId)) return previous.filter((id) => id !== discId)
+      if (previous.length >= COMPARE_MAX) return previous
+      return [...previous, discId]
+    })
+  }
+
+  function openComparison() {
+    if (compareIds.length < COMPARE_MIN) return
+    const query = new URLSearchParams({ ids: compareIds.join(',') })
+    navigate(`/bag/compare?${query.toString()}`)
+  }
+
   const manufacturers = useMemo(() => {
     if (!discs) return []
     const set = new Set(discs.map((d) => d.moldInfo?.manufacturer ?? d.manufacturer).filter(Boolean))
@@ -100,20 +130,48 @@ export default function BagLockerPage() {
 
   return (
     <section className="bag-locker-page">
-      <header className="practice-header">
+      {!embedded && <header className="practice-header">
         <h1>{pickerBag ? `Add to ${pickerBag.name}` : 'Locker'}</h1>
-        {pickerBag ? (
-          <Link to="/bag" className="link-button">
-            Done
-          </Link>
-        ) : (
-          <Link to="/bag" className="link-button">
-            Bag
-          </Link>
-        )}
-      </header>
+        <div className="locker-header-actions">
+          {pickerBag ? (
+            <Link to="/bag" className="link-button">
+              Done
+            </Link>
+          ) : compareMode ? (
+            <button type="button" className="link-button locker-compare-toggle" onClick={cancelCompareMode}>
+              Cancel
+            </button>
+          ) : (
+            <>
+              <button type="button" className="link-button locker-compare-toggle" onClick={startCompareMode}>
+                Compare
+              </button>
+              <Link to="/bag" className="link-button">
+                Bag
+              </Link>
+            </>
+          )}
+        </div>
+      </header>}
 
       {displayError && <p className="form-error">{displayError}</p>}
+
+      {compareMode && !pickerBag && (
+        <div className="locker-compare-toolbar" role="status">
+          <div>
+            <strong>Compare discs</strong>
+            <span>Select {COMPARE_MIN}–{COMPARE_MAX} discs ({compareIds.length} selected)</span>
+          </div>
+          <button
+            type="button"
+            className="btn-primary locker-compare-submit"
+            disabled={compareIds.length < COMPARE_MIN}
+            onClick={openComparison}
+          >
+            Compare ({compareIds.length})
+          </button>
+        </div>
+      )}
 
       {!pickerBag && (
         <p>
@@ -192,11 +250,30 @@ export default function BagLockerPage() {
       ) : (
         <div className={viewMode === 'grid' ? 'disc-grid' : 'disc-list'}>
           {visible.map((disc) =>
-            pickerBag ? (
+            compareMode && !pickerBag ? (
               <DiscCard
                 key={disc.id}
                 disc={disc}
                 variant={viewMode}
+                flair={flairEnabled}
+                action={
+                  <button
+                    type="button"
+                    className={`chip disc-card-action ${compareIds.includes(disc.id) ? 'chip-active' : ''}`}
+                    aria-pressed={compareIds.includes(disc.id)}
+                    disabled={!compareIds.includes(disc.id) && compareIds.length >= COMPARE_MAX}
+                    onClick={() => toggleCompareDisc(disc.id)}
+                  >
+                    {compareIds.includes(disc.id) ? 'Selected' : 'Compare'}
+                  </button>
+                }
+              />
+            ) : pickerBag ? (
+              <DiscCard
+                key={disc.id}
+                disc={disc}
+                variant={viewMode}
+                flair={flairEnabled}
                 action={
                   <button
                     type="button"
@@ -208,7 +285,13 @@ export default function BagLockerPage() {
                 }
               />
             ) : (
-              <DiscCard key={disc.id} disc={disc} variant={viewMode} to={`/bag/discs/${disc.id}`} />
+              <DiscCard
+                key={disc.id}
+                disc={disc}
+                variant={viewMode}
+                flair={flairEnabled}
+                to={`/bag/discs/${disc.id}`}
+              />
             ),
           )}
         </div>

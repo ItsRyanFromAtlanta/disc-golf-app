@@ -63,15 +63,14 @@ INVOKER` wrappers around non-exposed, hardened `SECURITY DEFINER` implementation
 
 ## A6 preflight and apply gate
 
-1. Re-confirm a fresh dashboard backup or `pg_dump` immediately before applying.
-2. Run the preflight counts and collision/ownership checks from the audit notebook;
+1. Run the preflight counts and collision/ownership checks from the audit notebook;
    all must remain zero except the documented historical row counts.
-3. Review the migration in the SQL editor and confirm the migration is still marked
+2. Review the migration in the SQL editor and confirm the migration is still marked
    unapplied locally and remotely.
-4. Apply during a short maintenance window. The migration is transactional, but
+3. Apply during a short maintenance window. The migration is transactional, but
    A6 should still monitor locks and verify the composite foreign keys before opening
    lifecycle writes.
-5. Add the A6 RPCs only after the table grants and RLS policies are verified.
+4. Add the A6 RPCs only after the table grants and RLS policies are verified.
 
 These gates were completed on 2026-07-12 after fresh backup confirmation. The
 remote migration history now contains `phase_a_activity_lifecycle`,
@@ -176,9 +175,8 @@ activities are excluded. Ordered-event-only metrics explicitly reject batch summ
 
 ## Recovery posture
 
-Before client rollout, recovery is a database restore from the confirmed backup.
-If post-apply verification fails, stop lifecycle writes, preserve an export of the
-three new tables, and restore the backup rather than hand-editing partial history.
+If post-apply verification fails, stop lifecycle writes and preserve an export of the
+three new tables rather than hand-editing partial history.
 After any client has written lifecycle rows, do not drop the tables or constraints:
 quarantine the RPCs, retain the append-only export, and perform a reviewed forward
 repair with an `admin_repair` audit event. A6 owns the final rollback/forward-repair

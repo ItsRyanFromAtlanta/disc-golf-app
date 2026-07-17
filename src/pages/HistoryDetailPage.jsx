@@ -42,14 +42,14 @@ export default function HistoryDetailPage() {
         ? supabase
             .from('putt_sessions')
             .select(
-              'id, session_date, notes, tags, created_at, putt_distance_logs(id, distance_feet, makes, attempts, zone, created_at)',
+              'id, session_date, notes, tags, external_factors, perceived_effort, weather_condition, wind_mph, created_at, putt_distance_logs(id, distance_feet, makes, attempts, zone, created_at)',
             )
             .eq('id', id)
             .single()
         : supabase
             .from('putting_regimen_runs')
             .select(
-              'id, regimen_id, started_at, completed, total_score, notes, tags, putting_regimens(name), putting_regimen_run_sets(id, makes, attempts, longest_streak, clean_set, pressure_putt_made, points_earned, putting_regimen_sets(set_order, distance_feet_min, distance_feet_max, reps_required, pressure_multiplier))',
+              'id, regimen_id, started_at, completed, total_score, notes, tags, external_factors, perceived_effort, weather_condition, wind_mph, putting_regimens(name), putting_regimen_run_sets(id, makes, attempts, longest_streak, clean_set, pressure_putt_made, points_earned, putting_regimen_sets(set_order, distance_feet_min, distance_feet_max, reps_required, pressure_multiplier))',
             )
             .eq('id', id)
             .single()
@@ -175,6 +175,10 @@ export default function HistoryDetailPage() {
       dropOffRows={dropOffRows}
       notes={entry.notes}
       tags={entry.tags}
+      externalFactors={entry.external_factors}
+      perceivedEffort={entry.perceived_effort}
+      weatherCondition={entry.weather_condition}
+      windMph={entry.wind_mph}
       onSaveNotesTags={saveNotesTags}
       onHide={hideActivity}
       onRetrySync={recovery.syncStatus === SYNC_STATUS.FAILED ? recovery.retrySync : null}

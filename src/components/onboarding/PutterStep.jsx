@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { fetchPutterMolds, createBag, upsertDisc, addDiscToBag } from '../../lib/discLocker'
+import { useEffect, useMemo, useState } from 'react'
+import { createBag, upsertDisc, addDiscToBag } from '../../lib/discLocker'
+import { filterCatalogMolds, useCatalog } from '../../lib/repository/catalogRepository'
 import { updateInstantLaunchState } from '../../lib/instantLaunch/storage'
 import { applySetProfileDefaults } from '../../lib/instantLaunch/stateReducer'
 import {
@@ -18,28 +19,19 @@ import ChipGroup from '../ChipGroup'
 
 export default function PutterStep({ userId, onNext }) {
   const [brand, setBrand] = useState(DEFAULT_BRAND)
-  const [molds, setMolds] = useState([])
   const [selectedMold, setSelectedMold] = useState(null)
   const [weight, setWeight] = useState(DEFAULT_WEIGHT_GRAMS)
-  const [loadingMolds, setLoadingMolds] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const catalog = useCatalog()
+  const molds = useMemo(
+    () => (catalog.data ? filterCatalogMolds(catalog.data, { manufacturer: brand, category: 'putter' }) : []),
+    [brand, catalog.data],
+  )
 
   useEffect(() => {
-    let cancelled = false
-    setLoadingMolds(true)
-    fetchPutterMolds(brand)
-      .then((results) => {
-        if (cancelled) return
-        setMolds(results)
-        setSelectedMold(pickDefaultMold(results))
-      })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoadingMolds(false))
-    return () => {
-      cancelled = true
-    }
-  }, [brand])
+    setSelectedMold(pickDefaultMold(molds))
+  }, [molds])
 
   async function provision() {
     const bag = await createBag(userId, { name: PRACTICE_STACK_BAG_NAME, is_default: true })
@@ -103,7 +95,7 @@ export default function PutterStep({ userId, onNext }) {
       />
 
       <span className="editor-label">2. Mold</span>
-      {loadingMolds ? (
+      {catalog.isLoading ? (
         <p className="loading">Loading molds...</p>
       ) : (
         <div className="mold-radio-list">
@@ -122,6 +114,8 @@ export default function PutterStep({ userId, onNext }) {
           ))}
         </div>
       )}
+
+      {catalog.error && <p className="form-error">{catalog.error.message}</p>}
 
       <span className="editor-label">3. Weight (grams)</span>
       <div className="weight-stepper">

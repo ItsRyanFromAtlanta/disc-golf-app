@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IconChartBar, IconTargetArrow } from '@tabler/icons-react'
-import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
 import { practiceStreak, volumeLedger, suggestNextSession } from '../lib/insights'
 import { heroCardState } from '../lib/dashboardHero'
-import { readInstantLaunchState } from '../lib/instantLaunch/storage'
+import { applySetProfileDefaults } from '../lib/instantLaunch/stateReducer'
+import { readInstantLaunchState, updateInstantLaunchState } from '../lib/instantLaunch/storage'
+import { quickPlayOptions, resolveQuickPlayRegimen } from '../lib/playLaunch'
+import { regimenRepository } from '../lib/repository/regimenRepository'
 import { useActiveActivity } from '../hooks/useActiveActivity'
 import ChipGroup from '../components/ChipGroup'
 
@@ -49,6 +51,9 @@ export default function PracticeMenuPage() {
   const [historyData, setHistoryData] = useState(null)
   const [regimens, setRegimens] = useState(null)
   const [zoneBTab, setZoneBTab] = useState('standard')
+  const [quickPlayRegimenId, setQuickPlayRegimenId] = useState(
+    () => readInstantLaunchState().profileDefaults.quickPlayRegimenId,
+  )
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -58,15 +63,12 @@ export default function PracticeMenuPage() {
   }, [user.id])
 
   useEffect(() => {
-    supabase
-      .from('putting_regimens')
-      .select('*')
-      .order('difficulty', { ascending: true })
-      .then(({ data, error: fetchError }) => {
-        if (fetchError) setError(fetchError.message)
-        else setRegimens(data)
-      })
-  }, [])
+    let cancelled = false
+    regimenRepository.list(user.id)
+      .then((data) => { if (!cancelled) setRegimens(data) })
+      .catch((fetchError) => { if (!cancelled) setError(fetchError.message) })
+    return () => { cancelled = true }
+  }, [user.id])
 
   const hasHistory = historyData ? historyData.sessions.length > 0 || historyData.runs.length > 0 : false
 
@@ -74,24 +76,20 @@ export default function PracticeMenuPage() {
   // localStorage smartPredictionCard directly -- nothing writes that field
   // yet, so it would always read null. Real crash-recovery state still comes
   // from the actual InstantLaunch buffer.
-  const hero = useMemo(() => {
+  const hero = useMemo(
+    () => heroCardState(readInstantLaunchState(), hasHistory, activeActivity),
+    [activeActivity, hasHistory],
+  )
+
+  const suggestion = useMemo(() => {
     if (!historyData) return null
-    const now = new Date()
-    const suggestion = suggestNextSession(historyData.runs, distanceSamples(historyData), allPuttSamples(historyData), now)
-    const launchState = readInstantLaunchState()
-    return heroCardState(
-      {
-        ...launchState,
-        smartPredictionCard: {
-          lastRegimenId: suggestion.lastRegimenId,
-          suggestedDistanceFt: suggestion.suggestedDistanceFt,
-          computedAt: suggestion.computedAt,
-        },
-      },
-      hasHistory,
-      activeActivity,
+    return suggestNextSession(
+      historyData.runs,
+      distanceSamples(historyData),
+      allPuttSamples(historyData),
+      new Date(),
     )
-  }, [activeActivity, historyData, hasHistory])
+  }, [historyData])
 
   const streak = useMemo(() => {
     if (!historyData) return 0
@@ -123,13 +121,18 @@ export default function PracticeMenuPage() {
     return merged.sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 3)
   }, [historyData])
 
-  const heroRegimenName =
-    hero?.kind === 'resume-last' && regimens ? regimens.find((r) => r.id === hero.regimenId)?.name : null
-
   // System regimens have user_id null; custom routines are the user's own,
   // non-archived rows (RLS already scopes the query to system + own).
   const standardRegimens = regimens?.filter((r) => r.user_id == null) ?? []
   const customRegimens = regimens?.filter((r) => r.user_id === user.id && !r.archived) ?? []
+  const quickPlay = resolveQuickPlayRegimen(regimens ?? [], quickPlayRegimenId)
+  const quickPlayChoices = quickPlayOptions(regimens ?? [])
+  const suggestedRegimen = regimens?.find((regimen) => regimen.id === suggestion?.lastRegimenId) ?? null
+
+  function setQuickPlayDefault(regimenId) {
+    setQuickPlayRegimenId(regimenId)
+    updateInstantLaunchState(applySetProfileDefaults, { quickPlayRegimenId: regimenId })
+  }
 
   if (error) return <p className="form-error">{error}</p>
 
@@ -149,9 +152,7 @@ export default function PracticeMenuPage() {
       </header>
 
       <section className="dashboard-zone-a">
-        {!hero ? (
-          <p className="loading">Loading...</p>
-        ) : hero.kind === 'crash-recovery' ? (
+        {hero.kind === 'crash-recovery' ? (
           <Link
             to={hero.sessionType === 'regimen' ? `/practice/regimens/${hero.parentIds.regimenId}/run` : '/practice/freeform'}
             className="hero-card hero-card-resume"
@@ -166,24 +167,44 @@ export default function PracticeMenuPage() {
             ▶️ Resume active practice
             <span className="log-time">{hero.state === 'paused' ? 'Paused safely for later' : 'In progress'}</span>
           </Link>
-        ) : hero.kind === 'resume-last' ? (
-          <Link to={`/practice/regimens/${hero.regimenId}/run`} className="hero-card hero-card-resume">
-            ▶️ Resume: {heroRegimenName ?? 'last routine'}
-            <span className="log-time">{hero.suggestedDistanceFt} ft target</span>
-          </Link>
-        ) : (
-          <Link to="/practice/regimens" className="hero-card hero-card-first">
-            {hero.kind === 'first-session' ? 'Start your first session' : 'Pick a routine to get going'}
-          </Link>
-        )}
+        ) : null}
 
-        <Link to="/practice/freeform" className="hero-card hero-card-quickstart">
-          <IconTargetArrow size={20} stroke={1.75} /> Quick Start: Free Play
-          <span className="log-time">Continuous scoring, no limits</span>
-        </Link>
+        <div className="quick-play-card">
+          <div className="quick-play-copy">
+            <IconTargetArrow size={24} stroke={1.75} aria-hidden="true" />
+            <div>
+              <h2>Quick Play</h2>
+              <p>{quickPlay.regimen?.name ?? 'No routine available'}</p>
+            </div>
+          </div>
+          <label htmlFor="quick-play-default">Default on this device</label>
+          <select
+            id="quick-play-default"
+            value={quickPlay.regimen?.id ?? ''}
+            disabled={quickPlayChoices.length === 0}
+            onChange={(event) => setQuickPlayDefault(event.target.value)}
+          >
+            {quickPlayChoices.map((regimen) => (
+              <option key={regimen.id} value={regimen.id}>
+                {regimen.user_id == null ? `Level ${regimen.difficulty}: ` : 'Custom: '}{regimen.name}
+              </option>
+            ))}
+          </select>
+          {quickPlay.regimen ? (
+            <Link to={`/practice/regimens/${quickPlay.regimen.id}/run`} className="start-button">
+              Start Quick Play
+            </Link>
+          ) : (
+            <span className="start-button" aria-disabled="true">Quick Play unavailable</span>
+          )}
+        </div>
       </section>
 
       <section className="dashboard-zone-b">
+        <div className="play-section-heading">
+          <h2>Select routine</h2>
+          <Link to="/practice/freeform" className="link-button">Free Play</Link>
+        </div>
         <ChipGroup
           options={ZONE_B_TABS}
           getKey={(t) => t.key}
@@ -212,10 +233,19 @@ export default function PracticeMenuPage() {
         )}
       </section>
 
-      <section className="dashboard-zone-c">
-        <Link to="/practice/regimens/new" className="zone-c-trigger">
-          ➕ Build Custom Routine Ladder
-        </Link>
+      <section className="dashboard-zone-c play-suggestion-card">
+        <h2>Suggested next session</h2>
+        {suggestedRegimen ? (
+          <Link to={`/practice/regimens/${suggestedRegimen.id}/run`} className="mode-card">
+            <span className="mode-card-body">
+              <span className="mode-card-title">{suggestedRegimen.name}</span>
+              <span className="mode-card-description">Suggested target: {suggestion?.suggestedDistanceFt} ft</span>
+            </span>
+            <span className="mode-card-chevron" aria-hidden="true">›</span>
+          </Link>
+        ) : (
+          <Link to="/practice/regimens" className="link-button">Choose a routine to establish your baseline</Link>
+        )}
       </section>
 
       <h2>

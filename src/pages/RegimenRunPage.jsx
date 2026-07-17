@@ -4,7 +4,11 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
 import { decayWeightedForm, distanceDropOff, putterBreakdown } from '../lib/insights'
+import { compareGhostPace } from '../lib/ghostPacing'
 import { computeSetScore, computeCompletionBonus, inferPressurePuttMade } from '../lib/regimenScoring'
+import { DRILL_TYPES, drillKind, nextDrillStage, scoreDrillStage, validateDrillConfig } from '../lib/drillEngine'
+import { createClutchDeadline, showClutchNotification } from '../lib/clutchTimer'
+import { evaluateMatchMode } from '../lib/matchModeCoach'
 import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
@@ -14,6 +18,7 @@ import { makeTerritoryPct } from '../lib/instantLaunch/sessionReducer'
 import { GESTURE_CONFIG } from '../lib/gestureEngine/config'
 import { FSM_STATES } from '../lib/instantLaunch/fsm'
 import { fetchUserDiscs } from '../lib/discLocker'
+import { regimenRepository } from '../lib/repository/regimenRepository'
 import { awardPostSession } from '../lib/gamification/badgeEvaluatorService'
 import { celebrationEventsFor } from '../lib/gamification/celebration'
 import { XP_SOURCE } from '../lib/gamification/constants'
@@ -29,6 +34,12 @@ import EditTallyDrawer from '../components/puttingCanvas/EditTallyDrawer'
 import BatchRibbon from '../components/puttingCanvas/BatchRibbon'
 import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePicker'
 import SessionReport from '../components/sessionReport/SessionReport'
+import FatigueCheckin from '../components/puttingCanvas/FatigueCheckin'
+import { fatigueCheckinTrigger } from '../lib/fatigueCheckin'
+import { fatigueCheckinRepository } from '../lib/repository/fatigueCheckinRepository'
+import { fetchGhostPacingProfile } from '../lib/repository/ghostPacingRepository'
+import GhostPaceCard from '../components/puttingCanvas/GhostPaceCard'
+import ClutchTimerPanel from '../components/puttingCanvas/ClutchTimerPanel'
 
 const BASELINE_WINDOW_DAYS = 30
 
@@ -42,9 +53,10 @@ function stageDistanceFt(regimenSet) {
   return Math.round((regimenSet.distance_feet_min + regimenSet.distance_feet_max) / 2)
 }
 
-function stageFromSet(regimenSet, index) {
+function stageFromSet(regimenSet, index, regimen = null, progress = {}) {
+  const classic = [DRILL_TYPES.JYLY, DRILL_TYPES.AROUND_THE_WORLD, DRILL_TYPES.CLUTCH].includes(drillKind(regimen))
   return {
-    label: `Set ${index + 1}`,
+    label: classic ? `Station ${index + 1}` : `Set ${index + 1}`,
     distanceFt: stageDistanceFt(regimenSet),
     volumePlanned: regimenSet.reps_required,
     historicalAvgMakePct: null,
@@ -53,6 +65,10 @@ function stageFromSet(regimenSet, index) {
     // denormalized onto each putt_events row for this stage so 2.5's
     // miss-tendency diagnostics can group by set without re-joining.
     regimenSetOrder: regimenSet.set_order,
+    drillAttemptsSoFar: progress.attemptsSoFar ?? 0,
+    drillRunningTotal: progress.runningTotal ?? 0,
+    clutchStatus: progress.clutchStatus ?? null,
+    clutchDueAt: progress.clutchDueAt ?? null,
   }
 }
 
@@ -88,6 +104,7 @@ export default function RegimenRunPage() {
   const [completedSets, setCompletedSets] = useState([])
   const [runningTotal, setRunningTotal] = useState(0)
   const [regimenRunId, setRegimenRunId] = useState(null)
+  const [clutchDistanceFt, setClutchDistanceFt] = useState(20)
 
   // Screen 8: mid-round adjustments. allDiscs backs both the active-putter
   // label and the weather->backup swap suggestion; activePutterDiscId is
@@ -99,6 +116,10 @@ export default function RegimenRunPage() {
   const [windMph, setWindMph] = useState(null)
   const [swapSuggestionDismissed, setSwapSuggestionDismissed] = useState(false)
   const [showEditDrawer, setShowEditDrawer] = useState(false)
+  const [externalFactors, setExternalFactors] = useState([])
+  const [perceivedEffort, setPerceivedEffort] = useState(null)
+  const [fatiguePrompt, setFatiguePrompt] = useState(null)
+  const [availableGhostProfile, setAvailableGhostProfile] = useState(null)
 
   // Session Summary (Screen 9) — populated once the run reaches 'summary'.
   const [reportPutterRows, setReportPutterRows] = useState([])
@@ -118,7 +139,10 @@ export default function RegimenRunPage() {
   )
 
   const session = useInstantLaunchSession(writeAdapter, user.id)
+  const recoveredRunningTotal = session.sessionState?.stage.drillRunningTotal
   const audio = usePuttAudio()
+  const speakCallout = audio.speakCallout
+  const markCoachingCallout = session.markCoachingCallout
   const haptics = usePuttHaptics()
 
   useEffect(() => {
@@ -129,9 +153,39 @@ export default function RegimenRunPage() {
     setInputMode(session.profileDefaults.inputModeDefault)
   }, [session.profileDefaults.inputModeDefault])
 
+  // Drill progress rides inside the persisted stage snapshot, so a killed PWA
+  // resumes the correct score/attempt cap without a network read.
+  useEffect(() => {
+    if (session.fsmStatus !== FSM_STATES.ACTIVE_SESSION || !session.sessionState) return
+    setRunningTotal(recoveredRunningTotal ?? 0)
+    setPhase('running')
+  }, [session.fsmStatus, recoveredRunningTotal, session.sessionState])
+
   useEffect(() => {
     audio.setSilenced(silenced)
   }, [silenced, audio])
+
+  useEffect(() => {
+    if (!session.matchModeEnabled) return
+    const callout = evaluateMatchMode({
+      events: session.coachingEvents,
+      lastSpokenAttempt: session.coachingLastSpokenAttempt,
+      lastInterventionAttempt: session.coachingLastInterventionAttempt,
+      ghostComparison: compareGhostPace(session.ghostCurrentEvents, session.ghostProfile),
+    })
+    if (!callout) return
+    speakCallout(callout.message)
+    markCoachingCallout({ attempt: callout.attempt, intervention: callout.intervention })
+  }, [
+    session.matchModeEnabled,
+    session.coachingEvents,
+    session.coachingLastSpokenAttempt,
+    session.coachingLastInterventionAttempt,
+    session.ghostCurrentEvents,
+    session.ghostProfile,
+    markCoachingCallout,
+    speakCallout,
+  ])
 
   useEffect(() => {
     fetchUserDiscs(user.id)
@@ -162,28 +216,28 @@ export default function RegimenRunPage() {
       return
     }
 
+    let cancelled = false
     async function load() {
       setLoading(true)
       setError(null)
-      const [{ data: regimenData, error: regimenError }, { data: setsData, error: setsError }] = await Promise.all([
-        supabase.from('putting_regimens').select('*').eq('id', regimenId).single(),
-        supabase
-          .from('putting_regimen_sets')
-          .select('*')
-          .eq('regimen_id', regimenId)
-          .order('set_order', { ascending: true }),
-      ])
-      if (regimenError || setsError) {
-        setError((regimenError || setsError).message)
-        setLoading(false)
+      try {
+        const snapshot = await regimenRepository.getWithSets(regimenId, user.id)
+        if (!cancelled) {
+          setRegimen(snapshot.regimen)
+          setSets(snapshot.sets)
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError.message)
+          setLoading(false)
+        }
         return
       }
-      setRegimen(regimenData)
-      setSets(setsData)
-      setLoading(false)
+      if (!cancelled) setLoading(false)
     }
     load()
-  }, [regimenId, session.fsmStatus, session.activeRegimenSnapshot, session.parentIds])
+    return () => { cancelled = true }
+  }, [regimenId, session.fsmStatus, session.activeRegimenSnapshot, session.parentIds, user.id])
 
   useEffect(() => {
     if (session.fsmStatus !== FSM_STATES.READY_DEFAULT) return
@@ -191,6 +245,19 @@ export default function RegimenRunPage() {
       .then((data) => setCurrentFormPct(decayWeightedForm(allPuttSamples(data), new Date()).currentFormPct))
       .catch(() => {}) // non-critical — the card just omits the form line on failure
   }, [session.fsmStatus, user.id])
+
+  // Best-effort and non-gating: Quick Play/Start remains immediately usable.
+  // Whatever profile is available at Start is frozen into crash recovery;
+  // a late network response never changes an active run's opponent.
+  useEffect(() => {
+    if (session.fsmStatus !== FSM_STATES.READY_DEFAULT || !regimenId) return
+    let cancelled = false
+    setAvailableGhostProfile(null)
+    fetchGhostPacingProfile(user.id, regimenId)
+      .then((profile) => { if (!cancelled) setAvailableGhostProfile(profile) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [session.fsmStatus, regimenId, user.id])
 
   // Session Summary data: putter breakdown needs this run's putt_events
   // (gesture-captured only, per the data-split rule — may still be mid-sync
@@ -254,6 +321,8 @@ export default function RegimenRunPage() {
 
   const currentSetIndex = session.sessionState?.stage.regimenSetIndex ?? 0
   const currentSet = sets[currentSetIndex]
+  const isClutch = drillKind(regimen) === DRILL_TYPES.CLUTCH
+  const ghostComparison = compareGhostPace(session.ghostCurrentEvents, session.ghostProfile)
 
   const activePutter = allDiscs.find((d) => d.id === activePutterDiscId) ?? null
   const suggestedSwapDisc = swapSuggestionDismissed
@@ -261,6 +330,11 @@ export default function RegimenRunPage() {
     : suggestBackupSwap({ weatherCondition, windMph, discs: allDiscs, activePutterDiscId })
 
   function handleStart() {
+    const contract = validateDrillConfig(regimen, sets)
+    if (!contract.valid) {
+      setError(contract.reason)
+      return
+    }
     setStarting(true)
     setBatchRibbonConfirming(false)
     setRunCompleted(true)
@@ -270,11 +344,23 @@ export default function RegimenRunPage() {
     setRunningTotal(0)
     setCompletedSets([])
     setCelebrationEvents([]) // clear the previous session's banner before this one starts
+    setExternalFactors([])
+    setPerceivedEffort(null)
+    setFatiguePrompt(null)
+    const clutchSetIndex = isClutch
+      ? Math.max(0, sets.findIndex((set) => stageDistanceFt(set) === clutchDistanceFt))
+      : 0
+    const initialSet = sets[clutchSetIndex]
+    const clutchProgress = isClutch
+      ? { clutchStatus: 'resting', clutchDueAt: createClutchDeadline(Date.now()).dueAt }
+      : {}
     session.startSession({
       sessionType: 'regimen',
       parentIds: { regimenRunId: newRunId, regimenId },
       activeRegimenSnapshot: { regimen, sets },
-      initialStage: stageFromSet(sets[0], 0),
+      ghostProfile: availableGhostProfile,
+      matchModeEnabled: session.profileDefaults.matchModeEnabled,
+      initialStage: stageFromSet(initialSet, clutchSetIndex, regimen, clutchProgress),
       parentWriteRow: {
         id: newRunId,
         _op: 'insert',
@@ -289,7 +375,7 @@ export default function RegimenRunPage() {
   function handleGestureMake() {
     audio.playMake()
     haptics.vibrateMake()
-    session.gestureMake(new Date().toISOString(), currentSet ? stageDistanceFt(currentSet) : null, activePutterDiscId)
+    session.gestureMake(new Date().toISOString(), currentSet ? stageDistanceFt(currentSet) : null, activePutterDiscId, isClutch)
   }
 
   // Sound/haptic feedback fires immediately regardless of diagnostic mode —
@@ -305,13 +391,23 @@ export default function RegimenRunPage() {
     if (diagnosticMode) {
       setPendingMiss({ occurredAt, distanceFt })
     } else {
-      session.gestureMiss(occurredAt, distanceFt, null, activePutterDiscId)
+      session.gestureMiss(occurredAt, distanceFt, null, activePutterDiscId, isClutch)
     }
   }
 
   function handleResolveMissZone(missZone) {
-    if (pendingMiss) session.gestureMiss(pendingMiss.occurredAt, pendingMiss.distanceFt, missZone, activePutterDiscId)
+    if (pendingMiss) session.gestureMiss(pendingMiss.occurredAt, pendingMiss.distanceFt, missZone, activePutterDiscId, isClutch)
     setPendingMiss(null)
+  }
+
+  function handleClutchReady() {
+    haptics.vibrateMake()
+    void showClutchNotification().catch(() => false)
+    session.advanceStage({
+      ...session.sessionState.stage,
+      label: 'Putt now',
+      clutchStatus: 'putt_now',
+    }, null)
   }
 
   function handleUndo() {
@@ -343,13 +439,25 @@ export default function RegimenRunPage() {
   function handleFinishStage() {
     setBatchRibbonConfirming(false)
     const stageState = session.sessionState
-    const isLastSet = currentSetIndex === sets.length - 1
+    const baseRunningTotal = stageState.stage.drillRunningTotal ?? runningTotal
+    const attemptsSoFar = (stageState.stage.drillAttemptsSoFar ?? 0) + stageState.tally.attempts
     const pressurePuttMade = inferPressurePuttMade(stageState.tally.makes, stageState.tally.attempts)
-    const { points, cleanSet } = computeSetScore(regimen, currentSet, {
+    const { points, cleanSet } = scoreDrillStage(
+      regimen,
+      { makes: stageState.tally.makes, attempts: stageState.tally.attempts },
+      () => computeSetScore(regimen, currentSet, {
+        makes: stageState.tally.makes,
+        attempts: stageState.tally.attempts,
+        longestStreak: stageState.longestStreak,
+        pressurePuttMade,
+      }),
+    )
+    const transition = nextDrillStage({
+      regimen,
+      currentIndex: currentSetIndex,
+      setCount: sets.length,
       makes: stageState.tally.makes,
-      attempts: stageState.tally.attempts,
-      longestStreak: stageState.longestStreak,
-      pressurePuttMade,
+      attemptsSoFar,
     })
 
     const summaryRow = {
@@ -365,6 +473,12 @@ export default function RegimenRunPage() {
       points_earned: points,
     }
 
+    const triggerReason = fatigueCheckinTrigger({
+      outcomes: stageState.events.map((event) => event.outcome),
+      stage: { makes: stageState.tally.makes, attempts: stageState.tally.attempts },
+      previousStages: completedSets,
+    })
+
     setCompletedSets((prev) => [
       ...prev,
       {
@@ -377,26 +491,51 @@ export default function RegimenRunPage() {
       },
     ])
 
-    if (isLastSet) {
-      const finalTotal = runningTotal + points + computeCompletionBonus(regimen, true)
+    if (transition.completed || transition.exhausted) {
+      const finalTotal = baseRunningTotal + points + computeCompletionBonus(regimen, transition.completed)
       setRunningTotal(finalTotal)
+      setRunCompleted(transition.completed)
       audio.announceStage(currentSetIndex + 1, sets.length, null)
       session.endSession(() => summaryRow, {
         id: regimenRunId,
         _op: 'update',
-        completed: true,
+        completed: transition.completed,
         completed_at: new Date().toISOString(),
         total_score: finalTotal,
         weather_condition: weatherCondition,
         wind_mph: windMph,
+        external_factors: externalFactors,
+        perceived_effort: perceivedEffort,
       })
       setPhase('summary')
     } else {
-      setRunningTotal((prev) => prev + points)
-      const nextSet = sets[currentSetIndex + 1]
-      audio.announceStage(currentSetIndex + 1, sets.length, stageDistanceFt(nextSet))
-      session.advanceStage(stageFromSet(nextSet, currentSetIndex + 1), () => summaryRow)
+      const nextRunningTotal = baseRunningTotal + points
+      setRunningTotal(nextRunningTotal)
+      const nextIndex = transition.nextIndex
+      const nextSet = sets[nextIndex]
+      audio.announceStage(nextIndex + 1, sets.length, stageDistanceFt(nextSet))
+      session.advanceStage(stageFromSet(nextSet, nextIndex, regimen, {
+        attemptsSoFar,
+        runningTotal: nextRunningTotal,
+      }), () => summaryRow)
+      if (triggerReason) setFatiguePrompt({ reason: triggerReason, stageIndex: completedSets.length + 1 })
     }
+  }
+
+  async function handleFatigueResponse(rating) {
+    const prompt = fatiguePrompt
+    setFatiguePrompt(null)
+    if (!prompt) return
+    await fatigueCheckinRepository.record({
+      id: crypto.randomUUID(), user_id: user.id, putt_session_id: null, regimen_run_id: regimenRunId,
+      stage_index: prompt.stageIndex, trigger_reason: prompt.reason, fatigue_rating: rating,
+      skipped: rating == null, recorded_at: new Date().toISOString(),
+      idempotency_key: `fatigue:${regimenRunId}:${prompt.stageIndex}`,
+    })
+  }
+
+  function toggleFactor(factor) {
+    setExternalFactors((current) => current.includes(factor) ? current.filter((value) => value !== factor) : [...current, factor])
   }
 
   // Voluntary early exit — distinct from finishing a stage. Finalizes the
@@ -487,6 +626,16 @@ export default function RegimenRunPage() {
         putterRows={putterRows}
         dropOffRows={reportDropOffRows}
         celebrationEvents={celebrationEvents}
+        externalFactors={externalFactors}
+        perceivedEffort={perceivedEffort}
+        weatherCondition={weatherCondition}
+        windMph={windMph}
+        contextEditable
+        onChangeContext={({ factors, effort }) => {
+          setExternalFactors(factors)
+          setPerceivedEffort(effort)
+          supabase.from('putting_regimen_runs').update({ external_factors: factors, perceived_effort: effort }).eq('id', regimenRunId)
+        }}
         onSaveNotesTags={async ({ notes, tags }) => {
           const { error: saveError } = await supabase
             .from('putting_regimen_runs')
@@ -510,20 +659,56 @@ export default function RegimenRunPage() {
       </header>
 
       {session.fsmStatus === FSM_STATES.READY_DEFAULT && (
-        <SessionLauncher
-          userId={user.id}
-          title="Ready when you are"
-          suggestion={{ currentFormPct }}
-          presets={session.profileDefaults.quickModPresets}
-          favoritePutterId={session.profileDefaults.favoritePutterDiscId}
-          onSelectPutter={(discId) => session.updateProfileDefaults({ favoritePutterDiscId: discId })}
-          onSelectPreset={() => {}}
-          onStart={handleStart}
-          starting={starting}
+        <>
+          {isClutch && (
+            <section className="clutch-setup">
+              <h2>Choose your pressure distance</h2>
+              <div className="clutch-distance-options" aria-label="Pressure putt distance">
+                {sets.map((set) => {
+                  const distance = stageDistanceFt(set)
+                  return (
+                    <button
+                      key={set.id}
+                      type="button"
+                      aria-pressed={clutchDistanceFt === distance}
+                      onClick={() => setClutchDistanceFt(distance)}
+                    >
+                      {distance} ft
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+          <SessionLauncher
+            userId={user.id}
+            title={isClutch ? 'Start the randomized rest' : 'Ready when you are'}
+            suggestion={{ currentFormPct }}
+            presets={session.profileDefaults.quickModPresets}
+            favoritePutterId={session.profileDefaults.favoritePutterDiscId}
+            onSelectPutter={(discId) => session.updateProfileDefaults({ favoritePutterDiscId: discId })}
+            onSelectPreset={() => {}}
+            onStart={handleStart}
+            starting={starting}
+            matchModeEnabled={session.profileDefaults.matchModeEnabled}
+            onToggleMatchMode={() => session.updateProfileDefaults({
+              matchModeEnabled: !session.profileDefaults.matchModeEnabled,
+              ...(!session.profileDefaults.matchModeEnabled ? { diagnosticModeDefault: true } : {}),
+            })}
+          />
+        </>
+      )}
+
+      {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState?.stage.clutchStatus === 'resting' && (
+        <ClutchTimerPanel
+          dueAt={session.sessionState.stage.clutchDueAt}
+          distanceFt={session.sessionState.stage.distanceFt}
+          onReady={handleClutchReady}
+          onExit={handleAbandon}
         />
       )}
 
-      {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState && (
+      {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState && session.sessionState.stage.clutchStatus !== 'resting' && (
         <PuttingCanvas
           contextBar={
             <CanvasContextBar
@@ -542,6 +727,9 @@ export default function RegimenRunPage() {
               onChangeInputMode={setInputMode}
               syncStatus={session.syncStatus}
               onExit={handleAbandon}
+              externalFactors={externalFactors}
+              onToggleFactor={toggleFactor}
+              matchModeEnabled={session.matchModeEnabled}
             />
           }
           toolbar={
@@ -556,9 +744,10 @@ export default function RegimenRunPage() {
               suggestedSwapDisc={suggestedSwapDisc}
               onAcceptSwap={handleAcceptSwap}
               onDismissSwap={() => setSwapSuggestionDismissed(true)}
-              onEdit={() => setShowEditDrawer(true)}
+              onEdit={isClutch ? null : () => setShowEditDrawer(true)}
             />
           }
+          ghostPace={<GhostPaceCard profile={session.ghostProfile} comparison={ghostComparison} />}
           stackTracker={
             <StackTracker
               volumePlanned={session.sessionState.stage.volumePlanned}
@@ -589,6 +778,13 @@ export default function RegimenRunPage() {
           }
           batchRibbon={(() => {
             const remaining = session.sessionState.stage.volumePlanned - session.sessionState.tally.attempts
+            if (isClutch) {
+              return remaining > 0 ? (
+                <p className="regimen-rule-summary">Record the real pressure putt with Make or Miss.</p>
+              ) : (
+                <button type="button" className="start-button" onClick={handleFinishStage}>Finish pressure putt</button>
+              )
+            }
             return remaining > 0 || batchRibbonConfirming ? (
               <BatchRibbon
                 volumePlanned={remaining}
@@ -601,12 +797,15 @@ export default function RegimenRunPage() {
               />
             ) : (
               <button type="button" className="start-button" onClick={handleFinishStage}>
-                {currentSetIndex === sets.length - 1 ? 'Finish regimen' : 'Finish set & next'}
+                {drillKind(regimen) === DRILL_TYPES.AROUND_THE_WORLD
+                  ? 'Resolve station'
+                  : currentSetIndex === sets.length - 1 ? 'Finish regimen' : 'Finish set & next'}
               </button>
             )
           })()}
         />
       )}
+      {fatiguePrompt && <FatigueCheckin reason={fatiguePrompt.reason} onRespond={handleFatigueResponse} />}
 
       {pendingMiss && (
         <DiagnosticZonePicker

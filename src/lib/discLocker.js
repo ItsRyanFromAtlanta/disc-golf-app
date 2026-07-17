@@ -1,11 +1,12 @@
 import { supabase } from './supabaseClient'
 import { bagIdsToUnsetForNewDefault } from './bags'
 import { discIdsToUnsetForNewPrimary, situationalRoleCount, SITUATIONAL_ROLE_CAP } from './discs'
+import { captureBagVersion } from './repository/bagHistoryRepository'
 
 // `discs.mold` is a legacy text column (kept as a human label after
 // migration); the joined disc_molds record must be aliased to something
 // else, or the two "mold" keys collide in the returned row.
-const DISC_WITH_MOLD = '*, moldInfo:disc_molds(*)'
+const DISC_WITH_MOLD = '*, moldInfo:disc_molds(*), cosmeticUnlocks:disc_cosmetic_unlocks(tier,threshold,unlocked_at)'
 
 export async function fetchUserDiscs(userId) {
   const { data, error } = await supabase
@@ -25,44 +26,6 @@ export async function fetchDisc(discId) {
 
 // Universe tab -> DiscFormPage handoff (Screen 5): resolve the mold picked
 // from the catalog accordion into MoldPicker's selectedMold shape.
-export async function fetchMoldById(moldId) {
-  const { data, error } = await supabase.from('disc_molds').select('*').eq('id', moldId).single()
-  if (error) throw error
-  return data
-}
-
-export async function searchMolds(query) {
-  if (!query.trim()) return []
-  const { data, error } = await supabase
-    .from('disc_molds')
-    .select('*')
-    .or(`manufacturer.ilike.%${query}%,mold_name.ilike.%${query}%`)
-    .order('manufacturer')
-    .limit(20)
-  if (error) throw error
-  return data
-}
-
-// Zero-typing putter provisioning (Onboarding Step 2): exact brand + category
-// match, no search string — distinct from searchMolds' free-text ilike used
-// by the typed disc-add flow.
-export async function fetchPutterMolds(manufacturer) {
-  const { data, error } = await supabase
-    .from('disc_molds')
-    .select('*')
-    .eq('manufacturer', manufacturer)
-    .eq('category', 'putter')
-    .order('mold_name')
-  if (error) throw error
-  return data
-}
-
-export async function createMold(fields) {
-  const { data, error } = await supabase.from('disc_molds').insert(fields).select().single()
-  if (error) throw error
-  return data
-}
-
 export async function upsertDisc(userId, discId, fields) {
   const payload = { ...fields, user_id: userId }
   let query
@@ -80,6 +43,22 @@ export async function upsertDisc(userId, discId, fields) {
   }
   const { data, error } = await query.select(DISC_WITH_MOLD).single()
   if (error) throw error
+  return data
+}
+
+export function buildDiscCopies(userId, fields, quantity, idFactory = () => crypto.randomUUID()) {
+  const count = Number(quantity)
+  if (!Number.isInteger(count) || count < 1 || count > 10) throw new Error('Quantity must be between 1 and 10')
+  return Array.from({ length: count }, () => ({ ...fields, id: idFactory(), user_id: userId }))
+}
+
+// One Postgres statement makes duplicate creation all-or-nothing: callers
+// never have to reconcile a partially-created set of physical discs.
+export async function createDiscCopies(userId, fields, quantity) {
+  const payloads = buildDiscCopies(userId, fields, quantity)
+  const { data, error } = await supabase.from('discs').upsert(payloads, { onConflict: 'id' }).select(DISC_WITH_MOLD)
+  if (error) throw error
+  if (data.length !== payloads.length) throw new Error('Not every physical disc was returned after creation')
   return data
 }
 
@@ -181,9 +160,11 @@ export async function fetchDiscBagIds(discId) {
 export async function addDiscToBag(bagId, discId) {
   const { error } = await supabase.from('bag_discs').insert({ bag_id: bagId, disc_id: discId })
   if (error) throw error
+  await captureBagVersion(bagId)
 }
 
 export async function removeDiscFromBag(bagId, discId) {
   const { error } = await supabase.from('bag_discs').delete().eq('bag_id', bagId).eq('disc_id', discId)
   if (error) throw error
+  await captureBagVersion(bagId)
 }

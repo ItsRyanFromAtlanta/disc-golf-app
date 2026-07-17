@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
 import { effectiveFlightNumbers } from '../lib/discs'
 import { stabilityClass, stabilityColor } from '../lib/discFilters'
+import { discFlairSignal, discTier } from '../lib/discFlair'
 
-export default function DiscCard({ disc, variant = 'grid', to, action }) {
+export default function DiscCard({ disc, variant = 'grid', to, action, flair = false }) {
   const mold = disc.moldInfo
   const { speed, glide, turn, fade } = effectiveFlightNumbers(disc, mold)
   const stability = turn == null || fade == null ? null : stabilityClass(turn + fade)
   const accentColor = stability ? stabilityColor(stability) : 'transparent'
+  const tier = flair ? discTier(disc) : null
 
   const content = (
     <>
@@ -23,13 +25,25 @@ export default function DiscCard({ disc, variant = 'grid', to, action }) {
         <span className="disc-card-numbers">
           {speed ?? '—'}/{glide ?? '—'}/{turn ?? '—'}/{fade ?? '—'}
         </span>
+        {flair && (
+          <dl className="disc-card-flair-stats" aria-label={`${tier} tier`}>
+            <div>
+              <dt>Tier</dt>
+              <dd>{tier}</dd>
+            </div>
+            <div>
+              <dt>Signal</dt>
+              <dd>{discFlairSignal(disc)}</dd>
+            </div>
+          </dl>
+        )}
       </div>
       {disc.status !== 'in_locker' && <span className="abandoned-badge disc-card-status">{disc.status}</span>}
       {action}
     </>
   )
 
-  const className = `disc-card disc-card-${variant}`
+  const className = `disc-card disc-card-${variant}${flair ? ` disc-card-flair disc-card-flair-${tier}` : ''}`
 
   if (to) {
     return (

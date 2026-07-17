@@ -1,47 +1,16 @@
-import { useState } from 'react'
-import { searchMolds, createMold } from '../lib/discLocker'
+import { useMemo, useState } from 'react'
+import { filterCatalogMolds, useCatalog } from '../lib/repository/catalogRepository'
 
 export default function MoldPicker({ selectedMold, onSelect }) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [searching, setSearching] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [newMold, setNewMold] = useState({ manufacturer: '', mold_name: '', speed: '', glide: '', turn: '', fade: '' })
-  const [error, setError] = useState(null)
+  const catalog = useCatalog()
+  const results = useMemo(
+    () => (catalog.data && query.trim() ? filterCatalogMolds(catalog.data, { query }) : []),
+    [catalog.data, query],
+  )
 
-  async function handleSearch(value) {
+  function handleSearch(value) {
     setQuery(value)
-    setError(null)
-    if (!value.trim()) {
-      setResults([])
-      return
-    }
-    setSearching(true)
-    try {
-      setResults(await searchMolds(value))
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSearching(false)
-    }
-  }
-
-  async function handleCreateMold() {
-    setError(null)
-    try {
-      const mold = await createMold({
-        manufacturer: newMold.manufacturer.trim(),
-        mold_name: newMold.mold_name.trim(),
-        speed: newMold.speed === '' ? null : Number(newMold.speed),
-        glide: newMold.glide === '' ? null : Number(newMold.glide),
-        turn: newMold.turn === '' ? null : Number(newMold.turn),
-        fade: newMold.fade === '' ? null : Number(newMold.fade),
-      })
-      onSelect(mold)
-      setCreating(false)
-    } catch (err) {
-      setError(err.message)
-    }
   }
 
   if (selectedMold) {
@@ -73,7 +42,7 @@ export default function MoldPicker({ selectedMold, onSelect }) {
         value={query}
         onChange={(e) => handleSearch(e.target.value)}
       />
-      {searching && <p className="loading">Searching...</p>}
+      {catalog.isLoading && <p className="loading">Loading catalog...</p>}
       {results.length > 0 && (
         <ul className="mold-picker-results">
           {results.map((mold) => (
@@ -89,59 +58,8 @@ export default function MoldPicker({ selectedMold, onSelect }) {
         </ul>
       )}
 
-      {error && <p className="form-error">{error}</p>}
-
-      {!creating ? (
-        <button type="button" className="link-button" onClick={() => setCreating(true)}>
-          Can't find it? Add a new mold
-        </button>
-      ) : (
-        // A <div>, not a <form>: this renders inside DiscFormPage's own
-        // <form>, and nested <form> elements are invalid HTML — the browser
-        // silently mishandles the submit event when one is nested inside
-        // another. "Create mold" is a type="button" wired to an onClick
-        // instead of relying on form submission.
-        <div className="mold-picker-create">
-          <label htmlFor="new-mold-manufacturer">Manufacturer</label>
-          <input
-            id="new-mold-manufacturer"
-            type="text"
-            required
-            value={newMold.manufacturer}
-            onChange={(e) => setNewMold({ ...newMold, manufacturer: e.target.value })}
-          />
-          <label htmlFor="new-mold-name">Mold name</label>
-          <input
-            id="new-mold-name"
-            type="text"
-            required
-            value={newMold.mold_name}
-            onChange={(e) => setNewMold({ ...newMold, mold_name: e.target.value })}
-          />
-          <div className="flight-number-grid">
-            {['speed', 'glide', 'turn', 'fade'].map((axis) => (
-              <div key={axis}>
-                <label htmlFor={`new-mold-${axis}`}>{axis}</label>
-                <input
-                  id={`new-mold-${axis}`}
-                  type="number"
-                  step="0.5"
-                  value={newMold[axis]}
-                  onChange={(e) => setNewMold({ ...newMold, [axis]: e.target.value })}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="profile-section-actions">
-            <button type="button" onClick={handleCreateMold}>
-              Create mold
-            </button>
-            <button type="button" className="link-button" onClick={() => setCreating(false)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      {catalog.error && <p className="form-error">{catalog.error.message}</p>}
+      {query.trim() && !catalog.isLoading && results.length === 0 && <p>No approved molds match.</p>}
     </div>
   )
 }
