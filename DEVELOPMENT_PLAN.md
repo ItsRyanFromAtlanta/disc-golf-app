@@ -422,7 +422,7 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
 
 ## Phase E — Courses, rounds, and interoperability
 
-### E1. Structured own-your-data export — LOCAL GREEN; RELEASE GATED 2026-07-16
+### E1. Structured own-your-data export — SHIPPED 2026-07-17
 - **Surface:** a focused `DataExportPanel` in existing `/profile/settings`; do not build a duplicate
   global settings route merely to satisfy the blueprint's Screen 10 grouping.
 - **Authority:** Supabase remote only under the current user's RLS session. Ordered `.range()` pages
@@ -433,9 +433,10 @@ Full CV make/miss + trajectory, Watch IMU throw counting, LiDAR/AR distance, bio
   tags, badges, and catalog entities referenced by those facts. Server administration is excluded;
   photo metadata is included while binary objects remain a separately disclosed exclusion.
 - **Verification:** 467 tests across 71 files, lint with the four known baseline warnings, and build
-  pass. Live schema audit confirms every currently-applied export table has RLS and authenticated
-  SELECT. Authenticated download smoke remains gated because PR #2 has not yet landed the Phase D
-  migrations for fatigue, preferences, goals/events, reports, and experiment markers.
+  pass. Phase D migrations are applied; live schema/RLS/grant smoke passed. The authenticated E1
+  preview completed its remote-authoritative export and reached the explicit `Export ready` state
+  without console errors. The in-app browser isolated the generated download from filesystem audit;
+  manifest/CSV determinism and formula safety remain covered by focused unit tests.
 - **Model:** GPT-5.3-Codex medium for implementation; GPT-5.6 high for the RLS/schema audit.
 
 ### E2. Shipped J1 round/course reconciliation — NEXT AFTER E1 RELEASE

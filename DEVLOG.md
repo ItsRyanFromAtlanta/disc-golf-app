@@ -1,5 +1,32 @@
 # Dev Log
 
+## 2026-07-17 — Phase E E1 authenticated release gate
+
+**What:** Merged PR #2 to `main`, applied the five pending Phase D migrations in dependency order,
+and verified production RLS, grants, immutable policy shape, goal RPC exposure, additive columns, and
+classic-drill seeds. Rebased E1 onto the released foundation, opened draft PR #3, and ran the export
+from an authenticated E1 Vercel preview session.
+
+**Why:** E1 must prove that the signed-in user's authoritative Supabase account can be exported only
+after every declared source table exists in production; a local or partial-cache success is not a
+release substitute.
+
+**Key decisions:** The production rollout used reviewed append-only migrations without automated
+backup commands. The authenticated preview reached the explicit `Export ready` state with no console
+errors. The in-app browser isolated its generated download from the normal Downloads/temp filesystem,
+so filesystem-level archive inspection was unavailable; deterministic manifest/CSV inventory and
+formula hardening remain covered by focused tests rather than being overstated as manually inspected.
+
+**Verification:** PR #2 and all five migrations completed successfully. Production smoke confirmed RLS
+on all six new owner tables, no anon table/RPC access, intended authenticated privileges, and all three
+seeded drills. E1 passes 467 tests across 71 files, lint with four documented baseline warnings, build,
+GitHub CI, and Vercel preview deployment. The authenticated export completed and reported `Export ready`.
+
+**Next:** Merge PR #3 and confirm its production Vercel deployment, then begin E2 shipped-J1
+round/course reconciliation.
+
+---
+
 ## 2026-07-16 — Phase E E1 structured data export (local green, release gated)
 
 **What:** Opened draft PR #2 for the accumulated Phase A–D branch, created stacked branch

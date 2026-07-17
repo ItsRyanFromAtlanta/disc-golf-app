@@ -238,7 +238,7 @@ referenced shared course/regimen/catalog rows, and produces deterministic formul
 inside a ZIP with a versioned manifest. It never falls back to a partial Dexie cache: offline, failed,
 or unavailable table reads abort the whole export. The manifest explicitly excludes unsynced/device-only
 facts and private photo binaries while retaining `disc_photos` metadata and Storage paths. Phase D's
-pending server migrations must be applied before E1's authenticated release smoke can pass.
+server migrations and E1's authenticated preview export smoke passed before release.
 
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
