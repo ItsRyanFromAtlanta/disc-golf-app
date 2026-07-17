@@ -1,5 +1,30 @@
 # Dev Log
 
+## 2026-07-16 — Phase D item 4 checkpoint 7 Match Mode voice coaching
+
+**What:** Added opt-in Match Mode to regimen and freeform launchers. Every five genuine real-time
+attempts it can announce running make percentage and an available best-run make delta. Coaching
+intervenes only after three consecutive same-zone misses in one distance band or a 30-point decline
+across consecutive five-attempt windows, with a five-attempt intervention cooldown.
+
+**Evidence/recovery:** Enabling Match Mode enables diagnostic capture by default, and the preference
+freezes at Start. InstantLaunch v4 stores a diagnostic-only event snapshot and spoken/intervention
+cursors across recovery. Batch totals never enter the evaluator, undo retracts the latest diagnostic
+event, and the putt outbox remains the sole sporting-fact authority.
+
+**Audio:** The existing SpeechSynthesis/silence channel now accepts deterministic callouts. Silencing
+cancels queued speech and suppresses new speech. Wording reports observed patterns and recommends a
+generic reset without asserting an unsupported mechanical cause. No schema or network dependency.
+
+**Verified:** 460 tests pass across 69 files, including pattern thresholds, distance-band matching,
+sustained-drop windows, cooldowns, milestones/ghost deltas, undo-safe diagnostics, and v1–v3 to v4
+recovery migration. Production build and diff checks pass. Lint retains only the four pre-existing
+warnings; the bundle-size advisory is unchanged.
+
+**Next:** Phase E begins with data export before further course/round interoperability work.
+
+---
+
 ## 2026-07-16 — Phase D item 4 checkpoint 6 clutch simulator
 
 **What:** Added Clutch Simulator as a classic drill: choose 15/20/25/33 feet, start a randomized

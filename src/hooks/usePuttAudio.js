@@ -64,6 +64,13 @@ export function usePuttAudio() {
     window.speechSynthesis.speak(new SpeechSynthesisUtterance(message))
   }, [])
 
+  const speakCallout = useCallback((message) => {
+    if (silencedRef.current || !message || !window.speechSynthesis) return false
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(message))
+    return true
+  }, [])
+
   // Toggles both the tone ladder and SpeechSynthesis instantly — cancels any
   // in-flight announcement immediately on silencing.
   const setSilenced = useCallback((value) => {
@@ -71,5 +78,5 @@ export function usePuttAudio() {
     if (value && window.speechSynthesis) window.speechSynthesis.cancel()
   }, [])
 
-  return { playMake, playMiss, announceStage, setSilenced }
+  return { playMake, playMiss, announceStage, speakCallout, setSilenced }
 }

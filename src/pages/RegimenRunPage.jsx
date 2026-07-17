@@ -8,6 +8,7 @@ import { compareGhostPace } from '../lib/ghostPacing'
 import { computeSetScore, computeCompletionBonus, inferPressurePuttMade } from '../lib/regimenScoring'
 import { DRILL_TYPES, drillKind, nextDrillStage, scoreDrillStage, validateDrillConfig } from '../lib/drillEngine'
 import { createClutchDeadline, showClutchNotification } from '../lib/clutchTimer'
+import { evaluateMatchMode } from '../lib/matchModeCoach'
 import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
@@ -140,6 +141,8 @@ export default function RegimenRunPage() {
   const session = useInstantLaunchSession(writeAdapter, user.id)
   const recoveredRunningTotal = session.sessionState?.stage.drillRunningTotal
   const audio = usePuttAudio()
+  const speakCallout = audio.speakCallout
+  const markCoachingCallout = session.markCoachingCallout
   const haptics = usePuttHaptics()
 
   useEffect(() => {
@@ -161,6 +164,28 @@ export default function RegimenRunPage() {
   useEffect(() => {
     audio.setSilenced(silenced)
   }, [silenced, audio])
+
+  useEffect(() => {
+    if (!session.matchModeEnabled) return
+    const callout = evaluateMatchMode({
+      events: session.coachingEvents,
+      lastSpokenAttempt: session.coachingLastSpokenAttempt,
+      lastInterventionAttempt: session.coachingLastInterventionAttempt,
+      ghostComparison: compareGhostPace(session.ghostCurrentEvents, session.ghostProfile),
+    })
+    if (!callout) return
+    speakCallout(callout.message)
+    markCoachingCallout({ attempt: callout.attempt, intervention: callout.intervention })
+  }, [
+    session.matchModeEnabled,
+    session.coachingEvents,
+    session.coachingLastSpokenAttempt,
+    session.coachingLastInterventionAttempt,
+    session.ghostCurrentEvents,
+    session.ghostProfile,
+    markCoachingCallout,
+    speakCallout,
+  ])
 
   useEffect(() => {
     fetchUserDiscs(user.id)
@@ -334,6 +359,7 @@ export default function RegimenRunPage() {
       parentIds: { regimenRunId: newRunId, regimenId },
       activeRegimenSnapshot: { regimen, sets },
       ghostProfile: availableGhostProfile,
+      matchModeEnabled: session.profileDefaults.matchModeEnabled,
       initialStage: stageFromSet(initialSet, clutchSetIndex, regimen, clutchProgress),
       parentWriteRow: {
         id: newRunId,
@@ -664,6 +690,11 @@ export default function RegimenRunPage() {
             onSelectPreset={() => {}}
             onStart={handleStart}
             starting={starting}
+            matchModeEnabled={session.profileDefaults.matchModeEnabled}
+            onToggleMatchMode={() => session.updateProfileDefaults({
+              matchModeEnabled: !session.profileDefaults.matchModeEnabled,
+              ...(!session.profileDefaults.matchModeEnabled ? { diagnosticModeDefault: true } : {}),
+            })}
           />
         </>
       )}
@@ -698,6 +729,7 @@ export default function RegimenRunPage() {
               onExit={handleAbandon}
               externalFactors={externalFactors}
               onToggleFactor={toggleFactor}
+              matchModeEnabled={session.matchModeEnabled}
             />
           }
           toolbar={

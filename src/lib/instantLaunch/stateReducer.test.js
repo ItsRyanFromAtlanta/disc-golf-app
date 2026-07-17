@@ -8,6 +8,9 @@ import {
   applySetCrashRecoveryBuffer,
   applyAppendGhostCurrentEvent,
   applyRemoveGhostCurrentEvent,
+  applyAppendCoachingEvent,
+  applyRemoveCoachingEvent,
+  applyMarkCoachingCallout,
   applyClearCrashRecoveryBuffer,
   applyEnqueueParentWrite,
   applyEnqueueSummaryWrite,
@@ -44,6 +47,8 @@ describe('migrateOrResetState', () => {
     expect(migrated.profileDefaults.favoritePutterDiscId).toBe('putter-1')
     expect(migrated.profileDefaults.quickPlayRegimenId).toBeNull()
     expect(migrated.profileDefaults.inputModeDefault).toBe('tap')
+    expect(migrated.profileDefaults.matchModeEnabled).toBe(false)
+    expect(migrated.crashRecoveryBuffer.coachingEvents).toEqual([])
   })
 
   it('upgrades v1 without losing crash recovery or pending capture writes', () => {
@@ -65,7 +70,7 @@ describe('migrateOrResetState', () => {
     }
 
     const migrated = migrateOrResetState(v1)
-    expect(migrated.schemaVersion).toBe(3)
+    expect(migrated.schemaVersion).toBe(4)
     expect(migrated.crashRecoveryBuffer.activityId).toBeNull()
     expect(migrated.crashRecoveryBuffer.parentIds.freeformSessionId).toBe('session-1')
     expect(migrated.crashRecoveryBuffer.ghostProfile).toBeNull()
@@ -79,7 +84,7 @@ describe('migrateOrResetState', () => {
     delete v2.crashRecoveryBuffer.ghostCurrentEvents
     v2.outbox.puttEvents = [{ id: 'pending' }]
     const migrated = migrateOrResetState(v2)
-    expect(migrated.schemaVersion).toBe(3)
+    expect(migrated.schemaVersion).toBe(4)
     expect(migrated.crashRecoveryBuffer.ghostProfile).toBeNull()
     expect(migrated.crashRecoveryBuffer.ghostCurrentEvents).toEqual([])
     expect(migrated.outbox.puttEvents).toEqual([{ id: 'pending' }])
@@ -94,6 +99,28 @@ describe('ghost pacing recovery diagnostics', () => {
     expect(appended.outbox.puttEvents).toEqual([])
     const removed = applyRemoveGhostCurrentEvent(appended, 'putt-1')
     expect(removed.crashRecoveryBuffer.ghostCurrentEvents).toEqual([])
+  })
+})
+
+describe('Match Mode recovery diagnostics', () => {
+  it('records only opted-in events and never touches the sporting outbox', () => {
+    const disabled = applyAppendCoachingEvent(defaultInstantLaunchState(), { id: 'ignored' })
+    expect(disabled.crashRecoveryBuffer.coachingEvents).toEqual([])
+
+    const enabled = applySetCrashRecoveryBuffer(defaultInstantLaunchState(), { matchModeEnabled: true })
+    const appended = applyAppendCoachingEvent(enabled, { id: 'putt-1', outcome: 'miss' })
+    expect(appended.crashRecoveryBuffer.coachingEvents).toEqual([{ id: 'putt-1', outcome: 'miss' }])
+    expect(appended.outbox.puttEvents).toEqual([])
+    expect(applyRemoveCoachingEvent(appended, 'putt-1').crashRecoveryBuffer.coachingEvents).toEqual([])
+  })
+
+  it('persists spoken and intervention cursors independently', () => {
+    const milestone = applyMarkCoachingCallout(defaultInstantLaunchState(), { attempt: 5, intervention: false })
+    expect(milestone.crashRecoveryBuffer.coachingLastSpokenAttempt).toBe(5)
+    expect(milestone.crashRecoveryBuffer.coachingLastInterventionAttempt).toBeNull()
+    const intervention = applyMarkCoachingCallout(milestone, { attempt: 8, intervention: true })
+    expect(intervention.crashRecoveryBuffer.coachingLastSpokenAttempt).toBe(8)
+    expect(intervention.crashRecoveryBuffer.coachingLastInterventionAttempt).toBe(8)
   })
 })
 

@@ -380,6 +380,7 @@ Absorbs the "Dual-Pace Scoring Canvas" interaction spec (velocity-gated gestures
 - **Model:** Sonnet 5 · **Prereqs:** 2.2; elevated from LATER in backlog
 
 ### 2.7 Voice callouts (Match Mode) — ratio: ★★★☆☆ (M value / S effort)
+- **Status:** SHIPPED 2026-07-16 (Phase D4 checkpoint 7)
 - **What:** browser SpeechSynthesis announcing running %, pace deltas, and pattern-triggered coaching
 - **Design rule (adopted from TDD):** intervention threshold — never coach off a single event; require ≥3 consecutive same-vector misses or a sustained drop
 - **Model:** Sonnet 5 · **Prereqs:** 2.5 (needs miss data to say anything smart)

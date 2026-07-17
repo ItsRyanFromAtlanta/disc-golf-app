@@ -16,12 +16,24 @@ export default function SessionLauncher({
   onSelectPreset,
   onStart,
   starting,
+  matchModeEnabled,
+  onToggleMatchMode,
 }) {
   return (
     <section className="session-launcher">
       <SmartPredictionCard title={title} regimenName={regimenName} suggestion={suggestion} onStart={onStart} starting={starting} />
       <QuickModPresetPills presets={presets} onSelect={onSelectPreset} />
       <PutterPicker userId={userId} selectedId={favoritePutterId} onSelect={onSelectPutter} />
+      {onToggleMatchMode && (
+        <button
+          type="button"
+          className={`chip match-mode-launch-toggle ${matchModeEnabled ? 'chip-active' : ''}`}
+          aria-pressed={matchModeEnabled}
+          onClick={onToggleMatchMode}
+        >
+          Match Mode voice {matchModeEnabled ? 'on' : 'off'}
+        </button>
+      )}
     </section>
   )
 }

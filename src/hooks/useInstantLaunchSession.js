@@ -10,6 +10,9 @@ import {
   applyRemovePendingPuttEvent,
   applyAppendGhostCurrentEvent,
   applyRemoveGhostCurrentEvent,
+  applyAppendCoachingEvent,
+  applyRemoveCoachingEvent,
+  applyMarkCoachingCallout,
   applyDequeueOutboxEntries,
   applySetProfileDefaults,
   applySetSmartPredictionCard,
@@ -223,7 +226,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     return () => scheduler.stop()
   }, [flush])
 
-  const startSession = useCallback(({ sessionType, parentIds, activeRegimenSnapshot, ghostProfile, initialStage, parentWriteRow }) => {
+  const startSession = useCallback(({ sessionType, parentIds, activeRegimenSnapshot, ghostProfile, matchModeEnabled, initialStage, parentWriteRow }) => {
     const state = updateInstantLaunchState((s) => {
       let next = applySetCrashRecoveryBuffer(s, {
         hasActiveSession: true,
@@ -233,6 +236,10 @@ export function useInstantLaunchSession(writeAdapter, userId) {
         activeRegimenSnapshot: activeRegimenSnapshot ?? null,
         ghostProfile: ghostProfile ?? null,
         ghostCurrentEvents: [],
+        matchModeEnabled: matchModeEnabled === true,
+        coachingEvents: [],
+        coachingLastSpokenAttempt: 0,
+        coachingLastInterventionAttempt: null,
         ...nowStageSnapshot(initialStage, 0),
       })
       if (parentWriteRow) next = applyEnqueueParentWrite(next, parentWriteRow)
@@ -263,7 +270,8 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       })
       const withEvent = applyEnqueuePuttEvent(s, row)
       const withGhostProgress = applyAppendGhostCurrentEvent(withEvent, row)
-      return applySetCrashRecoveryBuffer(withGhostProgress, nowStageSnapshot(next.stage, next.nextSequence - 1))
+      const withCoachingProgress = applyAppendCoachingEvent(withGhostProgress, row)
+      return applySetCrashRecoveryBuffer(withCoachingProgress, nowStageSnapshot(next.stage, next.nextSequence - 1))
     })
     setLaunchState(state)
     schedulerRef.current?.notifyOutboxChanged()
@@ -286,7 +294,8 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       })
       const withEvent = applyEnqueuePuttEvent(s, row)
       const withGhostProgress = applyAppendGhostCurrentEvent(withEvent, row)
-      return applySetCrashRecoveryBuffer(withGhostProgress, nowStageSnapshot(next.stage, next.nextSequence - 1))
+      const withCoachingProgress = applyAppendCoachingEvent(withGhostProgress, row)
+      return applySetCrashRecoveryBuffer(withCoachingProgress, nowStageSnapshot(next.stage, next.nextSequence - 1))
     })
     setLaunchState(state)
     schedulerRef.current?.notifyOutboxChanged()
@@ -307,11 +316,17 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     const stillPending = readInstantLaunchState().outbox.puttEvents.some((row) => row.id === last.id)
     if (stillPending) {
       setLaunchState(updateInstantLaunchState(
-        (state, eventId) => applyRemoveGhostCurrentEvent(applyRemovePendingPuttEvent(state, eventId), eventId),
+        (state, eventId) => applyRemoveCoachingEvent(
+          applyRemoveGhostCurrentEvent(applyRemovePendingPuttEvent(state, eventId), eventId),
+          eventId,
+        ),
         last.id,
       ))
     } else {
-      setLaunchState(updateInstantLaunchState(applyRemoveGhostCurrentEvent, last.id))
+      setLaunchState(updateInstantLaunchState(
+        (state, eventId) => applyRemoveCoachingEvent(applyRemoveGhostCurrentEvent(state, eventId), eventId),
+        last.id,
+      ))
       writeAdapterRef.current?.deletePuttEvent(last.id)
     }
     schedulerRef.current?.notifyOutboxChanged()
@@ -403,6 +418,10 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     setLaunchState(updateInstantLaunchState(applySetSmartPredictionCard, card))
   }, [])
 
+  const markCoachingCallout = useCallback((callout) => {
+    setLaunchState(updateInstantLaunchState(applyMarkCoachingCallout, callout))
+  }, [])
+
   return {
     fsmStatus: fsm.status,
     sessionState,
@@ -411,6 +430,10 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     activeRegimenSnapshot: launchState.crashRecoveryBuffer.activeRegimenSnapshot,
     ghostProfile: launchState.crashRecoveryBuffer.ghostProfile,
     ghostCurrentEvents: launchState.crashRecoveryBuffer.ghostCurrentEvents,
+    matchModeEnabled: launchState.crashRecoveryBuffer.matchModeEnabled,
+    coachingEvents: launchState.crashRecoveryBuffer.coachingEvents,
+    coachingLastSpokenAttempt: launchState.crashRecoveryBuffer.coachingLastSpokenAttempt,
+    coachingLastInterventionAttempt: launchState.crashRecoveryBuffer.coachingLastInterventionAttempt,
     // Lets a freshly-mounted page (e.g. after a killed-and-relaunched PWA)
     // recover which parent row(s) an in-progress session belongs to, since
     // that page's own component state starts empty on a fresh mount.
@@ -425,6 +448,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     endSession,
     updateProfileDefaults,
     updateSmartPredictionCard,
+    markCoachingCallout,
     retrySync: () => schedulerRef.current?.retry(),
   }
 }

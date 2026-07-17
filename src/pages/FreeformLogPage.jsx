@@ -8,6 +8,7 @@ import { suggestBackupSwap } from '../lib/scoringCanvas'
 import { useInstantLaunchSession } from '../hooks/useInstantLaunchSession'
 import { usePuttAudio } from '../hooks/usePuttAudio'
 import { usePuttHaptics } from '../hooks/usePuttHaptics'
+import { evaluateMatchMode } from '../lib/matchModeCoach'
 import { syncRows, deleteRowById } from '../lib/instantLaunch/supabaseSync'
 import { makeTerritoryPct } from '../lib/instantLaunch/sessionReducer'
 import { GESTURE_CONFIG } from '../lib/gestureEngine/config'
@@ -113,6 +114,8 @@ export default function FreeformLogPage() {
 
   const session = useInstantLaunchSession(writeAdapter, user.id)
   const audio = usePuttAudio()
+  const speakCallout = audio.speakCallout
+  const markCoachingCallout = session.markCoachingCallout
   const haptics = usePuttHaptics()
 
   useEffect(() => {
@@ -126,6 +129,25 @@ export default function FreeformLogPage() {
   useEffect(() => {
     audio.setSilenced(silenced)
   }, [silenced, audio])
+
+  useEffect(() => {
+    if (!session.matchModeEnabled) return
+    const callout = evaluateMatchMode({
+      events: session.coachingEvents,
+      lastSpokenAttempt: session.coachingLastSpokenAttempt,
+      lastInterventionAttempt: session.coachingLastInterventionAttempt,
+    })
+    if (!callout) return
+    speakCallout(callout.message)
+    markCoachingCallout({ attempt: callout.attempt, intervention: callout.intervention })
+  }, [
+    session.matchModeEnabled,
+    session.coachingEvents,
+    session.coachingLastSpokenAttempt,
+    session.coachingLastInterventionAttempt,
+    markCoachingCallout,
+    speakCallout,
+  ])
 
   useEffect(() => {
     fetchUserDiscs(user.id)
@@ -272,6 +294,7 @@ export default function FreeformLogPage() {
     setFreeformSessionId(newSessionId)
     session.startSession({
       sessionType: 'freeform',
+      matchModeEnabled: session.profileDefaults.matchModeEnabled,
       parentIds: { freeformSessionId: newSessionId },
       initialStage: stageAt(pendingDistance, DEFAULT_VOLUME),
       parentWriteRow: {
@@ -481,6 +504,11 @@ export default function FreeformLogPage() {
           }}
           onStart={handleStart}
           starting={starting}
+          matchModeEnabled={session.profileDefaults.matchModeEnabled}
+          onToggleMatchMode={() => session.updateProfileDefaults({
+            matchModeEnabled: !session.profileDefaults.matchModeEnabled,
+            ...(!session.profileDefaults.matchModeEnabled ? { diagnosticModeDefault: true } : {}),
+          })}
         />
       )}
 
@@ -505,6 +533,7 @@ export default function FreeformLogPage() {
               onExit={handleEndSession}
               externalFactors={externalFactors}
               onToggleFactor={(factor) => setExternalFactors((current) => current.includes(factor) ? current.filter((value) => value !== factor) : [...current, factor])}
+              matchModeEnabled={session.matchModeEnabled}
             />
           }
           toolbar={

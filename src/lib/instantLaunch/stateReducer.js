@@ -3,7 +3,7 @@
 // localStorage directly — storage.js is the only impure caller, which is
 // what keeps this fully vitest-testable (no jsdom in this repo's vitest
 // config, so `localStorage` itself isn't available under test).
-export const INSTANT_LAUNCH_SCHEMA_VERSION = 3
+export const INSTANT_LAUNCH_SCHEMA_VERSION = 4
 
 export function defaultInstantLaunchState() {
   return {
@@ -17,6 +17,7 @@ export function defaultInstantLaunchState() {
       // model; gesture/panic are opt-in alt modes, same pattern as
       // diagnosticModeDefault.
       inputModeDefault: 'tap',
+      matchModeEnabled: false,
     },
     smartPredictionCard: {
       lastRegimenId: null,
@@ -37,6 +38,12 @@ export function defaultInstantLaunchState() {
       // sporting-fact outbox and never synthesized from batch summaries.
       ghostProfile: null,
       ghostCurrentEvents: [],
+      // D4 Match Mode: a frozen opt-in plus a diagnostic-only real-time event
+      // snapshot and callout cursors. The putt outbox remains authoritative.
+      matchModeEnabled: false,
+      coachingEvents: [],
+      coachingLastSpokenAttempt: 0,
+      coachingLastInterventionAttempt: null,
       currentStage: { setOrder: null, distanceFt: null, sequenceCounter: 0 },
       lastUpdatedAt: null,
     },
@@ -49,11 +56,11 @@ export function defaultInstantLaunchState() {
 }
 
 // V1 is the shipped InstantLaunch shape; v2 adds activityId; v3 adds frozen
-// ghost-pacing diagnostics. Preserve every recovery snapshot and pending
+// ghost-pacing diagnostics; v4 adds Match Mode diagnostics. Preserve every recovery snapshot and pending
 // capture write during upgrades. Any unknown shape still resets rather than
 // risking malformed capture state.
 export function migrateOrResetState(rawParsed) {
-  if (!rawParsed || ![1, 2, INSTANT_LAUNCH_SCHEMA_VERSION].includes(rawParsed.schemaVersion)) {
+  if (!rawParsed || ![1, 2, 3, INSTANT_LAUNCH_SCHEMA_VERSION].includes(rawParsed.schemaVersion)) {
     return defaultInstantLaunchState()
   }
 
@@ -109,6 +116,40 @@ export function applyRemoveGhostCurrentEvent(state, eventId) {
     crashRecoveryBuffer: {
       ...state.crashRecoveryBuffer,
       ghostCurrentEvents: state.crashRecoveryBuffer.ghostCurrentEvents.filter((event) => event.id !== eventId),
+    },
+  }
+}
+
+export function applyAppendCoachingEvent(state, event) {
+  if (!state.crashRecoveryBuffer.matchModeEnabled) return state
+  return {
+    ...state,
+    crashRecoveryBuffer: {
+      ...state.crashRecoveryBuffer,
+      coachingEvents: [...state.crashRecoveryBuffer.coachingEvents, event],
+    },
+  }
+}
+
+export function applyRemoveCoachingEvent(state, eventId) {
+  return {
+    ...state,
+    crashRecoveryBuffer: {
+      ...state.crashRecoveryBuffer,
+      coachingEvents: state.crashRecoveryBuffer.coachingEvents.filter((event) => event.id !== eventId),
+    },
+  }
+}
+
+export function applyMarkCoachingCallout(state, { attempt, intervention }) {
+  return {
+    ...state,
+    crashRecoveryBuffer: {
+      ...state.crashRecoveryBuffer,
+      coachingLastSpokenAttempt: attempt,
+      coachingLastInterventionAttempt: intervention
+        ? attempt
+        : state.crashRecoveryBuffer.coachingLastInterventionAttempt,
     },
   }
 }

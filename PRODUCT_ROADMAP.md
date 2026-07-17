@@ -121,10 +121,11 @@ Recommended model: GPT-5.3-Codex medium; GPT-5.6 high for metric/report engines.
 3. **COMPLETE 2026-07-16.** ME career summary, Profile/Settings split, contextual notification
    preferences, goals pause/history, weekly deterministic report snapshots/version history, and
    complete activity history/corrections.
-4. **CHECKPOINTS 1–6 COMPLETE 2026-07-16.** Distance confidence/heat, completed-visible miss tendency,
+4. **COMPLETE 2026-07-16 (CHECKPOINTS 1–7).** Distance confidence/heat, completed-visible miss tendency,
    longitudinal physical-putter comparisons, immutable new-putter before/after markers, best-run ghost
    pacing, versioned JYLY/Around-the-World execution, and a deadline-recoverable one-putt Clutch
-   Simulator are shipped. Next: thresholded voice coaching.
+   Simulator are shipped. Opt-in Match Mode adds five-attempt make-rate/ghost callouts and thresholded,
+   cooldown-protected coaching from genuine real-time evidence. Phase D is complete; proceed to Phase E.
 
 ## Phase E — Courses, rounds, and interoperability
 

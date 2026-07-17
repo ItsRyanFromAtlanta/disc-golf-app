@@ -47,6 +47,7 @@ export default function CanvasContextBar({
   onExit,
   externalFactors = [],
   onToggleFactor,
+  matchModeEnabled = false,
 }) {
   return (
     <div className="canvas-context-bar">
@@ -72,6 +73,7 @@ export default function CanvasContextBar({
         <button type="button" className={`chip ${diagnosticMode ? 'chip-active' : ''}`} onClick={onToggleDiagnostic}>
           Diagnostic
         </button>
+        {matchModeEnabled && <span className="chip chip-active">Match Mode</span>}
       </div>
       {inputMode && onChangeInputMode && (
         <div className="canvas-context-bar-row">

@@ -225,6 +225,13 @@ authoritative; optional system notifications are permission-gated and best-effor
 execution remains available. Clutch capture is real-time only, writes `putt_events.is_pressure = true`,
 and hides batch/edit paths so no pressure event is synthesized from a summary.
 
+Phase D D4 checkpoint 7 adds opt-in, device-local Match Mode voice coaching to regimen and freeform
+capture. The preference freezes at Start and InstantLaunch v4 retains diagnostic-only real-time events
+plus callout cursors across recovery. Informational make-rate/ghost callouts occur every five genuine
+events; interventions require three consecutive same-zone/same-distance-band misses or a 30-point drop
+across consecutive five-attempt windows, with a five-attempt cooldown. Batch summaries never become
+coaching evidence, undo retracts evidence, and the shared silence control cancels/suppresses speech.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
