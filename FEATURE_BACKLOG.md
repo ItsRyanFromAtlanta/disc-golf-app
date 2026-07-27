@@ -15,6 +15,8 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Phase A release candidate and independent-session field gate | SHIPPED | A10 closed 2026-07-12; the independent authenticated-session/real-device result is user-reported, with Codex-observation limits recorded in CURRENT_WORK.md |
 | Existing React lint-warning cleanup | BACKLOG | Four pre-existing warnings: three hook dependency findings and one Fast Refresh export finding; address as touched or in a bounded cleanup review |
 | Production bundle code splitting | BACKLOG | Current main JS is ~740 KB minified / ~213 KB gzip; profile routes and split meaningful feature trees before public/mobile beta |
+| In-app account deletion (privacy purge) | IN PROGRESS | Client and `delete_own_account()` RPC written 2026-07-27; App Store Guideline 5.1.1(v) requirement. Migration `20260727120000` is unapplied — the button fails until it lands |
+| iOS/PWA field defects (OAuth breakout, SW mid-session reload, wake lock, silent-switch audio, storage eviction) | SHIPPED | 2026-07-27; see `docs/mobile/IOS_READINESS.md` |
 | Native privacy manifest and SDK audit | LATER (deliberate) | Required at Capacitor/iOS build phase; reconcile every SDK and actual collection before TestFlight |
 | Protected `main` + required PR review/checks | NEXT UP | CI now succeeds remotely, so the blocker is cleared; configure branch protection in GitHub settings. `main` auto-deploys to Vercel |
 

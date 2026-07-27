@@ -4,6 +4,7 @@ import { IconBrandApple, IconBrandGoogle } from '@tabler/icons-react'
 import { useAuth } from '../context/AuthContext'
 import ChipGroup from '../components/ChipGroup'
 import OtpInput from '../components/OtpInput'
+import { readPlatformContext } from '../lib/platform'
 
 const ENTRY_METHODS = [
   { id: 'otp', label: '⚡ Email code' },
@@ -30,6 +31,8 @@ export default function AuthPage() {
   } = useAuth()
   const navigate = useNavigate()
 
+  // Read once on mount: display mode does not change within a session.
+  const [platform] = useState(readPlatformContext)
   const [entryMethod, setEntryMethod] = useState('otp')
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
@@ -211,6 +214,17 @@ export default function AuthPage() {
             </button>
           )}
         </form>
+      )}
+
+      {/* Honest capability line, same contract as the haptics fallback: an
+          installed iOS PWA hands the OAuth redirect to Safari and commonly
+          never gets the session back, so say so instead of letting the user
+          discover it by getting stuck on a sign-in loop. */}
+      {platform.oauthLeavesApp && (
+        <p className="form-info sso-note">
+          On the installed app, Apple and Google sign-in open in Safari and may not carry the session
+          back here. Use the email code above — it completes without leaving the app.
+        </p>
       )}
 
       <div className="sso-row">

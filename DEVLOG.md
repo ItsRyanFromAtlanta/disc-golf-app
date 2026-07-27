@@ -1,5 +1,47 @@
 # Dev Log
 
+## 2026-07-27 — iOS/PWA field defects and account deletion
+
+**What:** Fixed six defects found while auditing the iOS story, all in the shipped PWA and none
+requiring Capacitor. Service worker moved from `autoUpdate` + `skipWaiting` to `prompt` with an
+explicit `PwaUpdatePrompt` that suppresses itself on ACTIVE shell routes. `PuttingCanvas` now holds a
+screen wake lock for active putting capture. `usePuttAudio` declares a playback audio session and
+resumes a suspended context. `requestPersistentStorage()` runs at start. `AuthPage` states honestly
+that OAuth leaves an installed iOS PWA. New `delete_own_account()` RPC plus a Settings panel gives
+in-app account deletion.
+
+**Why:** Each was silent in the sense that matters — nothing logged an error. Audio simply stopped on
+a phone with the ring switch off; the screen locked mid-routine; unsynced outbox rows were evictable;
+an installed-PWA user could loop on a sign-in that appeared to work in Safari. Account deletion is a
+hard App Review rejection under Guideline 5.1.1(v) and was also required by the roadmap's own privacy
+rule that a purge truly removes scoped data.
+
+**Key decisions:** Wake lock lives in `PuttingCanvas` rather than each page, so future capture modes
+inherit it; rounds deliberately do not take one, since the phone is pocketed between holes. The OAuth
+fix is an honest capability line rather than hiding the buttons — same contract as the haptics
+fallback — because the redirect does succeed on some iOS versions and platform detection is a
+heuristic. Deletion is a hard purge, not the soft delete activities use for recovery/audit. Community
+attribution on `courses`/`course_aliases`/`disc_molds` is released to null rather than cascading,
+because those nullable FKs would otherwise block the delete and shared rows must outlive a departing
+member; `catalog_submission_reviews.reviewer_id` is NOT NULL so those rows are deleted. Private
+Storage objects are removed explicitly since no foreign key reaches them. The client purges device
+storage only after the server confirms.
+
+**Verification:** 497 tests across 74 files pass (30 new, covering platform detection, storage
+persistence, and local purge), build succeeds, lint retains only the four documented baseline
+warnings. The generated `dist/sw.js` now contains only the message-driven `skipWaiting`, reached when
+the user accepts the prompt — no unconditional activation and no `clientsClaim`.
+
+**Not verified:** migration `20260727120000_phase_e_account_deletion.sql` is written but **unapplied**
+— this session had no Supabase access. The delete button fails until it lands. Rollback is a single
+`drop function`. The smoke checks it needs are listed in `CURRENT_WORK.md`. The iOS behaviours
+themselves (silent switch, wake lock, standalone OAuth) need a real device; they cannot be observed in
+an isolated browser.
+
+**Next:** Apply and smoke-test the deletion migration, then resume Phase E2.
+
+---
+
 ## 2026-07-27 — Documentation staleness audit and reconciliation
 
 **What:** Audited all 33 markdown files for instructions that recent work invalidated, then fixed them

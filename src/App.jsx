@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import AppShell from './components/AppShell'
 import ProtectedRoute from './components/ProtectedRoute'
+import PwaUpdatePrompt from './components/PwaUpdatePrompt'
 import SplashPage from './pages/SplashPage'
 import AuthPage from './pages/AuthPage'
 import OnboardingPage from './pages/OnboardingPage'
@@ -40,7 +41,9 @@ function App() {
   const { user, loading } = useAuth()
 
   return (
-    <Routes>
+    <>
+      <PwaUpdatePrompt />
+      <Routes>
       <Route
         path="/"
         element={loading ? null : user ? <Navigate to="/practice" replace /> : <SplashPage />}
@@ -106,7 +109,8 @@ function App() {
 
       {/* Old flat URLs from the v1/v2 slices */}
       <Route path="/regimens" element={<Navigate to="/practice/regimens" replace />} />
-    </Routes>
+      </Routes>
+    </>
   )
 }
 

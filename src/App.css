@@ -112,6 +112,97 @@
 .data-export-status {
   margin: 12px 0 0;
 }
+
+/* Account deletion is destructive and irreversible, so it reads in the
+   negative token rather than the ordinary positive action colour. */
+.delete-account-panel .settings-note {
+  max-width: 64ch;
+  line-height: 1.5;
+}
+
+.delete-account-panel {
+  border: var(--border-width) solid var(--color-negative);
+}
+
+.btn-danger {
+  min-height: var(--tap-target-min);
+  width: 100%;
+  border: var(--border-width) solid var(--color-negative);
+  border-radius: 8px;
+  background: var(--color-negative);
+  color: var(--color-text-inverse);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.delete-account-confirm {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.delete-account-confirm input {
+  min-height: 48px;
+  padding: 8px 10px;
+  border: var(--border-width) solid var(--color-negative);
+  border-radius: 8px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+/* Honest capability note above the SSO row on an installed iOS PWA. */
+.sso-note {
+  max-width: 64ch;
+  line-height: 1.5;
+}
+
+/* Service-worker update prompt. Fixed above the tab bar so it never covers
+   primary controls, and it is suppressed entirely on active capture routes. */
+.pwa-update-prompt {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.pwa-update-copy {
+  margin: 0;
+  font-weight: 600;
+}
+
+.pwa-update-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pwa-update-actions .btn-primary {
+  width: auto;
+  margin-top: 0;
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+.pwa-update-actions .link-button {
+  margin-top: 0;
+}
 .settings-timezone { display: grid; gap: 8px; padding: 12px 0; }
 .settings-timezone span { display: grid; gap: 3px; }
 .settings-timezone small { color: var(--color-text-secondary); }

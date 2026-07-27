@@ -44,6 +44,12 @@ and verification history lives in `DEVLOG.md` (newest first) — do not duplicat
 
 ## Open follow-ups
 
+- **`20260727120000_phase_e_account_deletion.sql` is written but NOT applied.** It creates the
+  `public.delete_own_account()` security-definer RPC. Until it is applied, the Settings delete button
+  fails with an undefined-function error. Apply it, then smoke-test in a rollback-only transaction:
+  a second user's rows survive, community `created_by` is nulled rather than deleted, private Storage
+  objects under the user's prefix are gone, and `anon` cannot execute the function.
+
 - Delete the empty `catalog-import-raw` Storage bucket from the Supabase dashboard. Direct DELETE on
   storage tables is blocked and the CLI manages objects rather than buckets, so this needs the
   dashboard. Open since 2026-07-14.

@@ -6,6 +6,21 @@ everything below is unreleased-but-shipped to production through `main`.
 
 ## Unreleased
 
+### Added — Phase E field/platform hardening (2026-07-27)
+
+- Delete your account from Profile → Settings. Permanently removes your history, discs, bags, photos,
+  goals, and reports; courses you contributed stay available to other players without your name.
+- The screen stays awake during active putting capture.
+- App updates now ask before reloading instead of interrupting a session in progress.
+
+### Fixed — Phase E field/platform hardening (2026-07-27)
+
+- Audio feedback no longer goes silent on iPhone when the ring/silent switch is off, or after the app
+  has been in the background.
+- Unsynced practice data is stored durably so it is not evicted before it reaches the server.
+- Sign-in now explains that Apple and Google open in Safari on the installed iPhone app and points to
+  the email code, which completes without leaving the app.
+
 ### Added — Phase E (2026-07-17)
 
 - Structured own-your-data export from Profile → Settings: deterministic, formula-safe CSVs in a

@@ -7,7 +7,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' + manual registration (see src/components/PwaUpdatePrompt.jsx).
+      // 'autoUpdate' activated a new worker and reloaded the page as soon as a
+      // deploy landed, and `main` auto-deploys — that could reload an active
+      // capture session out from under the athlete mid-routine.
+      registerType: 'prompt',
+      injectRegister: null,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Disc Golf Manager & Caddie',
@@ -34,9 +39,10 @@ export default defineConfig({
         // entries here — Supabase reads/writes must always hit the network.
         // Offline data buffering is handled by the InstantLaunch outbox and
         // the Dexie repository layer, not by the service worker.
+        // No skipWaiting/clientsClaim: a new worker stays in `waiting` until
+        // the user accepts the update prompt, so an in-flight session is never
+        // swapped underneath.
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
       },
     }),
   ],

@@ -242,6 +242,21 @@ or unavailable table reads abort the whole export. The manifest explicitly exclu
 facts and private photo binaries while retaining `disc_photos` metadata and Storage paths. Phase D's
 server migrations and E1's authenticated preview export smoke passed before release.
 
+Phase E field/platform hardening (2026-07-27) fixes defects found auditing the iOS story. The service
+worker no longer self-activates: `registerType` is `prompt` with no `skipWaiting`/`clientsClaim`, so a
+deploy can never reload an active capture session — `PwaUpdatePrompt` asks, and suppresses itself on
+ACTIVE shell routes. `PuttingCanvas` holds a screen wake lock for the whole of active putting capture
+(rounds deliberately do not; the phone is pocketed between holes). `usePuttAudio` declares a playback
+audio session so the iOS ring switch stops silently muting feedback, and resumes a context suspended by
+backgrounding. `requestPersistentStorage()` runs at start so the InstantLaunch buffer and Dexie outbox
+are not evictable. `AuthPage` states honestly that Apple/Google sign-in leaves an installed iOS PWA and
+may not carry the session back, steering to the in-app email code; detection lives in pure
+`src/lib/platform.js`. Account deletion is a real privacy purge, not a soft delete: the
+`delete_own_account()` security-definer RPC derives its subject from `auth.uid()`, releases community
+attribution on `courses`/`course_aliases`/`disc_molds` to null so shared rows survive, removes private
+Storage objects no foreign key reaches, then deletes the `auth.users` row that every owner-scoped table
+cascades from. The client purges device storage only after the server confirms.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
