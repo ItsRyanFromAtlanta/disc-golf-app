@@ -26,3 +26,12 @@ detail that should not inflate normal coding context.
 ## Decisions
 
 - [ADR index](decisions/README.md) — durable architecture decisions and template.
+
+## Archive
+
+Superseded documents kept for the reasoning trail. Each carries a HISTORICAL header and is never an
+authority for current work.
+
+- [TASK_BRIEFS_2.2.md](archive/TASK_BRIEFS_2.2.md) — shipped 2.2a/2.2b/2.2c briefs (pre-Codex).
+- [theme-spec-source.md](archive/theme-spec-source.md) — original Sun-Drenched Topo spec source.
+- [screen-inventory-ideation.md](archive/screen-inventory-ideation.md) — pre-blueprint feature ideation.

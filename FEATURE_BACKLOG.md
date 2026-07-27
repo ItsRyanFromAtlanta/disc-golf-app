@@ -111,7 +111,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Feature | Status | Notes |
 |---|---|---|
 | Confidence interval map (lock-in vs coin-flip zones) | SHIPPED | Pure frontend over shipped Wilson-interval stats |
-| Sun-Drenched Topo theme system (app-wide) | SHIPPED | 2.2a — exact tokens in CLAUDE.md; self-hosted Oswald; every screen restyled |
+| Sun-Drenched Topo theme system (app-wide) | SHIPPED | 2.2a — exact tokens in AGENTS.md § Design system; self-hosted Oswald; every screen restyled |
 | Dual-pace scoring canvas (gesture zone + batch ribbon) | SHIPPED | 2.2c — 3-gate swipe physics, make-territory growth, grid/carousel batch ribbon w/ auto-fill |
 | Instant-launch FSM + crash recovery (TTFP <5s) | SHIPPED | 2.2c — unified localStorage subsystem, synchronous bootstrap, once-per-load crash-recovery redirect |
 | Audio telemetry (pitch ladder, TTS stage announcements, silence pill) | SHIPPED | 2.2c — Web Audio + SpeechSynthesis; pre-builds 2.7 voice infrastructure |

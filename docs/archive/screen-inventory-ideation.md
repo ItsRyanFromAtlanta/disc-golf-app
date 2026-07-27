@@ -1,3 +1,11 @@
+> **HISTORICAL IDEATION — NOT THE AUTHORITY.** Archived 2026-07-27 (was `updates for disc golf app.md`
+> at repo root). Raw feature ideation captured before the 21-screen blueprint and the Phase A-E
+> sequencing. Several proposals here were explicitly overruled during integration — notably the
+> 4-digit OTP (shipped as email 6-digit, `SCREEN_SPECS.md` § Divergences) and the claim that Apple
+> mandates Sign in with Apple alongside Google SSO (App Store Guideline 4.8 binds native App Store
+> apps, not the shipped PWA). Current status for anything here lives in `PRODUCT_ROADMAP.md` and
+> `FEATURE_BACKLOG.md`. Retained for the reasoning trail.
+
 Master Screen Inventory (Sequential Flow)
 
     Screen 1: Splash / Welcome Landing — Brand entry, first impression, and primary call-to-action.

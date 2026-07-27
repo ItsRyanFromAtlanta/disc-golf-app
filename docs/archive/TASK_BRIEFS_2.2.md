@@ -1,5 +1,11 @@
 # Task Briefs — 2.2a / 2.2b / 2.2c
 
+> **HISTORICAL — DO NOT EXECUTE.** Archived 2026-07-27. All three briefs shipped in July 2026. This
+> file predates the Codex workflow: it names Claude models, points at the now-retired `CLAUDE.md`
+> design section (tokens live in `AGENTS.md` § Design system), and its session-close step instructs a
+> direct push to `main`. `main` auto-deploys and requires a reviewed pull request — see
+> `CONTRIBUTING.md`. Retained only for the reasoning trail.
+
 Run in order. Do not start 2.2c until the 2.2b spec is approved. /clear between sessions.
 
 ---

@@ -1,4 +1,10 @@
 # DESIGN SYSTEM SPECIFICATION: "SUN-DRENCHED TOPO" (OSWALD EDITION)
+
+> **HISTORICAL SOURCE — NOT THE AUTHORITY.** Archived 2026-07-27 (was `theme markdown.md` at repo
+> root). This is the original vendor-style spec the theme was derived from; it is written for
+> Tailwind/native stylesheets this repo does not use. The shipped tokens and field-use rules are in
+> `AGENTS.md` § Design system. Where the two differ, `AGENTS.md` wins.
+
 **Theme Identity:** Elevated Outdoor Adventure • Rugged & Tactile • High-Luminance Solar Glare Resistant  
 **Design Inspiration:** Modern adventure hardware (e.g., Yeti, Garmin, AllTrails), desert topography, and elevated outdoor lifestyle apparel.  
 **Core Objective:** Replace harsh clinical white (`#FFFFFF`) and unreadable woodland greens/browns with high-luminance, warm earth tones, bold color-blocking, and high-impact condensed typography that remains 100% legible under 10,000+ nits of direct noon sunlight.

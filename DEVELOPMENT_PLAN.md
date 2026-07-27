@@ -1,7 +1,7 @@
 # Development Plan
 
 Last updated: 2026-07-16
-Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
+Companion docs: `AGENTS.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
 `PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
 status), `DEVLOG.md` (work record)
