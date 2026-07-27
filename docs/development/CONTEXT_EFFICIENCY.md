@@ -29,7 +29,7 @@ uncommitted migration, failing test diagnosis, or unresolved data-loss risk.
 
 ```powershell
 rg -n "term" src docs *.md
-rg --files src supabase e2e
+rg --files src supabase
 git diff --stat
 git status --short
 graphify query "symbol or concept"

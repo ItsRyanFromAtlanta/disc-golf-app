@@ -43,7 +43,9 @@ git status --short
 git diff --stat
 ```
 
-After Playwright is approved and installed:
+Playwright is **not installed** and no `e2e/` suite exists yet. Once it is added (see
+`PHASE_A_ARCHITECTURE.md` § 9), these become available — the spec path below is illustrative, not an
+existing file:
 
 ```powershell
 npx playwright test
@@ -95,8 +97,8 @@ the `codex.exe` installer command. Run once in a normal PowerShell session, then
 codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp
 ```
 
-Playwright is a project dev dependency, not a Codex plugin. Install only at the Phase A browser-E2E
-checkpoint so the dependency change and first working test land together.
+Playwright belongs as a project dev dependency, not a Codex plugin, and should land together with the
+first working test. The Phase A browser-E2E checkpoint closed without it, so this is still pending.
 
 ## Token-saving settings
 

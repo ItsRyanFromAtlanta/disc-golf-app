@@ -59,10 +59,12 @@ Recommended model: GPT-5.6 high for architecture/contracts; GPT-5.3-Codex medium
 5. Expand Dexie/TanStack repositories and outbox diagnostics incrementally; preserve InstantLaunch
    until each replacement path is proven.
 
-Phase A status: COMPLETE (2026-07-12). Automated equivalence, RLS, build/lint, browser, accessibility,
-reload, and authenticated notification-route checks passed. The independent authenticated-session/
-real-device gate was reported passed by the user; Codex did not directly observe that session or collect
-device metadata.
+Phase A status: COMPLETE (2026-07-12), **with two required gates closed unmet** (recorded 2026-07-27):
+automated browser E2E was never built (`PHASE_A_ARCHITECTURE.md` § 9) and the PWA manifest token
+correction in item 4 was not applied until 2026-07-27. Automated equivalence, RLS, build/lint,
+accessibility, reload, and authenticated notification-route checks passed; browser verification was
+agent-driven smoke rather than an E2E suite. The independent authenticated-session/real-device gate was
+reported passed by the user; Codex did not directly observe that session or collect device metadata.
 
 ## Phase B — DISCS data foundation
 

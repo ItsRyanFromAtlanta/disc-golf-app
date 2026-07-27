@@ -21,8 +21,9 @@
   authorization; do not preload broad tool catalogs or commit credentials.
 - **OpenAI Developer Docs MCP:** recommended for current model/API work. One-time local command is in
   `CODEX_WORKFLOW.md` because the desktop sandbox could not launch the installer.
-- **Playwright:** add as a project dev dependency with the first Phase A browser test, not as a global
-  plugin with no exercised test.
+- **Playwright:** still not installed. Phase A closed without its browser-E2E gate, so this is open
+  work. Add it as a project dev dependency together with the first real test, not as a global plugin
+  with no exercised test.
 
 ## Maintenance
 

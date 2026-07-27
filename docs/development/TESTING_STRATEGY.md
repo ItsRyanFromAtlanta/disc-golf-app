@@ -5,7 +5,9 @@
   Supabase contracts.
 - **RLS/security tests:** positive ownership and negative cross-user/forged-write cases for every new
   user-owned table, RPC, and bucket.
-- **Browser E2E:** critical PLAY, DISCS, ME, auth, offline/resume, finalize/correct, and soft-delete flows.
+- **Browser E2E (NOT YET BUILT):** critical PLAY, DISCS, ME, auth, offline/resume, finalize/correct, and
+  soft-delete flows. No runner or suite exists today; verification has been agent-driven anonymous
+  browser smoke. Do not cite this tier as covered until a suite lands in CI.
 - **Visual/accessibility:** target mobile widths, keyboard/focus, screen-reader labels, contrast, text
   scaling, reduced motion, and touch-target checks.
 - **Real devices:** cold-start TTFP, sunlight, one-thumb operation, background/resume, interrupted
