@@ -13,8 +13,12 @@ export default defineConfig({
         name: 'Disc Golf Manager & Caddie',
         short_name: 'Disc Golf',
         description: 'Putting practice, stats, and caddie tools for disc golf.',
-        theme_color: '#7e14ff',
-        background_color: '#ffffff',
+        // Sun-Drenched Topo tokens, matching the <meta name="theme-color">
+        // in index.html. background_color is the standalone splash backdrop,
+        // so a non-palette value flashes on every cold start; pure white is
+        // banned by the design system.
+        theme_color: '#F4F1EA',
+        background_color: '#F4F1EA',
         display: 'standalone',
         start_url: '/',
         scope: '/',
@@ -28,7 +32,8 @@ export default defineConfig({
         // App-shell caching only: precache the built JS/CSS/HTML/icons so the
         // shell loads offline/on flaky signal. Deliberately no runtimeCaching
         // entries here — Supabase reads/writes must always hit the network.
-        // Offline data buffering is a separate, later feature (Track 2.2).
+        // Offline data buffering is handled by the InstantLaunch outbox and
+        // the Dexie repository layer, not by the service worker.
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
