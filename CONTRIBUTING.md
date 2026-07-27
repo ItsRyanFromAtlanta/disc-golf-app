@@ -30,8 +30,11 @@ changes unless separation would make the change unsafe.
 
 ## Database rule
 
-Schema history is append-only. Confirm a manual Supabase backup exists before any migration or foreign-
-key restructuring. Never run production migration SQL merely to validate a draft.
+Schema history is append-only. Database changes use reviewed migration/rollback notes, ownership/RLS
+negative tests, advisors, and post-apply smoke checks. Do not run backup commands or block a migration
+on manual backup confirmation; the owner manages production backup policy outside development sessions
+(see `docs/operations/BACKUP_RESTORE.md`). Never run production migration SQL merely to validate a
+draft.
 
 ## Commit and push policy
 

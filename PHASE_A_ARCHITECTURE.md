@@ -91,7 +91,8 @@ per-putt sequence, timing, streak, miss-zone, or putter attribution from batch t
   context action.
 - The active pill appears across PLAY, DISCS, and ME, but not auth/onboarding or the active activity.
 - Notifications sync across devices when durable/actionable. Transient toasts stay local.
-- Bottom navigation is PLAY / DISCS / ME; COURSES is added with the directory. First tap on the current
+- Bottom navigation is PLAY / DISCS / COURSES / ME. Phase A shipped the PLAY / DISCS / ME base shell;
+  COURSES was added at its documented trigger with the J1 directory on 2026-07-14. First tap on the current
   tab scrolls to top; a tap while already at top returns to that tab's root. Preserve nested state only
   for expected resumable/editing workflows.
 

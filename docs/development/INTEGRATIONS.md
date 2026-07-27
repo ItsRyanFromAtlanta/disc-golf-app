@@ -9,8 +9,9 @@
 - **Graphify 0.9.6:** installed locally with project-scoped Codex skill and pre-tool check. Use for code
   navigation and impact analysis; refresh after a major source checkpoint. Generated `graphify-out/`
   artifacts are disposable and should not become product documentation.
-- **RTK 0.43.0:** installed and connected to Claude Code through its global hook. It is not currently a
-  Codex hook. Use manually only when it reduces noisy command output without hiding failures.
+- **RTK 0.43.0:** installed locally from the earlier Claude Code workflow, where it was wired as a
+  global hook. It is not a Codex hook and is not required by any project workflow. Use manually only
+  when it reduces noisy command output without hiding failures; retire it if it goes unused.
 - **GitHub/browser/Vercel skills:** available in Codex; invoke only for a task that needs them.
 
 ## Conditional

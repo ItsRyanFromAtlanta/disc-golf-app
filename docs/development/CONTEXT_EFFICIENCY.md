@@ -36,5 +36,5 @@ graphify query "symbol or concept"
 graphify explain path/to/file
 ```
 
-RTK may compact shell output in Claude Code. Codex already has bounded tool history, so use RTK only
+RTK was a Claude Code shell-output compactor. Codex already has bounded tool history, so use RTK only
 when its output is demonstrably clearer; avoid stacking token wrappers blindly.

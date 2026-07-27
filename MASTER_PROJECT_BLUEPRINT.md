@@ -9,6 +9,22 @@ This document integrates all design tokens, offline-first Dexie.js database sche
 
 ## **SECTION 1: MASTER AGENT RULEBOOK (CLAUDE.md)**
 
+> **HISTORICAL — DO NOT EXECUTE.** Marked 2026-07-27. This section is a rulebook for the greenfield
+> Expo stack the blueprint was authored against. It is **not** this repo's agent rulebook — that is
+> `AGENTS.md` — and several of its "absolute mandates" contradict shipped, deliberate architecture:
+>
+> - *"ALL database CRUD MUST mutate our local Dexie.js instance first"* — the shipped app is staged,
+>   not Dexie-only. Supabase-direct reads/writes remain valid until a screen is migrated, and some
+>   flows are remote-authoritative on purpose (the E1 export must abort rather than fall back to a
+>   partial Dexie cache). See `AGENTS.md` § Offline architecture.
+> - Command protocols below are pnpm / Expo / Jest / Maestro / tsc / eslint. This repo is npm + Vite +
+>   Vitest + oxlint with no TypeScript. Use `CODEX_WORKFLOW.md`.
+> - 48px touch targets — the project rule is 80pt on primary actions (`AGENTS.md` § Design system).
+> - *"Do not implement horizontal scrolling on primary screen containers"* — the shipped batch ribbon
+>   deliberately uses a scroll-snap carousel at 15-20 putts.
+>
+> Read this section for design intent only. Where it conflicts with `AGENTS.md`, `AGENTS.md` wins.
+
 Markdown  
 \# CLAUDE.md — Master Agent Rulebook & Engineering Standards  
 \*\*Project:\*\* Disc Golf Telemetry & Putting Ecosystem    
@@ -1462,6 +1478,15 @@ Markdown
 \- \[ \] 7.6 Write Maestro E2E YAML scripts automating the complete outdoor execution loop: launch app $\\rightarrow$ tap Hero Card $\\rightarrow$ log 10 split-screen putts $\\rightarrow$ verify Dexie persistence and summary rendering.
 
 ## **SECTION 7: FINAL SYSTEM VERIFICATION & HANDOFF PROTOCOL**
+
+> **HISTORICAL — DO NOT EXECUTE.** Marked 2026-07-27. This section is the original one-time handoff
+> protocol for standing the project up from scratch. That handoff happened on 2026-07-05 and the work
+> it describes is shipped. In particular, **do not act on the seed command below**: it instructs an
+> agent to extract Section 1 into `CLAUDE.md` and begin executing "Layer 1: Foundation & Data
+> Architecture" sequentially. Layer 1 shipped, `CLAUDE.md` is now only a pointer at `AGENTS.md`, and
+> Section 6's `TASKS.md` is absorbed conceptually rather than executed literally (`AGENTS.md`
+> § Documentation conventions). Current sequencing authority is `PRODUCT_ROADMAP.md`; the resume point
+> is `docs/development/CURRENT_WORK.md`.
 
 ### **Verification Checklist Before Kicking Off Claude Code:**
 

@@ -66,7 +66,8 @@ per-screen re-justification needed:
 4. **Auth:** OTP is **email, 6-digit** (Supabase native, free) — UI renders 6 blocks, not the
    blueprint's 4. Guest mode is **Supabase anonymous sign-in** (survives device loss, converts via
    `linkIdentity`), not an Expo/Dexie-only shadow profile.
-5. **Navigation:** **PLAY / DISCS / ME**, adding **COURSES** when the course directory ships. The
+5. **Navigation:** **PLAY / DISCS / COURSES / ME** — the approved PLAY / DISCS / ME base shell plus
+   COURSES, added at its documented trigger when the J1 directory shipped 2026-07-14. The
    standalone Stats tab is obsolete: player-wide summaries live in ME and disc/bag/routine/session/
    course statistics live with their subject.
 6. **Interlocks:** both hard, as specified — 100-putt routine ceiling and 35-disc bag capacity, each
@@ -366,7 +367,7 @@ recorded here.
 ## Suggested build order
 
 Matches `DEVELOPMENT_PLAN.md`'s execution layers: **Layer 0** (this doc + companion doc updates) →
-**Layer 1** (schema + Dexie/TanStack skeleton + 4-tab bar, Opus 4.8, manual DB backup first) →
+**Layer 1** (schema + Dexie/TanStack skeleton + 4-tab bar) →
 **Layer 2** (Screens 1–3, front-door) → **Layer 3** (Screens 4–6, hubs) → **Layer 4** (Screens 7–9,
 execution engine — **Screen 8's input-model divergence needs explicit sign-off before this layer
 starts**) → **Layer 5** (Screens 10–13, analytics + progression).

@@ -10,13 +10,13 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 
 | Feature | Status | Notes |
 |---|---|---|
-| GitHub CI (test, lint, build) | IN PROGRESS | Workflow added; enable protected-branch required checks after the first successful remote run |
+| GitHub CI (test, lint, build) | SHIPPED | `.github/workflows/ci.yml` runs green on pull requests and `main` pushes since 2026-07-16 |
 | Browser E2E baseline | SHIPPED | Phase A A10 browser, authenticated-route, reload, and notification smoke gates passed 2026-07-12 |
 | Phase A release candidate and independent-session field gate | SHIPPED | A10 closed 2026-07-12; the independent authenticated-session/real-device result is user-reported, with Codex-observation limits recorded in CURRENT_WORK.md |
 | Existing React lint-warning cleanup | BACKLOG | Four pre-existing warnings: three hook dependency findings and one Fast Refresh export finding; address as touched or in a bounded cleanup review |
 | Production bundle code splitting | BACKLOG | Current main JS is ~740 KB minified / ~213 KB gzip; profile routes and split meaningful feature trees before public/mobile beta |
 | Native privacy manifest and SDK audit | LATER (deliberate) | Required at Capacitor/iOS build phase; reconcile every SDK and actual collection before TestFlight |
-| Protected `main` + required PR review/checks | NEXT UP | Configure after the CI workflow succeeds remotely; `main` auto-deploys to Vercel |
+| Protected `main` + required PR review/checks | NEXT UP | CI now succeeds remotely, so the blocker is cleared; configure branch protection in GitHub settings. `main` auto-deploys to Vercel |
 
 ## Session history & insights
 
