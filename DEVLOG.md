@@ -1,5 +1,42 @@
 # Dev Log
 
+## 2026-07-27 — Documentation staleness audit and reconciliation
+
+**What:** Audited all 33 markdown files for instructions that recent work invalidated, then fixed them
+across four commits: retiring the `CLAUDE.md` fork and archiving three unmarked root documents;
+sweeping stale status, retired gates, and dead references; correcting the browser E2E claim; and
+fixing the PWA manifest tokens.
+
+**Why:** Status lives in six places and multi-file documentation updates keep landing in only some of
+them. Two commits demonstrate the pattern: `7b8f243` removed the manual-backup migration gate from
+twelve files and missed `CONTRIBUTING.md` and `CLAUDE.md`, and `c126eec` marked E1 shipped in four
+files while leaving `PRODUCT_ROADMAP.md` gating it on an already-merged pull request and
+`CURRENT_WORK.md` pointing at Phase D item 2. A fresh session resuming from the designated restart
+file would have redone shipped work, and one reading `CONTRIBUTING.md` would have blocked on a gate
+that was deliberately removed.
+
+**Key decisions:** `CLAUDE.md` became a pointer at `AGENTS.md` rather than a maintained second copy —
+its compatibility banner was not preventing its live imperatives from being followed. The
+`MASTER_PROJECT_BLUEPRINT.md` agent rulebook and handoff protocol were kept verbatim as historical
+record but headed "DO NOT EXECUTE", since section 7 still carried a seed command to execute Layer 1
+and section 1's Dexie-first mandate contradicts deliberately remote-authoritative flows. Two claims
+were corrected downward rather than made true by writing code: browser E2E does not exist in any form
+(no Playwright, no `e2e/`, CI is unit/lint/build only), and Phase A closed with that gate and the PWA
+manifest correction both unmet. Building the E2E suite stays scoped work. ADRs were left undone —
+authoring durable decision records is net-new writing, not a stale-instruction fix.
+
+**Verification:** 467 tests across 71 files pass, build succeeds, and the emitted
+`dist/manifest.webmanifest` carries `#F4F1EA` for `theme_color` and `background_color`. Lint retains
+only the four documented baseline warnings. Tests require the CI Supabase placeholders in the
+environment, matching `.github/workflows/ci.yml`.
+
+**Next:** Open follow-ups are tracked in `docs/development/CURRENT_WORK.md` — build the browser E2E
+suite or amend the Phase A contract, enable protected-`main` required checks now that CI runs green,
+delete the empty `catalog-import-raw` Storage bucket, and install the OpenAI Developer Docs MCP.
+Product work resumes at Phase E2, the shipped J1 round/course reconciliation.
+
+---
+
 ## 2026-07-17 — Phase E E1 authenticated release gate
 
 **What:** Merged PR #2 to `main`, applied the five pending Phase D migrations in dependency order,
