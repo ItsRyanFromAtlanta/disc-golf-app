@@ -25,6 +25,14 @@ dev-dist
 *.sln
 *.sw?
 
+# Throwaway exploration specs. Writing one to poke at live IndexedDB/outbox
+# state is a normal part of authoring an E2E spec, but it must never reach the
+# repo — anything matching *.spec.js under e2e/ is otherwise collected by
+# `npm run test:e2e`, including in CI. playwright.config.js ignores the same
+# pattern so a local run skips them too.
+e2e/**/scratch.spec.js
+e2e/**/*.scratch.spec.js
+
 # Playwright run output (traces/screenshots may embed fixture data)
 test-results/
 playwright-report/

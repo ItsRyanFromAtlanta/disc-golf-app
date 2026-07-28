@@ -17,6 +17,10 @@ const SUPABASE_ENV = {
 
 export default defineConfig({
   testDir: './e2e',
+  // Throwaway exploration specs are gitignored under the same pattern. They
+  // exist to poke at live IndexedDB/outbox state while authoring a real spec,
+  // and must never be collected by a suite run.
+  testIgnore: /(^|\/|\.)scratch\.spec\.js$/,
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
