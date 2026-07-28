@@ -52,7 +52,8 @@ below.
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
 | 7 | E2 round/course reconciliation — **audit done, checkpoint 1 landed.** See `docs/development/E2_ROUND_COURSE_AUDIT.md`; findings 2 and 3 are next | agent | E2 feature work |
-| 8 | Extend E2E to the four remaining § 9 flows (needs live-capture fixtures) | agent | full Phase A § 9 gate |
+| 8 | ~~Extend E2E with live-capture fixtures~~ — **DONE 2026-07-28**, suite at 31 specs. Remaining § 9 gaps are app defects and unreachable branches, not missing fixtures | agent | — |
+| 9 | Fix the reconnect double-send in `syncScheduler.js` and the round outbox's silent `catch` — same class, both in the offline path | agent | wire-level exactly-once |
 
 **The 1-before-2 interlock was dissolved on 2026-07-28.** It existed because PR #4 ships the
 account-deletion UI and `main` auto-deploys, so merging first put a button in production that threw a

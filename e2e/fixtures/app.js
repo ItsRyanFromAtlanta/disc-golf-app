@@ -142,11 +142,69 @@ export function buildPuttSession(activityId, overrides = {}) {
   }
 }
 
+// The lifecycle and history-recovery outboxes drain through these four
+// Postgres functions. An unstubbed RPC answers 404 on purpose (see the route
+// handler), which is the right default for a spec that never meant to reach
+// the network — but any spec that drives a live capture session, a correction,
+// or a reconnect needs all four, so they are registered together.
+const ACTIVITY_RPCS = Object.freeze([
+  'activity_create_draft',
+  'activity_transition',
+  'activity_set_visibility',
+  'activity_correct_practice_details',
+])
+
+// Mirrors `src/lib/instantLaunch/storage.js`. The capture buffer and its
+// outbox are read straight out of localStorage by specs that need to know
+// whether a capture write is still in flight.
+const INSTANT_LAUNCH_STORAGE_KEY = 'discgolf.instantLaunch.v1'
+
 // PostgREST asks for a single object with this Accept header (`.single()` /
 // `.maybeSingle()`), and returns 406 rather than an empty array when nothing
 // matches. Getting this wrong surfaces as an unhandled error inside the app
 // rather than a test failure, so it is worth handling precisely.
 const SINGLE_OBJECT_ACCEPT = 'application/vnd.pgrst.object+json'
+
+/**
+ * Reads (and optionally writes) one Dexie object store from inside the page.
+ *
+ * Both directions have to run in the browser — the mirror is IndexedDB, not a
+ * file — and a function cannot be handed to `page.evaluate`, so the operation
+ * is described by data instead: `put` writes a row, and every call returns the
+ * store's full contents afterwards.
+ */
+async function localStoreRequest(page, { store, put = null }) {
+  return page.evaluate(
+    async ({ store: storeName, put: row }) => {
+      const request = indexedDB.open('DiscGolfAppDB')
+      const database = await new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const rows = await new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, row ? 'readwrite' : 'readonly')
+        const objectStore = transaction.objectStore(storeName)
+        if (row) objectStore.put(row)
+        const query = objectStore.getAll()
+        query.onsuccess = () => resolve(query.result)
+        transaction.onerror = () => reject(transaction.error)
+      })
+      database.close()
+      return rows
+    },
+    { store, put },
+  )
+}
+
+/**
+ * The identity a write replays under, which is what an exactly-once assertion
+ * has to count: an RPC carries its own `p_idempotency_key`, and a PostgREST
+ * row is deduplicated by the client-generated `id` it upserts under.
+ */
+function writeIdentity(write) {
+  const key = write.body?.p_idempotency_key ?? write.body?.id
+  return key ? `${write.table}:${key}` : null
+}
 
 function parseRestPath(url) {
   const { pathname, searchParams } = new URL(url)
@@ -163,6 +221,7 @@ async function installSupabaseBackend(page) {
   const tables = { ...DEFAULT_TABLES }
   const rpcHandlers = {}
   const writes = []
+  let offline = false
 
   const backend = {
     /** Seed rows for a table. Unseeded tables return [] rather than erroring. */
@@ -170,9 +229,40 @@ async function installSupabaseBackend(page) {
       tables[name] = rows
       return backend
     },
+    /** The rows currently seeded for a table, after any RPC stub mutated them. */
+    getTable(name) {
+      return tables[name] ?? []
+    },
     /** Stub a Postgres function. Handler receives the parsed JSON body. */
     setRpc(name, handler) {
       rpcHandlers[name] = handler
+      return backend
+    },
+    /**
+     * Registers no-op stubs for the four activity RPCs the outboxes drain
+     * through. Call before driving any live capture, correction, or reconnect
+     * flow; a later `setRpc` for the same name replaces the stub, which is how
+     * a spec makes one of them do something more interesting.
+     */
+    stubActivityRpcs() {
+      for (const name of ACTIVITY_RPCS) rpcHandlers[name] = () => null
+      return backend
+    },
+    /**
+     * Cuts the backend off without touching the rest of the app.
+     *
+     * `context.setOffline` alone is not enough here: an intercepted route is
+     * fulfilled in-process and never reaches the network stack, so every
+     * Supabase call would keep succeeding with the browser "offline". Aborting
+     * inside the handler is what actually makes a write fail.
+     *
+     * Add `context.setOffline` only when a spec specifically wants
+     * `navigator.onLine` or the `online` event — restoring it fires that event,
+     * which currently starts an unguarded second flush (see the reconnect spec
+     * in `capture.spec.js` and PHASE_A_ARCHITECTURE.md § 9).
+     */
+    setOffline(next) {
+      offline = next
       return backend
     },
     /** Every non-GET request that reached the REST layer, in order. */
@@ -181,6 +271,46 @@ async function installSupabaseBackend(page) {
     },
     writesTo(name) {
       return writes.filter((write) => write.table === name)
+    },
+    /**
+     * How many times each distinct write actually reached the backend, keyed
+     * by the identity it would replay under (see `writeIdentity`). This is the
+     * shape an exactly-once assertion wants: a bare `writes.length` cannot
+     * tell a legitimate second operation from a duplicated retry.
+     */
+    writeCounts() {
+      const counts = {}
+      for (const write of writes) {
+        const identity = writeIdentity(write)
+        if (identity) counts[identity] = (counts[identity] ?? 0) + 1
+      }
+      return counts
+    },
+    /**
+     * Rows currently in a Dexie store — `activities`, `activityStateEvents`,
+     * `auditEvents`, or `outbox`. The lifecycle contract is only partly
+     * visible on screen (a state event's reason, an audit row's previous
+     * values, a drained outbox), so specs assert against the mirror directly
+     * as well as against the UI.
+     */
+    async readLocalRows(store) {
+      return localStoreRequest(page, { store })
+    },
+    /**
+     * The InstantLaunch capture outbox, which lives in localStorage and is a
+     * different queue from the Dexie one above: lifecycle operations drain
+     * first, capture facts follow. A spec that simulates a restart has to wait
+     * for this to empty too, or it sees a legitimate at-least-once resend of a
+     * row whose acknowledgement never got persisted.
+     */
+    async readCaptureOutbox() {
+      return page.evaluate((key) => {
+        try {
+          return JSON.parse(localStorage.getItem(key))?.outbox ?? null
+        } catch {
+          return null
+        }
+      }, INSTANT_LAUNCH_STORAGE_KEY)
     },
     /**
      * Writes an activity straight into the Dexie mirror, which is where the
@@ -193,20 +323,7 @@ async function installSupabaseBackend(page) {
      */
     async seedLocalActivity(overrides = {}) {
       const activity = buildActivity({ state: 'paused', version: 3, ...overrides })
-      await page.evaluate(async (row) => {
-        const request = indexedDB.open('DiscGolfAppDB')
-        const database = await new Promise((resolve, reject) => {
-          request.onsuccess = () => resolve(request.result)
-          request.onerror = () => reject(request.error)
-        })
-        await new Promise((resolve, reject) => {
-          const transaction = database.transaction('activities', 'readwrite')
-          transaction.objectStore('activities').put(row)
-          transaction.oncomplete = () => resolve()
-          transaction.onerror = () => reject(transaction.error)
-        })
-        database.close()
-      }, activity)
+      await localStoreRequest(page, { store: 'activities', put: activity })
       return activity
     },
     /**
@@ -246,6 +363,11 @@ async function installSupabaseBackend(page) {
 
   // --- data ---------------------------------------------------------------
   await page.route('**/rest/v1/**', async (route) => {
+    // A simulated disconnect fails the request the way a lost connection does
+    // — before anything is recorded, so an aborted write is genuinely a write
+    // the backend never saw.
+    if (offline) return route.abort('internetdisconnected')
+
     const request = route.request()
     const method = request.method()
     const { isRpc, name, searchParams } = parseRestPath(request.url())

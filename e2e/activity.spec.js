@@ -60,6 +60,76 @@ test.describe('history and soft delete', () => {
   })
 })
 
+test.describe('editing a finalized activity', () => {
+  // § 4: once an activity is finalized, an edit updates the typed record *and*
+  // appends an audit event carrying both sides of the change. Only the typed
+  // half is on screen, so this reads the local audit row and the outgoing RPC
+  // for the rest.
+  test('a notes and tags correction appends an audit event and syncs the typed record', async ({
+    page,
+    supabase,
+  }) => {
+    supabase.stubActivityRpcs()
+    supabase.setTable('activities', [buildActivity({ id: COMPLETED_ID })])
+    supabase.setTable('putt_sessions', [buildPuttSession(COMPLETED_ID)])
+    // The real `activity_correct_practice_details` writes the corrected values
+    // back to the typed practice row; the stub does the same so the reload
+    // below reads what a synced correction would actually return.
+    supabase.setRpc('activity_correct_practice_details', (body) => {
+      const [session] = supabase.getTable('putt_sessions')
+      supabase.setTable('putt_sessions', [{ ...session, notes: body.p_notes, tags: body.p_tags }])
+      return null
+    })
+    await supabase.signIn()
+
+    await page.goto(`/practice/history/freeform/${COMPLETED_ID}`)
+    await expect(page.getByRole('heading', { name: 'Freeform session' })).toBeVisible()
+
+    await page.getByLabel('Notes').fill('Left everything short into the wind')
+    await page.getByRole('button', { name: 'experimenting' }).click()
+    await page.getByRole('button', { name: 'Save notes & tags' }).click()
+    // The editor's own "Saved" state is not a usable signal here: saving
+    // updates the entry, which changes the `key` SessionReport gives the
+    // editor, so it remounts with fresh state and the confirmation is lost.
+    // The correction reaching the backend is the settled point.
+    await expect.poll(() => supabase.writesTo('rpc:activity_correct_practice_details').length).toBe(1)
+
+    const audit = (await supabase.readLocalRows('auditEvents')).filter((row) => row.entity_id === COMPLETED_ID)
+    expect(audit).toHaveLength(1)
+    expect(audit[0]).toMatchObject({
+      entity_type: 'activity',
+      action: 'correct_practice_details',
+      source: 'manual_correction',
+      // Both sides are preserved, which is what makes the edit reversible and
+      // reviewable rather than just overwritten.
+      previous_values: { notes: null, tags: [] },
+      new_values: { notes: 'Left everything short into the wind', tags: ['experimenting'] },
+    })
+
+    // The correction is version-checked against the activity it was read from,
+    // and bumps it — a second edit from a stale copy would be rejected.
+    const [activity] = (await supabase.readLocalRows('activities')).filter((row) => row.id === COMPLETED_ID)
+    expect(activity.version).toBe(3)
+    const [rpc] = supabase.writesTo('rpc:activity_correct_practice_details')
+    expect(rpc.body).toMatchObject({
+      p_activity_id: COMPLETED_ID,
+      p_expected_version: 2,
+      p_notes: 'Left everything short into the wind',
+      p_tags: ['experimenting'],
+      p_audit_event_id: audit[0].id,
+    })
+
+    // Reloading proves the edit survived as data rather than as component
+    // state: this render comes from the corrected typed record.
+    await page.reload()
+    await expect(page.getByLabel('Notes')).toHaveValue('Left everything short into the wind')
+    // A selected tag is expressed only as a class — `ChipGroup` sets no
+    // `aria-pressed` — so there is no role-and-name way to assert it. That is
+    // an accessibility gap rather than a selector problem.
+    await expect(page.locator('.notes-tags-editor .chip-active')).toHaveText('experimenting')
+  })
+})
+
 test.describe('current activity and resume', () => {
   test('a paused activity surfaces a resume affordance that returns to its capture route', async ({
     page,

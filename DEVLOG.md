@@ -1,5 +1,49 @@
 # Dev Log
 
+## 2026-07-28 — live-capture E2E; three app defects found by the specs
+
+**What:** `e2e/capture.spec.js` drives a real freeform capture session through the launcher's own
+Start button, which is the only way to reach `planActivityStart` from a browser. The fixture gained
+`stubActivityRpcs`, `setOffline`, `readLocalRows`, `readCaptureOutbox`, and `writeCounts`. Suite is
+31 specs, up from 25.
+
+**Why the specs had to drive the UI:** auto-close, round-replacement, and outbox reconnect only occur
+when a real start command runs through `activityRepository` via `useInstantLaunchSession` — never from
+a route or a seeded row. No amount of fixture seeding reaches them.
+
+**Coverage moved:** pause/navigation/resume is now **Covered** (a live session pauses with reason
+`navigation_away` on leaving the capture screen and resumes from the header pill). Single-active
+auto-close, round-close confirmation, completed edit/audit, and exactly-once reconnect each moved to
+**Partial** — genuinely partial, with the unreachable half named in § 9 rather than rounded up.
+
+**Three real defects the specs surfaced.** None were patched; each is recorded rather than quietly
+fixed, since two touch the core offline path and deserve their own reviewed checkpoint.
+
+1. **Concurrent flushes double-send every queued operation on reconnect**
+   (`src/lib/instantLaunch/syncScheduler.js`). `notifyOutboxChanged` guards on
+   `status !== SYNCING`; `handleOnline` and `handleVisibility` guard only on `status !== FAILED`, so
+   an `online` event starts a second flush alongside one already running. Both read the same queue and
+   every operation goes out twice — reproduced at roughly one run in three, all within ~6ms. Verified
+   directly in the source, not only from the spec. Not corruption (RPC idempotency keys and
+   `on_conflict=id` absorb it server-side) but it defeats wire-level exactly-once and doubles
+   reconnect traffic. This is the same class of problem as the round outbox's silent `catch` in the E2
+   audit: the offline layer's failure and retry paths are the least-tested part of the app.
+2. **The "Saved" confirmation never appears on History Detail.** `SessionReport` keys
+   `NotesTagsEditor` on `notes`/`tags`, so a successful save changes the key, remounts the editor with
+   fresh state, and discards the confirmation the user just earned.
+3. **`ChipGroup` expresses selection only through a CSS class** — no `aria-pressed`, so a selected tag
+   cannot be announced by a screen reader or asserted by role and name.
+
+**A note on the reconnect spec's design.** It deliberately does *not* reconnect with
+`context.setOffline(false)`, because that fires the `online` event and triggers defect 1. It clears a
+route-level abort instead and lets the app's own backoff drive — which is also what a server-side
+outage looks like from the client. That choice is documented in the spec and `e2e/README.md` so a
+later reader does not "simplify" it back into flakiness.
+
+**Verification:** 31/31 E2E across both projects (stability checked at `--repeat-each=5` on the
+capture specs and `--repeat-each=6` on reconnect), 513 unit tests across 76 files, lint at one
+warning, build clean.
+
 ## 2026-07-28 — PR #4 merged; E2 audit opens with a silent offline defect
 
 **What:** Merged PR #4 (`eb9fd2b`), then opened Phase E2 with the audit its plan calls for — "audit
