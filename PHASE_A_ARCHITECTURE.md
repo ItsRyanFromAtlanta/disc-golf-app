@@ -91,7 +91,8 @@ per-putt sequence, timing, streak, miss-zone, or putter attribution from batch t
   context action.
 - The active pill appears across PLAY, DISCS, and ME, but not auth/onboarding or the active activity.
 - Notifications sync across devices when durable/actionable. Transient toasts stay local.
-- Bottom navigation is PLAY / DISCS / ME; COURSES is added with the directory. First tap on the current
+- Bottom navigation is PLAY / DISCS / COURSES / ME. Phase A shipped the PLAY / DISCS / ME base shell;
+  COURSES was added at its documented trigger with the J1 directory on 2026-07-14. First tap on the current
   tab scrolls to top; a tap while already at top returns to that tab's root. Preserve nested state only
   for expected resumable/editing workflows.
 
@@ -111,13 +112,19 @@ dependency key, and poison state. Remove duplicate storage only after crash/reco
 
 ## 9. Browser E2E and PWA gates
 
-Use Playwright for browser E2E. Required Phase A flows: onboarding/Quick Play; pause/navigation/resume;
+> **Status (2026-07-27): this gate is NOT met and Phase A was closed without it.** No automated E2E
+> suite exists — Playwright is not a dependency, there is no `e2e/` directory, and CI runs unit tests,
+> lint, and build only. What was performed instead was agent-driven browser smoke against anonymous
+> sessions, which never reached an authenticated session on any flow. Treat the target below as
+> outstanding work, not as satisfied. Do not describe browser E2E as shipped anywhere.
+
+Target: use Playwright for browser E2E. Required flows: onboarding/Quick Play; pause/navigation/resume;
 single-active auto-close; round-close confirmation; offline reload/recovery/exactly-once reconnect;
 completed edit/audit/recalculation; soft-delete/restore; tab scroll/root; notification sheet/Back; 320px
 reflow; keyboard/gesture alternatives.
 
-Correct PWA manifest colors to Sun-Drenched Topo tokens and verify icons, offline shell, safe areas,
-standalone mode, and killed-app recovery on a real phone.
+Correct PWA manifest colors to Sun-Drenched Topo tokens (done 2026-07-27) and verify icons, offline
+shell, safe areas, standalone mode, and killed-app recovery on a real phone.
 
 ## 10. Deferred from Phase A
 
@@ -243,6 +250,8 @@ Required: shared shells and route metadata; PLAY/DISCS/ME navigation; scroll/saf
 local lifecycle engine and repository; Dexie atomicity; InstantLaunch bridge; reviewed server schema,
 RPCs, RLS and negative tests; freeform/regimen integration; unified history/correction/hide/restore;
 active pill/resume card; actionable sync/activity notifications; browser E2E and real-device gates.
+Two of these closed without being met: automated browser E2E was never built (§ 9), and the
+real-device gate is user-reported rather than directly observed. Both remain open work.
 
 Optional and non-blocking: rich animations; tablet-specific layouts; detailed paused-time charts;
 draft-management UI; multiple skeleton systems; rich notification grouping; user-adjustable pause

@@ -1,7 +1,7 @@
 # Development Plan
 
 Last updated: 2026-07-16
-Companion docs: `CLAUDE.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
+Companion docs: `AGENTS.md` (architecture), `MASTER_PROJECT_BLUEPRINT.md` (21-screen design authority),
 `SCREEN_SPECS.md` (integration layer: status + reuse mapping + divergences per screen),
 `PRODUCT_ROADMAP.md` (current sequencing/disposition authority), `FEATURE_BACKLOG.md` (full feature
 status), `DEVLOG.md` (work record)
@@ -14,8 +14,9 @@ and the ME career dashboard. Current sequence: production/shared contracts → D
 DISCS experience/intelligence → PLAY/ME/report integration → courses/rounds/interoperability. Every
 parked item has an explicit revisit trigger in `PRODUCT_ROADMAP.md`.
 
-The approved bottom navigation is **PLAY / DISCS / ME**; add **COURSES** when the course directory
-ships. Do not build a standalone Stats tab.
+The bottom navigation is **PLAY / DISCS / COURSES / ME**. The approved base shell was PLAY / DISCS /
+ME; COURSES was added at its documented trigger when the J1 course directory shipped 2026-07-14. Do
+not build a standalone Stats tab.
 
 Current model policy: **GPT-5.3-Codex medium** for normal UI/CRUD/tests and **GPT-5.6 high** for
 architecture, migrations, RLS/security, synchronization, rules engines, and complex algorithms. Old
@@ -118,8 +119,9 @@ kept as historical record; most of what they describe is either shipped or absor
 Full context, user rulings, and per-screen detail: `SCREEN_SPECS.md`. Model recommendations per layer
 are stated below — **confirm the active model matches before starting a layer.**
 
-- **Layer 0 — Documentation alignment** (Sonnet 5, IN PROGRESS): blueprint into repo, `SCREEN_SPECS.md`
-  rewrite, this doc + `CLAUDE.md` + `FEATURE_BACKLOG.md` + `DEVLOG.md` updated.
+- **Layer 0 — Documentation alignment** (COMPLETE): blueprint into repo, `SCREEN_SPECS.md`
+  rewrite, this doc + `FEATURE_BACKLOG.md` + `DEVLOG.md` updated. (`CLAUDE.md` was part of this layer
+  and has since been retired to a pointer at `AGENTS.md`.)
 - **Layer 1 — Foundation** (Opus 4.8, COMPLETE): one append-only schema file (disc
   role/wear/odometer, bag capacity, profile PDGA/XP/level fields, weather columns, `putt_events.putter_disc_id`,
   routine `rules_config`/`drill_type`/100-putt CHECK, badges/badge_progress/xp_events tables, disc

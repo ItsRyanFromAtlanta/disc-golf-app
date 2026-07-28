@@ -1,5 +1,117 @@
 # Dev Log
 
+## 2026-07-28 — consolidate parallel sessions onto a single branch of record
+
+**What:** Audited all 16 remote branches, folded the only live unmerged work onto
+`claude/consolidate-chats-stage-actions-rj0lwl`, and staged the ordered next actions in
+`CURRENT_WORK.md`. No code changed in this consolidation — the merge was a clean fast-forward of the
+seven iOS/PWA and documentation-reconciliation commits, and the branch now carries `main` plus those.
+
+**Why:** Development had forked across parallel Codex and Claude sessions, each pushing its own
+branch. With 16 branches live it was no longer obvious which held real work, and two sessions could
+rebuild the same surface without either noticing — which had already happened once (below). One
+branch of record makes the next commit unambiguous.
+
+**Key decisions:** All 14 `codex/*` branches turned out to be fully merged into `main` — zero commits
+unique to any of them — so the branch count overstated the divergence considerably; only the shape of
+the audit revealed that. `claude/continue-hoqtyv` is deliberately **not** merged: its single unique
+commit (`775543c`, Layer 5 Screen 10) is 81 commits behind `main`, and every surface in it was
+independently rebuilt afterwards — export by E1's `dataExport`/`dataExportRepository`, confidence by
+`ConfidenceMapPage`, toggles and cache-clear by `SettingsPage`/`settingsRepository`, sync ledger by
+`syncScheduler`/`activitySync`. Merging would have restored a second implementation of each behind
+the shipped one. Its one surface with no successor, `TrendChart` + `insights/timeSeries`, went to
+`FEATURE_BACKLOG.md` as a salvage candidate rather than being merged blind; the commit remains
+reachable by SHA, so nothing depends on keeping the branch. Branch deletion is left to the owner
+rather than done unilaterally.
+
+**Verification:** 497 tests across 74 files pass, production build succeeds, lint retains exactly the
+four documented baseline warnings — matching the 2026-07-27 checkpoint, confirming the fast-forward
+introduced no drift. Recorded a real gotcha while doing it: `npm test` without the Supabase
+placeholder env vars fails 13 files at import, which reads as a regression and is not.
+
+**Not verified:** migration `20260727120000_phase_e_account_deletion.sql` remains **unapplied** —
+carried forward as staged action 1, not closed here. Nothing in this entry was exercised against a
+real device or an authenticated browser session.
+
+## 2026-07-27 — iOS/PWA field defects and account deletion
+
+**What:** Fixed six defects found while auditing the iOS story, all in the shipped PWA and none
+requiring Capacitor. Service worker moved from `autoUpdate` + `skipWaiting` to `prompt` with an
+explicit `PwaUpdatePrompt` that suppresses itself on ACTIVE shell routes. `PuttingCanvas` now holds a
+screen wake lock for active putting capture. `usePuttAudio` declares a playback audio session and
+resumes a suspended context. `requestPersistentStorage()` runs at start. `AuthPage` states honestly
+that OAuth leaves an installed iOS PWA. New `delete_own_account()` RPC plus a Settings panel gives
+in-app account deletion.
+
+**Why:** Each was silent in the sense that matters — nothing logged an error. Audio simply stopped on
+a phone with the ring switch off; the screen locked mid-routine; unsynced outbox rows were evictable;
+an installed-PWA user could loop on a sign-in that appeared to work in Safari. Account deletion is a
+hard App Review rejection under Guideline 5.1.1(v) and was also required by the roadmap's own privacy
+rule that a purge truly removes scoped data.
+
+**Key decisions:** Wake lock lives in `PuttingCanvas` rather than each page, so future capture modes
+inherit it; rounds deliberately do not take one, since the phone is pocketed between holes. The OAuth
+fix is an honest capability line rather than hiding the buttons — same contract as the haptics
+fallback — because the redirect does succeed on some iOS versions and platform detection is a
+heuristic. Deletion is a hard purge, not the soft delete activities use for recovery/audit. Community
+attribution on `courses`/`course_aliases`/`disc_molds` is released to null rather than cascading,
+because those nullable FKs would otherwise block the delete and shared rows must outlive a departing
+member; `catalog_submission_reviews.reviewer_id` is NOT NULL so those rows are deleted. Private
+Storage objects are removed explicitly since no foreign key reaches them. The client purges device
+storage only after the server confirms.
+
+**Verification:** 497 tests across 74 files pass (30 new, covering platform detection, storage
+persistence, and local purge), build succeeds, lint retains only the four documented baseline
+warnings. The generated `dist/sw.js` now contains only the message-driven `skipWaiting`, reached when
+the user accepts the prompt — no unconditional activation and no `clientsClaim`.
+
+**Not verified:** migration `20260727120000_phase_e_account_deletion.sql` is written but **unapplied**
+— this session had no Supabase access. The delete button fails until it lands. Rollback is a single
+`drop function`. The smoke checks it needs are listed in `CURRENT_WORK.md`. The iOS behaviours
+themselves (silent switch, wake lock, standalone OAuth) need a real device; they cannot be observed in
+an isolated browser.
+
+**Next:** Apply and smoke-test the deletion migration, then resume Phase E2.
+
+---
+
+## 2026-07-27 — Documentation staleness audit and reconciliation
+
+**What:** Audited all 33 markdown files for instructions that recent work invalidated, then fixed them
+across four commits: retiring the `CLAUDE.md` fork and archiving three unmarked root documents;
+sweeping stale status, retired gates, and dead references; correcting the browser E2E claim; and
+fixing the PWA manifest tokens.
+
+**Why:** Status lives in six places and multi-file documentation updates keep landing in only some of
+them. Two commits demonstrate the pattern: `7b8f243` removed the manual-backup migration gate from
+twelve files and missed `CONTRIBUTING.md` and `CLAUDE.md`, and `c126eec` marked E1 shipped in four
+files while leaving `PRODUCT_ROADMAP.md` gating it on an already-merged pull request and
+`CURRENT_WORK.md` pointing at Phase D item 2. A fresh session resuming from the designated restart
+file would have redone shipped work, and one reading `CONTRIBUTING.md` would have blocked on a gate
+that was deliberately removed.
+
+**Key decisions:** `CLAUDE.md` became a pointer at `AGENTS.md` rather than a maintained second copy —
+its compatibility banner was not preventing its live imperatives from being followed. The
+`MASTER_PROJECT_BLUEPRINT.md` agent rulebook and handoff protocol were kept verbatim as historical
+record but headed "DO NOT EXECUTE", since section 7 still carried a seed command to execute Layer 1
+and section 1's Dexie-first mandate contradicts deliberately remote-authoritative flows. Two claims
+were corrected downward rather than made true by writing code: browser E2E does not exist in any form
+(no Playwright, no `e2e/`, CI is unit/lint/build only), and Phase A closed with that gate and the PWA
+manifest correction both unmet. Building the E2E suite stays scoped work. ADRs were left undone —
+authoring durable decision records is net-new writing, not a stale-instruction fix.
+
+**Verification:** 467 tests across 71 files pass, build succeeds, and the emitted
+`dist/manifest.webmanifest` carries `#F4F1EA` for `theme_color` and `background_color`. Lint retains
+only the four documented baseline warnings. Tests require the CI Supabase placeholders in the
+environment, matching `.github/workflows/ci.yml`.
+
+**Next:** Open follow-ups are tracked in `docs/development/CURRENT_WORK.md` — build the browser E2E
+suite or amend the Phase A contract, enable protected-`main` required checks now that CI runs green,
+delete the empty `catalog-import-raw` Storage bucket, and install the OpenAI Developer Docs MCP.
+Product work resumes at Phase E2, the shipped J1 round/course reconciliation.
+
+---
+
 ## 2026-07-17 — Phase E E1 authenticated release gate
 
 **What:** Merged PR #2 to `main`, applied the five pending Phase D migrations in dependency order,

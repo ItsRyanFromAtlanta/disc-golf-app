@@ -38,13 +38,15 @@ See `supabase_schema.sql` for full schema. Key tables:
   location/sighting/contact timelines; atomic RPCs synchronize physical-disc lost/recovered status
 - `disc_odometer_events` / `disc_cosmetic_unlocks` — immutable owner-scoped throws/chain-hits/airballs
   deltas and permanent 300/1,000/5,000 chain-hit tier unlocks; cached disc totals are RPC-maintained
-- `catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
-  `catalog_import_candidate_reviews` — server-only B1.7 ingestion evidence and review staging;
-  RLS-enabled with no ordinary-client policies or grants, backed by the private
-  `catalog-import-raw` Storage bucket and `private.catalog_ingestion_admins` allowlist. B1.8 adds
-  service-only `catalog_review_candidate` / `catalog_promote_import_batch` RPCs, an authenticated
-  `catalog-ingestion-admin` Edge Function, and candidate/alias/actor links on
-  `catalog_entity_sources`; canonical promotion remains explicit, dependency-ordered, and atomic.
+- **Removed 2026-07-14 — do not rebuild.** The B1.7/B1.8 automated ingestion surface
+  (`catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
+  `catalog_import_candidate_reviews`, the `catalog_review_candidate` / `catalog_promote_import_batch` /
+  `catalog_stage_import` / `catalog_ensure_source` / `catalog_assert_ingestion_admin` RPCs, the
+  `catalog-ingestion` and `catalog-ingestion-admin` Edge Functions, the `/admin/catalog` route, and the
+  `private.catalog_ingestion_admins` allowlist) was torn down in migration `20260714120000` after the
+  first live crawl staged 0 batches. `disc_molds` is populated manually by the owner. The migration
+  files that created these objects remain as append-only history, and the empty `catalog-import-raw`
+  Storage bucket is a pending dashboard cleanup. See `docs/development/CURRENT_WORK.md`.
 
 See `putting_practice_schema.sql` for the putting practice feature:
 - `putt_sessions` — a practice session (user-owned, freeform date/notes)
@@ -240,6 +242,21 @@ or unavailable table reads abort the whole export. The manifest explicitly exclu
 facts and private photo binaries while retaining `disc_photos` metadata and Storage paths. Phase D's
 server migrations and E1's authenticated preview export smoke passed before release.
 
+Phase E field/platform hardening (2026-07-27) fixes defects found auditing the iOS story. The service
+worker no longer self-activates: `registerType` is `prompt` with no `skipWaiting`/`clientsClaim`, so a
+deploy can never reload an active capture session — `PwaUpdatePrompt` asks, and suppresses itself on
+ACTIVE shell routes. `PuttingCanvas` holds a screen wake lock for the whole of active putting capture
+(rounds deliberately do not; the phone is pocketed between holes). `usePuttAudio` declares a playback
+audio session so the iOS ring switch stops silently muting feedback, and resumes a context suspended by
+backgrounding. `requestPersistentStorage()` runs at start so the InstantLaunch buffer and Dexie outbox
+are not evictable. `AuthPage` states honestly that Apple/Google sign-in leaves an installed iOS PWA and
+may not carry the session back, steering to the in-app email code; detection lives in pure
+`src/lib/platform.js`. Account deletion is a real privacy purge, not a soft delete: the
+`delete_own_account()` security-definer RPC derives its subject from `auth.uid()`, releases community
+attribution on `courses`/`course_aliases`/`disc_molds` to null so shared rows survive, removes private
+Storage objects no foreign key reaches, then deletes the `auth.users` row that every owner-scoped table
+cascades from. The client purges device storage only after the server confirms.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
@@ -293,7 +310,10 @@ parked only until their documented revisit triggers are satisfied.
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+Graphify builds a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file
+relationships. **The directory is gitignored and is not present in a fresh clone** — it is a local,
+disposable artifact, never product documentation. Everything below applies only when the graph has
+actually been built on this machine; otherwise use `rg` and ignore this section.
 
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 

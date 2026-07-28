@@ -9,9 +9,19 @@
 - **Graphify 0.9.6:** installed locally with project-scoped Codex skill and pre-tool check. Use for code
   navigation and impact analysis; refresh after a major source checkpoint. Generated `graphify-out/`
   artifacts are disposable and should not become product documentation.
-- **RTK 0.43.0:** installed and connected to Claude Code through its global hook. It is not currently a
-  Codex hook. Use manually only when it reduces noisy command output without hiding failures.
+- **RTK 0.43.0:** installed locally from the earlier Claude Code workflow, where it was wired as a
+  global hook. It is not a Codex hook and is not required by any project workflow. Use manually only
+  when it reduces noisy command output without hiding failures; retire it if it goes unused.
 - **GitHub/browser/Vercel skills:** available in Codex; invoke only for a task that needs them.
+- **SwiftUI Pro `1.1`:** vendored project skill at `.claude/skills/swiftui-pro/` (SKILL.md plus nine
+  reference files). Reviews SwiftUI for deprecated API, data flow, navigation, HIG/design,
+  accessibility, performance, and hygiene. Source:
+  [twostraws/SwiftUI-Agent-Skill](https://github.com/twostraws/SwiftUI-Agent-Skill), MIT, license
+  retained beside the skill. Committed rather than installed to a user directory so it survives a
+  fresh clone or a remote session container. It targets Swift 6.2 / iOS 26 and has **nothing to act on
+  today** — this repo contains no Swift. It becomes useful only if the parked Capacitor/native path in
+  `docs/mobile/IOS_READINESS.md` is taken and hand-written Swift appears. Update by re-copying from
+  upstream; do not hand-edit the vendored copy.
 
 ## Conditional
 
@@ -20,8 +30,9 @@
   authorization; do not preload broad tool catalogs or commit credentials.
 - **OpenAI Developer Docs MCP:** recommended for current model/API work. One-time local command is in
   `CODEX_WORKFLOW.md` because the desktop sandbox could not launch the installer.
-- **Playwright:** add as a project dev dependency with the first Phase A browser test, not as a global
-  plugin with no exercised test.
+- **Playwright:** still not installed. Phase A closed without its browser-E2E gate, so this is open
+  work. Add it as a project dev dependency together with the first real test, not as a global plugin
+  with no exercised test.
 
 ## Maintenance
 

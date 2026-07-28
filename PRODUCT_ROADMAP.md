@@ -11,8 +11,9 @@ greenfield Expo schema literally.
 > **Deliberate out-of-sequence work (owner decision 2026-07-14):** three features are being built ahead
 > of their phase order — Round logging + quick-course/COURSES tab (Phase E), Disc comparison view
 > (Phase C), and Game-flair disc cards (Phase B cosmetic). Each is self-contained with live schema, so
-> the jump is intentional, not a sequencing violation. See `DEVELOPMENT_PLAN.md` "Jump-ahead features"
-> (J1–J3) and `~/.claude/plans/1a-2yes-bright-pelican.md`.
+> the jump is intentional, not a sequencing violation. All three shipped (J1 2026-07-14, J2 and J3
+> 2026-07-15). See `DEVELOPMENT_PLAN.md` "Jump-ahead features" (J1–J3); the original plan file lived
+> outside the repository and is not retrievable.
 
 ## Product structure
 
@@ -48,8 +49,8 @@ greenfield Expo schema literally.
 
 Recommended model: GPT-5.6 high for architecture/contracts; GPT-5.3-Codex medium for UI/documentation.
 
-1. Shared scroll/header/sheet shell; navigation to PLAY / DISCS / ME; notification bell and active-
-   activity pill; tab-tap scroll/root behavior.
+1. Shared scroll/header/sheet shell; navigation to PLAY / DISCS / ME (COURSES added later with the J1
+   directory); notification bell and active-activity pill; tab-tap scroll/root behavior.
 2. Canonical activity lifecycle: pause, resume, finalize, auto-close previous, soft delete, correction
    provenance, and single-active-activity invariant.
 3. Canonical event/audit contract and metric registry (player/disc/bag/routine/session/round/course
@@ -58,10 +59,12 @@ Recommended model: GPT-5.6 high for architecture/contracts; GPT-5.3-Codex medium
 5. Expand Dexie/TanStack repositories and outbox diagnostics incrementally; preserve InstantLaunch
    until each replacement path is proven.
 
-Phase A status: COMPLETE (2026-07-12). Automated equivalence, RLS, build/lint, browser, accessibility,
-reload, and authenticated notification-route checks passed. The independent authenticated-session/
-real-device gate was reported passed by the user; Codex did not directly observe that session or collect
-device metadata.
+Phase A status: COMPLETE (2026-07-12), **with two required gates closed unmet** (recorded 2026-07-27):
+automated browser E2E was never built (`PHASE_A_ARCHITECTURE.md` § 9) and the PWA manifest token
+correction in item 4 was not applied until 2026-07-27. Automated equivalence, RLS, build/lint,
+accessibility, reload, and authenticated notification-route checks passed; browser verification was
+agent-driven smoke rather than an E2E suite. The independent authenticated-session/real-device gate was
+reported passed by the user; Codex did not directly observe that session or collect device metadata.
 
 ## Phase B — DISCS data foundation
 
@@ -131,11 +134,12 @@ Recommended model: GPT-5.3-Codex medium; GPT-5.6 high for metric/report engines.
 
 Recommended model: GPT-5.6 high for schema/import/round state; GPT-5.3-Codex medium for UI.
 
-1. **E1 IMPLEMENTED LOCALLY 2026-07-16; RELEASE GATED.** Data export first: remote-authoritative,
-   paginated, formula-safe CSVs in a versioned ZIP from `/profile/settings`. PR #2 and the pending
-   Phase D migrations must land before authenticated download smoke and SHIPPED status. Then harden
-   the already-shipped course directory/layout viewer and round creation/recording/finalization,
-   activity-only rounds, group scorecard groundwork, weather, bag snapshot, and course preparation.
+1. **E1 SHIPPED 2026-07-17.** Data export first: remote-authoritative, paginated, formula-safe CSVs in
+   a versioned ZIP from `/profile/settings`. PR #2 landed the five pending Phase D migrations; the
+   authenticated preview export reached `Export ready` and live schema/RLS/grant smoke passed. Next in
+   this phase (E2): harden the already-shipped course directory/layout viewer and round creation/
+   recording/finalization, then activity-only rounds, group scorecard groundwork, weather, bag
+   snapshot, and course preparation.
 2. UDisc import after verifying the current export format. Imports always affect statistics; XP and
    cosmetic rewards apply only when deduplicated data arrives within seven calendar days of the event.
 3. Course-aware loadouts, course/layout/hole analytics, lost-disc proximity, and explicit/fallback

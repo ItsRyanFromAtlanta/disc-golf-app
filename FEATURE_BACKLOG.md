@@ -10,13 +10,15 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 
 | Feature | Status | Notes |
 |---|---|---|
-| GitHub CI (test, lint, build) | IN PROGRESS | Workflow added; enable protected-branch required checks after the first successful remote run |
-| Browser E2E baseline | SHIPPED | Phase A A10 browser, authenticated-route, reload, and notification smoke gates passed 2026-07-12 |
+| GitHub CI (test, lint, build) | SHIPPED | `.github/workflows/ci.yml` runs green on pull requests and `main` pushes since 2026-07-16 |
+| Browser E2E baseline | NEXT UP | Corrected 2026-07-27: previously marked SHIPPED, but no automated suite exists — no Playwright dependency, no `e2e/`, CI runs unit/lint/build only. A10 passed agent-driven smoke against anonymous sessions, never an authenticated flow. Phase A lists this as required (`PHASE_A_ARCHITECTURE.md` § 9) |
 | Phase A release candidate and independent-session field gate | SHIPPED | A10 closed 2026-07-12; the independent authenticated-session/real-device result is user-reported, with Codex-observation limits recorded in CURRENT_WORK.md |
 | Existing React lint-warning cleanup | BACKLOG | Four pre-existing warnings: three hook dependency findings and one Fast Refresh export finding; address as touched or in a bounded cleanup review |
 | Production bundle code splitting | BACKLOG | Current main JS is ~740 KB minified / ~213 KB gzip; profile routes and split meaningful feature trees before public/mobile beta |
+| In-app account deletion (privacy purge) | IN PROGRESS | Client and `delete_own_account()` RPC written 2026-07-27; App Store Guideline 5.1.1(v) requirement. Migration `20260727120000` is unapplied — the button fails until it lands |
+| iOS/PWA field defects (OAuth breakout, SW mid-session reload, wake lock, silent-switch audio, storage eviction) | SHIPPED | 2026-07-27; see `docs/mobile/IOS_READINESS.md` |
 | Native privacy manifest and SDK audit | LATER (deliberate) | Required at Capacitor/iOS build phase; reconcile every SDK and actual collection before TestFlight |
-| Protected `main` + required PR review/checks | NEXT UP | Configure after the CI workflow succeeds remotely; `main` auto-deploys to Vercel |
+| Protected `main` + required PR review/checks | NEXT UP | CI now succeeds remotely, so the blocker is cleared; configure branch protection in GitHub settings. `main` auto-deploys to Vercel |
 
 ## Session history & insights
 
@@ -31,6 +33,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Volume ledger | SHIPPED | Putts this week / month / lifetime |
 | Fatigue curve | SHIPPED | D2 adds pattern-gated adaptive stage check-ins and a user-disableable round-turn prompt |
 | Pressure differential | SHIPPED | Contextual metric; no standalone Stats tab |
+| Make-% trend chart over time | BACKLOG | Salvage candidate from the superseded `claude/continue-hoqtyv` branch (`TrendChart.jsx` + `insights/timeSeries.js`, reachable at commit `775543c`). The only surface on that branch with no successor in `main`. Re-derive against the current repository and `insights/` conventions rather than merging the 2026-07-14 code as-is; pairs with decay-weighted current form |
 | Decay-weighted current form | SHIPPED | Contextual recent-vs-lifetime metric; no opaque composite score |
 | Cadence fingerprint | SHIPPED | Integrate into ME/weekly reports when supported by samples |
 | Confidence intervals on make % | SHIPPED | Wilson band until n ≥ 30 per distance/split |
@@ -111,7 +114,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Feature | Status | Notes |
 |---|---|---|
 | Confidence interval map (lock-in vs coin-flip zones) | SHIPPED | Pure frontend over shipped Wilson-interval stats |
-| Sun-Drenched Topo theme system (app-wide) | SHIPPED | 2.2a — exact tokens in CLAUDE.md; self-hosted Oswald; every screen restyled |
+| Sun-Drenched Topo theme system (app-wide) | SHIPPED | 2.2a — exact tokens in AGENTS.md § Design system; self-hosted Oswald; every screen restyled |
 | Dual-pace scoring canvas (gesture zone + batch ribbon) | SHIPPED | 2.2c — 3-gate swipe physics, make-territory growth, grid/carousel batch ribbon w/ auto-fill |
 | Instant-launch FSM + crash recovery (TTFP <5s) | SHIPPED | 2.2c — unified localStorage subsystem, synchronous bootstrap, once-per-load crash-recovery redirect |
 | Audio telemetry (pitch ladder, TTS stage announcements, silence pill) | SHIPPED | 2.2c — Web Audio + SpeechSynthesis; pre-builds 2.7 voice infrastructure |
