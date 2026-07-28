@@ -44,12 +44,16 @@ Ordered. The first three close currently-open work; E2 does not start until 1 is
 | # | Action | Owner | Blocks |
 |---|---|---|---|
 | 1 | Apply `20260727120000_phase_e_account_deletion.sql`, then run the four smoke checks below | **owner** — see note | account deletion; App Review |
-| 2 | Review and merge PR #4 (`main` auto-deploys) | owner review | everything downstream |
+| 2 | Review and merge PR #4 — **after action 1, not before** | owner review | everything downstream |
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
 | 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | Resolve the E2E contradiction: build a Playwright baseline or amend the Phase A contract | agent | honest Phase A status |
 | 7 | Begin E2 round/course reconciliation | agent | — |
+
+**Order matters between 1 and 2.** PR #4 carries the account-deletion UI and `main` auto-deploys, so
+merging before the migration lands ships a button that errors on click. CI on #4 is green (`verify` +
+Vercel preview) as of 2026-07-28; the hold is the migration, not the checks.
 
 **Two of these are owner-only for environment reasons, not judgement reasons.** Both were approved on
 2026-07-28 and attempted; both were refused by the sandbox, so a future agent session should not
