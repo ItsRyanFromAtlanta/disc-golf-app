@@ -33,6 +33,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Volume ledger | SHIPPED | Putts this week / month / lifetime |
 | Fatigue curve | SHIPPED | D2 adds pattern-gated adaptive stage check-ins and a user-disableable round-turn prompt |
 | Pressure differential | SHIPPED | Contextual metric; no standalone Stats tab |
+| Make-% trend chart over time | BACKLOG | Salvage candidate from the superseded `claude/continue-hoqtyv` branch (`TrendChart.jsx` + `insights/timeSeries.js`, reachable at commit `775543c`). The only surface on that branch with no successor in `main`. Re-derive against the current repository and `insights/` conventions rather than merging the 2026-07-14 code as-is; pairs with decay-weighted current form |
 | Decay-weighted current form | SHIPPED | Contextual recent-vs-lifetime metric; no opaque composite score |
 | Cadence fingerprint | SHIPPED | Integrate into ME/weekly reports when supported by samples |
 | Confidence intervals on make % | SHIPPED | Wilson band until n ≥ 30 per distance/split |

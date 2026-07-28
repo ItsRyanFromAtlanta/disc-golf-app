@@ -1,5 +1,38 @@
 # Dev Log
 
+## 2026-07-28 — consolidate parallel sessions onto a single branch of record
+
+**What:** Audited all 16 remote branches, folded the only live unmerged work onto
+`claude/consolidate-chats-stage-actions-rj0lwl`, and staged the ordered next actions in
+`CURRENT_WORK.md`. No code changed in this consolidation — the merge was a clean fast-forward of the
+seven iOS/PWA and documentation-reconciliation commits, and the branch now carries `main` plus those.
+
+**Why:** Development had forked across parallel Codex and Claude sessions, each pushing its own
+branch. With 16 branches live it was no longer obvious which held real work, and two sessions could
+rebuild the same surface without either noticing — which had already happened once (below). One
+branch of record makes the next commit unambiguous.
+
+**Key decisions:** All 14 `codex/*` branches turned out to be fully merged into `main` — zero commits
+unique to any of them — so the branch count overstated the divergence considerably; only the shape of
+the audit revealed that. `claude/continue-hoqtyv` is deliberately **not** merged: its single unique
+commit (`775543c`, Layer 5 Screen 10) is 81 commits behind `main`, and every surface in it was
+independently rebuilt afterwards — export by E1's `dataExport`/`dataExportRepository`, confidence by
+`ConfidenceMapPage`, toggles and cache-clear by `SettingsPage`/`settingsRepository`, sync ledger by
+`syncScheduler`/`activitySync`. Merging would have restored a second implementation of each behind
+the shipped one. Its one surface with no successor, `TrendChart` + `insights/timeSeries`, went to
+`FEATURE_BACKLOG.md` as a salvage candidate rather than being merged blind; the commit remains
+reachable by SHA, so nothing depends on keeping the branch. Branch deletion is left to the owner
+rather than done unilaterally.
+
+**Verification:** 497 tests across 74 files pass, production build succeeds, lint retains exactly the
+four documented baseline warnings — matching the 2026-07-27 checkpoint, confirming the fast-forward
+introduced no drift. Recorded a real gotcha while doing it: `npm test` without the Supabase
+placeholder env vars fails 13 files at import, which reads as a regression and is not.
+
+**Not verified:** migration `20260727120000_phase_e_account_deletion.sql` remains **unapplied** —
+carried forward as staged action 1, not closed here. Nothing in this entry was exercised against a
+real device or an authenticated browser session.
+
 ## 2026-07-27 — iOS/PWA field defects and account deletion
 
 **What:** Fixed six defects found while auditing the iOS story, all in the shipped PWA and none

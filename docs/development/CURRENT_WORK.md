@@ -1,18 +1,55 @@
 # Current Work
 
-Last updated: 2026-07-27
+Last updated: 2026-07-28
 
 This file is the restart/handoff checkpoint. A fresh session should be able to resume from this file,
 `AGENTS.md`, and one relevant spec without replaying previous conversations. Per-item implementation
 and verification history lives in `DEVLOG.md` (newest first) — do not duplicate it here.
 
+## Session and branch of record (2026-07-28)
+
+Work had fragmented across parallel Codex/Claude sessions, each on its own branch. It is now
+consolidated to a single line of development.
+
+- **Branch of record:** `claude/consolidate-chats-stage-actions-rj0lwl`, which contains `origin/main`
+  plus the seven unmerged iOS/PWA and documentation-reconciliation commits. Open new work from this
+  branch, not from a per-session branch, until it merges to `main`.
+- **All 14 `codex/*` branches are fully merged into `main`** (verified: zero commits unique to any of
+  them) and are safe to delete. They are retained only until the owner prunes them.
+- **`claude/continue-hoqtyv` is superseded and will NOT be merged.** Its single unique commit
+  (`775543c`, Layer 5 Screen 10, 2026-07-14) sits 81 commits behind `main` and each of its surfaces
+  was rebuilt independently afterwards: `DataExportPanel`/`csvExport` by E1's `dataExport` +
+  `dataExportRepository`, `ConfidenceMapPanel` by `ConfidenceMapPage` + `insights/confidenceMap`,
+  `BehavioralToggles`/`ClearCacheModal` by `SettingsPage` + `settingsRepository`, and
+  `SyncLedger`/`flushOutbox` by `syncScheduler` + `activitySync`. Merging it would reintroduce a
+  second parallel implementation of each. The one surface with no successor — `TrendChart` +
+  `insights/timeSeries` — is recorded in `FEATURE_BACKLOG.md` as a salvage candidate; the code stays
+  reachable at `775543c` and does not need the branch kept.
+
 ## Resume point
 
 - **Active phase:** Phase E. Phases A, B, C, and D are complete; E1 shipped 2026-07-17.
+- **Blocking E2:** apply migration `20260727120000_phase_e_account_deletion.sql` (see Open
+  follow-ups). In-app account deletion is a shipped-but-broken surface until it lands, and it is an
+  App Review blocker rather than a Phase E feature.
 - **Next:** **E2 — shipped J1 round/course reconciliation.** Audit and harden the existing course/
   layout and offline round routes rather than rebuilding them, then add weather, activity-only rounds,
   group-scorecard groundwork, bag snapshot verification, and course preparation as separately
   committed green checkpoints. See `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E.
+
+## Staged next actions
+
+Ordered. The first three close currently-open work; E2 does not start until 1 is applied.
+
+| # | Action | Owner | Blocks |
+|---|---|---|---|
+| 1 | Apply `20260727120000_phase_e_account_deletion.sql`, then run the four smoke checks below | agent, on owner approval | account deletion; App Review |
+| 2 | Merge the branch of record to `main` via reviewed PR (`main` auto-deploys) | owner review | everything downstream |
+| 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
+| 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
+| 5 | Prune the 14 merged `codex/*` branches and `claude/continue-hoqtyv` | owner or agent | nothing; hygiene |
+| 6 | Resolve the E2E contradiction: build a Playwright baseline or amend the Phase A contract | agent | honest Phase A status |
+| 7 | Begin E2 round/course reconciliation | agent | — |
 
 ## Standing decisions that constrain new work
 
@@ -33,6 +70,10 @@ and verification history lives in `DEVLOG.md` (newest first) — do not duplicat
 
 ## Known baseline (not regressions)
 
+- **`npm test` needs the Supabase placeholders exported, or 13 files fail at import** with a config
+  error that looks like a regression and is not. CI sets them inline (`.github/workflows/ci.yml`);
+  locally use `VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=ci-test-placeholder`.
+  Green on the branch of record as of 2026-07-28: 497 tests across 74 files, build clean.
 - Lint carries four pre-existing warnings: three hook-dependency findings and one Fast Refresh export
   finding. Address as touched or in a bounded cleanup review.
 - Browser verification to date has been agent-driven smoke against anonymous sessions. Authenticated
