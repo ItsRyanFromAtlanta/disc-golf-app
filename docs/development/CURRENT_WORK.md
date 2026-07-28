@@ -48,8 +48,9 @@ Ordered. The first three close currently-open work; E2 does not start until 1 is
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
 | 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
-| 6 | Resolve the E2E contradiction: build a Playwright baseline or amend the Phase A contract | agent | honest Phase A status |
+| 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
 | 7 | Begin E2 round/course reconciliation | agent | — |
+| 8 | Extend E2E to the six uncovered § 9 flows (needs activity-lifecycle fixtures) | agent | full Phase A § 9 gate |
 
 **Order matters between 1 and 2.** PR #4 carries the account-deletion UI and `main` auto-deploys, so
 merging before the migration lands ships a button that errors on click. CI on #4 is green (`verify` +
@@ -66,6 +67,32 @@ assume they are merely undecided:
   as having zero commits outside `main` immediately before the attempt, so deleting them loses
   nothing. `claude/continue-hoqtyv` is kept for now as a visible pointer until the `TrendChart`
   salvage in `FEATURE_BACKLOG.md` is done.
+
+**Re-attempted 2026-07-28 (second session), same walls — do not assume these are merely undecided:**
+
+- **Action 1** still refused. Every Supabase MCP call, including zero-argument read-only ones
+  (`list_projects`, `list_organizations`), returns `MCP error -32003: MCP tool call requires
+  approval` and never reaches the project. Because `list_projects` is the first call, the migration's
+  applied/not-applied state could not even be *read*. The migration SQL was reviewed instead and is
+  clean: zero arguments with the subject derived from `auth.uid()`, `created_by` nulled rather than
+  cascaded on `courses`/`course_aliases`/`disc_molds`, private Storage objects deleted by user
+  prefix, and `revoke ... from anon` + `grant execute to authenticated`. One behaviour worth a
+  conscious sign-off before applying: `catalog_submission_reviews.reviewer_id` is `NOT NULL` with no
+  cascade, so a departing user's **moderation history is hard-deleted** rather than preserved —
+  a different tradeoff than the community-attribution rows.
+- **Action 2** correctly did NOT proceed. The merge is gated on verifying `delete_own_account()`
+  exists, that verification was impossible (above), and unverifiable is a stop condition — merging
+  first would auto-deploy a delete button that throws on click. PR #4 was otherwise re-confirmed
+  healthy: open, `mergeable_state: clean`, 10 commits, 52 files, +1793/−404.
+- **Action 3** cannot be done from tooling. The GitHub MCP server exposes no branch-protection or
+  ruleset capability of any kind (`list_branches` confirms `main` is `"protected": false`). Do it at
+  https://github.com/ItsRyanFromAtlanta/disc-golf-app/settings/branches — add a rule for `main`,
+  require a PR with 1 approval, require status checks with "up to date before merging", and select
+  `verify` (verified as the exact job name, lowercase, not "CI / verify") plus whichever `Vercel`
+  entry GitHub actually lists. Leave **"Do not allow bypassing the above settings" unchecked** — as
+  sole maintainer you cannot approve your own PR, and that unchecked box is the admin escape hatch
+  that keeps the 1-approval rule from locking you out. The new `e2e` job is a separate status context
+  and can be added as a required check once it has green history on `main`.
 
 ## Standing decisions that constrain new work
 
@@ -92,10 +119,15 @@ assume they are merely undecided:
   Green on the branch of record as of 2026-07-28: 497 tests across 74 files, build clean.
 - Lint carries four pre-existing warnings: three hook-dependency findings and one Fast Refresh export
   finding. Address as touched or in a bounded cleanup review.
-- Browser verification to date has been agent-driven smoke against anonymous sessions. Authenticated
-  in-app rendering and interaction remain unexercised in the isolated browser environment, and the
-  Phase A real-device gate is user-reported rather than Codex-observed. There is no automated E2E
-  suite — see `PHASE_A_ARCHITECTURE.md` § 9 and `FEATURE_BACKLOG.md`.
+- **Browser E2E now exists** (2026-07-28). `npm run test:e2e` runs 19 Playwright specs across a phone
+  project and a 320px project, authenticated via a seeded session with the Supabase backend
+  intercepted in-page; CI runs them as a separate `e2e` job. This closes the "no authenticated screen
+  has ever been rendered by a test" gap but **not** the full § 9 gate — see the per-flow coverage
+  table there, and `e2e/README.md` for what the harness deliberately does not verify (schema truth,
+  real network conditions, real devices). The Phase A real-device gate remains user-reported rather
+  than independently observed.
+- **Running E2E in a sandbox:** the pre-provisioned Chromium may not match the build Playwright
+  expects. Use `E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run test:e2e`; leave it unset in CI.
 - Production bundle is ~740 KB minified / ~213 KB gzip; code splitting is a tracked backlog item
   before public/mobile beta.
 
@@ -111,8 +143,10 @@ assume they are merely undecided:
   storage tables is blocked and the CLI manages objects rather than buckets, so this needs the
   dashboard. Open since 2026-07-14.
 - Enable protected-`main` required review/checks now that CI runs green remotely. `main` auto-deploys.
-- Automated browser E2E is unbuilt while the Phase A contract lists it as required. Either build it or
-  amend the contract; do not report it as shipped.
+- Browser E2E is built but partial. Six § 9 flows remain uncovered — pause/resume, single-active
+  auto-close, round-close confirmation, completed edit/audit, soft-delete/restore, exactly-once
+  reconnect. All six need an in-progress or completed activity seeded through the InstantLaunch +
+  Dexie layers rather than table-level rows, which is the next increment on the existing harness.
 - Install the OpenAI Developer Docs MCP locally (`CODEX_WORKFLOW.md` § Installed capabilities). The
   desktop sandbox could not launch the installer.
 

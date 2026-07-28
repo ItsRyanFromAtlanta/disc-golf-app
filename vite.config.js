@@ -4,6 +4,12 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  test: {
+    // Vitest's default include matches **/*.spec.js, which would sweep up the
+    // Playwright suite and fail at import — those specs need a browser and a
+    // running server, not jsdom. `npm run test:e2e` owns e2e/.
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
+  },
   plugins: [
     react(),
     VitePWA({

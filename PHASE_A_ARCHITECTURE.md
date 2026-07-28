@@ -112,16 +112,34 @@ dependency key, and poison state. Remove duplicate storage only after crash/reco
 
 ## 9. Browser E2E and PWA gates
 
-> **Status (2026-07-27): this gate is NOT met and Phase A was closed without it.** No automated E2E
-> suite exists — Playwright is not a dependency, there is no `e2e/` directory, and CI runs unit tests,
-> lint, and build only. What was performed instead was agent-driven browser smoke against anonymous
-> sessions, which never reached an authenticated session on any flow. Treat the target below as
-> outstanding work, not as satisfied. Do not describe browser E2E as shipped anywhere.
+> **Status (2026-07-28): PARTIALLY met. A Playwright suite now exists and runs in CI; roughly half the
+> required flows are covered.** The prior status ("no suite exists, no `e2e/` directory, anonymous
+> smoke only") is superseded. What changed: `e2e/` holds 19 specs across two viewport projects, they
+> run authenticated via a seeded Supabase session with the backend intercepted in-page, and a second
+> CI job (`e2e`) runs them on every PR. See `e2e/README.md` for the harness design and its limits.
+>
+> This gate is still **not fully met**, and Phase A's COMPLETE status remains retroactively generous
+> until the uncovered flows below land. Do not describe browser E2E as finished.
 
-Target: use Playwright for browser E2E. Required flows: onboarding/Quick Play; pause/navigation/resume;
-single-active auto-close; round-close confirmation; offline reload/recovery/exactly-once reconnect;
-completed edit/audit/recalculation; soft-delete/restore; tab scroll/root; notification sheet/Back; 320px
-reflow; keyboard/gesture alternatives.
+Target: use Playwright for browser E2E. Required flows, with current coverage:
+
+| Flow | Status |
+|---|---|
+| Onboarding / Quick Play | **Partial** — the zero-bag onboarding gate redirect is covered; the wizard itself and Quick Play launch are not |
+| Pause / navigation / resume | Not covered |
+| Single-active auto-close | Not covered |
+| Round-close confirmation | Not covered |
+| Offline reload / recovery / exactly-once reconnect | **Partial** — the shell boots from precache with the network down; outbox recovery and exactly-once reconnect are not covered |
+| Completed edit / audit / recalculation | Not covered |
+| Soft-delete / restore | Not covered |
+| Tab scroll / root | **Covered** — tapping the active tab scrolls to top without navigating |
+| Notification sheet / Back | **Covered** — modal open/close, plus nested-route Back to section root |
+| 320px reflow | **Covered** — five routes asserted free of horizontal overflow |
+| Keyboard / gesture alternatives | **Partial** — tab bar is keyboard-operable; gesture alternatives are not covered |
+
+The uncovered rows share one dependency: they all need activity-lifecycle state (an in-progress or
+completed activity), which means richer fixtures than table-level seeding provides. That is the next
+increment, not a rewrite of the harness.
 
 Correct PWA manifest colors to Sun-Drenched Topo tokens (done 2026-07-27) and verify icons, offline
 shell, safe areas, standalone mode, and killed-app recovery on a real phone.

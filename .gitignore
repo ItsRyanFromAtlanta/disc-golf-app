@@ -25,6 +25,12 @@ dev-dist
 *.sln
 *.sw?
 
+# Playwright run output (traces/screenshots may embed fixture data)
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # Google Drive sync temp artifacts
 .tmp.driveupload/
 

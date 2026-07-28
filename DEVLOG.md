@@ -1,5 +1,52 @@
 # Dev Log
 
+## 2026-07-28 — Playwright E2E baseline, authenticated for the first time
+
+**What:** Added a browser E2E suite — `playwright.config.js`, `e2e/` with 19 specs across a phone
+project and a 320px project, a backend-interception fixture, an `e2e` CI job, and `e2e/README.md`.
+Also excluded `e2e/**` from Vitest, whose default include pattern (`**/*.spec.js`) would otherwise
+sweep the Playwright specs into `npm test` and fail them at import.
+
+**Why:** `PHASE_A_ARCHITECTURE.md` § 9 listed browser E2E as a Phase A requirement while Phase A was
+marked COMPLETE and no suite existed — the contradiction was one of the staged next actions in
+`CURRENT_WORK.md`. Every browser check to date had run against an anonymous session, so no
+authenticated screen had ever been rendered by an automated test.
+
+**Key decisions:** The blocker was never Playwright, it was Supabase — the app needs it for auth and
+data, and pointing a suite at a live project would make the suite depend on real rows. Resolved by
+intercepting the backend in-page rather than provisioning a test project: supabase-js reads its
+session from `localStorage` before any network call, so an init script seeding
+`sb-<ref>-auth-token` with a far-future token produces a genuinely authenticated app with no auth
+server; a route handler over `/rest/v1/**` implements enough PostgREST grammar to serve per-table
+fixtures, stub RPCs, and record writes. Deterministic and fully offline. The tradeoff is explicit and
+documented in `e2e/README.md`: fixtures do not validate against the real schema, so query/schema/RLS
+truth stays with the SQL checks. Chose to keep `verify` untouched and add `e2e` as a separate CI job
+— E2E needs a browser download and a served build, and folding it into the check that gates every
+push would cost minutes on every commit; a distinct status context can also be adopted as a required
+check independently once it has green history. Selectors are role/accessible-name only (the app has
+no `data-testid` anywhere), which makes the specs double as an accessibility check. Renamed the
+Playwright fixture argument `use` to `provide` because oxlint's rules-of-hooks reads a bare `use(...)`
+as React's `use` hook — a rename beat a lint suppression.
+
+**Gotchas:** The pre-provisioned Chromium in this environment (build 1194) does not match what
+Playwright 1.62 expects (1234), and only the full binary is present, not `chrome-headless-shell` —
+hence the `E2E_CHROMIUM_PATH` escape hatch, left unset in CI. The service worker deliberately does
+not call `clientsClaim` (claiming mid-session could swap the app out from under an active capture
+screen), so the first page load is never controlled by it; the offline spec has to wait for
+activation, reload once to come under control, and only then cut the network. Route titles are short
+words that recur in page content — "Play" is also inside "Quick Play", and `/bag` renders its own
+`<h1>Discs</h1>` under the header's — so header assertions scope to the `banner` landmark.
+
+**Verification:** 19/19 E2E pass across both projects. Unit suite unchanged at 497 tests across 74
+files, lint back to exactly the four documented baseline warnings after the fixture rename, build
+clean.
+
+**Status honesty:** this does not close the § 9 gate. Roughly half the required flows are covered;
+pause/resume, single-active auto-close, round-close confirmation, completed edit/audit,
+soft-delete/restore, and exactly-once reconnect are not, and all six need activity-lifecycle fixtures
+rather than table-level seeding. § 9 now carries a per-flow coverage table instead of a binary claim,
+and Phase A's COMPLETE status stays retroactively generous until those land.
+
 ## 2026-07-28 — consolidate parallel sessions onto a single branch of record
 
 **What:** Audited all 16 remote branches, folded the only live unmerged work onto
