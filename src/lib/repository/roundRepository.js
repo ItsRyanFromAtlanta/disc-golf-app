@@ -59,9 +59,16 @@ async function cacheRound(round) {
   return round
 }
 
-async function cacheRoundHole(input) {
+// `replacesId` carries the optimistic row's id when the server turns out to
+// own a different one for the same (round_id, hole_id) — which is the normal
+// outcome now that `upsertRoundHole` resolves on the natural key and lets the
+// database keep its own primary key. Without this the local optimistic row
+// would linger beside the authoritative one and the hole would be counted
+// twice in `db.roundHoles`.
+async function cacheRoundHole(input, { replacesId = null } = {}) {
   const hole = localHole(input)
   await db.transaction('rw', db.rounds, db.roundHoles, async () => {
+    if (replacesId && replacesId !== hole.id) await db.roundHoles.delete(replacesId)
     await db.roundHoles.put(hole)
     const round = await db.rounds.get(hole.round_id)
     if (!round) return
@@ -318,7 +325,7 @@ export async function saveRoundHole(input) {
       const remote = await upsertRoundHole(payload)
       return { ...local, ...remote }
     },
-    writeRemote: (roundHole) => cacheRoundHole(roundHole),
+    writeRemote: (roundHole) => cacheRoundHole(roundHole, { replacesId: local.id }),
   })
 }
 
@@ -345,7 +352,7 @@ export async function flushRoundOutbox(userId) {
         await cacheRound(result)
       } else if (entry.table === ROUND_HOLE_TABLE && entry.op === 'upsert') {
         const result = await upsertRoundHole(entry.payload)
-        await cacheRoundHole(result)
+        await cacheRoundHole(result, { replacesId: entry.payload.id })
       }
       await db.outbox.delete(entry.id)
     } catch {

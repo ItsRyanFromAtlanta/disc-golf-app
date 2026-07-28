@@ -15,7 +15,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Activity-lifecycle E2E fixtures | SHIPPED | 2026-07-28. Terminal activities seed via the `activities` table (hydrated into Dexie by `fetchHistory`); current activities via `seedLocalActivity`, writing straight to IndexedDB. Closed the soft-delete/restore and resume rows |
 | Live-capture E2E fixtures | NEXT UP | The four remaining § 9 rows need a session driven through `activityRepository` start/pause/finalize plus an outbox flush across a simulated disconnect, not a pre-seeded row |
 | Phase A release candidate and independent-session field gate | SHIPPED | A10 closed 2026-07-12; the independent authenticated-session/real-device result is user-reported, with Codex-observation limits recorded in CURRENT_WORK.md |
-| Existing React lint-warning cleanup | BACKLOG | Four pre-existing warnings: three hook dependency findings and one Fast Refresh export finding; address as touched or in a bounded cleanup review |
+| Existing React lint-warning cleanup | IN PROGRESS | 2026-07-28: the three hook-dependency findings are fixed via `useCallback`, following HistoryPage's pattern. One remains — `AuthContext` exports both a component and a hook, and 37 files import `useAuth`; clean to resolve in one bounded pass, just wide. A re-export shim was rejected as suppressing the warning without fixing Fast Refresh |
 | Production bundle code splitting | BACKLOG | Current main JS is ~740 KB minified / ~213 KB gzip; profile routes and split meaningful feature trees before public/mobile beta |
 | In-app account deletion (privacy purge) | IN PROGRESS | Client and `delete_own_account()` RPC written 2026-07-27; App Store Guideline 5.1.1(v) requirement. Migrations `20260727120000` and `20260728120000` are both unapplied and must be applied in that order. The button now degrades to "temporarily unavailable" rather than showing a raw PostgREST error while they are missing (`src/lib/accountDeletion.js`), so merge order is no longer load-bearing |
 | iOS/PWA field defects (OAuth breakout, SW mid-session reload, wake lock, silent-switch audio, storage eviction) | SHIPPED | 2026-07-27; see `docs/mobile/IOS_READINESS.md` |
@@ -63,6 +63,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 
 | Feature | Status | Notes |
 |---|---|---|
+| Round/course offline hardening (E2) | IN PROGRESS | 2026-07-28 audit in `docs/development/E2_ROUND_COURSE_AUDIT.md`. Checkpoint 1 fixed a silent permanent outbox poisoning (round-hole upsert resolved on the surrogate id, not the `unique (round_id, hole_id)` natural key) and added the first 8 tests to a ~600-line layer that had none. Open: round outbox swallows every error (diverges from PHASE_A § 8), and `createCourseWithLayout` is non-atomic across three upserts |
 | Round logging tree (/rounds: courses, holes, scores) | SHIPPED | J1 shipped 2026-07-14: COURSES tab, quick-course, offline-first scorecard/history/finalization, activity-parent FK bridge, and live owner-scoped RLS. |
 | Live caddie chat (OpenAI Responses API, server-side) | BACKLOG | Schema exists; build after rounds/course prep and approve safety/cost/context policy |
 | Course prep views | BACKLOG | |

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchUserDiscs, updateDiscRole, updateDiscWear, upsertDisc } from '../../lib/discLocker'
 import { effectiveFlightNumbers } from '../../lib/discs'
 import { speedClass } from '../../lib/discFilters'
@@ -17,7 +17,7 @@ export default function PutterLineup({ userId }) {
   const [discs, setDiscs] = useState(null)
   const [error, setError] = useState(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     const all = await fetchUserDiscs(userId)
     const putters = all.filter((disc) => {
       if (disc.status !== 'in_locker') return false
@@ -25,11 +25,11 @@ export default function PutterLineup({ userId }) {
       return speedClass(speed) === 'putter'
     })
     setDiscs(putters)
-  }
+  }, [userId])
 
   useEffect(() => {
     load().catch((err) => setError(err.message))
-  }, [userId])
+  }, [load])
 
   const swimlanes = useMemo(() => {
     if (!discs) return null

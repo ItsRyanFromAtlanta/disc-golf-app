@@ -1,5 +1,49 @@
 # Dev Log
 
+## 2026-07-28 — PR #4 merged; E2 audit opens with a silent offline defect
+
+**What:** Merged PR #4 (`eb9fd2b`), then opened Phase E2 with the audit its plan calls for — "audit
+and harden the existing course/layout and offline round routes rather than rebuilding them". Findings
+are in `docs/development/E2_ROUND_COURSE_AUDIT.md`. Checkpoint 1 fixes the worst of them. Separately,
+three of the four long-standing baseline lint warnings are cleared.
+
+**The finding that mattered:** `round_holes` carries `unique (round_id, hole_id)`, but
+`upsertRoundHole` resolved conflicts on `id` — a client-generated surrogate. Any replay whose local id
+had changed (second device, cleared cache, a queued write re-created from a fresh optimistic row) took
+the INSERT branch and violated the natural-key constraint. The `23505` was swallowed by
+`flushRoundOutbox`'s bare `catch {}`, so the entry stayed queued and the round retried the same doomed
+write on every reconnect and every app load, forever, with nothing surfaced. Offline-only, silent, and
+permanent.
+
+Fixed by resolving on `round_id,hole_id` and deliberately not sending `id`: PostgREST's
+merge-duplicates updates every column supplied, so including it would rewrite the primary key the
+Dexie mirror is indexed by. `cacheRoundHole` gained `replacesId` so the optimistic row is dropped when
+the server owns a different id for the same hole.
+
+**Why it survived this long:** the repository had 505 tests across 75 files and **zero** covering
+`roundLog.js` or `roundRepository.js` — the entire course/round data and offline layer, roughly 600
+lines. `rounds.test.js` covered only the 44-line scoring helper. `roundLog.js` now has 8 tests
+including the two-local-ids convergence case; `roundRepository.js` is still uncovered.
+
+**Left open, deliberately, with reasons recorded:** the round outbox's bare `catch {}` diverges from
+`PHASE_A_ARCHITECTURE.md` § 8, which requires attempt count, last error class, next retry, dependency
+key, and poison state — the *activity* outbox implements all five, so this is a divergence from a
+sibling that got it right, not an unmade decision. And `createCourseWithLayout` performs three
+sequential upserts with no transaction, so a mid-sequence failure leaves an orphan course or an empty
+layout visible to every other user in the shared directory. Both are the next checkpoint. E2 feature
+work should not start on top of an offline layer that fails silently.
+
+**Lint:** the three exhaustive-deps warnings are fixed by wrapping each loader in `useCallback`,
+following `HistoryPage`'s existing pattern; in all three the loader's only reactive inputs were
+already in the effect's dependency array, so behaviour is unchanged rather than merely lint-clean. The
+fourth (`AuthContext` exporting both a component and a hook) is left: 37 files import `useAuth` and six
+are Course/Round pages under concurrent edit. A re-export shim was considered and rejected — it would
+silence the warning while leaving Fast Refresh just as degraded. Worth noting the suite has no render
+coverage for the three changed components, so that green run rests on dependency analysis rather than
+on tests exercising the effects.
+
+**Verification:** 513 tests across 76 files, lint down to one warning from four, build clean.
+
 ## 2026-07-28 — unblock the staged queue: degrade-on-missing-RPC, moderation history, activity E2E
 
 **What:** Four fixes aimed at the blockers recorded in the entry below. (1) `DeleteAccountPanel` now

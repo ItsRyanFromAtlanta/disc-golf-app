@@ -11,9 +11,10 @@ and verification history lives in `DEVLOG.md` (newest first) — do not duplicat
 Work had fragmented across parallel Codex/Claude sessions, each on its own branch. It is now
 consolidated to a single line of development.
 
-- **Branch of record:** `claude/consolidate-chats-stage-actions-rj0lwl`, which contains `origin/main`
-  plus the seven unmerged iOS/PWA and documentation-reconciliation commits. Open new work from this
-  branch, not from a per-session branch, until it merges to `main`.
+- **Branch of record:** merged to `main` on 2026-07-28 as `eb9fd2b`. `main` is authoritative again;
+  open new work from it. Current session work continues on
+  `claude/prioritize-scheduled-work-7lohb6`, which is `main` plus the E2E baseline, the
+  degrade-on-missing-RPC fix, and the E2 audit checkpoint.
 - **All 14 `codex/*` branches are fully merged into `main`** (verified: zero commits unique to any of
   them) and are safe to delete. They are retained only until the owner prunes them.
 - **`claude/continue-hoqtyv` is superseded and will NOT be merged.** Its single unique commit
@@ -45,12 +46,12 @@ below.
 | # | Action | Owner | Blocks |
 |---|---|---|---|
 | 1 | Apply `20260727120000_phase_e_account_deletion.sql`, **then** `20260728120000_phase_e_preserve_moderation_history.sql`, then run the smoke checks below | **owner** — see note | account deletion; App Review |
-| 2 | Review and merge PR #4 — no longer blocked on action 1 (see below) | owner review | everything downstream |
+| 2 | ~~Review and merge PR #4~~ — **MERGED 2026-07-28** as `eb9fd2b` | — | — |
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
 | 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
-| 7 | Begin E2 round/course reconciliation | agent | — |
+| 7 | E2 round/course reconciliation — **audit done, checkpoint 1 landed.** See `docs/development/E2_ROUND_COURSE_AUDIT.md`; findings 2 and 3 are next | agent | E2 feature work |
 | 8 | Extend E2E to the four remaining § 9 flows (needs live-capture fixtures) | agent | full Phase A § 9 gate |
 
 **The 1-before-2 interlock was dissolved on 2026-07-28.** It existed because PR #4 ships the

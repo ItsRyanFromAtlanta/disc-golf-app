@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -35,7 +35,7 @@ export default function BagManagePage() {
   const [savingBagId, setSavingBagId] = useState(null)
   const [replacementByBag, setReplacementByBag] = useState({})
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     const [bagsData, discsData] = await Promise.all([fetchBags(user.id), fetchUserDiscs(user.id)])
     setBags(bagsData)
     setDiscs(discsData)
@@ -43,11 +43,11 @@ export default function BagManagePage() {
       bagsData.map(async (bag) => [bag.id, new Set((await fetchBagDiscs(bag.id)).map((d) => d.id))]),
     )
     setMembership(Object.fromEntries(entries))
-  }
+  }, [user.id])
 
   useEffect(() => {
     loadAll().catch((err) => setError(err.message))
-  }, [user.id])
+  }, [loadAll])
 
   async function handleCreateBag(e) {
     e.preventDefault()

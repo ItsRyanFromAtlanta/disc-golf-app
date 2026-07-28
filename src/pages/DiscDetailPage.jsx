@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { fetchDisc, fetchBags, fetchDiscBagIds, addDiscToBag, removeDiscFromBag, upsertDisc } from '../lib/discLocker'
@@ -29,7 +29,7 @@ export default function DiscDetailPage() {
   const [shotTagAssignments, setShotTagAssignments] = useState([])
   const [newShotTag, setNewShotTag] = useState('')
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     const [discData, bagsData, bagIds, taxonomy] = await Promise.all([
       fetchDisc(discId),
       fetchBags(user.id),
@@ -41,11 +41,11 @@ export default function DiscDetailPage() {
     setMemberBagIds(new Set(bagIds))
     setShotTags(taxonomy.tags)
     setShotTagAssignments(taxonomy.assignments)
-  }
+  }, [discId, user.id])
 
   useEffect(() => {
     loadAll().catch((err) => setError(err.message))
-  }, [discId, user.id])
+  }, [loadAll])
 
   async function handleToggleBag(bagId) {
     setError(null)

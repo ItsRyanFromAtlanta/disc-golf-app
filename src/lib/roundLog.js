@@ -148,9 +148,28 @@ export async function updateRound(roundId, fields = {}) {
   return fetchRound(updated.id)
 }
 
+// `round_holes` carries `unique (round_id, hole_id)` (supabase_schema.sql), so
+// the natural key — not the surrogate `id` — is what a retry has to resolve
+// against.
+//
+// Resolving on `id` was wrong in a way that only showed up offline: a replay
+// whose locally-generated id had changed (second device, cleared cache, a
+// queued write re-created from a fresh optimistic row) took the INSERT branch,
+// which then violated the natural-key constraint. That 23505 was swallowed by
+// `flushRoundOutbox`'s bare catch and the entry stayed queued, so the round
+// retried the same doomed write on every reconnect and every app load without
+// ever surfacing. Resolving on the natural key converges instead.
+//
+// `id` is deliberately not sent: PostgREST's merge-duplicates updates every
+// column supplied, so including it would rewrite the primary key on the
+// conflict path — and the local Dexie mirror is keyed by that id.
 export async function upsertRoundHole(input = {}) {
-  const payload = normalizeHoleFields(input)
-  const { data, error } = await supabase.from('round_holes').upsert(payload, { onConflict: 'id' }).select().single()
+  const { id: _localId, ...payload } = normalizeHoleFields(input)
+  const { data, error } = await supabase
+    .from('round_holes')
+    .upsert(payload, { onConflict: 'round_id,hole_id' })
+    .select()
+    .single()
   return throwIfError({ data, error })
 }
 
