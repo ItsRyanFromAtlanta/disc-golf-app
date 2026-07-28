@@ -43,13 +43,25 @@ Ordered. The first three close currently-open work; E2 does not start until 1 is
 
 | # | Action | Owner | Blocks |
 |---|---|---|---|
-| 1 | Apply `20260727120000_phase_e_account_deletion.sql`, then run the four smoke checks below | agent, on owner approval | account deletion; App Review |
-| 2 | Merge the branch of record to `main` via reviewed PR (`main` auto-deploys) | owner review | everything downstream |
+| 1 | Apply `20260727120000_phase_e_account_deletion.sql`, then run the four smoke checks below | **owner** — see note | account deletion; App Review |
+| 2 | Review and merge PR #4 (`main` auto-deploys) | owner review | everything downstream |
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
 | 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
-| 5 | Prune the 14 merged `codex/*` branches and `claude/continue-hoqtyv` | owner or agent | nothing; hygiene |
+| 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | Resolve the E2E contradiction: build a Playwright baseline or amend the Phase A contract | agent | honest Phase A status |
 | 7 | Begin E2 round/course reconciliation | agent | — |
+
+**Two of these are owner-only for environment reasons, not judgement reasons.** Both were approved on
+2026-07-28 and attempted; both were refused by the sandbox, so a future agent session should not
+assume they are merely undecided:
+
+- **Action 1** — every Supabase MCP call returns `MCP tool call requires approval` and never reaches
+  the project. Apply via the Supabase dashboard SQL editor or `supabase db push`.
+- **Action 5** — the git proxy returns HTTP 403 on `git push origin --delete`, and the GitHub tool
+  set exposes no delete-branch capability. Prune from the GitHub branches UI. All 14 were re-verified
+  as having zero commits outside `main` immediately before the attempt, so deleting them loses
+  nothing. `claude/continue-hoqtyv` is kept for now as a visible pointer until the `TrendChart`
+  salvage in `FEATURE_BACKLOG.md` is done.
 
 ## Standing decisions that constrain new work
 
