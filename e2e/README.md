@@ -41,6 +41,22 @@ sitting on the practice hub, which is what most shell specs want).
 Because `bags` drives `useOnboardingGate`, the default fixture seeds one bag — otherwise every
 authenticated spec would land on the onboarding wizard.
 
+## Seeding activities
+
+Activities reach the app by two different paths, so there are two ways to seed one:
+
+| Activity state | Path | How |
+|---|---|---|
+| `completed` / `incomplete` | `fetchHistory` selects them from Supabase and hydrates the Dexie mirror | `supabase.setTable('activities', [buildActivity(...)])`, plus a `putt_sessions` row via `buildPuttSession(id)` if the entry should render as more than a bare row |
+| `active` / `paused` | never returned by the history query; the shell reads them from the Dexie mirror via `liveQuery` | `await supabase.seedLocalActivity({ state: 'paused', ... })` |
+
+`seedLocalActivity` writes straight to IndexedDB, so two rules apply: call it *after* a navigation
+(the app has to have opened the database first), and `page.reload()` afterwards — a raw IndexedDB
+write does not fire the Dexie mutation broadcast that `liveQuery` listens to.
+
+Both helpers produce the row shape `createDraftLifecycle` + `createDraft` build, so a seeded activity
+is indistinguishable from one the app wrote itself.
+
 ## What this does not verify
 
 - **Schema truth.** A fixture will happily return a column Postgres would reject, or accept a write

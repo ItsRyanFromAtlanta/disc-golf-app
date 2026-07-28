@@ -114,7 +114,7 @@ dependency key, and poison state. Remove duplicate storage only after crash/reco
 
 > **Status (2026-07-28): PARTIALLY met. A Playwright suite now exists and runs in CI; roughly half the
 > required flows are covered.** The prior status ("no suite exists, no `e2e/` directory, anonymous
-> smoke only") is superseded. What changed: `e2e/` holds 19 specs across two viewport projects, they
+> smoke only") is superseded. What changed: `e2e/` holds 25 specs across two viewport projects, they
 > run authenticated via a seeded Supabase session with the backend intercepted in-page, and a second
 > CI job (`e2e`) runs them on every PR. See `e2e/README.md` for the harness design and its limits.
 >
@@ -126,20 +126,27 @@ Target: use Playwright for browser E2E. Required flows, with current coverage:
 | Flow | Status |
 |---|---|
 | Onboarding / Quick Play | **Partial** — the zero-bag onboarding gate redirect is covered; the wizard itself and Quick Play launch are not |
-| Pause / navigation / resume | Not covered |
+| Pause / navigation / resume | **Partial** — a paused activity surfaces the resume pill and resumes to the correct capture route (freeform vs. a specific regimen); pause-on-navigation-away is not covered, as it needs a live capture session rather than a seeded one |
 | Single-active auto-close | Not covered |
 | Round-close confirmation | Not covered |
 | Offline reload / recovery / exactly-once reconnect | **Partial** — the shell boots from precache with the network down; outbox recovery and exactly-once reconnect are not covered |
 | Completed edit / audit / recalculation | Not covered |
-| Soft-delete / restore | Not covered |
+| Soft-delete / restore | **Covered** — a hidden activity is absent from History, listed under Recently Deleted, and leaves that list when restored |
 | Tab scroll / root | **Covered** — tapping the active tab scrolls to top without navigating |
 | Notification sheet / Back | **Covered** — modal open/close, plus nested-route Back to section root |
 | 320px reflow | **Covered** — five routes asserted free of horizontal overflow |
 | Keyboard / gesture alternatives | **Partial** — tab bar is keyboard-operable; gesture alternatives are not covered |
 
-The uncovered rows share one dependency: they all need activity-lifecycle state (an in-progress or
-completed activity), which means richer fixtures than table-level seeding provides. That is the next
-increment, not a rewrite of the harness.
+Activity-lifecycle fixtures landed 2026-07-28 and closed the soft-delete/restore and resume rows.
+Terminal activities seed through the `activities` table (`fetchHistory` selects them and hydrates the
+Dexie mirror); current activities are written straight to IndexedDB, since the history query never
+returns them. See `e2e/README.md`.
+
+The four still-uncovered rows need something the fixtures do not yet provide: a *live* capture
+session. Single-active auto-close and round-close confirmation only trigger on a real start command
+through `activityRepository`, completed edit/audit needs the correction path exercised end to end,
+and exactly-once reconnect needs the outbox flushed across a simulated disconnect. Each is a
+self-contained increment on the existing harness.
 
 Correct PWA manifest colors to Sun-Drenched Topo tokens (done 2026-07-27) and verify icons, offline
 shell, safe areas, standalone mode, and killed-app recovery on a real phone.

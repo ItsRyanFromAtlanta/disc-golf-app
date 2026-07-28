@@ -79,6 +79,69 @@ const DEFAULT_TABLES = {
   bags: [TEST_BAG],
 }
 
+// --- activity lifecycle fixtures -------------------------------------------
+//
+// Activities reach the app by two different paths, and specs need both:
+//
+//   * Terminal activities (completed/incomplete) come from Supabase —
+//     `fetchHistory` selects them and hydrates the Dexie mirror. Seeding the
+//     `activities` table is enough, so `buildActivity` + `setTable` covers
+//     history, soft-delete, and restore.
+//   * Current activities (active/paused) never appear in that query. The shell
+//     reads them from the Dexie mirror via a liveQuery, so they have to be
+//     written to IndexedDB directly — that is what `seedLocalActivity` is for.
+//
+// Both produce the row shape `createDraftLifecycle` + `createDraft` build, so
+// a fixture row is indistinguishable from one the app wrote itself.
+
+const ACTIVITY_ID_PREFIX = '00000000-0000-4000-8000-0000000000a'
+
+export function buildActivity(overrides = {}) {
+  const recordedAt = overrides.updated_at ?? '2026-07-20T15:00:00.000Z'
+  const id = overrides.id ?? `${ACTIVITY_ID_PREFIX}1`
+  return {
+    id,
+    user_id: TEST_USER.id,
+    type: 'putting_freeform',
+    state: 'completed',
+    version: 2,
+    has_meaningful_fact: true,
+    needs_review: false,
+    hidden_at: null,
+    metadata: {},
+    created_at: '2026-07-20T14:30:00.000Z',
+    updated_at: recordedAt,
+    create_idempotency_key: `e2e-create-${id}`,
+    last_lifecycle_idempotency_key: `e2e-lifecycle-${id}`,
+    ...overrides,
+  }
+}
+
+/**
+ * The `putt_sessions` row a freeform activity needs in order to render as
+ * anything other than a bare row — `fetchHistory` joins the two by id.
+ */
+export function buildPuttSession(activityId, overrides = {}) {
+  return {
+    id: activityId,
+    session_date: '2026-07-20',
+    notes: null,
+    tags: [],
+    created_at: '2026-07-20T14:30:00.000Z',
+    putt_distance_logs: [
+      {
+        id: `${activityId}-log-1`,
+        distance_feet: 20,
+        makes: 7,
+        attempts: 10,
+        zone: 'circle_1',
+        created_at: '2026-07-20T14:35:00.000Z',
+      },
+    ],
+    ...overrides,
+  }
+}
+
 // PostgREST asks for a single object with this Accept header (`.single()` /
 // `.maybeSingle()`), and returns 406 rather than an empty array when nothing
 // matches. Getting this wrong surfaces as an unhandled error inside the app
@@ -118,6 +181,33 @@ async function installSupabaseBackend(page) {
     },
     writesTo(name) {
       return writes.filter((write) => write.table === name)
+    },
+    /**
+     * Writes an activity straight into the Dexie mirror, which is where the
+     * shell reads current (active/paused) activities from — they never come
+     * back from the history query, so `setTable` cannot reach them.
+     *
+     * Call this *after* a navigation (the app has to have opened the database
+     * first) and reload afterwards: a raw IndexedDB write does not fire the
+     * Dexie mutation broadcast that liveQuery listens to.
+     */
+    async seedLocalActivity(overrides = {}) {
+      const activity = buildActivity({ state: 'paused', version: 3, ...overrides })
+      await page.evaluate(async (row) => {
+        const request = indexedDB.open('DiscGolfAppDB')
+        const database = await new Promise((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        })
+        await new Promise((resolve, reject) => {
+          const transaction = database.transaction('activities', 'readwrite')
+          transaction.objectStore('activities').put(row)
+          transaction.oncomplete = () => resolve()
+          transaction.onerror = () => reject(transaction.error)
+        })
+        database.close()
+      }, activity)
+      return activity
     },
     /**
      * Seeds an authenticated session. Must be called before the first

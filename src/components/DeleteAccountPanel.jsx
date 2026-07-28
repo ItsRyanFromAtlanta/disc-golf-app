@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../lib/db/dexieDb'
 import { purgeDeviceData } from '../lib/localPurge'
+import { describeDeleteAccountError, isDeleteAccountUnavailable } from '../lib/accountDeletion'
 
 const CONFIRM_PHRASE = 'DELETE'
 
@@ -18,13 +19,27 @@ export default function DeleteAccountPanel() {
   const [phrase, setPhrase] = useState('')
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState(null)
+  // Set once we learn the RPC is not deployed. `main` auto-deploys and a
+  // migration cannot land in the same step as the client that calls it, so
+  // there is always a window where this button exists and its function does
+  // not. Re-offering the button through that window just invites a second
+  // identical failure.
+  const [unavailable, setUnavailable] = useState(false)
 
   async function handleDelete() {
     setStatus('working')
     setError(null)
     try {
       const { error: rpcError } = await deleteAccount()
-      if (rpcError) throw new Error(rpcError.message)
+      if (rpcError) {
+        // Handled here rather than thrown: wrapping it in a plain Error would
+        // discard `code`, which is the only reliable way to tell "not deployed"
+        // from "your session expired" from "the purge itself failed".
+        setStatus('error')
+        setUnavailable(isDeleteAccountUnavailable(rpcError))
+        setError(describeDeleteAccountError(rpcError))
+        return
+      }
 
       // Only after the server confirms: clear this device so the next person
       // to open the app cannot see the deleted account's practice data and no
@@ -42,8 +57,9 @@ export default function DeleteAccountPanel() {
       // open Dexie handle in memory still belongs to the deleted user.
       window.location.replace('/')
     } catch (err) {
+      // Reached when the purge succeeded server-side but a local step threw.
       setStatus('error')
-      setError(err.message)
+      setError(describeDeleteAccountError(err))
     }
   }
 
@@ -78,7 +94,7 @@ export default function DeleteAccountPanel() {
             <button
               type="button"
               className="btn-danger"
-              disabled={phrase !== CONFIRM_PHRASE || status === 'working'}
+              disabled={phrase !== CONFIRM_PHRASE || status === 'working' || unavailable}
               onClick={handleDelete}
             >
               {status === 'working' ? 'Deleting…' : 'Permanently delete'}
@@ -95,7 +111,10 @@ export default function DeleteAccountPanel() {
         </div>
       )}
 
-      {error && <p className="form-error" role="alert">Account not deleted: {error}</p>}
+      {/* No "Account not deleted:" prefix — every mapped message says so
+          itself, and the one thing this must never leave ambiguous is whether
+          an irreversible purge partially happened. */}
+      {error && <p className="form-error" role="alert">{error}</p>}
     </section>
   )
 }

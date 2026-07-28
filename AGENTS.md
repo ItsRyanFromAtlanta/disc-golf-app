@@ -297,6 +297,13 @@ parked only until their documented revisit triggers are satisfied.
 - Never commit Supabase or OpenAI API keys — use environment variables
 - Prefer small, composable React components over large page files
 - Distance in feet, scores relative to par unless stated otherwise
+- **UI that calls a new RPC must degrade when the RPC is absent.** `main` auto-deploys and a
+  migration cannot land in the same atomic step as the client that calls it, so there is always a
+  window where the button is live and the function is not. Map the failure to a real message rather
+  than rendering the raw PostgREST string — `PGRST202` and `42883` both mean "not deployed yet". See
+  `src/lib/accountDeletion.js` for the pattern. This is what keeps merge order from being
+  load-bearing: without it, shipping the client before the migration is a production defect rather
+  than a temporary gap.
 - When adding a new data table: state the ideal column format (types, constraints, indexes) in
   the schema file's header comment before writing DDL, and seed representative test data where
   feasible — assigned to the project's actively-exercised test account (the one with real

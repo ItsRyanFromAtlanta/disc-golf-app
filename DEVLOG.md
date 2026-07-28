@@ -1,5 +1,57 @@
 # Dev Log
 
+## 2026-07-28 — unblock the staged queue: degrade-on-missing-RPC, moderation history, activity E2E
+
+**What:** Four fixes aimed at the blockers recorded in the entry below. (1) `DeleteAccountPanel` now
+maps RPC failures to real messages via a new tested pure helper, `src/lib/accountDeletion.js`.
+(2) A new migration, `20260728120000_phase_e_preserve_moderation_history.sql`, stops the privacy
+purge from hard-deleting a departing user's catalog review history. (3) `.claude/settings.json`
+declares a read-only Supabase MCP allowlist. (4) The E2E suite gained activity-lifecycle fixtures and
+six specs, closing two more § 9 rows.
+
+**Why the deletion-panel fix matters more than its size:** the panel rendered `rpcError.message`
+verbatim, so with the migration unapplied a user who typed DELETE saw *"Could not find the function
+public.delete\_own\_account without parameters in the schema cache"*. `main` auto-deploys and a
+migration cannot land in the same atomic step as the client that calls it, so that window is
+structural, not an accident of this one PR. Mapping `PGRST202`/`42883` to "temporarily unavailable"
+is what makes shipping the client before the migration a temporary gap instead of a production
+defect — and it dissolves the PR #4 merge-ordering interlock entirely. Generalized as a convention in
+`AGENTS.md`. Every mapped message states that nothing was deleted: the purge is irreversible, so the
+one thing a failure must never leave ambiguous is whether it partially happened.
+
+**Moderation history:** `catalog_submission_reviews.reviewer_id` was `NOT NULL` with no cascade, so
+`delete_own_account()` deleted those rows outright while carefully nulling `courses.created_by`,
+`course_aliases.created_by`, and `disc_molds.created_by`. Inconsistent, and the roadmap's own rule is
+that version history is authoritative. The new migration makes the column nullable and replaces the
+function so reviews are kept and nulled like every other attribution. Verified against a throwaway
+local Postgres 16 cluster rather than by inspection: both migrations apply cleanly, the new one twice
+(idempotent), 12/12 behavioural assertions pass, and a counterfactual run with only the original
+migration confirms the review row *is* destroyed — the data loss was real, not theoretical. Note the
+rollback is asymmetric: restoring `NOT NULL` only works while no nulled rows exist, and once a real
+deletion has happened those rows *are* the preserved history. Nothing in `src/` reads `reviewer_id`.
+
+**Supabase MCP allowlist:** two sessions were fully blocked by `-32003 requires approval` on
+read-only calls, unable even to check whether a migration had been applied. The allowlist covers
+reads only — `execute_sql` is deliberately excluded, being read-capable but not read-only. Worth
+recording what the investigation turned up: the connector's tool namespace **changed mid-session**,
+from `mcp__Supabase__*` to a UUID prefix five minutes later, so neither identifier is stable and both
+forms are listed. Verification says the file does not fix it on its own: `-32003` comes from the MCP
+transport, not the harness permission layer, so the gate is upstream and needs an account-level
+connector approval. The file is a precondition, not the cure.
+
+**E2E:** terminal activities seed through the `activities` table, since `fetchHistory` selects them
+and hydrates the Dexie mirror; current (active/paused) activities never appear in that query, so
+`seedLocalActivity` writes straight to IndexedDB. Two consequences worth knowing: seed after a
+navigation, because the app must have opened the database first, and reload afterwards, because a raw
+IndexedDB write does not fire the mutation broadcast `liveQuery` listens to. Closes soft-delete/
+restore and the resume half of pause/resume.
+
+**Verification:** 25/25 E2E across both projects, 505 unit tests across 75 files (up 8, all from the
+new deletion-error mapping), lint at exactly the four documented baseline warnings, build clean.
+
+**Still open:** four § 9 rows remain — single-active auto-close, round-close confirmation, completed
+edit/audit, exactly-once reconnect. All four need a *live* capture session rather than a seeded one.
+
 ## 2026-07-28 — Playwright E2E baseline, authenticated for the first time
 
 **What:** Added a browser E2E suite — `playwright.config.js`, `e2e/` with 19 specs across a phone

@@ -29,9 +29,9 @@ consolidated to a single line of development.
 ## Resume point
 
 - **Active phase:** Phase E. Phases A, B, C, and D are complete; E1 shipped 2026-07-17.
-- **Blocking E2:** apply migration `20260727120000_phase_e_account_deletion.sql` (see Open
-  follow-ups). In-app account deletion is a shipped-but-broken surface until it lands, and it is an
-  App Review blocker rather than a Phase E feature.
+- **Not blocking E2 any more:** the two account-deletion migrations are still unapplied, but the UI
+  now degrades gracefully without them, so nothing downstream waits on them. They remain an App
+  Review blocker for the *feature*, not a correctness gate on other work.
 - **Next:** **E2 — shipped J1 round/course reconciliation.** Audit and harden the existing course/
   layout and offline round routes rather than rebuilding them, then add weather, activity-only rounds,
   group-scorecard groundwork, bag snapshot verification, and course preparation as separately
@@ -39,22 +39,35 @@ consolidated to a single line of development.
 
 ## Staged next actions
 
-Ordered. The first three close currently-open work; E2 does not start until 1 is applied.
+Ordered. The first three close currently-open work. E2 no longer waits on 1 — see the interlock note
+below.
 
 | # | Action | Owner | Blocks |
 |---|---|---|---|
-| 1 | Apply `20260727120000_phase_e_account_deletion.sql`, then run the four smoke checks below | **owner** — see note | account deletion; App Review |
-| 2 | Review and merge PR #4 — **after action 1, not before** | owner review | everything downstream |
+| 1 | Apply `20260727120000_phase_e_account_deletion.sql`, **then** `20260728120000_phase_e_preserve_moderation_history.sql`, then run the smoke checks below | **owner** — see note | account deletion; App Review |
+| 2 | Review and merge PR #4 — no longer blocked on action 1 (see below) | owner review | everything downstream |
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
 | 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
 | 7 | Begin E2 round/course reconciliation | agent | — |
-| 8 | Extend E2E to the six uncovered § 9 flows (needs activity-lifecycle fixtures) | agent | full Phase A § 9 gate |
+| 8 | Extend E2E to the four remaining § 9 flows (needs live-capture fixtures) | agent | full Phase A § 9 gate |
 
-**Order matters between 1 and 2.** PR #4 carries the account-deletion UI and `main` auto-deploys, so
-merging before the migration lands ships a button that errors on click. CI on #4 is green (`verify` +
-Vercel preview) as of 2026-07-28; the hold is the migration, not the checks.
+**The 1-before-2 interlock was dissolved on 2026-07-28.** It existed because PR #4 ships the
+account-deletion UI and `main` auto-deploys, so merging first put a button in production that threw a
+raw PostgREST error on click. `DeleteAccountPanel` now maps `PGRST202`/`42883` to "Account deletion is
+temporarily unavailable… nothing was deleted" (`src/lib/accountDeletion.js`), so the pre-migration
+window degrades instead of breaking. Applying the migrations first is still preferable — the feature
+does not work until they land — but it is no longer a correctness gate on the merge. CI on #4 is
+green (`verify` + Vercel preview).
+
+**Two migrations now, in order.** `20260728120000` makes `catalog_submission_reviews.reviewer_id`
+nullable and replaces `delete_own_account()` so a departing user's moderation history is kept and
+nulled rather than hard-deleted — matching how `created_by` is already handled. Both are unapplied.
+Verified against a throwaway local Postgres 16 cluster: both apply cleanly, the second is idempotent,
+12/12 behavioural assertions pass, and a counterfactual run confirms the original really does destroy
+the review rows. Its rollback is asymmetric — restoring `NOT NULL` only works while no nulled rows
+exist, and after a real deletion those rows *are* the preserved history.
 
 **Two of these are owner-only for environment reasons, not judgement reasons.** Both were approved on
 2026-07-28 and attempted; both were refused by the sandbox, so a future agent session should not
@@ -76,14 +89,22 @@ assume they are merely undecided:
   applied/not-applied state could not even be *read*. The migration SQL was reviewed instead and is
   clean: zero arguments with the subject derived from `auth.uid()`, `created_by` nulled rather than
   cascaded on `courses`/`course_aliases`/`disc_molds`, private Storage objects deleted by user
-  prefix, and `revoke ... from anon` + `grant execute to authenticated`. One behaviour worth a
-  conscious sign-off before applying: `catalog_submission_reviews.reviewer_id` is `NOT NULL` with no
-  cascade, so a departing user's **moderation history is hard-deleted** rather than preserved —
-  a different tradeoff than the community-attribution rows.
-- **Action 2** correctly did NOT proceed. The merge is gated on verifying `delete_own_account()`
-  exists, that verification was impossible (above), and unverifiable is a stop condition — merging
-  first would auto-deploy a delete button that throws on click. PR #4 was otherwise re-confirmed
-  healthy: open, `mergeable_state: clean`, 10 commits, 52 files, +1793/−404.
+  prefix, and `revoke ... from anon` + `grant execute to authenticated`. The one real finding from
+  that review — `catalog_submission_reviews.reviewer_id` being `NOT NULL`, so moderation history was
+  hard-deleted rather than preserved — is **fixed** by migration `20260728120000`.
+
+  A read-only Supabase MCP allowlist now sits in `.claude/settings.json`, but it does **not** fix
+  this on its own: `-32003` is returned by the MCP transport, not by the harness permission layer, so
+  the gate is upstream of repo settings and needs an account-level connector approval. Two further
+  findings worth knowing: the connector's tool namespace changed *mid-session* (`mcp__Supabase__*` →
+  a UUID prefix five minutes later), so neither identifier is stable and both are listed; and Claude
+  Code only watches settings files that existed at session start, so the file takes effect from the
+  next fresh session.
+- **Action 2** correctly did NOT proceed at the time: the merge was gated on verifying
+  `delete_own_account()` exists, that verification was impossible (above), and unverifiable is a stop
+  condition. That gate has since been removed by the graceful-degradation fix, so the merge is now an
+  ordinary review decision. PR #4 was re-confirmed healthy: open, `mergeable_state: clean`, 10
+  commits, 52 files, +1793/−404.
 - **Action 3** cannot be done from tooling. The GitHub MCP server exposes no branch-protection or
   ruleset capability of any kind (`list_branches` confirms `main` is `"protected": false`). Do it at
   https://github.com/ItsRyanFromAtlanta/disc-golf-app/settings/branches — add a rule for `main`,
