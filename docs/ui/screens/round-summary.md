@@ -266,18 +266,36 @@ hole list render with `In progress` → `Finish round` → button reads `Finishi
 
 **Error.** Two behaviors:
 
-- **Load failure with no cache** → `:86` returns `<p class="form-error">{error || 'Round not found'}</p>`
-  as the whole page: no header, no stats, no way to finish the round, no retry. `Round not found` is
-  house copy; anything else is a raw Supabase or network string.
+- **Load failure with no cache** → `S-ERR-BLOCK`. `:86` returns `<p class="form-error">{error || 'Round
+  not found'}</p>` as the whole page: no header, no stats, no way to finish the round, no retry
+  (`S-RETRY`). `Round not found` is house copy; anything else is a raw Supabase or network string. One
+  of the thirteen **unguarded** instances.
 - **Finish failure** → either `notice-sync` (when a local result exists — the normal offline case) or
   `setError`, which under `:86`'s `error || !round` test **replaces the entire page** with the error even
   though `round` is loaded and fine. A finish failure with no `localResult` therefore destroys a
   perfectly good summary view. That combination is narrow (`useUpdateRound` attaches `localResult` on
   every failure path at `:300-303`) but the branch is live.
 
-**Offline.** As § 5 — review and completion both work and queue; no reconnect self-heal.
+**The second bullet is a divergence from `S-ERR-BLOCK` as the row defines it.** The row scopes the state
+to "a read fails and replaces the whole screen." Here a *write* failure replaces a screen whose read
+succeeded — the same extension `settings` makes, and for the same structural reason: one `error` state
+shared between the load path and the mutation path, tested in an early return. Two of the twenty
+documents in this pass found that shape independently; it is not specific to either screen.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; the onboarding gate runs first.
+**Offline.** `S-OFFLINE-READ` — on the working side: `roundRepository` is cache-backed.
+`S-OFFLINE-WRITE` — review and completion both work and queue through the round outbox. As § 5; no
+reconnect self-heal, which diverges from the row's `createRepository` `online`-event re-flush.
+
+**Resolves the `?` in this route's `S-SYNC` cell — and it is a sixth vocabulary, not one of the five.**
+`RoundSummaryPage.jsx:76` sets `Round completed on this device; it will sync when you reconnect.`,
+rendered as `.form-info` at `:100`. That is a distinct string from all five the row catalogues, including
+`round-scorecard`'s `Saved on this device; it will retry when you reconnect.` — same screen family, same
+repository, three words different. It uses none of § 12's four labels and reserves no layout space.
+The row's count of "five distinct offline/sync copy vocabularies" is therefore an undercount; logged in
+`_corrections/state-citations-2.md`.
+
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell; `S-ONBOARD` — the onboarding gate
+runs first.
 `RoundSummaryPage.jsx:19` dereferences `user.id`. `loadRound`'s cached path checks `round.user_id`; the
 remote path relies on RLS (`Authenticated users manage own rounds`,
 `20260714150000_phase_c_round_logging_rls.sql:160`). `finalizeRoundActivity` independently rejects a
@@ -288,7 +306,11 @@ mismatched `activity.user_id` (`roundRepository.js:177`).
 - **No completeness check.** `cta-finish` never inspects how many holes are scored. Finishing a round
   after three holes writes `total_score` = the sum of three and marks it `Completed`, and that number
   then appears in `rounds-root` and feeds the weekly report's `rounds_completed` highlight
-  (`weeklyReport.js:92`) as a full round.
+  (`weeklyReport.js:92`) as a full round. This is the `S-INCOMPLETE` gap arriving from the other
+  direction: the row records that `activities.needs_review` is captured, notified around, and never
+  rendered, and names `round-summary` as one of the three affected screens. Here a round that any
+  reasonable definition would mark as needing review is instead marked `Completed` with no badge, so
+  there is nothing for the unrendered column to have flagged.
 - **No idempotency guard against a stale total.** `total_score` is computed once, at the moment the
   button is pressed, from whatever `round_holes` happen to be loaded.
 

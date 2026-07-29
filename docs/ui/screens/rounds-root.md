@@ -205,33 +205,47 @@ Two offline defects:
 **Happy path.** `/courses` → `View all` → list renders newest-first with each row's relative-to-par →
 tap an in-progress round → `/rounds/:roundId` resumes the scorecard.
 
-**First run / empty.** `rounds.length === 0` → `list-empty` with a `Log a round` CTA. Correct and
-complete. Note the copy is idiom A (`No rounds logged yet.`) while `courses-root`'s directory uses idiom
-B (absence plus next action) — catalogued in `COPY_AND_TERMINOLOGY.md` § 2.
+**First run / empty.** `S-EMPTY` — `rounds.length === 0` → `list-empty` with a `Log a round` CTA
+(`RoundsPage.jsx:61`, one of the four `.empty-state` users in the app). Correct and complete, with no
+divergence from the row. Note the copy is idiom A (`No rounds logged yet.`) while `courses-root`'s
+directory uses idiom B (absence plus next action) — catalogued in `COPY_AND_TERMINOLOGY.md` § 2.
 
 **Error.** Two behaviors, correctly separated — this screen handles errors better than the three
 course screens:
 
-- `roundsQuery.error` **with no data** (remote failed *and* cache empty) → `RoundsPage.jsx:45` returns
-  `<p class="form-error">{roundsQuery.error.message}</p>` as the whole page. Raw Supabase text, no retry.
-  Only reachable on a first-ever visit with no network.
-- `roundsQuery.error` **with data** → the list renders normally with `banner-cached`. Non-blocking, and
-  the right shape.
+- `roundsQuery.error` **with no data** (remote failed *and* cache empty) → `S-ERR-BLOCK`.
+  `RoundsPage.jsx:45` returns `<p class="form-error">{roundsQuery.error.message}</p>` as the whole page.
+  Raw Supabase text, no retry (`S-RETRY`). One of the six **guarded** instances — the `&& !roundsQuery.data`
+  test is what makes this reachable only on a first-ever visit with no network.
+- `roundsQuery.error` **with data** → the list renders normally with `banner-cached`. `S-ERR-INLINE`
+  (`:58`). Non-blocking, and the right shape.
 - A single `loadRound` rejection → that row's `row-relative` shows `—`; everything else is unaffected.
+  `S-ERR-SILENT` in effect: the em dash is indistinguishable from a round with no scores.
 
-**Offline.** As § 5 — the list renders from cache with a banner, in the wrong order.
+**Offline.** `S-OFFLINE-READ` — on the working side: `roundRepository` is cache-backed, so the list
+renders from Dexie. As § 5 — with a banner, in the wrong order.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; the onboarding gate runs first.
-`RoundsPage.jsx:14` dereferences `user.id` unconditionally. `useRoundList` and the Dexie cache are both
+**`S-STALE`, and this screen is the row's single instance in the entire app.** `RoundsPage.jsx:58` —
+`Showing saved rounds from this device.` — is the only place any screen tells the user it is looking at
+cache. Two divergences remain, both recorded by the row: it is rendered in `.form-error`
+(`--color-negative`), so a successful cached read reads as a failure rather than as one of § 12's calm
+`Saved on Device` family; and the element is conditional, so it appears and disappears without reserved
+layout space. The behavior is right and the signal is wrong — which is exactly why the row rates the
+state `contract-violation` app-wide despite this screen existing.
+
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell; `S-ONBOARD` — the onboarding gate
+runs first. `RoundsPage.jsx:14` dereferences `user.id` unconditionally. `useRoundList` and the Dexie cache are both
 user-scoped (`readCachedRound` rejects a round whose `user_id` does not match, `roundRepository.js:98-106`),
 so a shared device cannot leak another account's rounds through the cache.
 
-**Interlock.** **N/A** — no cap or constraint is enforced or displayed. There is no limit on rounds, and
+**Interlock.** **N/A** — no cap or constraint is enforced or displayed, so `S-INTERLOCK-CAP` is `➖`.
+There is no limit on rounds, and
 no truncation: unlike `courses-root`'s `.slice(0, 3)`, this list renders every round with no pagination,
 which is what makes the N+1 in § 5 unbounded.
 
-**Destructive.** **N/A** — nothing here deletes, discards, or hides a round. As with the rest of the
-section, note the absence: **there is no way to delete a round anywhere in the app.** The J1 RLS policy
+**Destructive.** **N/A** — nothing here deletes, discards, or hides a round, so `S-CONFIRM` is `➖`. As
+with the rest of the section, note the absence: **there is no way to delete a round anywhere in the
+app.** The J1 RLS policy
 does grant owners full control (`Authenticated users manage own rounds`, `for all`, at
 `20260714150000_phase_c_round_logging_rls.sql:160`), so unlike courses the database permits it — no UI
 offers it. An accidental round started at the wrong course is permanent, appears in this list forever,

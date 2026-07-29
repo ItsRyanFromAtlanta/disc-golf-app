@@ -261,6 +261,11 @@ builds one card per hole → type a score, tab or tap away → `updateLocal` sho
 and writes, `tb-savestate` flips to `Saving…` and back, `tb-score` updates → repeat for 18 holes →
 `Finish` → `/rounds/:roundId/summary` → the button there completes the round.
 
+`tb-savestate` is `S-SAVING`, and it is the row's **only announced instance in the app**:
+`RoundScorecardPage.jsx:159` renders `Saving…`/`Autosaves` inside an `aria-live="polite"` toolbar. Every
+other in-flight indicator in the codebase is silent to assistive technology. No divergence — this is the
+pattern § 3's first accessibility finding asks the other screens to adopt.
+
 **First run / empty.** A newly created round has a row per hole with `score: null`, so every card renders
 with an empty score box, `tb-score` reads `— · 0 strokes`, and the page is immediately usable. There is
 no distinct empty state and none is needed.
@@ -273,16 +278,33 @@ future score-only import.
 
 **Error.** Two very different behaviors:
 
-- **Load failure with no cache** → full-page `<p class="form-error">{error || 'Round not found'}</p>`
-  (`:144`), no retry, no header, no navigation but the tab bar. `Round not found` is house copy for the
-  `!round` case; anything else is a raw Supabase or network string.
-- **Save failure** → `notice-save`, non-blocking, capture continues. This is the correct shape and the
-  screen gets it right.
+- **Load failure with no cache** → `S-ERR-BLOCK`. Full-page `<p class="form-error">{error || 'Round not
+  found'}</p>` (`:144`), no retry (`S-RETRY`), no header, no navigation but the tab bar. `Round not
+  found` is house copy for the `!round` case; anything else is a raw Supabase or network string. One of
+  the thirteen **unguarded** instances — the `error || !round` test has no `&& !data` clause, which is
+  the same shape that bites `round-summary` harder (see that document's Error path).
+- **Save failure** → `notice-save`, non-blocking, capture continues. `S-ERR-INLINE`, and the row names
+  this screen the **reference pattern** for it (`:163,181` — `Disc list unavailable; scores still save
+  without a disc.`). Copy that names what still works, beside content that still works. This is the
+  correct shape and the screen gets it right.
 
-**Offline.** As § 5. Capture continues; reconnect does not auto-flush.
+Note the `S-ERR-INLINE` severity divergence still applies: `:181` describes a benign degradation and is
+styled `.form-error`, so a message whose entire point is reassurance renders in `--color-negative`.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; the onboarding gate runs first.
-`RoundScorecardPage.jsx:51` dereferences `user.id`. `loadRound`'s cached path checks `round.user_id`
+**Offline.** `S-OFFLINE-READ` — on the working side: `loadRound` reads through the Dexie cache
+(`roundRepository.js:200-207`). `S-OFFLINE-WRITE` — outbox-backed and durable. As § 5: capture continues;
+reconnect does not auto-flush, which diverges from the row's `createRepository` shape, where the `online`
+event re-flushes the outbox.
+
+**Diverges from `S-SYNC`.** `RoundScorecardPage.jsx:137` is the row's **fifth** and last competing
+vocabulary — `Saved on this device; it will retry when you reconnect.` — a sentence rather than one of
+§ 12's four labels, and distinct even from `lost-found`'s fourth-vocabulary sentence, which says
+"connectivity returns" rather than "you reconnect." Neither reserves layout space. The row rates the
+whole state `contract-violation` on labels, count, and layout stability; this screen contributes to all
+three.
+
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell; `S-ONBOARD` — the onboarding gate
+runs first. `RoundScorecardPage.jsx:51` dereferences `user.id`. `loadRound`'s cached path checks `round.user_id`
 (`roundRepository.js:98-106`); the remote path relies on RLS
 (`Authenticated users manage own rounds`, `20260714150000_phase_c_round_logging_rls.sql:160`). Opening
 another user's round id therefore fails at the fetch and lands in the full-page error rather than showing
@@ -301,7 +323,14 @@ So `99`, `0`, and `-3` all save and all flow into `roundTotal` and `relativeToPa
 disabling AND a DB `CHECK` constraint" — met by the 100-putt routine ceiling and the 35-disc bag cap, not
 met here.
 
-**Destructive.** **N/A** — the screen deletes nothing. Two adjacent facts:
+**Diverges from `S-INTERLOCK-CAP`.** The row surveys three ceilings and rates them `cosmetic` —
+"enforced, inconsistently pre-empted." This bound is the opposite and is not in the row's tally:
+*advertised and not enforced anywhere at all*, in the markup, the app layer, or the schema. An
+`S-INTERLOCK-CAP` reader who assumed the row's `cosmetic` severity generalized would be wrong here; on
+this screen the failure is silent data corruption of the round total. Noted in
+`_corrections/state-citations-2.md`.
+
+**Destructive.** **N/A** — the screen deletes nothing, so `S-CONFIRM` is `➖`. Two adjacent facts:
 
 - Clearing a score to empty writes `null` (`localHole` normalizes `''` to `null`), which is a real
   unscoring with no confirmation. Appropriate for a scorecard; worth knowing it is silent.

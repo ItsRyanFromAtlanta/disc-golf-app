@@ -184,15 +184,21 @@ no path forward — even though `round-scorecard` itself is fully offline-capabl
 ## 6. Flow paths
 
 **Happy path.** `/courses` → `Add course` → type a name → accept the `9` / `3` defaults → `Create course`
-→ button reads `Creating…` → three writes succeed → `fetchCourse` returns → `navigate('/courses/<id>')` →
-`course-detail` renders the `Main` layout with nine par-3 holes and a `Start round` button.
+→ button reads `Creating…` (`S-SAVING`, `CourseFormPage.jsx:78` — a page-owned hand replication of
+`EditableSection`'s pattern, with the control disabled while in flight, which is the row's correct shape)
+→ three writes succeed → `fetchCourse` returns → `navigate('/courses/<id>')` → `course-detail` renders
+the `Main` layout with nine par-3 holes and a `Start round` button.
 
-**First run / empty.** Identical to the happy path — this screen has no data-dependent state, so there is
-no distinct empty rendering. It is the entry point *out of* the empty state on both `courses-root` and
-`round-start`.
+**First run / empty.** `S-EMPTY` and `S-LOAD` are both `➖` here — this screen has no data-dependent
+state, so there is no distinct empty rendering and no initial read to wait on. Identical to the happy
+path. It is the entry point *out of* the empty state on both `courses-root` and `round-start`.
 
-**Error.** Any rejection sets `err-inline` and clears `saving`, leaving every field populated and the
-button live. Three distinct error sources reach the same banner with three different registers of copy:
+**Error.** `S-ERR-INLINE` (`CourseFormPage.jsx:47`) — any rejection sets `err-inline` and clears
+`saving`, leaving every field populated and the button live. **This screen is deliberately outside
+`S-ERR-BLOCK`**, one of the minority the row does not list among its 19; there is no page-level error
+state. `S-RETRY` binds only nominally, as on `goals`: no retry control exists, but the form stays live
+so resubmitting *is* the retry. Three distinct error sources reach the same banner with three different
+registers of copy:
 
 | Source | Message the user sees |
 |---|---|
@@ -203,10 +209,15 @@ button live. Three distinct error sources reach the same banner with three diffe
 
 The first three are house copy; the fourth is not, and it is the one an offline user always gets.
 
-**Offline.** As § 5 — hard failure with a raw message, values retained, nothing queued.
+**Offline.** `S-OFFLINE-READ` — `lib/roundLog` is one of the eight modules with no cache, though it costs
+little here because the screen reads nothing on mount. **Diverges from `S-OFFLINE-WRITE`:**
+`createCourseWithLayout` is three direct Supabase writes with no outbox and no flush, so submission is a
+hard failure with a raw message, values retained, nothing queued — and no `S-SYNC` label is displayable.
+Worse than the row's generic uncovered-write case, because the three writes are not atomic: a partial
+success leaves the zero-hole layout that `course-detail` § 6 records as unhandled. As § 5.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; `CourseFormPage.jsx:7` dereferences `user.id`
-unconditionally. `createCourseWithLayout` additionally re-resolves the user via `supabase.auth.getUser()`
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell; `CourseFormPage.jsx:7`
+dereferences `user.id` unconditionally. `createCourseWithLayout` additionally re-resolves the user via `supabase.auth.getUser()`
 when `userId` is falsy (`roundLog.js:193-198`) — defensive, and unreachable from this screen. A Supabase
 anonymous (guest) session can create courses, and those courses are visible to every authenticated user
 because of the community-read RLS policy; nothing warns the user of that.
@@ -224,7 +235,14 @@ gets a 36-hole course with no explanation. Contrast the two hard interlocks name
 which have "app-side disabling AND a DB `CHECK` constraint." These do not, and the app-side handling is
 correction rather than disabling.
 
-**Destructive.** **N/A** — the screen creates only. The relevant destructive fact is the absence of the
+`S-INTERLOCK-CAP` surveys three ceilings and does not include these two. They introduce a **fourth
+enforcement quality** the row does not describe: not "enforced, inconsistently pre-empted" but *silently
+corrected and never enforced* — no disable, no message, and no backing constraint. Of everything in the
+COURSES section this is the only interlock that changes the user's data without telling them. Noted in
+`_corrections/state-citations-2.md`.
+
+**Destructive.** **N/A** — the screen creates only, so `S-CONFIRM` is `➖`. The relevant destructive fact
+is the absence of the
 inverse: a course created here can never be deleted (§ 5), so an accidental submit is permanent and
 globally visible. `Cancel` discards unsaved input with no confirmation, which is appropriate for a form
 this short.

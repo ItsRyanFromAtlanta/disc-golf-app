@@ -225,9 +225,17 @@ selects prefilled → `round-start` creates the round.
 The middle row is the one produced by a partially failed quick-course creation (`courses-new` § 5), and
 it is unhandled.
 
-**Error.** `fetchCourse` rejects → `CourseDetailPage.jsx:27` returns `<p class="form-error">{error}</p>`
-as the whole page, with no retry control and no way back except the tab bar. Two common causes produce
-the same unhelpful raw string:
+`S-EMPTY` covers only the first row, and it covers it well: `CourseDetailPage.jsx:49` is one of the four
+`.empty-state` users in the app, so the no-layouts case has the row's best markup. **The second row is a
+divergence from `S-EMPTY`**: a zero-hole layout is genuinely empty and renders no empty state at all —
+an empty `<ol>` under a live CTA, which is the row's `❌` condition rather than its `cosmetic` one. The
+grid's `✅` for this route reflects the handled case only.
+
+**Error.** `S-ERR-BLOCK` — `fetchCourse` rejects → `CourseDetailPage.jsx:27` returns
+`<p class="form-error">{error}</p>` as the whole page, with no retry control (`S-RETRY`) and no way back
+except the tab bar. It is one of the thirteen **unguarded** instances, with no `&& !data` test, and this
+screen has no `S-ERR-INLINE` path at all, so every failure is total. Two common causes produce the same
+unhelpful raw string:
 
 - **Course not found.** `.single()` on a nonexistent id rejects with PostgREST's
   `JSON object requested, multiple (or no) rows returned`. The user sees that sentence. There is no
@@ -237,14 +245,17 @@ the same unhelpful raw string:
 `error` is checked before `course` (`:27` before `:28`), so an error always wins over the loading state —
 correct ordering, wrong presentation.
 
-**Offline.** As § 5.
+**Offline.** `S-OFFLINE-READ`, on the failing side: `lib/roundLog` is one of the eight modules with no
+cache, so the single read throws straight into `S-ERR-BLOCK` and the screen cannot render offline at all.
+`S-STALE` therefore never arises, and no `S-SYNC` label is displayable. As § 5.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; the onboarding gate runs first. This page never reads
-`user`, so it has no per-user branch at all: an anonymous (guest) Supabase session renders it identically
-to a full account.
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell; `S-ONBOARD` — the onboarding gate
+runs first. This page never reads `user`, so it has no per-user branch at all: an anonymous (guest)
+Supabase session renders it identically to a full account, which is consistent with `S-GUEST`'s finding
+that `AuthPage` is the only screen that branches on `isGuest`.
 
-**Interlock.** No cap or constraint is enforced here, but the screen contains a **dead-end launch path**
-that behaves like a missing one. `lay-start` and the `lay-empty` CTA are always enabled, and neither
+**Interlock.** `S-INTERLOCK-CAP` is `➖` — no cap or constraint is enforced here. But the screen contains
+a **dead-end launch path** that behaves like a missing one. `lay-start` and the `lay-empty` CTA are always enabled, and neither
 checks that the target layout has holes. Following either into `round-start`:
 
 - with `layoutId` pointing at a hole-less layout, or with no layout at all, `round-start`'s layout
@@ -256,7 +267,8 @@ checks that the target layout has holes. Following either into `round-start`:
 The correct behavior is to disable or relabel the CTA here, where the hole count is already known. Filed
 as `T-course-detail-2`.
 
-**Destructive.** **N/A** — the screen deletes nothing. As with `courses-root`, the notable fact is the
+**Destructive.** **N/A** — the screen deletes nothing, so `S-CONFIRM` is `➖`. As with `courses-root`,
+the notable fact is the
 absence of the inverse: the J1 RLS migration ships no delete policy for `courses`, `layouts`, or `holes`
 (`20260714150000_phase_c_round_logging_rls.sql`, comment at :29), so nothing displayed on this page can
 be removed by anyone, including its creator.

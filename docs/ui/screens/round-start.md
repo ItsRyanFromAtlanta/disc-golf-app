@@ -268,7 +268,14 @@ and started → round row written → `navigate('/rounds/<id>')` → scorecard.
 | No bags | Silent. `bags` stays `[]`, no default is preselected, and `fld-bag` shows only `No bag selected`. Fine — the field is genuinely optional — but note the onboarding gate guarantees at least one bag exists, so this is only reachable for a user who deleted all of theirs. |
 | Course with no layouts | Not handled. `fld-layout` renders empty and disabled, `info-summary` is absent, and `cta-submit` is disabled with no message. Arriving here from `course-detail`'s no-layouts empty state produces exactly this dead end — see `course-detail` § 6. |
 
-**Error.** Every failure lands in one `err-inline` banner:
+`S-EMPTY` covers the first row only, and covers it well: `RoundStartPage.jsx:131` is one of the four
+`.empty-state` users in the app. The second row is out of scope (an optional field, correctly silent).
+**The third row is a divergence from `S-EMPTY`** — a genuinely empty layout list with no empty state at
+all, only a disabled control. The grid's `✅` for this route reflects the no-courses case.
+
+**Error.** `S-ERR-INLINE` (`RoundStartPage.jsx:129`) — every failure lands in one `err-inline` banner,
+and **this screen is deliberately outside `S-ERR-BLOCK`**, one of the minority the row does not list
+among its 19:
 
 - either effect's `catch` sets it; a subsequent successful load does **not** clear it, so a transient
   course-fetch failure leaves a stale error above a working form;
@@ -277,11 +284,20 @@ and started → round row written → `navigate('/rounds/<id>')` → scorecard.
   because `cta-submit` is already disabled by `!selectedLayout`;
 - everything else is a raw Supabase or network message.
 
-**Offline.** As § 5. Reads fail; the write path works only when a bag version is cached or no bag is
-selected.
+**Diverges from `S-ERR-INLINE` in one respect the row does not cover:** the banner is not cleared by a
+later *successful* load, only by `handleSubmit` at `:97`. The row's premise is "a failure is shown beside
+content that still works"; here a resolved failure is shown beside content that works, which is a
+stale-signal defect rather than a severity one. `S-RETRY` binds nominally — no retry control exists, but
+the form stays live, so re-selecting or resubmitting is reachable without a reload.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; the onboarding gate runs first, which is why a bag
-normally exists. `RoundStartPage.jsx:10` dereferences `user.id` unconditionally. The onboarding gate
+**Offline.** `S-OFFLINE-READ` — mixed: `roundRepository` is cache-backed while `lib/roundLog` and
+`lib/discLocker` are two of the eight uncached modules, so the course and bag reads fail while the round
+path survives. `S-OFFLINE-WRITE` is partial: the write works only when a bag version is cached or no bag
+is selected. As § 5. No `S-SYNC` label is displayable on this screen, so a round created offline gives
+the user no calm-state confirmation that it was saved on device.
+
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell; `S-ONBOARD` — the onboarding gate
+runs first, which is why a bag normally exists. `RoundStartPage.jsx:10` dereferences `user.id` unconditionally. The onboarding gate
 matters here in a second way: it guarantees the `bags` fetch is non-empty for a normal user, which is
 what makes the default-bag preselection — and therefore the offline defect above — the common path rather
 than a rare one.
@@ -291,13 +307,29 @@ than a rare one.
 deliberately nullable (`migrate_disc_locker_and_layouts.sql:206-207`: "left NULLABLE on purpose (future
 score-only imports may not resolve a layout)"), so the database will accept what the form refuses. The
 disabling is silent, with no adjacent explanation, which is what turns the `course-detail` dead-end path
-into a confusing one rather than a merely blocked one.
+into a confusing one rather than a merely blocked one. `S-INTERLOCK-CAP` surveys three ceilings and does
+not include this one; it is a precondition gate rather than a capacity cap, and it is the mirror image of
+the row's pattern — pre-empted app-side with no backing constraint, where the row's three are enforced
+with inconsistent pre-emption.
 
 The **single-active-activity invariant** is the other interlock in play, and this screen deliberately
-does not enforce it — it degrades instead, leaving the parent as a draft (§ 5).
+does not enforce it — it degrades instead, leaving the parent as a draft (§ 5). **That is
+`S-INTERLOCK-ACTIVE`, but this screen diverges from the row in the manner of its failure, not merely by
+omitting the dialog.** The row's finding is that the confirmation flow is fully built in the repository
+and never reaches a screen. Here the repository declines to reach for it: `ensureRoundActivity`
+(`roundRepository.js:145-158`) calls `activityRepository.getActive(userId)` first and invokes
+`activityRepository.start` **only when nothing is active**. When a round or practice *is* live, the
+`start` call — and with it `planActivityStart`'s `round_confirmation_required` and the
+`confirmRoundReplacement` flag the row describes — is skipped entirely, by an explicit comment
+("J1 keeps that decision out of the round form"). So the confirmation is not lost in the UI layer on this
+path; it is never requested. The user-visible result is the same, and the round row is still created.
 
-**Destructive.** **N/A** — nothing here deletes. `Cancel` discards local selections with no confirmation,
-correctly. The relevant absence is downstream: once submitted, a round cannot be deleted anywhere in the
+The row's gap-1 screen list (`play-root`, `freeform-active`, `regimen-active`, `round-scorecard`,
+`practice-history`) does not name `round-start`, which is where a round is *started* and therefore where
+§ 11's confirmation is most directly owed. Noted in `_corrections/state-citations-2.md`.
+
+**Destructive.** **N/A** — nothing here deletes, so `S-CONFIRM` is `➖`. `Cancel` discards local
+selections with no confirmation, correctly. The relevant absence is downstream: once submitted, a round cannot be deleted anywhere in the
 app (`rounds-root` § 12 question 4), so an accidental `Start round` on the wrong course is permanent.
 
 ## 7. Dependencies
