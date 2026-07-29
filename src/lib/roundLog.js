@@ -233,54 +233,71 @@ export const COURSE_CREATE_UNAVAILABLE_MESSAGE =
 //
 // The ids are generated here rather than server-side so the call is a safe
 // replay: re-sending the same `p_course_id` returns that course instead of
-// creating a second one. Nothing depends on that yet — finding 4 (no offline
-// path for course creation) is what will queue this call in the outbox.
-export async function createCourseWithLayout({ userId, name, location, holes = [] }) {
+// creating a second one. That is what makes the call queueable, and
+// `courseRepository.js` queues it (E2 finding 4).
+//
+// Building the arguments is separated from sending them because those are two
+// different moments once the write is queued: the outbox entry has to be the
+// exact args object — ids included, or a replay would create a second course —
+// recorded before anything touches the network.
+export function buildCourseCreateArgs({ name, location, holes = [] }) {
   // Validated first, before anything touches the network: a missing name or an
-  // empty hole set should cost zero round trips on a bad connection. The RPC
-  // repeats both checks for callers that are not this function.
+  // empty hole set should cost zero round trips on a bad connection, and an
+  // invalid course must never reach the outbox, where it would fail on every
+  // reconnect forever. The RPC repeats both checks for callers that are not
+  // this function.
   if (!name?.trim()) throw new Error('Course name is required')
   if (holes.length === 0) throw new Error('A course needs at least one hole')
 
-  let ownerId = userId
-  if (!ownerId) {
-    const { data, error } = await supabase.auth.getUser()
-    if (error) throw error
-    ownerId = data.user?.id
-  }
-  // A local guard only. `created_by` is no longer sent: the function reads
-  // `auth.uid()` itself and accepts no owner argument, so a caller cannot
-  // attribute a community course to anyone else, and a stale client-side id
-  // cannot disagree with the JWT the write is actually authorised under.
-  if (!ownerId) throw new Error('You must be signed in to create a course')
-
-  const courseId = crypto.randomUUID()
-  const layoutId = crypto.randomUUID()
-  const holeRows = holes.map((hole, index) => ({
-    id: hole.id ?? crypto.randomUUID(),
-    hole_number: Number(hole.hole_number ?? hole.holeNumber ?? index + 1),
-    par: nullableNumber(hole.par) ?? 3,
-    distance_feet: nullableNumber(hole.distance_feet ?? hole.distanceFeet),
-    tee_type: hole.tee_type ?? hole.teeType ?? null,
-    hazards: hole.hazards ?? null,
-    strategy_notes: hole.strategy_notes ?? hole.strategyNotes ?? null,
-  }))
-
-  const { data, error } = await supabase.rpc('create_course_with_layout', {
+  return {
     p_name: name.trim(),
     p_location: location?.trim() || null,
-    p_holes: holeRows,
-    p_course_id: courseId,
-    p_layout_id: layoutId,
-  })
+    p_holes: holes.map((hole, index) => ({
+      id: hole.id ?? crypto.randomUUID(),
+      hole_number: Number(hole.hole_number ?? hole.holeNumber ?? index + 1),
+      par: nullableNumber(hole.par) ?? 3,
+      distance_feet: nullableNumber(hole.distance_feet ?? hole.distanceFeet),
+      tee_type: hole.tee_type ?? hole.teeType ?? null,
+      hazards: hole.hazards ?? null,
+      strategy_notes: hole.strategy_notes ?? hole.strategyNotes ?? null,
+    })),
+    // No owner id: the function reads `auth.uid()` itself and accepts no owner
+    // argument, so a caller cannot attribute a community course to anyone else,
+    // and a stale client-side id cannot disagree with the JWT the write is
+    // actually authorised under. It also means attribution survives a replay —
+    // `created_by` is resolved when the call lands, not when it was queued.
+    p_course_id: crypto.randomUUID(),
+    p_layout_id: crypto.randomUUID(),
+  }
+}
+
+// supabase-js returns `{ data, error, status }`, but the PostgrestError itself
+// carries only `message`/`details`/`hint`/`code` — never `status`. The outbox's
+// permanent/transient classifier keys off `status` for everything outside its
+// small set of Postgres codes, and this function's own validation raises 22023
+// (bad name / empty holes), 28000 (not signed in) and 42501 (course id owned by
+// someone else) — none of which are in that set. Dropping the status would
+// classify all three as transient and retry a rejected course on every
+// reconnect forever, which is finding 2 reappearing on a different queue.
+function courseRpcError(error, status) {
+  const wrapped = error instanceof Error ? error : Object.assign(new Error(error.message), error)
+  if (typeof status === 'number' && wrapped.status == null) wrapped.status = status
+  return wrapped
+}
+
+// Returns the course id, not the course. The read-back is deliberately not part
+// of this call: an outbox replay has no caller to hand a hydrated course to, and
+// a read that fails after the write landed must not look like a write that
+// failed. `courseRepository.js` hydrates separately, best-effort.
+export async function createCourseWithLayoutRpc(args) {
+  const { data, error, status } = await supabase.rpc('create_course_with_layout', args)
   if (error) {
     if (MISSING_COURSE_RPC_CODES.has(error.code == null ? '' : String(error.code))) {
       throw new Error(COURSE_CREATE_UNAVAILABLE_MESSAGE)
     }
-    throw error
+    throw courseRpcError(error, status)
   }
-
-  return fetchCourse(data ?? courseId)
+  return data ?? args.p_course_id
 }
 
 export async function fetchLayoutHoles(layoutId) {

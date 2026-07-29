@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { createCourseWithLayout } from '../lib/roundLog'
+import { useCreateCourse } from '../lib/repository/courseRepository'
 
 export default function CourseFormPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const createCourse = useCreateCourse(user.id)
   const [name, setName] = useState('')
   const [location, setLocation] = useState('')
   const [holeCount, setHoleCount] = useState('9')
@@ -20,14 +21,23 @@ export default function CourseFormPage() {
     try {
       const count = Math.max(1, Math.min(36, Number(holeCount) || 0))
       const par = Math.max(2, Math.min(6, Number(defaultPar) || 3))
-      const course = await createCourseWithLayout({
-        userId: user.id,
+      const course = await createCourse.mutateAsync({
         name,
         location,
         holes: Array.from({ length: count }, (_, index) => ({ holeNumber: index + 1, par })),
       })
       navigate(`/courses/${course.id}`)
     } catch (err) {
+      // The course is queued and mirrored locally even when the write could not
+      // be sent, so this is not a dead end — but it must not look like a
+      // success either. The directory is where its state is legible (badge,
+      // count banner, retry), and the detail screen reads from the server, so
+      // that is where an unsent course goes rather than a page that would fail
+      // to load.
+      if (err.localResult?.id) {
+        navigate('/courses')
+        return
+      }
       setError(err.message)
     } finally {
       setSaving(false)
@@ -44,6 +54,9 @@ export default function CourseFormPage() {
       </header>
 
       <p className="form-info">Create a lightweight course now and enrich its hole details later.</p>
+      <p className="form-info">
+        No signal? The course is saved on this device and uploaded when you are back online.
+      </p>
       {error && <p className="form-error">{error}</p>}
 
       <form className="putt-form" onSubmit={handleSubmit}>

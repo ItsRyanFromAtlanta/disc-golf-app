@@ -62,7 +62,22 @@ test.describe('single-active auto-close', () => {
     await page.reload()
 
     await startFreeformCapture(page)
+
+    // § 1's acknowledgement, asserted before the mirror reads below because it
+    // is the only thing the athlete actually sees: their in-progress session
+    // was closed for them, and a silent close is what this used to be. It is a
+    // transient shell toast (§ 6), so it is asserted through its live-region
+    // contract rather than by class — a notice a screen reader never announces
+    // would pass a text-only check while failing the athlete.
+    const toast = page.getByRole('status').filter({ hasText: 'saved as incomplete' })
+    await expect(toast).toBeVisible()
+    await expect(toast).toHaveAttribute('aria-live', 'polite')
+
     await waitForCaptureSync(supabase)
+
+    // ...and it is dismissible on demand rather than only on a timer.
+    await toast.getByRole('button', { name: 'Dismiss' }).click()
+    await expect(toast).toHaveCount(0)
 
     // The invariant `requireSingleCurrent` enforces: whatever else happened,
     // exactly one activity is current afterwards, and it is the new one.
@@ -110,6 +125,15 @@ test.describe('single-active auto-close', () => {
     await startFreeformCapture(page)
     await waitForCaptureSync(supabase)
 
+    // The toast is transient: it clears itself with no interaction, so it can
+    // never sit over the capture canvas for the rest of a session. The
+    // dismissible half of that contract is asserted in the spec above; this is
+    // the timer half, and it has to be observed here because everything below
+    // navigates, which would clear the toast for unrelated reasons.
+    const toast = page.getByRole('status').filter({ hasText: 'saved as incomplete' })
+    await expect(toast).toBeVisible()
+    await expect(toast).toHaveCount(0, { timeout: 15_000 })
+
     // The session has to be finished before History can be reached by URL:
     // `useCrashRecoveryRedirect` sends any fresh page load back to the capture
     // screen while a capture buffer is live, which is the behaviour a
@@ -118,10 +142,8 @@ test.describe('single-active auto-close', () => {
     await expect(page.getByRole('heading', { name: 'Freeform session complete!' })).toBeVisible()
     await page.goto('/practice/history')
 
-    // No toast accompanies the auto-close. `AppShell` renders
-    // `<ToastHost toast={null} />` unconditionally, so the "we closed your last
-    // session" notice § 9 asks for does not exist yet — History is the only
-    // place a replaced activity surfaces.
+    // History is where the replaced activity durably lives. The toast above is
+    // the in-the-moment acknowledgement; this is the record it points at.
     const row = page.locator('.history-row').filter({ hasText: '7/10' })
     await expect(row).toBeVisible()
     await expect(row).toContainText('Freeform')

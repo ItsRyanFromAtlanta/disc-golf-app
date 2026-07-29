@@ -261,6 +261,20 @@ export class AppDatabase extends Dexie {
       goalEvents: 'id, user_id, goal_id, idempotency_key, [goal_id+occurred_at]',
       weeklyReportSnapshots: 'id, user_id, week_start, version, [user_id+week_start], [week_start+version]',
     })
+
+    // E2 finding 4: quick-course creation queues through the outbox, so the
+    // course a player just built has to be readable before it reaches the
+    // server. This walks back the v5 note above ("shared course/layout/hole
+    // reference data remains remote-only") for courses only, and only as a
+    // mirror — the server stays authoritative.
+    //
+    // One store, not three: layouts and their holes ride along nested on the
+    // cached course row, exactly the shape `fetchCourse` returns, the same way
+    // `round_holes` rides on a cached round. Splitting them would mean keeping
+    // three tables consistent for data the client can never edit.
+    this.version(15).stores({
+      courses: 'id, created_by, name',
+    })
   }
 }
 

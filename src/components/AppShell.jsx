@@ -5,7 +5,8 @@ import TabBar from './TabBar'
 import GlobalHeader from './GlobalHeader'
 import ScreenScrollRegion from './ScreenScrollRegion'
 import SheetHost from './SheetHost'
-import ToastHost, { ToastProvider, useToastController } from './ToastHost'
+import ToastHost from './ToastHost'
+import { ToastContext, useToastController } from '../hooks/useToast'
 import { useCrashRecoveryRedirect } from '../hooks/useCrashRecoveryRedirect'
 import { useOnboardingGate } from '../hooks/useOnboardingGate'
 import { useActiveActivity } from '../hooks/useActiveActivity'
@@ -80,52 +81,53 @@ export default function AppShell() {
 
   return (
     <ProtectedRoute>
-      <ToastProvider showToast={showToast}>
-      <div className={`app-shell ${isActiveShell ? 'app-shell-active' : 'app-shell-standard'}`}>
-        {isActiveShell ? (
-          <div className="active-activity-shell">
-            <Outlet />
-          </div>
-        ) : (
-          <div className="app-shell-standard-content" aria-hidden={sheet ? true : undefined}>
-            <GlobalHeader
-              title={route?.title ?? 'Disc Golf'}
-              showBack={Boolean(route && !isRoot)}
-              onBack={handleBack}
-              showActivityPill={route?.showActivityPill}
-              activeActivity={activeActivity}
-              activeHref={activeHref}
-              notificationCount={badgeCount}
-              onNotifications={() =>
-                setSheet({
-                  title: 'Notifications',
-                  content: (
-                    <NotificationSheet
-                      userId={user?.id}
-                      onOpen={async (notification, destination) => {
-                        await notificationRepository.setStatus(notification.id, { read_at: new Date().toISOString() })
-                        setSheet(null)
-                        navigate(destination)
-                      }}
-                      onResolve={(notification) => notificationRepository.setStatus(notification.id, { resolved_at: new Date().toISOString() })}
-                    />
-                  ),
-                })
-              }
-            />
-            <ScreenScrollRegion ref={scrollRegionRef} onScroll={handleScroll}>
+      <ToastContext.Provider value={showToast}>
+        <div className={`app-shell ${isActiveShell ? 'app-shell-active' : 'app-shell-standard'}`}>
+          {isActiveShell ? (
+            <div className="active-activity-shell">
               <Outlet />
-            </ScreenScrollRegion>
-            <TabBar
-              isAtTop={isAtTop}
-              hasRequestedTop={requestedTopRef.current}
-              onScrollToTop={scrollToTop}
-            />
-          </div>
-        )}
-        <SheetHost sheet={sheet} onClose={() => setSheet(null)} />
-        <ToastHost toast={null} />
-      </div>
+            </div>
+          ) : (
+            <div className="app-shell-standard-content" aria-hidden={sheet ? true : undefined}>
+              <GlobalHeader
+                title={route?.title ?? 'Disc Golf'}
+                showBack={Boolean(route && !isRoot)}
+                onBack={handleBack}
+                showActivityPill={route?.showActivityPill}
+                activeActivity={activeActivity}
+                activeHref={activeHref}
+                notificationCount={badgeCount}
+                onNotifications={() =>
+                  setSheet({
+                    title: 'Notifications',
+                    content: (
+                      <NotificationSheet
+                        userId={user?.id}
+                        onOpen={async (notification, destination) => {
+                          await notificationRepository.setStatus(notification.id, { read_at: new Date().toISOString() })
+                          setSheet(null)
+                          navigate(destination)
+                        }}
+                        onResolve={(notification) => notificationRepository.setStatus(notification.id, { resolved_at: new Date().toISOString() })}
+                      />
+                    ),
+                  })
+                }
+              />
+              <ScreenScrollRegion ref={scrollRegionRef} onScroll={handleScroll}>
+                <Outlet />
+              </ScreenScrollRegion>
+              <TabBar
+                isAtTop={isAtTop}
+                hasRequestedTop={requestedTopRef.current}
+                onScrollToTop={scrollToTop}
+              />
+            </div>
+          )}
+          <SheetHost sheet={sheet} onClose={() => setSheet(null)} />
+          <ToastHost toast={toast?.message ?? null} onDismiss={dismissToast} />
+        </div>
+      </ToastContext.Provider>
     </ProtectedRoute>
   )
 }

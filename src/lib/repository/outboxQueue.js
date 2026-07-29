@@ -77,3 +77,43 @@ export function createOutboxQueue({ database, tables, dependencyScope = 'own' })
 
   return { rows, listReady, recordFailure, acknowledge, retryPoisoned }
 }
+
+// The optimistic write path every queued mutation shares: record the intent
+// durably *first*, apply it to the local mirror, then try the network. Anything
+// that fails from there leaves a replayable entry behind, and only a completed
+// remote write clears it — so a reload, a dead tunnel or a closed tab all land
+// in the same state.
+//
+// This lived in `roundRepository.js` until course creation became its second
+// caller. It moved here rather than being copied for the same reason the queue
+// itself is shared (see the header): the failure modes of an outbox are all
+// silent, so two copies means two chances to diverge invisibly.
+export async function enqueueAndSend({
+  database,
+  table,
+  op,
+  payload,
+  idempotencyKey = null,
+  dependencyKey = null,
+  writeLocal,
+  remote,
+  writeRemote,
+}) {
+  const outboxId = await database.outbox.add({
+    table,
+    op,
+    payload,
+    createdAt: Date.now(),
+    idempotencyKey,
+    dependencyKey,
+    attemptCount: 0,
+    lastErrorClass: null,
+    nextRetryAt: null,
+    poison: false,
+  })
+  await writeLocal()
+  const result = await remote()
+  await writeRemote(result)
+  await database.outbox.delete(outboxId)
+  return result
+}

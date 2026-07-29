@@ -114,7 +114,7 @@ dependency key, and poison state. Remove duplicate storage only after crash/reco
 
 > **Status (2026-07-28): PARTIALLY met. A Playwright suite now exists and runs in CI; most required
 > flows are covered.** The prior status ("no suite exists, no `e2e/` directory, anonymous smoke
-> only") is superseded. What changed: `e2e/` holds 32 specs across two viewport projects, they run
+> only") is superseded. What changed: `e2e/` holds 34 specs across two viewport projects, they run
 > authenticated via a seeded Supabase session with the backend intercepted in-page, and a second CI
 > job (`e2e`) runs them on every PR. See `e2e/README.md` for the harness design and its limits.
 >
@@ -127,7 +127,7 @@ Target: use Playwright for browser E2E. Required flows, with current coverage:
 |---|---|
 | Onboarding / Quick Play | **Partial** — the zero-bag onboarding gate redirect is covered; the wizard itself and Quick Play launch are not |
 | Pause / navigation / resume | **Covered** — a live capture session pauses with reason `navigation_away` when its screen is left and resumes from the header pill; a seeded paused activity resumes to the correct capture route (freeform vs. a specific regimen) |
-| Single-active auto-close | **Partial** — starting a live practice while another is current closes the previous one as `incomplete` with reason `replaced_by_activity`, keeps exactly one current activity, syncs the close ahead of the start, and surfaces the replaced session in History. The toast is **not** covered because it does not exist: `AppShell` renders `<ToastHost toast={null} />` unconditionally, so no auto-close notice is ever shown |
+| Single-active auto-close | **Covered** — starting a live practice while another is current closes the previous one as `incomplete` with reason `replaced_by_activity`, keeps exactly one current activity, syncs the close ahead of the start, and surfaces the replaced session in History. The § 1 toast landed 2026-07-29 and is covered too: it is announced through `role="status"` / `aria-live="polite"`, is dismissible on demand, and clears itself on a timer without interaction. Undo is deliberately not part of it — see the note below |
 | Round-close confirmation | **Covered** — starting a practice while a round is live prompts before anything moves; declining leaves the round running and starts nothing; confirming closes the round as `incomplete` with a `round_replacement_confirmed` state event and starts the practice. The confirmed branch had no browser path at all until 2026-07-29 |
 | Offline reload / recovery / exactly-once reconnect | **Covered** — the shell boots from precache with the network down, and a capture session started against an unreachable backend queues locally, drains both outboxes on reconnect, and reaches the backend exactly once per idempotency key, across a reload and across **both** reconnect shapes: backoff-driven (a server-side outage) and browser `online` event. The unguarded-flush defect that made the second shape double-send was fixed 2026-07-28 in `syncScheduler.js` and is held by a dedicated spec |
 | Completed edit / audit / recalculation | **Partial** — editing a finalized practice's notes/tags appends an audit event carrying previous and new values, bumps the activity version, sends the correction under one idempotency key, and survives a reload. Recalculation is **not** covered: notes/tags are the only editable fields on a finalized activity and no metric consumes them, so there is nothing to recalculate |
@@ -146,10 +146,33 @@ Live-capture fixtures landed the same day and moved the four remaining rows off 
 of them all the way to Covered. `e2e/capture.spec.js` drives the freeform capture screen through its
 own UI, which is the only way to reach `planActivityStart`, and asserts against the Dexie mirror and
 the recorded writes. One of those four — the unguarded `online`-event flush — was a genuine
-concurrency defect and has since been fixed, moving exactly-once reconnect to Covered. The gaps that
-remain are app gaps rather than harness gaps: the missing auto-close toast and the missing
-round-replacement confirmation UI have no surface to assert against, and recalculation has nothing to
-assert until a finalized edit can change something a metric reads.
+concurrency defect and has since been fixed, moving exactly-once reconnect to Covered. Two of the
+three remaining gaps were app gaps rather than harness gaps and have since been built: the
+round-replacement confirmation UI (2026-07-29) and the auto-close toast (2026-07-29). Recalculation
+still has nothing to assert until a finalized edit can change something a metric reads.
+
+The auto-close toast is raised from the repository's own answer, not from a second observer: `start`
+returns the replaced activity together with the state event that closed it, `mirrorInstantLaunchActivity`
+carries both out, and `useInstantLaunchSession` announces only when that event's reason is
+`replaced_by_activity`. A `round_replacement_confirmed` close stays silent, because the user just
+approved it in a dialog. The toast is transient and local (§ 6) and creates no notification row (§ 7).
+
+**Replacement Undo (§ 11, § 15) is deferred, and the policy helper is not dead by accident.**
+`canUndoReplacement` in `activityLifecycle/policies.js` stays unused because the undo window it
+describes is currently empty by construction and unreachable in the lifecycle engine:
+
+- `applyTransition` sets `has_meaningful_fact: true` on any `start`, so at the moment the toast is
+  shown the replacement already has a meaningful fact and `canUndoReplacement` is already `false`.
+- `incomplete` is terminal in `LIFECYCLE_TRANSITION_TABLE` — there is no command that returns a
+  closed activity to `active` — and § 11 separately states old incomplete activities are never
+  reactivated as the current live activity. Undo needs that contradiction resolved first.
+- Undo would also have to restore the replaced session's InstantLaunch capture buffer, which the
+  replacement start overwrote.
+
+So undo is a lifecycle-engine increment (redefine when a start becomes meaningful, add a reversal
+transition, decide what happens to the replacement), not a shell one. Shipping the toast without it
+is the smaller honest step; the helper's cost is one unused export, recorded here rather than left
+to rot silently.
 
 Correct PWA manifest colors to Sun-Drenched Topo tokens (done 2026-07-27) and verify icons, offline
 shell, safe areas, standalone mode, and killed-app recovery on a real phone.

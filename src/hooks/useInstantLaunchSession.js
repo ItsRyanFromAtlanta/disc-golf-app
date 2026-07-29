@@ -29,6 +29,13 @@ import { activityRepository } from '../lib/repository/activityRepository'
 import { createActivitySyncAdapter } from '../lib/repository/activitySync'
 import { getInstallationId } from '../lib/instantLaunch/installationId'
 import { activityIdForCrashRecoveryBuffer, mirrorInstantLaunchActivity } from '../lib/instantLaunch/activityBridge'
+import { useToast } from './useToast'
+
+// § 1: "Starting a new activity auto-closes an existing practice as
+// `incomplete` and shows a toast." The toast is transient and local (§ 6) — it
+// is deliberately not a notification row, which § 7 reserves for durable,
+// actionable, cross-device items.
+export const REPLACED_PRACTICE_TOAST = 'Your previous practice was saved as incomplete.'
 
 // Orchestrates the FSM + unified localStorage subsystem + sync scheduler for
 // one page (RegimenRunPage or FreeformLogPage) — generic across both session
@@ -71,6 +78,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
   const [fsm, setFsm] = useState(() => ({ status: resolveBootstrapState(launchState.crashRecoveryBuffer) }))
   const [sessionState, setSessionState] = useState(() => bootstrapSessionState(launchState))
   const [syncStatus, setSyncStatus] = useState(SYNC_STATUS.SYNCED)
+  const showToast = useToast()
 
   const sessionStateRef = useRef(sessionState)
   const schedulerRef = useRef(null)
@@ -105,8 +113,17 @@ export function useInstantLaunchSession(writeAdapter, userId) {
         setLaunchState(updateInstantLaunchState(applySetCrashRecoveryBuffer, { activityId: result.activity.id }))
       }
     }
+    // Every path that can auto-close a previous activity runs through this one
+    // call — a fresh start, the bootstrap mirror of a relaunched PWA, and the
+    // flush-time mirror retry — so the announcement lives here rather than in
+    // three callers. The recorded close reason is what distinguishes an
+    // unprompted auto-close from a round replacement the user just confirmed
+    // in a dialog; only the former needs telling.
+    if (result?.replacedStateEvent?.reason === ACTIVITY_STATE_REASONS.REPLACED_BY_ACTIVITY) {
+      showToast(REPLACED_PRACTICE_TOAST, { key: `replaced:${result.replacedActivity?.id ?? ''}` })
+    }
     return result
-  }, [])
+  }, [showToast])
 
   // A resumed PWA may have a live InstantLaunch buffer but no React page
   // state. Mirror that buffer once on mount before any capture rows are

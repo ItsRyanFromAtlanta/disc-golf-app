@@ -13,7 +13,8 @@ import { getInstallationId } from '../instantLaunch/installationId'
 import { SYNC_STATUS, createSyncScheduler } from '../instantLaunch/syncScheduler'
 import { activityRepository } from './activityRepository'
 import { createActivitySyncAdapter } from './activitySync'
-import { createOutboxQueue } from './outboxQueue'
+import { createOutboxQueue, enqueueAndSend } from './outboxQueue'
+import { assertCourseIsSynced } from './courseRepository'
 import {
   createRound,
   fetchRound,
@@ -240,33 +241,10 @@ export async function loadRound(roundId, userId) {
   }
 }
 
-async function runQueuedMutation({
-  table,
-  op,
-  payload,
-  idempotencyKey = null,
-  dependencyKey = null,
-  writeLocal,
-  remote,
-  writeRemote,
-}) {
-  const outboxId = await db.outbox.add({
-    table,
-    op,
-    payload,
-    createdAt: Date.now(),
-    idempotencyKey,
-    dependencyKey,
-    attemptCount: 0,
-    lastErrorClass: null,
-    nextRetryAt: null,
-    poison: false,
-  })
-  await writeLocal()
-  const result = await remote()
-  await writeRemote(result)
-  await db.outbox.delete(outboxId)
-  return result
+// Now the shared helper in `outboxQueue.js` — course creation became its second
+// caller, so it moved next to the queue it writes into rather than being copied.
+function runQueuedMutation(options) {
+  return enqueueAndSend({ database: db, ...options })
 }
 
 export function useRoundList(userId) {
@@ -295,6 +273,13 @@ export function useCreateRound(userId) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (fields) => {
+      // A round is filed against the *shared* course and layout rows, so it
+      // cannot be queued behind a course that is itself still queued. Refused
+      // deliberately and up front, outside the try below, so no optimistic
+      // round and no outbox entry are created — see `PENDING_COURSE_ROUND_MESSAGE`
+      // in `courseRepository.js` for the reasoning.
+      await assertCourseIsSynced(fields.course_id)
+
       const roundId = fields.id ?? crypto.randomUUID()
       let bagVersionId = fields.bag_version_id ?? null
       if (fields.bag_id && !bagVersionId) {

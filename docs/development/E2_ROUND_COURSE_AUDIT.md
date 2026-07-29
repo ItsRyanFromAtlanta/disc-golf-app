@@ -110,12 +110,25 @@ produced exactly the orphan course this finding describes — the harness demons
 defect, not just bless the fix. Invoker semantics were confirmed by dropping the `courses` INSERT
 policy and watching the call fail, which a definer function would have sailed through.
 
-## 4. `createCourseWithLayout` has no offline path — OPEN
+## 4. `createCourseWithLayout` has no offline path — FIXED (2026-07-29)
 
-**Severity: medium.** Every other write in the app queues through the outbox; this one calls Supabase
-directly and throws. Quick-course creation is a field action, taken standing on a course with one bar
-of signal — the exact condition the offline architecture exists for. Pairs naturally with finding 3:
-the RPC is what an outbox entry would replay.
+**Severity: medium.** Every other write in the app queues through the outbox; this one called Supabase
+directly and threw. Quick-course creation is a field action, taken standing on a course with one bar
+of signal — the exact condition the offline architecture exists for.
+
+Fixed by `src/lib/repository/courseRepository.js`, structured after the round outbox and sharing its
+machinery: the same `createOutboxQueue`, the same permanent/transient classifier, the same backoff
+curve, and a flush whose result shape `createSyncScheduler` already consumes. A fourth hand-rolled
+queue is what `outboxQueue.js`'s header exists to prevent.
+
+Finding 3 is what made it tractable, by design rather than by luck: one RPC call is one queueable
+unit, and client-generated `p_course_id`/`p_layout_id` mean a reconnect that retries a call which
+actually landed gets the existing course back instead of a duplicate. The read-back split noted under
+finding 3 was the first move — `buildCourseCreateArgs` and `createCourseWithLayoutRpc` separate the
+write from `fetchCourse`, since an outbox replay has nothing to return a read to.
+
+`roundRepository` gained `assertCourseIsSynced`, so starting a round against a course whose creation
+is still queued is handled deliberately rather than discovered in the field.
 
 ## 5. `fetchCourses()` is unbounded — OPEN
 
@@ -155,7 +168,7 @@ documented rather than assumed. Fix: `nulls not distinct` on the index, or a syn
 | 1 | Round-hole upsert resolved on surrogate id | High | **Fixed** |
 | 2 | Round outbox swallows errors, diverging from § 8 | High | **Fixed** |
 | 3 | Course creation is not atomic | High | **Fixed** |
-| 4 | Course creation has no offline path | Medium | After 3 (shares the RPC) |
+| 4 | Course creation has no offline path | Medium | **Fixed** |
 | 5 | Unbounded course directory fetch | Medium | Deferred, trigger recorded |
 | 6 | Round holes ordered by UUID | Low | With 2 or 3 |
 | 8 | Duplicate hole numbers possible when `tee_type` is NULL | Medium | Open, found 2026-07-29 |

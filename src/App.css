@@ -2133,11 +2133,47 @@
   color: var(--color-text-secondary);
 }
 
+/* Anchored on both sides rather than right-only: a fixed element wider than
+   the viewport is exactly the horizontal overflow the 320px reflow gate
+   forbids, and the message length is not under this component's control. */
 .toast-host {
   position: fixed;
+  left: 16px;
   right: 16px;
   bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-text-primary);
+  color: var(--color-bg-primary);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+}
+
+.toast-message {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+/* 44×44pt minimum for a secondary control (§ 12). */
+.toast-dismiss {
+  flex: none;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-display);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
 }
 
 .tab-bar-item {

@@ -114,6 +114,13 @@ export async function mirrorInstantLaunchActivity({
     }
   }
 
+  // The start command is the only thing that can auto-close a previous
+  // activity, and the repository is the only place that decides it did. Carry
+  // its answer out verbatim (§ 1's toast reads it) rather than letting a caller
+  // infer a replacement from a second source.
+  let replacedActivity = null
+  let replacedStateEvent = null
+
   if (!isCurrentActivityState(activity.state)) {
     const started = await repository.start(activityId, {
       ...baseMutation,
@@ -131,11 +138,15 @@ export async function mirrorInstantLaunchActivity({
       }
     }
     activity = started.activity
+    replacedActivity = started.replacedActivity ?? null
+    replacedStateEvent = started.replacedStateEvent ?? null
   }
 
   return {
     instantLaunchState: attachActivityMirror(instantLaunchState, activityId),
     activity,
+    replacedActivity,
+    replacedStateEvent,
     outcome: 'mirrored',
     warnings: [],
   }
