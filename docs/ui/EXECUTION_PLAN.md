@@ -26,10 +26,10 @@ screens each proposed "add a Retry control to the error state"; same. Where the 
 component that must then be adopted with screen-specific copy and conditions, the umbrella is a new
 enabling task and the adopters stay separate — merging them would delete real content.
 
-`docs/ui/DEFECT_REGISTER.md` **did not exist when this plan was written.** Cross-referencing every task
-to a `D-` defect id is therefore **outstanding** and is the first maintenance action on this file. The
-correspondence should be near-mechanical: most tasks in Phases 1–3 are the remediation of a registered
-defect.
+`docs/ui/DEFECT_REGISTER.md` landed mid-draft, compiled against `8ee0ac9`, with **24 defects**. It is
+cross-referenced in § 3.5 below. That cross-reference produced the most important single finding in this
+plan and it is not a scheduling one: **six registered defects have no task in any screen document,** four
+of them `data-loss` or `broken-feature`. See § 3.5.2.
 
 ---
 
@@ -267,9 +267,84 @@ five, which is precisely why they belong in one task.
 
 ---
 
+## 3.5 Cross-reference to `DEFECT_REGISTER.md`
+
+24 defects, compiled against `8ee0ac9`. The register is authoritative on *what is broken*; this plan is
+authoritative on *when it gets fixed*. Where they disagree, open both.
+
+### 3.5.1 Defects with a task
+
+| Defect | Sev | Remediating task | Phase |
+|---|---|---|---|
+| `D-03` — a round started during another activity is permanently unfinalizable | `data-loss` | `T-round-start-3` (+ `T-round-summary-2`) | 7 / 1 |
+| `D-04` — onboarding provisioning ordering makes retry impossible | `data-loss` | `T-onboarding-2` | 1 |
+| `D-05` — offline round start fails whenever a bag is selected | `broken-feature` | `T-round-start-1` | **1** |
+| `D-07` — account deletion cannot succeed | `broken-feature` | `T-settings-2`, `T-settings-3` | **1** |
+| `D-08` — `CareerHubPage` reads a nonexistent column | `broken-feature` | `T-me-root-1` | 7 |
+| `D-09` — `/notifications` is unreachable | `broken-feature` | `T-notifications-1` | 6 |
+| `D-10` — guest conversion is unreachable | `broken-feature` | `T-login-6` | 7 |
+| `D-11` — the weekly report is unproduced, unscheduled, misrouted | `broken-feature` | `T-weekly-reports-1`, `T-weekly-reports-2` | 6 / 7 |
+| `D-14` — the community comparison source is hardcoded off | `broken-feature` | `T-disc-compare-3` | 7 |
+| `D-15` — the onboarding goal is discarded | `broken-feature` | `T-onboarding-1` | 7 |
+| `D-17` — `OtpInput` relocates non-sequential digits | `degraded` | `T-login-2` | 8 |
+| `D-18` — queued offline Lost & Found cases are invisible | `degraded` | `T-lost-found-1` | 5 |
+| `D-19` — bag capacity counted three ways across four surfaces | `degraded` | `T-discs-root-6` | 5 |
+| `D-20` — archived routines are not filtered | `degraded` | `T-regimen-select-1` | 6 |
+| `D-21` — the 100-putt ceiling gates `Add stage` but not `Save` | `degraded` | `T-routine-builder-1` | 1 |
+| `D-22` — a retried course create mints a permanent duplicate | `degraded` | `T-courses-new-3` (+ `T-courses-new-2`) | 1 / 3 |
+| `D-23` — one scroll key per parameterized route | `degraded` | `T-course-detail-5` | 7 |
+| `D-24` — notification failures look like "all caught up" | `degraded` | `T-notifications-2` | 6 |
+
+Three defects also motivate work already scheduled without being named by it: `D-16` is the reason
+`T-round-summary-2` matters; `D-06`'s symptom is why nine screens each proposed a live-region role
+(`XC-5`); `D-19` is why `T-discs-root-6` is `schema` rather than `ui-routine`.
+
+**The register's own ranking note is worth honouring:** *"If only one thing is fixed, fix `D-05`."*
+`D-05` is `T-round-start-1`, in Phase 1. That is the one task in this plan that should not slip.
+
+### 3.5.2 Registered defects with **no** task — a coverage gap
+
+These are real, verified against source, and **nothing in the 179 tasks remediates them.** They are
+listed rather than invented: this plan does not create task ids no screen document proposes. The
+correct response is to write § 11 tasks for them in the owning screen documents, then place them —
+`D-01`, `D-02`, and `D-16` belong in **Phase 1** the moment they have ids.
+
+| Defect | Sev | Owning screens | Why there is no task |
+|---|---|---|---|
+| `D-01` — offline fatigue check-ins are stranded with no outbox, no retry, no badge | **`data-loss`** | `freeform-active`, `regimen-active` | Neither document's § 11 addresses `fatigueCheckinRepository`. Both screens' tasks are about tests, scroll, deep-links, confirmation, and `SheetHost`. |
+| `D-02` — the single-active interlock is built and never reaches the UI | **`data-loss`** | `play-root`, `freeform-active`, `regimen-active`, `round-scorecard`, `practice-history` | `T-round-start-3` covers only the round-creation end. Nothing covers a putting session started while a round is live. |
+| `D-16` — `Finish` on the scorecard finalizes nothing | `broken-feature` | `round-scorecard`, `round-summary`, `rounds-root` | The nine `round-scorecard` tasks cover normalization, outbox, poison path, turn prompt, score bounds, load errors, empty holes, ergonomics, and the picker — not the `Finish` control's semantics. |
+| `D-06` — `AppShell` passes `toast={null}`, so no toast can ever render | `broken-feature` | all shell routes | `COMPONENT_LIBRARY.md` gap 9 says *"a toast queue is the missing piece, not a new component."* No screen owns the shell, so no screen wrote the task. **This is the structural reason it was missed.** |
+| `D-12` — the PLAY hero mislinks an in-progress round to the freeform canvas | `broken-feature` | `play-root`, `round-scorecard`, `round-start` | `play-root` has three tasks; none touches `dashboardHero`. |
+| `D-13` — the header activity pill can never advertise a round | `broken-feature` | all seven COURSES routes | Same structural cause as `D-06`: an `AppShell` defect with no owning screen document. |
+
+**The pattern is worth naming.** Four of the six are shell- or cross-screen concerns (`D-02`, `D-06`,
+`D-12`, `D-13`). A per-screen documentation pass cannot see a defect that lives between screens — which
+is the same blind spot the consolidation in § 3 exists to correct, showing up here as missing work rather
+than duplicated work. Any future screen-document pass should end with an explicit shell sweep.
+
+---
+
 ## 4. Phases
 
-Eight phases. Phase 0 is decisions and owner actions; Phases 1–7 are commits.
+Nine phases, 0–8. Phase 0 is decisions and owner actions; Phase 4 is a contract to satisfy or amend; the
+rest are commits.
+
+| Phase | Name | Tasks | Character |
+|---|---|---:|---|
+| 0 | Unblock | 0 | Owner decisions and dashboard actions. Gates everything. |
+| 1 | Stop losing data | 17 | Highest care throughout. Not batchable. |
+| 2 | Shared primitives | 13 | Small, high leverage. Pays for itself inside one phase. |
+| 3 | E2: audit and harden COURSES | 25 | The committed next work item. Run as 3a/3b/3c. |
+| 4 | Build the verification floor | 0 | No `T-` ids — `CURRENT_WORK.md` action 6. |
+| 5 | DISCS | 17 | One `schema` decision, then routine. |
+| 6 | PLAY and ME | 35 | Largest by count, lowest by risk. Batch it. |
+| 7 | Decision-gated | 28 | Blocked on a decision, not on effort. |
+| 8 | Pre-shell | 6 | Least-changed surface in the app. |
+| | **Total** | **141** | |
+
+Phases 0 and 4 contribute no `T-` ids and are not omissions — they are the two places where the work is
+a decision or a contract rather than a commit, and both are load-bearing.
 
 ---
 
@@ -331,7 +406,7 @@ and it does not contradict the E2 commitment because E2's own first line is "aud
 `T-routine-builder-2` before `T-routine-builder-3` — fix the constraint before relying on it inside a
 transaction. Everything else is independent.
 
-**Capability mix:** `sync` ×4, `schema` ×4, `security` ×2, `data-access` ×4, `pure-logic` ×3. Per
+**Capability mix (17):** `sync` ×5, `data-access` ×5, `schema` ×3, `security` ×2, `pure-logic` ×2. Per
 `TASK_FORMAT.md`, that is an almost entirely *Highest / Elevated* care phase — GPT-5.6 high or Opus 5
 throughout, with negative tests mandatory on the `schema` and `security` items and append-only,
 rollback-noted migrations.
@@ -370,8 +445,8 @@ and ten screens gaining ten different Retry buttons.
 into Phase 2 or run `XC-4` at the Phase 2/3 boundary. `T-goals-3` before `XC-6`. The three `SheetHost`
 migrations are independent of everything else and can run in parallel.
 
-**Capability mix:** `ui-routine` ×9, `ui-interaction` ×4 (the three `SheetHost` migrations plus `XC-6`),
-`sync` ×0. Mostly Normal care — Sonnet 5 or GPT-5.3-Codex medium — except the `SheetHost` and draft-guard
+**Capability mix (13):** `ui-routine` ×9, `ui-interaction` ×4 (`T-goals-3`, `XC-6`, and two of the three
+`SheetHost` migrations). Mostly Normal care — Sonnet 5 or GPT-5.3-Codex medium — except the `SheetHost` and draft-guard
 work, which is focus management and therefore Elevated.
 
 **Definition of done:** no `window.confirm` call remains in `src/`; `grep -rn "window.confirm" src/`
@@ -387,7 +462,7 @@ progress-bar, and the draft guard each have at least one consumer and are docume
 *"audit and harden the existing course/layout and offline round routes rather than rebuilding them"*
 (`DEVELOPMENT_PLAN.md` § E2, `PRODUCT_ROADMAP.md` § Phase E, `CURRENT_WORK.md` staged action 7).
 
-**This is the largest phase in the plan: 33 tasks.** It is large because COURSES is 51 of the 179
+**This is the largest implementation phase after Phase 6: 25 tasks.** It is large because COURSES is 51 of the 179
 original tasks and because `TEST_MAP.md` records it as the least-covered section in the app —
 `src/lib/roundLog.js` exports nine functions and has no test file. It should be run as three sub-phases
 with a green commit at each boundary, not as one push.
@@ -428,6 +503,7 @@ from `PHASE_A_ARCHITECTURE.md` § 12.
 | `T-round-start-5` | Read the round setup form from the offline cache |
 | `XC-7` **[C]** | Settle and apply the calm sync-state vocabulary *(absorbs 5 tasks; blocked on state-matrix C-2)* |
 | `T-round-summary-7` | Label the stat tiles and hole scores *(absorbs `T-rounds-root-5`)* |
+| `T-round-summary-3` | Confirm before finishing an incomplete round *(consumes `T-goals-3`'s dialog)* |
 | `T-round-scorecard-4` | Style the turn prompt, or remove it |
 | `T-course-detail-6` | Give the hole list assistive-tech structure |
 | `T-courses-new-5` | Reconcile the route title and the page heading |
@@ -436,7 +512,7 @@ from `PHASE_A_ARCHITECTURE.md` § 12.
 `T-course-detail-5`, `T-course-detail-7`, `T-round-start-3`, `T-round-summary-4`, `T-rounds-root-7`,
 `T-round-scorecard-8` ⏸, `T-round-scorecard-9` ⏸, `T-round-summary-9` ⏸.
 
-**Capability mix:** `ui-routine` ×17, `data-access` ×8, `pure-logic` ×3, `sync` ×1 (`XC-7`),
+**Capability mix (25):** `ui-routine` ×14, `data-access` ×7, `pure-logic` ×2, `sync` ×1 (`XC-7`),
 `docs` ×1. Roughly two thirds Normal care, one third Elevated — but the Elevated third
 (`T-courses-root-4` and its three dependents) is the phase's critical path and should not be run at
 Normal care.
@@ -503,7 +579,7 @@ amended to say what is actually required, with `CURRENT_WORK.md` staged action 6
 ### Phase 5 — DISCS
 
 **Goal:** close the DISCS section, starting with the capacity contract because it is `schema` and
-therefore append-only and expensive to defer. 21 tasks.
+therefore append-only and expensive to defer. 17 tasks.
 
 | Task | One-line |
 |---|---|
@@ -527,7 +603,7 @@ therefore append-only and expensive to defer. 21 tasks.
 
 Held for Phase 7: `T-disc-new-3`, `T-disc-compare-3`.
 
-**Capability mix:** `ui-routine` ×11, `data-access` ×3, `pure-logic` ×2, `schema` ×1, `sync` ×1.
+**Capability mix (17):** `ui-routine` ×11, `data-access` ×2, `pure-logic` ×2, `schema` ×1, `sync` ×1.
 Predominantly Normal care; `T-discs-root-6` alone is Highest.
 
 **Definition of done:** one count definition and one cap value govern every add path including
@@ -538,8 +614,9 @@ offline; every DISCS chart has a text equivalent.
 
 ### Phase 6 — PLAY and ME
 
-**Goal:** close the two remaining shipped sections. 26 tasks. Almost entirely `ui-routine` — this is the
-polish phase and it should be scheduled as such.
+**Goal:** close the two remaining shipped sections. **35 tasks — the largest phase in the plan by count**,
+though not by risk. Almost entirely `ui-routine`; this is the polish phase and it should be scheduled as
+such, batched several tasks to a session.
 
 **PLAY**
 
@@ -590,8 +667,8 @@ Held for Phase 7: `T-practice-stats-2`, `T-notifications-3`, `T-regimen-select-4
 `T-freeform-active-2`, `T-goals-5`, `T-me-root-1`, `T-me-root-4`, `T-settings-4`, `T-trophy-room-2`,
 `T-weekly-reports-2`, `T-profile-details-3`.
 
-**Capability mix:** `ui-routine` ×24, `pure-logic` ×5, `data-access` ×4, `ui-interaction` ×2, `docs` ×2.
-Overwhelmingly Normal care — this phase is the best candidate for batching several tasks per session.
+**Capability mix (35):** `ui-routine` ×22, `pure-logic` ×6, `data-access` ×3, `ui-interaction` ×2,
+`docs` ×2. Overwhelmingly Normal care — this phase is the best candidate for batching several tasks per session.
 
 **Definition of done:** no PLAY or ME screen replaces itself with a full-screen error on a partial
 failure; every chart and progress indicator has a text equivalent; `T-notifications-5` has a written
@@ -601,7 +678,8 @@ answer for each unproduced notification type.
 
 ### Phase 7 — Decision-gated work
 
-**Goal:** the tasks that were correctly written and cannot start. **21 tasks.** They are listed as a
+**Goal:** the tasks that were correctly written and cannot start. **28 tasks — one task in five.** That
+proportion is the single most important number in this plan; see the closing note below. They are listed as a
 phase so they are visible; in practice each lands as soon as its gate opens, which may be earlier than
 this position implies.
 
@@ -615,22 +693,31 @@ acceptance is owner-executed on device), `T-round-scorecard-9` (bag-snapshot dis
 `T-round-summary-4`, `T-rounds-root-7`, `T-disc-new-3`, `T-disc-compare-3`, `T-practice-stats-2`,
 `T-notifications-3`, `T-regimen-select-4`, `T-freeform-active-2`, `T-goals-5`, `T-me-root-1`,
 `T-me-root-4`, `T-settings-4`, `T-trophy-room-2`, `T-weekly-reports-2`, `T-profile-details-3`,
-`T-login-6`, `T-login-7`, `T-onboarding-1`, `T-onboarding-3`.
+`T-practice-history-detail-5` (resolve `activity_review` notifications on review — `practice-history-detail`
+§ 12 Q4), `T-login-6`, `T-login-7`, `T-onboarding-1`, `T-onboarding-3`.
 
-**Capability mix:** heavy on `schema`, `security`, and `data-access` relative to its size — decisions
-tend to be deferred precisely when they are expensive. `T-course-detail-7` (the hole editor) is the
-largest single unstarted item in the repo and `DEVELOPMENT_PLAN.md` § E2 names it.
+**Capability mix (28):** `ui-routine` ×13, `data-access` ×6, `schema` ×2, `pure-logic` ×2,
+`ui-interaction` ×2, `sync` ×1, `security` ×1, `docs` ×1. Note the `schema` + `security` + `sync` share
+is double this phase's proportion of the whole plan — **decisions get deferred precisely when they are
+expensive**, which is the argument for closing Phase 0 promptly rather than the argument for deferring
+further. `T-course-detail-7` (the hole editor) is the largest single unstarted item in the repo and
+`DEVELOPMENT_PLAN.md` § E2 names it.
 
 **Definition of done:** every task here has either shipped or had its gate answered in writing in the
 owning screen document's § 12. A task that is still gated at the end of Phase 7 needs an ADR, not
 another deferral.
+
+**The number to argue with:** 28 of 141 tasks — 20% — are blocked on a decision rather than on effort,
+and 24 of those 28 are blocked on a question a screen document already wrote down and nobody has
+answered. This is not a resourcing problem and no amount of agent time moves it. It is the strongest
+case in this plan for treating Phase 0 as the real critical path.
 
 ---
 
 ### Phase 8 — Pre-shell
 
 **Goal:** close `root`, `login`, and `onboarding`. Deliberately last — the least-changed surface in the
-app, and three of its tasks already landed in Phase 2 via `T-root-4`. 8 tasks.
+app, and three of its tasks already landed in Phase 2 via `T-root-4`. 6 tasks.
 
 | Task | One-line |
 |---|---|
@@ -643,7 +730,7 @@ app, and three of its tasks already landed in Phase 2 via `T-root-4`. 8 tasks.
 
 Held for Phase 7: `T-login-6`, `T-login-7`, `T-onboarding-1`, `T-onboarding-3`.
 
-**Capability mix:** `security` ×1, `ui-interaction` ×1, `pure-logic` ×1, `ui-routine` ×3.
+**Capability mix (6):** `ui-routine` ×3, `security` ×1, `ui-interaction` ×1, `pure-logic` ×1.
 
 **Definition of done:** `AuthPage`, `AuthContext`, and `OtpInput` have test files; every pre-shell
 control has an in-flight state; all three screens expose a landmark (from Phase 2).
@@ -781,8 +868,12 @@ someone writes them.
 
 ## Maintaining this file
 
-- **Cross-reference `docs/ui/DEFECT_REGISTER.md` when it lands.** It did not exist when this was written.
-  Every task in Phases 1–3 should gain a `D-` id.
+- **Close the § 3.5.2 coverage gap first.** Six registered defects have no task. Write § 11 tasks for
+  them in the owning screen documents — and, for `D-06` and `D-13`, decide which document owns an
+  `AppShell` defect at all, because today none does. Then place them: `D-01`, `D-02`, and `D-16` are
+  Phase 1 work.
+- Re-run the cross-reference in § 3.5 when `DEFECT_REGISTER.md` changes. It was compiled against
+  `8ee0ac9`; this plan was verified against the same branch.
 - Update it when a screen document's § 11 changes, when an ADR status changes, or when a § 12 open
   question is answered — the last of these moves tasks out of Phase 7 and is the most common edit.
 - Do not copy task detail here. If you need to know what a task means, open its screen document.
