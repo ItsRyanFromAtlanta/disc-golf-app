@@ -208,39 +208,56 @@ export async function fetchCourse(courseId) {
   }
 }
 
+// PostgREST cannot find the function in its schema cache; Postgres does not know
+// it at all. Both mean the migration behind `createCourseWithLayout` has not
+// landed yet — `main` auto-deploys and a migration cannot ride in the same
+// atomic step as the client that calls it, so there is always a window where the
+// button is live and the function is not. Same pattern as `accountDeletion.js`.
+const MISSING_COURSE_RPC_CODES = new Set(['PGRST202', '42883'])
+
+export const COURSE_CREATE_UNAVAILABLE_MESSAGE =
+  'Course creation is temporarily unavailable. Nothing was saved — please try again shortly.'
+
+// A course, its default layout and its holes used to be three sequential
+// upserts with nothing tying them together. A failure after the first left an
+// orphan course with no layout; after the second, a layout with no holes. All
+// three tables are community-visible (J1 grants every authenticated user
+// `select ... using (true)`) and none of them grants a client DELETE, so a
+// partial write was immediately public and unrepairable from here. Quick-course
+// creation is a field action taken on one bar of signal, which is exactly when
+// the gap between three round trips gets interrupted.
+//
+// `create_course_with_layout` does all three inserts in one function body, which
+// is one transaction: an exception anywhere inside rolls back every row the call
+// wrote. See `supabase/migrations/20260729120000_phase_e_atomic_course_creation.sql`.
+//
+// The ids are generated here rather than server-side so the call is a safe
+// replay: re-sending the same `p_course_id` returns that course instead of
+// creating a second one. Nothing depends on that yet — finding 4 (no offline
+// path for course creation) is what will queue this call in the outbox.
 export async function createCourseWithLayout({ userId, name, location, holes = [] }) {
+  // Validated first, before anything touches the network: a missing name or an
+  // empty hole set should cost zero round trips on a bad connection. The RPC
+  // repeats both checks for callers that are not this function.
+  if (!name?.trim()) throw new Error('Course name is required')
+  if (holes.length === 0) throw new Error('A course needs at least one hole')
+
   let ownerId = userId
   if (!ownerId) {
     const { data, error } = await supabase.auth.getUser()
     if (error) throw error
     ownerId = data.user?.id
   }
+  // A local guard only. `created_by` is no longer sent: the function reads
+  // `auth.uid()` itself and accepts no owner argument, so a caller cannot
+  // attribute a community course to anyone else, and a stale client-side id
+  // cannot disagree with the JWT the write is actually authorised under.
   if (!ownerId) throw new Error('You must be signed in to create a course')
-  if (!name?.trim()) throw new Error('Course name is required')
-  if (holes.length === 0) throw new Error('A course needs at least one hole')
 
   const courseId = crypto.randomUUID()
   const layoutId = crypto.randomUUID()
-  const { error: courseError } = await supabase.from('courses').upsert(
-    {
-      id: courseId,
-      name: name.trim(),
-      location: location?.trim() || null,
-      created_by: ownerId,
-    },
-    { onConflict: 'id' },
-  )
-  if (courseError) throw courseError
-
-  const { error: layoutError } = await supabase.from('layouts').upsert(
-    { id: layoutId, course_id: courseId, name: 'Main', is_default: true },
-    { onConflict: 'id' },
-  )
-  if (layoutError) throw layoutError
-
   const holeRows = holes.map((hole, index) => ({
     id: hole.id ?? crypto.randomUUID(),
-    layout_id: layoutId,
     hole_number: Number(hole.hole_number ?? hole.holeNumber ?? index + 1),
     par: nullableNumber(hole.par) ?? 3,
     distance_feet: nullableNumber(hole.distance_feet ?? hole.distanceFeet),
@@ -248,10 +265,22 @@ export async function createCourseWithLayout({ userId, name, location, holes = [
     hazards: hole.hazards ?? null,
     strategy_notes: hole.strategy_notes ?? hole.strategyNotes ?? null,
   }))
-  const { error: holesError } = await supabase.from('holes').upsert(holeRows, { onConflict: 'id' })
-  if (holesError) throw holesError
 
-  return fetchCourse(courseId)
+  const { data, error } = await supabase.rpc('create_course_with_layout', {
+    p_name: name.trim(),
+    p_location: location?.trim() || null,
+    p_holes: holeRows,
+    p_course_id: courseId,
+    p_layout_id: layoutId,
+  })
+  if (error) {
+    if (MISSING_COURSE_RPC_CODES.has(error.code == null ? '' : String(error.code))) {
+      throw new Error(COURSE_CREATE_UNAVAILABLE_MESSAGE)
+    }
+    throw error
+  }
+
+  return fetchCourse(data ?? courseId)
 }
 
 export async function fetchLayoutHoles(layoutId) {

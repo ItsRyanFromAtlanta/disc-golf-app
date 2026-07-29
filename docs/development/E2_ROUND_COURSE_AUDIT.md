@@ -54,7 +54,7 @@ have no way to learn the round never reached the server.
 Fix: reuse the activity outbox's retry/poison record rather than inventing a second scheme, and
 surface poisoned round entries the same way `useHistoryRecovery` surfaces activity ones.
 
-## 3. `createCourseWithLayout` is not atomic — OPEN
+## 3. `createCourseWithLayout` is not atomic — FIXED (2026-07-29)
 
 **Severity: high.** Writes to shared, community-visible data.
 
@@ -63,8 +63,23 @@ compensation. A failure after the first leaves an orphan course with no layout; 
 layout with no holes. Both are immediately visible to every other authenticated user in the COURSES
 directory, and neither is repairable from the client.
 
-Fix: one `security invoker` RPC performing all three inserts in a single transaction. Compensating
-deletes are the lesser alternative — they fail for exactly the reason the original write failed.
+Fixed by `20260729120000_phase_e_atomic_course_creation.sql`: one `security invoker` RPC performing
+all three inserts in a single transaction. Compensating deletes were rejected as the lesser
+alternative — they fail for exactly the reason the original write failed.
+
+Two design choices worth carrying forward. The function reads `auth.uid()` itself and takes **no
+owner argument**, so a caller can no longer attribute a community course to someone else — `created_by`
+stopped being client-supplied. And `p_course_id`/`p_layout_id` are client-generated, so replaying a
+call that actually succeeded returns the existing course instead of duplicating it. That is the same
+property finding 1 taught the round outbox to need, added deliberately rather than discovered later.
+
+Proved against a throwaway Postgres 16 cluster, not by inspection: 27 assertions, three independent
+rollback proofs (a raising trigger, a real unique-constraint violation, and a PK violation mid-INSERT),
+each in its own autocommit transaction rather than inside a plpgsql `EXCEPTION` block that would have
+rolled back by itself. A contrast case ran the *old* three-statement sequence under the same fault and
+produced exactly the orphan course this finding describes — the harness demonstrating it can detect the
+defect, not just bless the fix. Invoker semantics were confirmed by dropping the `courses` INSERT
+policy and watching the call fail, which a definer function would have sailed through.
 
 ## 4. `createCourseWithLayout` has no offline path — OPEN
 
@@ -93,6 +108,15 @@ Fix: order through the joined hole's `hole_number`, or document that callers mus
 **Severity: cosmetic.** `rows.map((row) => row)` does nothing; the dedupe and filter are the work.
 Fix while touching the file.
 
+## 8. Duplicate hole numbers are possible on a quick course — OPEN
+
+**Severity: medium.** Surfaced while fixing finding 3. `holes_layout_hole_tee_uniq` does not prevent
+duplicate `hole_number` values when `tee_type` is NULL, because Postgres treats NULLs as distinct in a
+unique index. Pre-existing, inherited from the original `unique (course_id, hole_number, tee_type)` —
+but the quick-course form never sets `tee_type`, so **every** quick course lives in the NULL branch and
+is unprotected today. There is a passing assertion recording the current behaviour so it stays
+documented rather than assumed. Fix: `nulls not distinct` on the index, or a synthetic default tee.
+
 ---
 
 ## Disposition
@@ -101,10 +125,11 @@ Fix while touching the file.
 |---|---|---|---|
 | 1 | Round-hole upsert resolved on surrogate id | High | **Fixed** |
 | 2 | Round outbox swallows errors, diverging from § 8 | High | Next checkpoint |
-| 3 | Course creation is not atomic | High | Next checkpoint |
+| 3 | Course creation is not atomic | High | **Fixed** |
 | 4 | Course creation has no offline path | Medium | After 3 (shares the RPC) |
 | 5 | Unbounded course directory fetch | Medium | Deferred, trigger recorded |
 | 6 | Round holes ordered by UUID | Low | With 2 or 3 |
+| 8 | Duplicate hole numbers possible when `tee_type` is NULL | Medium | Open, found 2026-07-29 |
 | 7 | No-op `idList` map | Cosmetic | While touching |
 
 Findings 2 and 3 are the next checkpoint. They are independent of each other and of the E2 feature

@@ -41,17 +41,35 @@ function queryBuilder(table) {
   return builder
 }
 
+// Course creation is one RPC now, so the mock records `rpc` alongside the table
+// writes — a test that only watched `from()` could not tell "one transaction"
+// from "three upserts that happen to be in order".
+let rpcResponse = { data: 'server-course-id', error: null }
+
 vi.mock('./supabaseClient', () => ({
   supabase: {
     from: (table) => queryBuilder(table),
+    rpc: (fn, args) => {
+      calls.push({ op: 'rpc', fn, args })
+      return Promise.resolve(rpcResponse)
+    },
     auth: { getUser: () => Promise.resolve({ data: { user: { id: 'user-1' } }, error: null }) },
   },
 }))
 
-const { upsertRoundHole, createCourseWithLayout } = await import('./roundLog')
+const { upsertRoundHole, createCourseWithLayout, COURSE_CREATE_UNAVAILABLE_MESSAGE } = await import('./roundLog')
+
+const NINE_HOLES = Array.from({ length: 9 }, (_, index) => ({ holeNumber: index + 1, par: 3 }))
+
+function writeCalls() {
+  // fetchCourse's reads go through select/eq/order, which the builder does not
+  // record, so everything left in `calls` is a write.
+  return calls
+}
 
 beforeEach(() => {
   calls.length = 0
+  rpcResponse = { data: 'server-course-id', error: null }
 })
 
 describe('upsertRoundHole', () => {
@@ -125,5 +143,112 @@ describe('createCourseWithLayout', () => {
       /at least one hole/,
     )
     expect(calls).toHaveLength(0)
+  })
+
+  it('writes the course, its layout and its holes in a single transactional RPC', async () => {
+    // The whole point of the change: three sequential upserts could leave an
+    // orphan course or an empty layout visible to every authenticated user,
+    // with no client-side repair path. One RPC is one transaction.
+    await createCourseWithLayout({ userId: 'user-1', name: 'Oak Grove', location: 'Pasadena', holes: NINE_HOLES })
+
+    expect(writeCalls()).toHaveLength(1)
+    expect(writeCalls()[0].op).toBe('rpc')
+    expect(writeCalls()[0].fn).toBe('create_course_with_layout')
+  })
+
+  it('no longer upserts courses, layouts or holes directly', async () => {
+    await createCourseWithLayout({ userId: 'user-1', name: 'Oak Grove', holes: NINE_HOLES })
+
+    const tables = writeCalls()
+      .filter((call) => call.op === 'upsert')
+      .map((call) => call.table)
+    expect(tables).toEqual([])
+  })
+
+  it('sends the whole hole set in one payload, snake_cased, without a layout id', async () => {
+    // `layout_id` is the function's to assign — the holes belong to the layout
+    // it creates in the same transaction, so the client cannot pre-bind them.
+    await createCourseWithLayout({
+      userId: 'user-1',
+      name: 'Oak Grove',
+      holes: [{ holeNumber: 7, par: 5, distanceFeet: '420', teeType: 'Blue', strategyNotes: 'OB left' }],
+    })
+
+    const { args } = writeCalls()[0]
+    expect(args.p_holes).toHaveLength(1)
+    expect(args.p_holes[0]).toMatchObject({
+      hole_number: 7,
+      par: 5,
+      distance_feet: 420,
+      tee_type: 'Blue',
+      strategy_notes: 'OB left',
+    })
+    expect(args.p_holes[0]).not.toHaveProperty('layout_id')
+  })
+
+  it('trims the name and sends a blank location as null', async () => {
+    await createCourseWithLayout({ userId: 'user-1', name: '  Oak Grove  ', location: '   ', holes: NINE_HOLES })
+
+    expect(writeCalls()[0].args.p_name).toBe('Oak Grove')
+    expect(writeCalls()[0].args.p_location).toBeNull()
+  })
+
+  it('falls back to array position for hole_number and 3 for par', async () => {
+    await createCourseWithLayout({ userId: 'user-1', name: 'Oak Grove', holes: [{}, {}, {}] })
+
+    expect(writeCalls()[0].args.p_holes.map((hole) => hole.hole_number)).toEqual([1, 2, 3])
+    expect(writeCalls()[0].args.p_holes.map((hole) => hole.par)).toEqual([3, 3, 3])
+  })
+
+  it('sends client-generated ids so the same call can be replayed safely', async () => {
+    // Finding 4 will queue this call in the round outbox. A replay that
+    // regenerated its ids would create a second course every reconnect.
+    await createCourseWithLayout({ userId: 'user-1', name: 'Oak Grove', holes: NINE_HOLES })
+
+    const { args } = writeCalls()[0]
+    const uuid = /^[0-9a-f-]{36}$/i
+    expect(args.p_course_id).toMatch(uuid)
+    expect(args.p_layout_id).toMatch(uuid)
+    expect(args.p_course_id).not.toBe(args.p_layout_id)
+    for (const hole of args.p_holes) expect(hole.id).toMatch(uuid)
+  })
+
+  it('sends no owner id — the function derives attribution from auth.uid()', async () => {
+    // `created_by` used to come from the client. The RPC accepts no owner
+    // argument, so a caller cannot attribute a community course to anyone else.
+    await createCourseWithLayout({ userId: 'someone-else', name: 'Oak Grove', holes: NINE_HOLES })
+
+    const { args } = writeCalls()[0]
+    expect(args).not.toHaveProperty('p_user_id')
+    expect(args).not.toHaveProperty('p_created_by')
+    expect(JSON.stringify(args)).not.toContain('someone-else')
+  })
+
+  it('reads the course back through the id the function returns', async () => {
+    const course = await createCourseWithLayout({ userId: 'user-1', name: 'Oak Grove', holes: NINE_HOLES })
+
+    expect(course).toMatchObject({ id: 'server-owned-id' })
+  })
+
+  it('explains a missing function instead of leaking the PostgREST string', async () => {
+    // `main` auto-deploys, so there is always a window where the button is live
+    // and the migration is not. PGRST202 and 42883 both mean "not deployed yet".
+    for (const code of ['PGRST202', '42883']) {
+      calls.length = 0
+      rpcResponse = { data: null, error: { code, message: 'Could not find the function in the schema cache' } }
+      await expect(
+        createCourseWithLayout({ userId: 'user-1', name: 'Oak Grove', holes: NINE_HOLES }),
+      ).rejects.toThrow(COURSE_CREATE_UNAVAILABLE_MESSAGE)
+    }
+  })
+
+  it('rethrows any other failure unchanged', async () => {
+    // A constraint or RLS rejection is rolled back whole by the function, so
+    // the real message is more useful to the user than a generic one.
+    rpcResponse = { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint' } }
+
+    await expect(createCourseWithLayout({ userId: 'user-1', name: 'Oak Grove', holes: NINE_HOLES })).rejects.toThrow(
+      /duplicate key value/,
+    )
   })
 })
