@@ -256,7 +256,9 @@ hole list render with `In progress` → `Finish round` → button reads `Finishi
 `total_score` written → `finalizeRoundActivity` closes the lifecycle parent → `stat-status` flips to
 `Completed` and the button becomes `Back to rounds`.
 
-**First run / empty.** No distinct empty state. Three degenerate cases render without comment:
+**First run / empty.** No distinct empty state; `S-EMPTY` is `➖` for a single-record detail screen. But
+three degenerate cases render without comment, and the second is the one place a genuine empty state is
+owed and absent:
 
 | Situation | What renders |
 |---|---|
@@ -301,7 +303,8 @@ remote path relies on RLS (`Authenticated users manage own rounds`,
 `20260714150000_phase_c_round_logging_rls.sql:160`). `finalizeRoundActivity` independently rejects a
 mismatched `activity.user_id` (`roundRepository.js:177`).
 
-**Interlock.** **N/A** — none is enforced. Worth naming what is absent rather than leaving it bare:
+**Interlock.** **N/A** — none is enforced, so `S-INTERLOCK-CAP` is `➖`. Worth naming what is absent
+rather than leaving it bare:
 
 - **No completeness check.** `cta-finish` never inspects how many holes are scored. Finishing a round
   after three holes writes `total_score` = the sum of three and marks it `Completed`, and that number
@@ -317,9 +320,11 @@ mismatched `activity.user_id` (`roundRepository.js:177`).
 **Destructive.** Finishing a round is the only irreversible action in the COURSES section, and it is
 presented as an ordinary primary button:
 
-- **No confirmation step.** `COMPONENT_LIBRARY.md` item 8 records that the app's three existing
-  destructive flows all call `window.confirm()` and that no confirmation component exists; this flow has
-  neither.
+- **No confirmation step. Diverges from `S-CONFIRM` by omission**, like `disc-detail`'s retirement and
+  `lost-found`'s case resolution: the row's three `window.confirm` sites are all elsewhere, and this
+  irreversible action has no confirmation of any kind. `COMPONENT_LIBRARY.md` item 8 records that the
+  app's three existing destructive flows all call `window.confirm()` and that no confirmation component
+  exists; this flow has neither.
 - **No reopen.** Once `status === 'completed'`, `cta-finish` is replaced by `cta-backtorounds` and no
   screen offers a way back to `in_progress`.
 - **But the round is still editable.** `hdr-scorecard` stays, and `round-scorecard` never reads

@@ -270,10 +270,11 @@ pattern § 3's first accessibility finding asks the other screens to adopt.
 with an empty score box, `tb-score` reads `— · 0 strokes`, and the page is immediately usable. There is
 no distinct empty state and none is needed.
 
-The genuinely empty case is unhandled: a round whose layout has no holes — or a round with
-`layout_id: null`, which `rounds` permits on purpose (`migrate_disc_locker_and_layouts.sql:206-207`) —
-produces `round.holes = []` and renders the header, the toolbar, and an **empty `<ol>`**. No message, no
-explanation. Reachable from `course-detail`'s zero-hole layout path (`course-detail` § 6) and from any
+The genuinely empty case is unhandled, and **is a divergence from `S-EMPTY`** — the grid marks this route
+`➖`, which is right for the newly created round above but not for this case: a round whose layout has no
+holes — or a round with `layout_id: null`, which `rounds` permits on purpose
+(`migrate_disc_locker_and_layouts.sql:206-207`) — produces `round.holes = []` and renders the header, the
+toolbar, and an **empty `<ol>`**. No message, no explanation. Reachable from `course-detail`'s zero-hole layout path (`course-detail` § 6) and from any
 future score-only import.
 
 **Error.** Two very different behaviors:
