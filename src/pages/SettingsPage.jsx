@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchProfile, upsertProfileFields } from '../lib/profile'
 import { getFlairMode, setFlairMode } from '../lib/viewPreference'
 import { NOTIFICATION_PREFERENCE_CATEGORIES, isValidIanaTimezone, preferenceMap } from '../lib/notificationPreferences'

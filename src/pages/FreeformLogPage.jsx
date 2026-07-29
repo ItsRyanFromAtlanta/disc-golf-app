@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchHistory, distanceSamples, allPuttSamples } from '../lib/history'
 import { suggestNextSession, distanceDropOff, putterBreakdown } from '../lib/insights'
 import { suggestBackupSwap } from '../lib/scoringCanvas'

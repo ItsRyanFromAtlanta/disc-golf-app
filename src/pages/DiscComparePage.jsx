@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useDiscList } from '../lib/repository/discRepository'
 import { fetchBags, fetchBagDiscs } from '../lib/discLocker'
 import {

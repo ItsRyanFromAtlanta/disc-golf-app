@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { formatRelativeToPar, relativeToPar } from '../lib/rounds'
 import { loadRound, useRoundList } from '../lib/repository/roundRepository'
 

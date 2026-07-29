@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchBags, fetchBagDiscs, fetchUserDiscs } from '../lib/discLocker'
 import { bagViewDiscs, capacityTier } from '../lib/bags'
 import FlightSpectrum from '../components/FlightSpectrum'

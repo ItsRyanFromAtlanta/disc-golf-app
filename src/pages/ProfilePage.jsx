@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchProfile, upsertProfileFields, isThrowingProfileEmpty } from '../lib/profile'
 import EditableSection from '../components/EditableSection'
 import ChipGroup from '../components/ChipGroup'

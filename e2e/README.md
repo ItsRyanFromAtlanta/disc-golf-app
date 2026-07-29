@@ -100,14 +100,15 @@ queued write genuinely never reached the backend.
 an RPC's `p_idempotency_key`, a PostgREST row's client-generated `id`. That is the assertion an
 exactly-once claim needs; `writes.length` cannot tell a second legitimate operation from a duplicate.
 
-The reconnect spec deliberately does **not** restore connectivity with `context.setOffline(false)`.
-That fires an `online` event, and `handleOnline` in `syncScheduler.js` starts a flush with no
-in-flight guard — it can run concurrently with the backoff retry, both flushes read the same queue,
-and every queued operation is sent twice (reproduced: two `activity_create_draft`, two
-`activity_transition`, two `putt_sessions`, two `putt_events`, all within 6ms). That is an app defect
-recorded in `PHASE_A_ARCHITECTURE.md` § 9, not something to assert around; the spec reconnects by
-clearing the route abort and letting the app's own backoff retry drive, which is also what a
-server-side outage looks like from the client.
+There are two reconnect shapes and a spec for each, because they used to behave differently.
+
+Clearing the route abort and letting the app's own backoff retry drive is what a **server-side
+outage** looks like from the client. Restoring `context.setOffline(false)` additionally fires the
+browser's `online` event, which is a **connectivity** reconnect — and that one used to double-send
+every queued operation, because `handleOnline` started a flush with no in-flight guard and it raced
+the backoff retry over the same queue snapshot. Fixed 2026-07-28; the `online`-event spec exists
+specifically to keep it fixed, and reproducing the original failure needs both layers of disconnect
+(the route abort to actually fail writes, browser offline mode so restoring it fires the event).
 
 ## What this does not verify
 
@@ -115,8 +116,6 @@ server-side outage looks like from the client.
   RLS would refuse. Query/schema/RLS correctness stays the job of the SQL checks and unit tests.
 - **Real network conditions.** Intercepted requests resolve instantly; failure is simulated by
   aborting a route, so timeouts, partial responses, and slow links are still untested.
-- **Exactly-once on an `online`-event reconnect.** See above — the app double-sends there, and no
-  spec covers it.
 - **The confirmed branch of round replacement.** No UI ever passes `confirmRoundReplacement: true`,
   so only the gate (the round is left alone) is reachable from a browser.
 - **Real devices.** Chromium with a phone-sized viewport is not iOS Safari. The killed-app recovery,

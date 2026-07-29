@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useDiscList } from '../lib/repository/discRepository'
 import { flushRoundOutbox, loadRound, saveRoundHole } from '../lib/repository/roundRepository'
 import { formatRelativeToPar, relativeToPar, roundTotal } from '../lib/rounds'

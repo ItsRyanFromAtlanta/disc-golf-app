@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import NotificationSheet from '../components/NotificationSheet'
 import { notificationRepository } from '../lib/repository/notificationRepository'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 export default function NotificationsPage() {
   const { user } = useAuth()

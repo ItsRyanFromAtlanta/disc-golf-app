@@ -8,6 +8,7 @@ import SessionContextSummary from './SessionContextSummary'
 // Screen 9). All data is precomputed by the caller (fetchers + the pure
 // insights functions) — this component only renders.
 export default function SessionReport({
+  entryId,
   title,
   headerAction,
   at,
@@ -154,8 +155,15 @@ export default function SessionReport({
       </ul>
 
       {onSaveNotesTags && (
+        // Keyed on the entry's identity, never on its notes/tags. History
+        // Detail keeps one page instance across `/:type/:id` changes, so the
+        // editor's local state has to be reset when a different entry loads —
+        // that is what the key is for. Keying on the mutable content did that
+        // too, but also remounted the editor on every successful save (the save
+        // updates notes/tags), throwing away the "Saved" confirmation the user
+        // had just earned. `entryId` changes only when the loaded entry does.
         <NotesTagsEditor
-          key={`${title}-${notes ?? ''}-${(tags ?? []).join()}`}
+          key={entryId ?? title}
           initialNotes={notes}
           initialTags={tags}
           onSave={onSaveNotesTags}

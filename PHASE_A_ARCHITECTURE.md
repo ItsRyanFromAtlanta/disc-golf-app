@@ -114,7 +114,7 @@ dependency key, and poison state. Remove duplicate storage only after crash/reco
 
 > **Status (2026-07-28): PARTIALLY met. A Playwright suite now exists and runs in CI; most required
 > flows are covered.** The prior status ("no suite exists, no `e2e/` directory, anonymous smoke
-> only") is superseded. What changed: `e2e/` holds 31 specs across two viewport projects, they run
+> only") is superseded. What changed: `e2e/` holds 32 specs across two viewport projects, they run
 > authenticated via a seeded Supabase session with the backend intercepted in-page, and a second CI
 > job (`e2e`) runs them on every PR. See `e2e/README.md` for the harness design and its limits.
 >
@@ -129,7 +129,7 @@ Target: use Playwright for browser E2E. Required flows, with current coverage:
 | Pause / navigation / resume | **Covered** — a live capture session pauses with reason `navigation_away` when its screen is left and resumes from the header pill; a seeded paused activity resumes to the correct capture route (freeform vs. a specific regimen) |
 | Single-active auto-close | **Partial** — starting a live practice while another is current closes the previous one as `incomplete` with reason `replaced_by_activity`, keeps exactly one current activity, syncs the close ahead of the start, and surfaces the replaced session in History. The toast is **not** covered because it does not exist: `AppShell` renders `<ToastHost toast={null} />` unconditionally, so no auto-close notice is ever shown |
 | Round-close confirmation | **Partial** — the gate is covered: a live `disc_golf_round` is left untouched when a practice starts, no state event is appended, and the practice stays a draft. The confirmed branch is **not** covered and is not reachable from a browser: nothing in the app calls `start` with `confirmRoundReplacement: true`, and the capture screen ignores the `confirmation_required` outcome instead of prompting |
-| Offline reload / recovery / exactly-once reconnect | **Partial** — the shell boots from precache with the network down, and a capture session started against an unreachable backend queues locally, drains both outboxes on reconnect, and reaches the backend exactly once per idempotency key, including across a reload. Reconnect via the browser `online` event is **not** exactly-once and is not covered: `handleOnline` in `syncScheduler.js` starts a flush with no in-flight guard, so it can run concurrently with the backoff retry and send every queued operation twice (observed) |
+| Offline reload / recovery / exactly-once reconnect | **Covered** — the shell boots from precache with the network down, and a capture session started against an unreachable backend queues locally, drains both outboxes on reconnect, and reaches the backend exactly once per idempotency key, across a reload and across **both** reconnect shapes: backoff-driven (a server-side outage) and browser `online` event. The unguarded-flush defect that made the second shape double-send was fixed 2026-07-28 in `syncScheduler.js` and is held by a dedicated spec |
 | Completed edit / audit / recalculation | **Partial** — editing a finalized practice's notes/tags appends an audit event carrying previous and new values, bumps the activity version, sends the correction under one idempotency key, and survives a reload. Recalculation is **not** covered: notes/tags are the only editable fields on a finalized activity and no metric consumes them, so there is nothing to recalculate |
 | Soft-delete / restore | **Covered** — a hidden activity is absent from History, listed under Recently Deleted, and leaves that list when restored |
 | Tab scroll / root | **Covered** — tapping the active tab scrolls to top without navigating |
@@ -145,10 +145,11 @@ returns them. See `e2e/README.md`.
 Live-capture fixtures landed the same day and moved the four remaining rows off "Not covered" — none
 of them all the way to Covered. `e2e/capture.spec.js` drives the freeform capture screen through its
 own UI, which is the only way to reach `planActivityStart`, and asserts against the Dexie mirror and
-the recorded writes. Three of the four gaps that remain are app gaps rather than harness gaps: the
-missing auto-close toast, the missing round-replacement confirmation UI, and the unguarded
-`online`-event flush. The fourth (recalculation) has nothing to assert until a finalized edit can
-change something a metric reads.
+the recorded writes. One of those four — the unguarded `online`-event flush — was a genuine
+concurrency defect and has since been fixed, moving exactly-once reconnect to Covered. The gaps that
+remain are app gaps rather than harness gaps: the missing auto-close toast and the missing
+round-replacement confirmation UI have no surface to assert against, and recalculation has nothing to
+assert until a finalized edit can change something a metric reads.
 
 Correct PWA manifest colors to Sun-Drenched Topo tokens (done 2026-07-27) and verify icons, offline
 shell, safe areas, standalone mode, and killed-app recovery on a real phone.

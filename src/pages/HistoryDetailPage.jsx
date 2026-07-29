@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchHistory, sessionAggregate, regimenRunAggregate, distanceSamples } from '../lib/history'
 import { distanceDropOff, putterBreakdown } from '../lib/insights'
 import { fetchUserDiscs } from '../lib/discLocker'
@@ -158,6 +158,10 @@ export default function HistoryDetailPage() {
 
   return (
     <SessionReport
+      // The loaded entry's id, not the route param: `entry` is not cleared
+      // while a new id is fetching, so the route param would swap the editor's
+      // identity while the previous entry is still on screen.
+      entryId={entry.id}
       title={title}
       headerAction={
         <Link to="/practice/history" className="link-button">

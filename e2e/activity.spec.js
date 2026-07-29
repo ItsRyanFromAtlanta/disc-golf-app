@@ -88,10 +88,9 @@ test.describe('editing a finalized activity', () => {
     await page.getByLabel('Notes').fill('Left everything short into the wind')
     await page.getByRole('button', { name: 'experimenting' }).click()
     await page.getByRole('button', { name: 'Save notes & tags' }).click()
-    // The editor's own "Saved" state is not a usable signal here: saving
-    // updates the entry, which changes the `key` SessionReport gives the
-    // editor, so it remounts with fresh state and the confirmation is lost.
-    // The correction reaching the backend is the settled point.
+    // The editor survives its own save, so its confirmation is the user-visible
+    // signal that the correction landed.
+    await expect(page.getByRole('button', { name: 'Saved' })).toBeVisible()
     await expect.poll(() => supabase.writesTo('rpc:activity_correct_practice_details').length).toBe(1)
 
     const audit = (await supabase.readLocalRows('auditEvents')).filter((row) => row.entity_id === COMPLETED_ID)
@@ -123,10 +122,9 @@ test.describe('editing a finalized activity', () => {
     // state: this render comes from the corrected typed record.
     await page.reload()
     await expect(page.getByLabel('Notes')).toHaveValue('Left everything short into the wind')
-    // A selected tag is expressed only as a class — `ChipGroup` sets no
-    // `aria-pressed` — so there is no role-and-name way to assert it. That is
-    // an accessibility gap rather than a selector problem.
-    await expect(page.locator('.notes-tags-editor .chip-active')).toHaveText('experimenting')
+    // The restored tag is asserted the way a screen reader hears it: a toggle
+    // button by name, reporting itself as pressed.
+    await expect(page.getByRole('button', { name: 'experimenting', pressed: true })).toBeVisible()
   })
 })
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IconChartBar, IconTargetArrow } from '@tabler/icons-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
 import { practiceStreak, volumeLedger, suggestNextSession } from '../lib/insights'
 import { heroCardState } from '../lib/dashboardHero'

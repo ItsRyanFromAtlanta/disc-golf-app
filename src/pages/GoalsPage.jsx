@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { availableGoalActions, GOAL_DEFINITIONS } from '../lib/goals'
 import { goalRepository } from '../lib/repository/goalRepository'
 

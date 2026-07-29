@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { weeklyReportRepository } from '../lib/repository/weeklyReportRepository'
 
 const reportDate = (value) => new Date(`${value}T00:00:00Z`).toLocaleDateString([], {

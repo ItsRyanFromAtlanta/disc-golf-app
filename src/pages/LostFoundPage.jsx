@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchUserDiscs } from '../lib/discLocker'
 import { fetchCourses } from '../lib/roundLog'
 import { discDisplayName, LOST_FOUND_EVENT_LABELS, LOST_FOUND_UPDATE_TYPES } from '../lib/lostFound'

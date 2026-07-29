@@ -214,13 +214,11 @@ test.describe('offline outbox and reconnect', () => {
     // reasons. An intercepted route is fulfilled in-process and never reaches
     // the network stack, so browser offline mode alone leaves every Supabase
     // call succeeding — aborting in the handler is what actually fails a write.
-    // And restoring `context.setOffline(false)` additionally fires an `online`
-    // event, which starts a second flush on top of the retry already running:
-    // `handleOnline` in syncScheduler.js has no in-flight guard, both flushes
-    // read the same queue, and every operation is sent twice. That is a real
-    // defect (see PHASE_A_ARCHITECTURE.md § 9), and it is not what this spec is
-    // measuring — the app's own backoff retry drives the reconnect here, which
-    // is also what a server-side outage looks like from the client.
+    // This spec reconnects by clearing the abort and letting the app's own
+    // backoff retry drive, which is the shape a server-side outage has from the
+    // client. The `online`-event path is a different reconnect shape and gets
+    // its own spec below — it used to double-send every queued operation, and
+    // that spec is what holds the fix in place.
     supabase.setOffline(true)
 
     await page.getByRole('button', { name: 'Start' }).click()
@@ -293,5 +291,66 @@ test.describe('offline outbox and reconnect', () => {
     const resumedEvent = supabase.writesTo('putt_events')[1].body
     expect(resumedEvent.id).not.toBe(puttEvents[0].body.id)
     expect(supabase.writeCounts()).toEqual({ ...expected, [`putt_events:${resumedEvent.id}`]: 1 })
+  })
+
+  test('an online-event reconnect does not double-send the queue', async ({ page, context, supabase }) => {
+    // The regression this locks down: `handleOnline` used to call the flush
+    // with no in-flight guard, so the browser's `online` event started a second
+    // pass alongside the backoff retry already running. Both read the same
+    // outbox snapshot and every queued operation went out twice — reproduced at
+    // roughly one run in three before the fix in syncScheduler.js.
+    //
+    // Both layers of disconnect are needed to reproduce it. The route abort is
+    // what actually fails a write (an intercepted route never reaches the
+    // network stack, so browser offline mode alone leaves every call
+    // succeeding), and browser offline mode is what makes restoring it fire the
+    // `online` event at all.
+    supabase.stubActivityRpcs()
+    await supabase.signIn()
+    await page.goto('/practice/freeform')
+    await expect(page.getByRole('button', { name: 'Start' })).toBeVisible()
+
+    supabase.setOffline(true)
+    await context.setOffline(true)
+
+    await page.getByRole('button', { name: 'Start' }).click()
+    await expect(page.getByRole('button', { name: 'Made' })).toBeVisible()
+    await page.getByRole('button', { name: 'Made' }).click()
+
+    await expect
+      .poll(async () => {
+        const rows = await supabase.readLocalRows('outbox')
+        return { ops: rows.map((row) => row.op), attempted: (rows[0]?.attemptCount ?? 0) > 0 }
+      })
+      .toEqual({ ops: ['create_draft', 'transition'], attempted: true })
+    expect(supabase.writes).toEqual([])
+
+    // Order matters: clearing the route abort first means the `online` event
+    // lands on a queue that can actually drain, which is exactly the race —
+    // event-triggered flush and backoff retry live at the same moment.
+    supabase.setOffline(false)
+    await context.setOffline(false)
+
+    await expect
+      .poll(async () => (await supabase.readLocalRows('outbox')).length, { timeout: 25_000 })
+      .toBe(0)
+    await expect
+      .poll(async () => {
+        const outbox = await supabase.readCaptureOutbox()
+        return outbox.parentWrites.length + outbox.summaryWrites.length + outbox.puttEvents.length
+      }, { timeout: 25_000 })
+      .toBe(0)
+
+    const [activity] = await localActivities(supabase)
+    const puttEvents = supabase.writesTo('putt_events')
+    expect(puttEvents).toHaveLength(1)
+
+    // Counted by replay identity. Before the fix these came back as 2s.
+    expect(supabase.writeCounts()).toEqual({
+      [`rpc:activity_create_draft:instant-launch:${activity.id}:create`]: 1,
+      [`rpc:activity_transition:instant-launch:${activity.id}:start`]: 1,
+      [`putt_sessions:${activity.id}`]: 1,
+      [`putt_events:${puttEvents[0].body.id}`]: 1,
+    })
   })
 })

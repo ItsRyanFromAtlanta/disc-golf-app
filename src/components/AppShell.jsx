@@ -13,7 +13,7 @@ import { useActivityNavigationLifecycle } from '../hooks/useActivityNavigationLi
 import { useNotifications } from '../hooks/useNotifications'
 import NotificationSheet from './NotificationSheet'
 import { notificationRepository } from '../lib/repository/notificationRepository'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { resolveRouteMetadata, resolveSectionRoot, SHELL_TYPES } from '../lib/routeMetadata'
 
 export default function AppShell() {

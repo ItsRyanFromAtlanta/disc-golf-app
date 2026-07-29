@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { useAuth } from './context/AuthContext'
+import { useAuth } from './hooks/useAuth'
 import AppShell from './components/AppShell'
 import ProtectedRoute from './components/ProtectedRoute'
 import PwaUpdatePrompt from './components/PwaUpdatePrompt'

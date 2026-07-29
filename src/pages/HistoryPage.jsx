@@ -6,7 +6,7 @@ import {
   allPuttSamples,
   fetchHistory,
 } from '../lib/history'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useHistoryRecovery } from '../hooks/useHistoryRecovery'
 import { SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
 import ChipGroup from '../components/ChipGroup'

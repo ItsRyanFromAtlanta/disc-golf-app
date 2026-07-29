@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconBrandApple, IconBrandGoogle } from '@tabler/icons-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import ChipGroup from '../components/ChipGroup'
 import OtpInput from '../components/OtpInput'
 import { readPlatformContext } from '../lib/platform'

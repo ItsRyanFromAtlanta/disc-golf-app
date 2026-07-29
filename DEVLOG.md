@@ -1,5 +1,57 @@
 # Dev Log
 
+## 2026-07-28 — the reconnect double-send, fixed; lint reaches zero
+
+**What:** Fixed all three defects the live-capture specs found, plus the last lint warning. The
+significant one is the sync scheduler.
+
+**`syncScheduler.js` was using `status` as a concurrency guard, and status cannot do that job.** It
+is `SYNCING` only while `flush()` is awaited, so an `online` event arriving next to a backoff retry
+started a second pass over the same outbox snapshot and sent every queued operation twice. Replaced
+with a real `flushing` in-flight flag plus a rerun queue: a trigger landing mid-flush is *recorded*
+rather than either dropped or run concurrently. Both halves matter — dropping it is what used to
+strand a write in PENDING until the next window event, which is exactly what the old
+`status !== SYNCING` check in `notifyOutboxChanged` did. That check is gone; the guard now lives in
+one place.
+
+**The test caught a regression I introduced while writing it.** Adding a per-pass FAILED check meant
+`retry()` — the user's explicit escape from a permanent failure — was itself being swallowed. It now
+passes `{ force: true }`, which is the one thing allowed past that gate. Worth stating plainly: I
+wrote the bug and the test in the same sitting, and only the test knew.
+
+**Why this module had no tests.** Its header declared it not vitest-testable because it uses
+window/document. That was true of `start`/`stop` and got generalised to the whole module — so the
+scheduling logic, which touches neither, went untested for the life of the file. Guarding the two
+listener bindings made the rest testable; there are now 11 unit tests covering overlap, coalescing,
+non-dropping, convergence, the FAILED terminal rules, and forced retry. The header now says which
+part is browser-dependent instead of writing off the file.
+
+The E2E reconnect spec had been deliberately avoiding `context.setOffline(false)` to route around
+this defect. There is now a second spec that uses exactly that path and asserts exactly-once — the
+failure reproduced at roughly one run in three before the fix, and passes 6/6 after. That moves
+"offline reload / recovery / exactly-once reconnect" to **Covered** in § 9.
+
+**The other two:** `SessionReport` keyed `NotesTagsEditor` on the entry's mutable `notes`/`tags`, so
+saving changed the key and remounted the editor, destroying the "Saved" confirmation. Keyed on the
+entry id instead — which still resets the editor when navigating between entries, the thing the
+original key was protecting. Note it keys on the *loaded record's* id rather than the route param,
+since `HistoryDetailPage` does not clear the previous entry while fetching. And `ChipGroup` now emits
+`aria-pressed`. Deliberately not `role="radio"` for the single-select rows: a radiogroup owes the user
+roving tabindex and arrow-key traversal, and claiming the role without the keyboard contract would be
+a regression for screen-reader users rather than an improvement.
+
+**Lint is at zero.** `useAuth` and the context handle it needs moved to `src/hooks/useAuth.js` across
+37 importers; `AuthContext.jsx` now exports only `AuthProvider`. No re-export shim — that would have
+suppressed the warning while leaving Fast Refresh just as degraded.
+
+**Verification:** 32/32 E2E, 524 unit tests across 76 files, lint clean with zero warnings for the
+first time in the project's history, build clean. The `online`-event spec was repeated 6× against the
+race it covers.
+
+**Worth recording about method:** three of the four defects fixed today were found by tests written
+to *describe* behaviour, not to hunt bugs. The offline layer had no coverage at all, and every defect
+found this session lived there.
+
 ## 2026-07-28 — live-capture E2E; three app defects found by the specs
 
 **What:** `e2e/capture.spec.js` drives a real freeform capture session through the launcher's own

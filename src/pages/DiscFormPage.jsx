@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { createDiscCopies } from '../lib/discLocker'
 import { useCatalog } from '../lib/repository/catalogRepository'
 import MoldPicker from '../components/MoldPicker'

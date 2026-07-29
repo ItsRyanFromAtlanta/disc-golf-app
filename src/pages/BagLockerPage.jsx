@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { IconLayoutGrid, IconList } from '@tabler/icons-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchBags, fetchBagDiscs, addDiscToBag, removeDiscFromBag } from '../lib/discLocker'
 import { useDiscList } from '../lib/repository/discRepository'
 import { filterDiscs, sortDiscs } from '../lib/discFilters'

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchHistory, allPuttSamples, distanceSamples } from '../lib/history'
 import { decayWeightedForm, distanceDropOff, putterBreakdown } from '../lib/insights'
 import { compareGhostPace } from '../lib/ghostPacing'

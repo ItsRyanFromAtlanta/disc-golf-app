@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchDisc, fetchBags, fetchDiscBagIds, addDiscToBag, removeDiscFromBag, upsertDisc } from '../lib/discLocker'
 import { effectiveFlightNumbers } from '../lib/discs'
 import EditableSection from '../components/EditableSection'

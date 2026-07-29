@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { mostRecentRegimenId } from '../lib/insights'
 import { regimenRepository } from '../lib/repository/regimenRepository'
 import { drillGroupLabel, drillKind, DRILL_TYPES } from '../lib/drillEngine'

@@ -52,8 +52,8 @@ below.
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
 | 7 | E2 round/course reconciliation — **audit done, checkpoint 1 landed.** See `docs/development/E2_ROUND_COURSE_AUDIT.md`; findings 2 and 3 are next | agent | E2 feature work |
-| 8 | ~~Extend E2E with live-capture fixtures~~ — **DONE 2026-07-28**, suite at 31 specs. Remaining § 9 gaps are app defects and unreachable branches, not missing fixtures | agent | — |
-| 9 | Fix the reconnect double-send in `syncScheduler.js` and the round outbox's silent `catch` — same class, both in the offline path | agent | wire-level exactly-once |
+| 8 | ~~Extend E2E with live-capture fixtures~~ — **DONE 2026-07-28**, suite at 32 specs. Remaining § 9 gaps are app defects and unreachable branches, not missing fixtures | agent | — |
+| 9 | ~~Reconnect double-send in `syncScheduler.js`~~ — **FIXED 2026-07-28**, 11 unit tests plus a dedicated `online`-event E2E spec. The round outbox's silent `catch` (E2 audit finding 2) is still open and is the same class | agent | — |
 
 **The 1-before-2 interlock was dissolved on 2026-07-28.** It existed because PR #4 ships the
 account-deletion UI and `main` auto-deploys, so merging first put a button in production that threw a
@@ -142,7 +142,7 @@ assume they are merely undecided:
   Green on the branch of record as of 2026-07-28: 497 tests across 74 files, build clean.
 - Lint carries four pre-existing warnings: three hook-dependency findings and one Fast Refresh export
   finding. Address as touched or in a bounded cleanup review.
-- **Browser E2E now exists** (2026-07-28). `npm run test:e2e` runs 19 Playwright specs across a phone
+- **Browser E2E now exists** (2026-07-28). `npm run test:e2e` runs 32 Playwright specs across a phone
   project and a 320px project, authenticated via a seeded session with the Supabase backend
   intercepted in-page; CI runs them as a separate `e2e` job. This closes the "no authenticated screen
   has ever been rendered by a test" gap but **not** the full § 9 gate — see the per-flow coverage

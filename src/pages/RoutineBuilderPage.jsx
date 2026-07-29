@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { IconPlus } from '@tabler/icons-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { createCustomRegimen, fetchRegimenWithSets } from '../lib/regimens'
 import {
   blankStage,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchCourses } from '../lib/roundLog'
 import { useRoundList } from '../lib/repository/roundRepository'
 

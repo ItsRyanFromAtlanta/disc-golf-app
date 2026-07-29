@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { fetchBags } from '../lib/discLocker'
 import { fetchCourse, fetchCourses } from '../lib/roundLog'
 import { parTotal } from '../lib/rounds'

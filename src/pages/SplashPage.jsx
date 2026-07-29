@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { IconBolt, IconFlame } from '@tabler/icons-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 // Screen 1 (WelcomeLandingView). The social-proof number is static v1 copy,
 // not a live aggregate query — see SCREEN_SPECS.md Screen 1.
