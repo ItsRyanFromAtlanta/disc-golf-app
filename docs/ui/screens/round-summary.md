@@ -682,7 +682,7 @@ closes.**
    and syncs later with nothing to tell the user it landed. Related to `T-round-summary-6`.
 
 Filed corrections touching this screen:
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState` and
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-1 (`preserveNestedState` and
 the shared scroll key), CS-3 (`STATE_MATRIX.md`, since resolved), CS-5 (`TEST_MAP.md` rows), CS-6 (finalizing here
 frees the active slot the PLAY hero mislinks), CS-7 (activity pill), CS-9 (ADR 0001 scope vs inventory
 status).

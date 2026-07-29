@@ -46,13 +46,21 @@ imports of the page component, and correct it here if the inference is wrong.
 
 | Route id | Related tests | Notes |
 |---|---|---|
-| `discs-root` | `bags`, `bagHistory`, `bagResonance`, `wishlist`, `flightCurve` | `wishlist.stabilityGaps` is the ghost-slot detection; `flightCurve` covers `PutterLineup` |
+| `discs-root` | `bags`, `bagHistory`, `bagResonance`, `wishlist`, `flightCurve`, `flightSpectrum` | `wishlist.stabilityGaps` is the ghost-slot detection; `flightCurve` covers `PutterLineup`; `flightSpectrum` moved here 2026-07-29 — see below |
 | `disc-collection` | `discFilters`, `discLocker`, `discFlair` | |
 | `bag-manage` | `bags`, `bagHistory` | |
-| `disc-compare` | `discCompare`, `discCompareCohorts`, `flightSpectrum`, `flightCurve` | |
+| `disc-compare` | `discCompare`, `discCompareCohorts`, `flightCurve` | `flightSpectrum` removed 2026-07-29 — see below |
 | `lost-found` | `lostFound` | |
 | `disc-new` | `discLocker`, `repository/catalogRepository` | Mold search is catalog-backed |
 | `disc-detail` | `discs`, `discLocker`, `discTaxonomy`, `discOdometer`, `discPhotos`, `discProfile`, `repository/discOdometerRepository` | Confirmed by reading imports — see `screens/disc-detail.md` |
+
+**Attribution corrected 2026-07-29** (was `_corrections/discs-screens.md` D-4). `flightSpectrum` was
+listed against `disc-compare` and has moved to `discs-root`. `DiscComparePage.jsx` imports nothing from
+`src/lib/flightSpectrum.js` — its chart is `FlightCurveOverlay` (`:17,197`), covered by
+`flightCurve.test.js`. `src/lib/flightSpectrum.js` is consumed by `src/components/FlightSpectrum.jsx:3`,
+rendered by `src/pages/BagPage.jsx:6,216`, which is `discs-root`. `flightSpectrum.test.js` exists and
+passes; only its row was wrong. This table is what an agent reads to answer "what might I break," so a
+change to `flightSpectrum` would previously have pointed at the wrong screen.
 
 ## COURSES
 
@@ -62,7 +70,7 @@ imports of the page component, and correct it here if the inference is wrong.
 | `courses-new` | **none** | Quick-course creation is untested |
 | `course-detail` | **none** | |
 | `rounds-root` | `rounds` | |
-| `round-start` | `rounds` | |
+| `round-start` | `rounds`, `discLocker` | `discLocker` added 2026-07-29: `RoundStartPage.jsx:4` imports `fetchBags`, and `discLocker.test.js` exists |
 | `round-scorecard` | `rounds` | `roundTotal`, `parTotal`, `relativeToPar`, `formatRelativeToPar` only |
 | `round-summary` | `rounds` | |
 
@@ -74,6 +82,14 @@ pure functions: `roundTotal`, `parTotal`, `relativeToPar`, `formatRelativeToPar`
 So the four tested functions compute totals, and the nine untested ones do all the reading and writing.
 E2 is "audit and harden the existing course/layout and offline round routes" — this is the strongest
 available argument for where that audit should start.
+
+**Amended 2026-07-29** (was `_corrections/courses-screens.md` CS-5). The rows above were confirmed
+correct by reading all seven page components' imports, and the headline finding stands — if anything it
+is understated. Three further modules these screens depend on have **no test file at all**:
+`src/lib/repository/roundRepository.js` (`useRoundList`, imported by `courses-root` and `rounds-root`),
+`src/lib/repository/discRepository.js` (`useDiscList`, imported by `round-scorecard`), and
+`src/lib/profile.js` (`fetchProfile` / `upsertProfileFields`, also `round-scorecard`). Read a `**none**`
+or a single-module row as "the only *tested* module," not "the only *relevant* one."
 
 ## ME
 

@@ -18,7 +18,7 @@ most common failure mode in this codebase, and the duplicate always drifts.
   **Tested** column.
 - **Code is ground truth.** Where an existing document disagrees with an export listed here, the
   code is right; the contradiction is logged in
-  [`_corrections/lib-api-index.md`](_corrections/lib-api-index.md), never fixed in place.
+  [`_corrections/lib-api-index.md`, now `CORRECTIONS_LEDGER.md`](CORRECTIONS_LEDGER.md), never fixed in place.
 - **Link, never restate.** Design tokens live in `AGENTS.md` § Design system. Lifecycle, metric,
   shell, offline, and repository/transaction contracts live in `PHASE_A_ARCHITECTURE.md`. This
   index describes *what is callable*, not *what the architecture requires*.

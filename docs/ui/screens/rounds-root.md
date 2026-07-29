@@ -515,7 +515,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
    `T-courses-root-4`. Worth settling once, for the whole section, rather than four times.
 
 Filed corrections touching this screen:
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState`),
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-1 (`preserveNestedState`),
 CS-3 (`STATE_MATRIX.md`, since resolved), CS-5 (`TEST_MAP.md` rows), CS-7 (activity pill).
 
 ## 13. Blueprint divergence

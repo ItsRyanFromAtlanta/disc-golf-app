@@ -73,6 +73,18 @@ sheet, not the route. See `_corrections/play-screens.md` P-4.
 The `/rounds` tree carries `section: 'courses'` — rounds are reached through the COURSES tab, which is
 why they highlight it rather than PLAY.
 
+**`round-start` is deliberately ⬜/unblocked, and this file governs** (recorded 2026-07-29; was
+`_corrections/courses-screens.md` CS-9). ADR 0001's Context sentence names three screens that "cannot
+state a stable interaction contract until this closes" — `round-scorecard`, **`round-start`**, and
+`round-summary` — while this table marks only two as 🔶. The narrower reading here is the correct one on
+the merits: all three of the ADR's options require a round row to exist before capture begins, and none
+of them changes what `round-start` collects (course, layout, bag) or how it writes it. Option C, the
+accepted decision, keeps the structured scorecard as the primary surface, which leaves the setup form
+untouched. Per this file's own rule — **screen status lives here and nowhere else** — `round-start` is
+unblocked, and `screens/round-start.md` is written that way with the discrepancy recorded in its § 12.
+The remaining cleanup is on the ADR side: its Context sentence should be narrowed to the two screens
+when its owner next edits it. Do not resolve the disagreement by demoting `round-start` here.
+
 ## ME section
 
 | Route id | Path | Component | Shell | Pill | Doc |

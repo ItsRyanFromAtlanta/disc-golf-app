@@ -67,7 +67,7 @@ And because `AppShell.jsx:42-47` computes a pill target only for `putting_regime
 PLAY mid-round has no in-app affordance to get back except COURSES → View all → the row. Worse,
 `/practice` will show them "▶️ Resume active practice" linking to `/practice/freeform`
 (`PracticeMenuPage.jsx:162-169`, filed as
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-6).
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-6).
 
 **Scroll position leaks between rounds.** All rounds share the scroll key `round-scorecard`; see CS-1.
 
@@ -378,7 +378,7 @@ the screen's normalization and merge logic. `T-round-scorecard-1` moves them.
 plain `<select>` of strings. It also promised "secondary tasks in sheets"; no sheet is opened here, so
 putter choice and notes sit inline in the capture flow rather than behind the bottom-sheet pattern
 `PHASE_A_ARCHITECTURE.md` § 12 prescribes for the active shell. Filed as
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-4.
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-4.
 
 ### Screens
 
@@ -603,7 +603,7 @@ closes** — they change the capture surface the ADR is deciding about.
   aside.
 - **Commit:** `fix: style and persist the round turn check-in`
 - **Note:** the feature ships behind a Settings toggle and a profile column and has never had a
-  stylesheet rule. Filed as [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-8.
+  stylesheet rule. Filed as [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-8.
 
 #### T-round-scorecard-5 — Bound the score input
 
@@ -690,7 +690,7 @@ closes** — they change the capture surface the ADR is deciding about.
    depends on the answer. **Not decided here.**
 
 Filed corrections touching this screen:
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState` and
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-1 (`preserveNestedState` and
 the shared scroll key), CS-3 (`STATE_MATRIX.md`, since resolved), CS-4 (§ J1's `DiscCard`/sheets reuse claim),
 CS-5 (`TEST_MAP.md` rows), CS-6 (the PLAY hero mislinks the round this screen is capturing), CS-7
 (activity pill), CS-8 (`.round-turn-prompt` has no CSS).

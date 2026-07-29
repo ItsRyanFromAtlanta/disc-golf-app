@@ -48,7 +48,7 @@ discs were available — is fixed before a single throw is recorded.
 
 Neither fallback tells the user. A stale bookmark or a hand-edited link therefore starts a round at a
 different course than the URL names, with no warning. `NAVIGATION_MAP.md` § Deep links does not yet list
-this contract — filed as [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-2.
+this contract — filed as [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-2.
 
 Guards: `ProtectedRoute` and the onboarding gate only. `useActivityNavigationLifecycle` acts solely on
 transitions into and out of `SHELL_TYPES.ACTIVE` (`useActivityNavigationLifecycle.js:36-38`) and no
@@ -217,7 +217,7 @@ The inverse case is also live: when the round *does* start its activity, the rou
 single current activity. `PracticeMenuPage.jsx:162-169` then renders **"▶️ Resume active practice"** on
 `/practice` linking to `/practice/freeform` — the wrong destination, because that branch has no
 `disc_golf_round` case. Filed as
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-6.
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-6.
 
 ### Offline
 
@@ -370,7 +370,7 @@ app (`rounds-root` § 12 question 4), so an accidental `Start round` on the wron
 
 `DEVELOPMENT_PLAN.md` § J1's **Reuse** bullet promised "field-screen ergonomics (primary controls in
 viewport, secondary in sheets)". Course, layout, and bag are three native `<select>` elements inline; no
-sheet is opened. Filed as [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-4.
+sheet is opened. Filed as [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-4.
 
 ### Screens
 
@@ -399,7 +399,7 @@ sheet is opened. Filed as [`_corrections/courses-screens.md`](../_corrections/co
   `SCREEN_INVENTORY.md` marks only the other two as 🔶 blocked. This document follows the inventory —
   the setup form is unaffected by whichever capture model wins, since Option C keeps the structured
   scorecard as primary and Options A and B both still need a round to exist. Recorded as a discrepancy in
-  § 12 question 5 and as [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-9.
+  § 12 question 5 and as [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-9.
   **Do not resolve the ADR from this document.**
 - `DEVELOPMENT_PLAN.md` § E2 owns the backlog.
 
@@ -464,7 +464,7 @@ prevent permanently. See § 5.
 | `context/AuthContext` | absent | — |
 
 [`TEST_MAP.md`](../TEST_MAP.md):65 records `round-start` → `rounds`. Accurate as far as it goes; it omits
-`discLocker`, filed as [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-5.
+`discLocker`, filed as [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-5.
 
 **Not covered, at any layer — and this is the screen where that hurts most**, because it owns the
 section's only genuinely intricate write path:
@@ -625,11 +625,11 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
    `SCREEN_INVENTORY.md`:61-64 marks only `round-scorecard` and `round-summary` as 🔶. This document
    follows the inventory, which owns status, and treats `round-start` as unblocked because the setup form
    is orthogonal to the capture model. If that reading is wrong, this document becomes provisional too.
-   Filed as [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-9. **Not resolved
+   Filed as [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-9. **Not resolved
    here.**
 
 Filed corrections touching this screen:
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState`),
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-1 (`preserveNestedState`),
 CS-2 (this screen consumes the second query-parameter contract), CS-3 (`STATE_MATRIX.md`, since resolved), CS-4
 (§ J1's stated reuse), CS-5 (`TEST_MAP.md` omits `discLocker`), CS-6 (the PLAY hero mislinks an active
 round created here), CS-7 (activity pill), CS-9 (ADR 0001 scope vs inventory status).

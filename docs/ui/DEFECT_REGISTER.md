@@ -2,7 +2,8 @@
 
 The consolidated, ranked list of **code defects** found during the 33-screen documentation pass. It
 exists because the findings were scattered across 33 screen documents (§ 6 Flow paths, § 10 Tests,
-§ 12 Open questions), nine files under [`_corrections/`](_corrections/), and
+§ 12 Open questions), thirteen files that were quarantined under `_corrections/` (now applied and
+cleared — dispositions in [`CORRECTIONS_LEDGER.md`](CORRECTIONS_LEDGER.md)), and
 [`STATE_MATRIX.md`](STATE_MATRIX.md) § 2 and § 5 — a shape in which nobody can act on them. This is
 the single artifact an engineer or an agent works from.
 
@@ -25,8 +26,9 @@ the single artifact an engineer or an agent works from.
 | A document describes the code wrongly | | ✅ |
 | A document is wrong **and** the code is also wrong | ✅ — the code half only | ✅ — the doc half only |
 
-So `SCREEN_SPECS.md:304` naming a `profiles.current_rating` column that does not exist is drift and
-stays in [`_corrections/me-screens.md`](_corrections/me-screens.md) C-2; `CareerHubPage.jsx` *reading*
+So `SCREEN_SPECS.md:304` naming a `profiles.current_rating` column that does not exist is drift — it was
+filed as `_corrections/me-screens.md` C-2, has since been applied to `SCREEN_SPECS.md`, and its
+disposition is in [`CORRECTIONS_LEDGER.md`](CORRECTIONS_LEDGER.md). `CareerHubPage.jsx` *reading*
 that column is a defect and is registered as `D-08`. The same split applies to the 35-disc interlock,
 the guest-conversion surface, and the `/notifications` route.
 

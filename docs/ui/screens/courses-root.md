@@ -481,7 +481,7 @@ E2 ("audit and harden the existing course/layout and offline round routes rather
    `total_score` — see `round-summary` § 12. Decide once and apply to `rounds-root` too, which has the
    same behavior.
 
-Filed corrections touching this screen: [`_corrections/courses-screens.md`](../_corrections/courses-screens.md)
+Filed corrections touching this screen: [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md)
 CS-1 (`preserveNestedState`), CS-3 (`STATE_MATRIX.md`, since resolved), CS-5 (`TEST_MAP.md` rows), CS-7 (activity
 pill).
 

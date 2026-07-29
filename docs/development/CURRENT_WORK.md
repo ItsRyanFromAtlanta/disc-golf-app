@@ -1,6 +1,6 @@
 # Current Work
 
-Last updated: 2026-07-28
+Last updated: 2026-07-29
 
 This file is the restart/handoff checkpoint. A fresh session should be able to resume from this file,
 `AGENTS.md`, and one relevant spec without replaying previous conversations. Per-item implementation
@@ -36,6 +36,22 @@ consolidated to a single line of development.
   layout and offline round routes rather than rebuilding them, then add weather, activity-only rounds,
   group-scorecard groundwork, bag snapshot verification, and course preparation as separately
   committed green checkpoints. See `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E.
+  ADR 0002 defines "group-scorecard groundwork": ensure nothing in the round schema or repository layer
+  permanently assumes a single scorer — no widened RLS, no shared-round UI.
+
+### Screen documentation exists — read it before touching any screen (2026-07-29)
+
+`docs/ui/` now documents **all 33 routes** from code. Start at `docs/ui/README.md`.
+
+- `docs/ui/SCREEN_INVENTORY.md` is the canonical route/status table; screen status lives there and
+  nowhere else.
+- `docs/ui/DEFECT_REGISTER.md` holds **24 registered defects** the pass found and deliberately did not
+  fix. Check it before "discovering" a bug — several are already diagnosed with evidence.
+- `docs/ui/EXECUTION_PLAN.md` is the **sequencing artifact** for that work. Read it with
+  `PRODUCT_ROADMAP.md` when choosing what to do next; E2's audit overlaps several registered items.
+- The pass's quarantined corrections have been applied to the root documents (2026-07-29) and
+  `docs/ui/_corrections/` is cleared. Dispositions are in `docs/ui/CORRECTIONS_LEDGER.md`.
+- `AGENTS.md` § Not yet decided is closed: ADRs 0001–0003 are accepted, in `docs/decisions/`.
 
 ## Staged next actions
 

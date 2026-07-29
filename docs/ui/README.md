@@ -38,6 +38,9 @@ it rather than carrying their own status field, so status can never disagree wit
 
 - [TASK_FORMAT.md](TASK_FORMAT.md) — capability-tagged task convention and the capability→model table.
 - [TEST_MAP.md](TEST_MAP.md) — screen-to-test coverage and the E2E backlog.
+- [DEFECT_REGISTER.md](DEFECT_REGISTER.md) — consolidated, ranked code defects found by this pass.
+- [EXECUTION_PLAN.md](EXECUTION_PLAN.md) — sequencing for that registered work.
+- [CORRECTIONS_LEDGER.md](CORRECTIONS_LEDGER.md) — disposition of every quarantined correction.
 - [screens/](screens/) — one document per screen.
 
 ## Scope
@@ -63,5 +66,15 @@ carries a forward-looking design document marked as such.
 ## `_corrections/`
 
 Staging area for contradictions between existing documentation and the code, with `file:line` evidence.
-Not a permanent record — entries are resolved into the root documents and cleared. If this directory is
-non-empty, there is unreconciled drift outstanding.
+Not a permanent record — entries are resolved into the root documents and cleared. **If this directory
+exists and is non-empty, there is unreconciled drift outstanding.**
+
+**It is currently empty and absent, which is the correct resting state.** The 33-screen pass filed
+thirteen files there; all were reconciled on 2026-07-29 and the directory was removed. Every entry's
+outcome — applied, rejected, resolved, registered, or carried — is in
+[CORRECTIONS_LEDGER.md](CORRECTIONS_LEDGER.md), which is also where the ~240 by-id citations in the
+screen documents (`_corrections/play-screens.md` P-7 and the like) resolve. Three of those entries were
+**rejected on verification**; check the ledger before acting on a correction a screen document cites.
+
+Re-create `_corrections/` the next time a documentation pass finds drift it should not fix in flight,
+and clear it the same way.

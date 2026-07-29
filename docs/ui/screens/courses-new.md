@@ -509,7 +509,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
    building the editor from question 3.
 
 Filed corrections touching this screen:
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-1
 (`preserveNestedState`), CS-3 (`STATE_MATRIX.md`, since resolved), CS-4 (§ J1's stated reuse — the "secondary
 tasks in sheets" ergonomics claim is not met here), CS-7 (activity pill).
 

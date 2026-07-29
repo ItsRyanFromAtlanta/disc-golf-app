@@ -23,9 +23,30 @@ detail that should not inflate normal coding context.
 - [IOS_READINESS.md](mobile/IOS_READINESS.md) — Capacitor and App Store preparation.
 - [FIELD_TESTING.md](mobile/FIELD_TESTING.md) — sunlight, one-thumb, offline, and device testing.
 
+## UI
+
+Screen-level documentation. Start at the README; screen **status** lives only in `SCREEN_INVENTORY.md`.
+
+- [README.md](ui/README.md) — index, authority chain, and authoring rules for the screen documents.
+- [SCREEN_INVENTORY.md](ui/SCREEN_INVENTORY.md) — canonical route → component → document → status table.
+- [NAVIGATION_MAP.md](ui/NAVIGATION_MAP.md) — shell, route tree, sheet layer, guards, deep links.
+- [STATE_MATRIX.md](ui/STATE_MATRIX.md) — cross-cutting states, current behavior against contract.
+- [COMPONENT_LIBRARY.md](ui/COMPONENT_LIBRARY.md) — every component in `src/components/`, props and usage.
+- [LIB_API_INDEX.md](ui/LIB_API_INDEX.md) — exported API surface of `src/lib/` and `src/hooks/`.
+- [COPY_AND_TERMINOLOGY.md](ui/COPY_AND_TERMINOLOGY.md) — user-facing strings, grouped, conflicts flagged.
+- [DEFECT_REGISTER.md](ui/DEFECT_REGISTER.md) — code defects found by the documentation pass, as tracked work.
+- [EXECUTION_PLAN.md](ui/EXECUTION_PLAN.md) — sequencing for that registered work.
+- [TEST_MAP.md](ui/TEST_MAP.md) — screen-to-test coverage and the E2E backlog.
+- [TEMPLATE.md](ui/TEMPLATE.md) / [TASK_FORMAT.md](ui/TASK_FORMAT.md) — authoring and task conventions.
+- [CORRECTIONS_LEDGER.md](ui/CORRECTIONS_LEDGER.md) — disposition of every quarantined correction.
+- [screens/](ui/screens/) — one document per screen.
+
 ## Decisions
 
 - [ADR index](decisions/README.md) — durable architecture decisions and template.
+- Accepted: [0001 live-round interaction model](decisions/0001-live-round-interaction-model.md),
+  [0002 group and league scope](decisions/0002-group-and-league-scope.md),
+  [0003 native capability timeline](decisions/0003-native-capability-timeline.md).
 
 ## Archive
 

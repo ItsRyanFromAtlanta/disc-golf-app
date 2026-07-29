@@ -125,9 +125,32 @@ actions, tested in `src/lib/navigation.test.js`:
 | Navigate to section root | Active tab, already at top | `navigate(resolveSectionRoot(...))` |
 
 So the active tab is a three-state control: go there → scroll up → return to root. Scroll positions are
-retained per `scrollKey` in a ref map and restored in a `useLayoutEffect`; a route with
-`preserveNestedState: false` still has its position stored, but returns to it only within a single shell
+retained per `scrollKey` in a ref map and restored in a `useLayoutEffect`, for the lifetime of one shell
 mount.
+
+**`preserveNestedState` is a declared-but-unimplemented contract field** (corrected 2026-07-29; was
+`_corrections/courses-screens.md` CS-1 — this paragraph previously read "a route with
+`preserveNestedState: false` still has its position stored, but returns to it only within a single shell
+mount," which implies the field changes behavior). **Nothing reads it.** `src/lib/routeMetadata.js` sets
+it on all 30 app routes, and the only other references in `src/` are assertions in
+`routeMetadata.test.js`. `AppShell` restores and stores scroll position keyed **solely** on
+`route.scrollKey`:
+
+```
+AppShell.jsx:52-58   if (!region || !route?.scrollKey) return
+                     const top = scrollPositionsRef.current[route.scrollKey] ?? 0
+                     region.scrollTop = top
+AppShell.jsx:61      if (route?.scrollKey) scrollPositionsRef.current[route.scrollKey] = event.currentTarget.scrollTop
+```
+
+So scroll position **is** restored for `preserveNestedState: false` routes. Do not assert scroll
+behavior from this field until it is either wired into `AppShell` (a real behavior change, needs a
+decision) or removed.
+
+**Second, unrelated consequence of the same code:** the ref map is keyed by `scrollKey`, and every
+instance of a parameterized route shares one key. Scrolling `/courses/course-a`, returning to
+`/courses`, then opening `/courses/course-b` restores **course A's** offset onto course B. The same
+applies to `course-detail`, `round-scorecard`, `round-summary`, and `disc-detail`.
 
 ## Sheet layer
 

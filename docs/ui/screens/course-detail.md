@@ -41,7 +41,7 @@ holes, and it is the primary jumping-off point into a round.
 (`CourseDetailPage.jsx:51` and `:66`) and consumed only by `round-start` (`RoundStartPage.jsx:13-14`).
 `NAVIGATION_MAP.md` § Deep links currently states that `/bag/lost-found?disc=` is the app's only
 query-parameter contract; that is out of date. Filed as
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-2.
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-2.
 
 Both parameters are **advisory, not binding**. `round-start` falls back to the first available course
 (`RoundStartPage.jsx:34-37`) and to the course's default layout (`:66-70`) when the requested id is not
@@ -485,7 +485,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
 - **Verify:** `npm test` (`routeMetadata.test.js` if the key derivation moves there) plus a manual
   A → root → B check on all four routes.
 - **Commit:** `fix: scope scroll restoration to the route instance`
-- **Blocked by:** [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 —
+- **Blocked by:** [`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-1 —
   decide whether `preserveNestedState` gains behavior at the same time or is retired.
 
 #### T-course-detail-6 — Give the hole list assistive-tech structure
@@ -545,7 +545,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
    "course statistics live with their subject," which points directly at this page. Nothing is built.
 
 Filed corrections touching this screen:
-[`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState` and
+[`_corrections/courses-screens.md`, now `CORRECTIONS_LEDGER.md`](../CORRECTIONS_LEDGER.md) CS-1 (`preserveNestedState` and
 the shared scroll key), CS-2 (this screen produces the second query-parameter contract), CS-3 (`STATE_MATRIX.md`,
 since resolved), CS-5 (`TEST_MAP.md` rows), CS-7 (activity pill).
 
