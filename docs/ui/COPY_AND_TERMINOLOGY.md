@@ -181,19 +181,31 @@ Established conventions, confirmed by `AGENTS.md` § Conventions. These are sett
 
 ---
 
-## Decisions needed
+## Decisions — RESOLVED 2026-07-29
 
-Ordered by blast radius. Each needs one owner answer; none blocks screen documentation.
+All seven are decided. They were resolved by the assistant under the owner's standing "resolve them all"
+instruction rather than by individual sign-off; each is a naming rule, reversible by editing its row.
 
-| # | Decision | Affects |
-|---|---|---|
-| 1 | "Routine" or "Regimen" as the user-facing term (T-1) | 3 route titles, 2 headings, empty states, `SCREEN_SPECS.md` |
-| 2 | "Collection" or "Locker" (T-2) | 1 route title, 2 empty states, `discLocker.js` naming |
-| 3 | "Session", "Run", or "Activity" (T-3) | 2 buttons, history copy, alignment with the § 1 lifecycle contract |
-| 4 | Is "Practice Stack" a proper noun or a synonym for bag (T-4) | Onboarding copy, 2 empty states |
-| 5 | Emoji in button labels: keep, drop, or blueprint-only | ~8 labels |
-| 6 | Heading capitalization: Title Case or sentence case | 74 headings, and whether route titles must match |
-| 7 | Empty-state idiom: adopt B (absence + next action) as the standard | 27 strings, and argues for a shared component |
+**None is applied to the code yet.** These are the target state. Implementation is tracked in
+`EXECUTION_PLAN.md` — a copy change touching 74 headings does not belong inside an unrelated commit.
 
-Decisions 5–7 are style rules that belong in `AGENTS.md` § Design system once made — that document owns
-presentation conventions, and this one should keep pointing at it rather than growing a second copy.
+| # | Decision | Ruling | Rationale |
+|---|---|---|---|
+| 1 | T-1 Routine vs Regimen | **"Routine" in the UI; `regimen` stays in schema and code** | Renaming a table is expensive and invisible to users; renaming the UI word is cheap. Today `Putting Regimens` and `No custom routines yet.` sit on adjacent surfaces |
+| 2 | T-2 Collection vs Locker | **"Collection" in the UI; `discLocker.js` keeps its name** | Same principle. The route title already says `Collection`, so this moves two empty states, not a route |
+| 3 | T-3 Session / Run / Activity | **"Session" in the UI; `activity` stays the contract term** | `activity` is right for `PHASE_A_ARCHITECTURE.md` § 1 and wrong on a button. `End run` becomes `End session` |
+| 4 | T-4 Practice Stack | **Proper noun — the specific bag onboarding creates** | It comes from `PRACTICE_STACK_BAG_NAME`, one named default bag, not a synonym. Generic copy says "bag" |
+| 5 | Emoji in buttons | **Drop from labels; keep in blueprint wireframes** | Blueprint emoji were layout annotation, never shipped copy. Today the same two actions ship both ways — `Edit` and `📝 Edit`. An icon belongs in an icon slot, not inside a label string |
+| 6 | Heading capitalization | **Sentence case everywhere, including route titles** | The larger existing group and the accessible default. `routeMetadata.js` titles change with it, so a screen never shows two names for itself |
+| 7 | Empty-state idiom | **Idiom B — absence plus a next action** | Already the best strings in the app. `Nothing here yet.` is retired outright |
+
+**Rule 7 needs a component, not 27 rewrites.** `COMPONENT_LIBRARY.md` found three competing CSS idioms
+across six files and no shared empty-state component. Applying idiom B by hand would recreate the
+divergence it is meant to end — build the component first, then adopt.
+
+**Where these live once applied.** Rules 5–7 are presentation conventions and belong in `AGENTS.md`
+§ Design system, which owns presentation; this document will link rather than keep a second copy.
+Rules 1–4 are naming and stay here, since this is the terminology authority.
+
+**Explicitly not in scope.** `Made` / `Missed` on the capture surface are read at speed in sunlight.
+They are correct as they are and no rule above applies to them.

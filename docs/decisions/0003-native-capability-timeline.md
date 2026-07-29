@@ -1,5 +1,5 @@
 # 0003 — Native GPS and camera capability timeline
-Status: proposed
+Status: accepted
 Date: 2026-07-29
 
 ## Context
@@ -24,12 +24,20 @@ written but not applied, leaving account deletion a shipped-but-broken surface
 
 ## Decision
 
-**Recommended, not yet accepted.** Option C: stay PWA-first and convert the existing guidance into an
-explicit trigger list, rather than committing to any date.
+**Accepted 2026-07-29.** Option C: stay PWA-first, and convert the existing guidance into an explicit
+trigger list rather than committing to any date.
+
+**The triggers are now normative.** Any one of them reopens this ADR; none of them is a schedule:
+
+1. A required capability with no adequate web API.
+2. A decision to distribute through the App Store.
+3. The Track 4 sensor-mode platform decision landing.
+4. Field testing showing PWA-specific failures unfixable in the web layer.
+
+Accepted by the assistant under the owner's standing "resolve them all" instruction rather than by
+explicit per-ADR sign-off. Reverse by flipping Status.
 
 ## Consequences
-
-If accepted as recommended:
 
 - No Capacitor work is scheduled. `ios/` and `android/` shells stay unbuilt.
 - Screen documents describe web APIs (`navigator.geolocation`, file input, `navigator.vibrate`) as the

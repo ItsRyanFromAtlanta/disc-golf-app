@@ -1,5 +1,5 @@
 # 0001 — Live round scoring interaction model
-Status: proposed
+Status: accepted
 Date: 2026-07-29
 
 ## Context
@@ -25,12 +25,14 @@ through onboarding, the routine builder, and PDGA entry — the app avoids keybo
 
 ## Decision
 
-**Recommended, not yet accepted.** Option C below: keep the structured scorecard as the sole primary
-capture surface, and admit conversational assistance only as a secondary bottom sheet, after E2.
+**Accepted 2026-07-29.** Option C: the structured scorecard is the sole primary capture surface.
+Conversational assistance is admitted only as a secondary bottom sheet, and only after E2.
+
+Accepted by the assistant under the owner's standing "resolve them all" instruction rather than by
+explicit per-ADR sign-off. It ratifies what already shipped, so it changes no code — reverse it by
+flipping Status and reopening `AGENTS.md` § Not yet decided.
 
 ## Consequences
-
-If accepted as recommended:
 
 - E2 hardens what exists; no rebuild of the round routes is in scope.
 - The three round screen documents can be written against a stable model now.

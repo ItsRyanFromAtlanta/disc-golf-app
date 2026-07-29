@@ -1,5 +1,5 @@
 # 0002 — Group and league feature scope
-Status: proposed
+Status: accepted
 Date: 2026-07-29
 
 ## Context
@@ -20,12 +20,17 @@ get wrong, since schema files are append-only.
 
 ## Decision
 
-**Recommended, not yet accepted.** Option B: schema-shaped groundwork in v1, no group UI, no RLS
-widening until a real multi-scorer flow is designed.
+**Accepted 2026-07-29.** Option B: schema-shaped groundwork in v1 — no group UI, no RLS widening until a
+real multi-scorer flow is designed.
+
+This also fixes the definition E2 was missing. "Group-scorecard groundwork" means exactly one thing:
+ensure nothing in the round schema or repository layer permanently assumes a single scorer. It does not
+authorize widened RLS, shared-round UI, or any Social surface.
+
+Accepted by the assistant under the owner's standing "resolve them all" instruction rather than by
+explicit per-ADR sign-off. Reverse by flipping Status.
 
 ## Consequences
-
-If accepted as recommended:
 
 - E2's "group-scorecard groundwork" is scoped to exactly one thing: ensuring nothing in the round schema
   or repository layer assumes a single scorer permanently — no widened RLS, no shared-round UI.
