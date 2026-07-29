@@ -401,7 +401,8 @@ coverage.
 1. **Bag capacity is not enforced here at all.** This screen is the widest hole in the 35-disc
    interlock: `card-add` writes membership with no check while `/bag` believes it has blocked the path.
    The full cross-surface table and the decision it needs are in `screens/discs-root.md` § 12 item 1;
-   `screens/disc-detail.md` § 12 item 1 raised the same question against a different surface. Blocks
+   `screens/disc-detail.md` § 12 item 1 raised the same question against a different surface. Logged
+   against `SCREEN_SPECS.md:73-74,174` in `_corrections/discs-screens.md` D-1. Blocks
    `T-disc-collection-2`.
 2. **A foreign or malformed `addToBag` id fails silently.** `pickerBag` resolves to `null` and the page
    renders browse mode, but `addToBagId` is still the raw parameter, so the code path that would write
@@ -417,7 +418,7 @@ coverage.
 5. **`flairEnabled` is captured once at mount.** Changing the flair preference in Settings has no
    effect on an already-mounted locker, including the embedded one on `/bag`.
 6. **`COPY_AND_TERMINOLOGY.md` T-2 attributes an empty-state string to this route that lives
-   elsewhere.** Logged in `_corrections/discs-screens.md` D-1.
+   elsewhere.** Logged in `_corrections/discs-screens.md` D-2.
 
 ## 13. Blueprint divergence
 

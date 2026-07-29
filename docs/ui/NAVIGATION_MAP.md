@@ -167,6 +167,24 @@ title `Disc Golf` and hides the back control.
 ## Deep links
 
 Every route is directly addressable and survives reload; there is no navigation state held outside the
-URL except scroll positions. One query-parameter contract exists in the shipped app:
-`/bag/lost-found?disc=:discId`, linked from `disc-detail`. A screen that accepts query parameters must
-document them in its Entry and exit table.
+URL except scroll positions.
+
+**Eight query parameters across seven screens.** All are read-only — `grep -rn "setSearchParams("
+src/pages/` returns nothing, so no screen ever writes back to the URL:
+
+| Parameter | Route | Read at | Purpose |
+|---|---|---|---|
+| `addToBag` | `/bag/locker` | `BagLockerPage.jsx:19` | Add-to-bag mode for a specific bag |
+| `mold` | `/bag/discs/new` | `DiscFormPage.jsx:44` | Pre-select a catalog mold |
+| `plastic` | `/bag/discs/new` | `DiscFormPage.jsx:51` | Pre-select a plastic |
+| `ids` | `/bag/compare` | `DiscComparePage.jsx:71-77` | Comma-split, deduped, capped at `COMPARE_MAX`. The only repeatable parameter — uses `getAll` |
+| `disc` | `/bag/lost-found` | `LostFoundPage.jsx:54` | Link a disc to its case |
+| `distance` | `/practice/freeform` | `FreeformLogPage.jsx:66` | Trophy Room pursuit-drill starting distance |
+| `clone` | `/practice/regimens/new` | `RoutineBuilderPage.jsx:46` | CLONE & TWEAK source routine |
+| `courseId`, `layoutId` | `/rounds/new` | `RoundStartPage.jsx:13-14` | Pre-select course and layout |
+
+None has a shared constant between producer and consumer — every one is a bare string literal on both
+sides, so a rename breaks the link silently and no test would catch it. `ids` is the only one with input
+hardening (trim, dedupe, cap); `disc` is unvalidated.
+
+A screen that accepts query parameters must document them in its Entry and exit table.

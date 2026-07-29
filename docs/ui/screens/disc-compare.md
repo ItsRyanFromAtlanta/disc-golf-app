@@ -463,6 +463,10 @@ skip, not crash. Offline reload of a bookmarked comparison. No automated browser
    subtitle says `Current reality` — honest, but the two panels now describe different numbers under
    one page-level source selector.
 
+Entries in `_corrections/` touching this screen: `discs-screens.md` D-1 (the bag-capacity claim, which
+this screen's `bag-summary` inherits through its third distinct disc count) and `discs-screens.md` D-4
+(`flightSpectrum` is listed under this screen's row in `TEST_MAP.md` and belongs to `discs-root`).
+
 ## 13. Blueprint divergence
 
 **N/A** — screen has no blueprint counterpart. `MASTER_PROJECT_BLUEPRINT.md` § 3 draws no comparison

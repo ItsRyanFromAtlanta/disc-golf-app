@@ -168,7 +168,7 @@ Both are documented in `COMPONENT_LIBRARY.md`.
 | Category → enabled lookup | `preferenceMap(rows)` | `lib/notificationPreferences` | — | **pure** |
 | Device flair preference | `getFlairMode()` | `lib/viewPreference` | `localStorage`, try/catch-wrapped | sync |
 | Timezone validity | `isValidIanaTimezone(value)` | `lib/notificationPreferences` | `Intl` round-trip | **pure** |
-| Full account export dataset (~46 tables) | `dataExportRepository.collectUserExport(user.id)` | `lib/repository/dataExportRepository` | Supabase, paginated | async, on demand |
+| Full account export dataset (54 tables) | `dataExportRepository.collectUserExport(user.id)` | `lib/repository/dataExportRepository` | Supabase, paginated | async, on demand |
 
 Both initial reads run in one `Promise.all` (`SettingsPage.jsx:17-21`), re-run on `user.id` change
 only. `fetchProfile` uses `maybeSingle()`; a missing row is substituted with `{ id: user.id }`.
@@ -253,8 +253,10 @@ confirmation, not an interlock.
 
 **Destructive.** Two, of very different weight.
 
-*Export* is non-destructive but privacy-sensitive: `collectUserExport` walks ~40 owner-scoped tables
-with 500-row pagination plus referenced shared rows (`dataExportRepository.js:5-50`), then
+*Export* is non-destructive but privacy-sensitive: `collectUserExport` walks **35 owner-scoped tables**
+(`OWNER_SOURCES`, `dataExportRepository.js:5-41`) plus **6 reached through parent RLS**
+(`RLS_DERIVED_SOURCES`, `:43-50`) plus **13 referenced shared catalog tables** resolved by id — 54 CSVs
+in total — with 500-row pagination throughout, then
 `createExportFiles` renders each to a deterministic, formula-safe, BOM-prefixed CSV under `data/`, adds
 `manifest.json` (format version 1, generated-at, source cutoff, account id, per-file row counts,
 columns, scope, and three explicit exclusions) and a `README.txt`, and zips it at level 6. Scopes are
@@ -289,7 +291,7 @@ question 1.
   category CHECK admits eight values including `sync`, which the UI deliberately does not offer. RLS
   select/insert/update own only; `grant select, insert, update` to `authenticated`
   (`:132-135`).
-- Every table in `dataExportRepository`'s `OWNER_SOURCES` (36 entries) and `RLS_DERIVED_SOURCES` (6),
+- Every table in `dataExportRepository`'s `OWNER_SOURCES` (35 entries) and `RLS_DERIVED_SOURCES` (6),
   plus the referenced shared catalog tables resolved by id.
 - `public.delete_own_account()` — `20260727120000_phase_e_account_deletion.sql:34-77`. Security
   definer, `set search_path = ''`, no parameters (so no caller can target another user), `revoke all`
@@ -557,7 +559,7 @@ No automated browser E2E suite exists (`PHASE_A_ARCHITECTURE.md` § 9); these ar
 5. **`del-phrase` is case-sensitive against a hardcoded English word.** `CONFIRM_PHRASE = 'DELETE'`
    (`DeleteAccountPanel.jsx:6`). Any future localization breaks the gate or forces an untranslated
    English word on every user. Not urgent; worth deciding before localization.
-6. **The export has no progress granularity and no cancel.** `collectUserExport` fetches ~46 tables in
+6. **The export has no progress granularity and no cancel.** `collectUserExport` fetches 54 tables in
    two `Promise.all` waves with 500-row pages; a large account produces a long opaque
    `Reading your authoritative account data…`. There is no per-table progress, no row estimate, and no
    way to abort.

@@ -453,7 +453,8 @@ this is the interlock's real boundary. Go offline and reload. No automated brows
    `A bag cannot contain more than 35 discs` string the user cannot act on from `/bag/manage`.
    Needs one decision: is the cap a data-integrity rule (add the constraint, then make every path
    handle its rejection) or a UI guideline (say so, and drop the RPC exception)? Blocks
-   `T-discs-root-6` and `T-disc-detail-3`.
+   `T-discs-root-6` and `T-disc-detail-3`. Logged against `SCREEN_SPECS.md:73-74,174` in
+   `_corrections/discs-screens.md` D-1.
 
 2. **`bag.capacity` is display-only and labelled as such on `/bag/manage` ("Display capacity"), yet
    `/bag` treats it as the interlock threshold.** A bag with `capacity` 10 blocks at 10 here and at 35
@@ -472,6 +473,11 @@ this is the interlock's real boundary. Go offline and reload. No automated brows
    `fetchUserDiscs` (raw) and `useDiscList` (Dexie-backed) read the same rows through two different
    paths in one render tree. Should the page adopt `useDiscList` for its own counts?
 
+Other entries in `_corrections/` touching this screen: `component-library.md` item 1 (`FlightChart` is
+not rendered here), `lib-api-index.md` item 1 (`searchMolds` no longer exists),
+`screen-specs-and-agents.md` C-3 (Screen 6's three-surface split, of which the Putters tab is one), and
+`discs-screens.md` D-4 (`flightSpectrum` tests belong to this screen's row in `TEST_MAP.md`).
+
 ## 13. Blueprint divergence
 
 Blueprint Screen 5 is *Unified Bag Management & Disc Universe Hub*. This page is its principal carrier
@@ -482,7 +488,7 @@ and diverges in six recorded ways.
 | 3-way segmented header `[ MY BAGS ] [ 🎯 PUTTERS ] [ UNIVERSE ]` | **4-way**, with a new `Collection` tab first and as the default. `PRODUCT_ROADMAP.md` Phase C item 1 is the reason: "Collection-first DISCS hub" |
 | 35-disc capacity interlock, blue → orange → rust, `[ + Add to Bag ]` disables at 35 | Bar and tiers ship as drawn (`capacityTier`). The disable is a hidden link, not a disabled button, and it is not enforced — § 12 item 1 |
 | 3-tier vertical accordion Mold → Plastic → **Run**, with a weight-selection drawer | Two tiers ship: Manufacturer → Mold → plastic rows. No run tier, no weight drawer — the plastic row deep-links to `disc-new` with `?mold=&plastic=` and the weight is a field on that form (`DiscFormPage.jsx:41-53`) |
-| Ghost Slot wishlist card with a `[ FIND ]` action bridging to Screen 17 | Card ships; **`[ FIND ]` is absent, not disabled.** `UniverseBrowser.jsx:38-47` renders a non-interactive `<div class="ghost-slot-card">` holding two `<span>`s. Screen 17 is parked, so this matches the intent of `SCREEN_SPECS.md:169-172` — but that entry says "hidden/disabled", and what shipped is "never rendered". Note the asymmetry: on `/bag/manage` the same CSS class *is* a button, whose action is `remove` |
+| Ghost Slot wishlist card with a `[ FIND ]` action bridging to Screen 17 | Card ships; **`[ FIND ]` is absent, not disabled.** `UniverseBrowser.jsx:38-47` renders a non-interactive `<div class="ghost-slot-card">` holding two `<span>`s. Screen 17 is parked, so this matches the intent of `SCREEN_SPECS.md:170-173` — but that entry says "hidden/disabled", and what shipped is "never rendered". Note the asymmetry: on `/bag/manage` the same CSS class *is* a button, whose action is `remove` |
 | `[ 🔗 BEAM QR ]` P2P bag share | Absent, per standing divergence 8 |
 | `[ + NEW BAG ]` in the header | Lives on `/bag/manage` instead |
 

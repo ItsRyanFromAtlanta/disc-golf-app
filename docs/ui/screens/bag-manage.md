@@ -508,7 +508,8 @@ suite exists (`PHASE_A_ARCHITECTURE.md` § 9); these are backlog entries, not ex
 1. **The membership cap here is `35`, not `bag.capacity`, and it counts every status.** `/bag` uses
    `bag.capacity ?? 35` over `in_locker` members only. Two screens one tap apart disagree about how
    full the same bag is. The cross-surface table and the decision this blocks are in
-   `screens/discs-root.md` § 12 item 1; the `bag.capacity` semantics question is item 2 there. Blocks
+   `screens/discs-root.md` § 12 item 1; the `bag.capacity` semantics question is item 2 there. Logged
+   against `SCREEN_SPECS.md:73-74,174` in `_corrections/discs-screens.md` D-1. Blocks
    `T-bag-manage-3`.
 2. **The `Display capacity` label says the number is presentational, and `/bag` treats it as an
    interlock threshold.** Either the label is wrong or `/bag` is.
@@ -535,7 +536,7 @@ suite exists (`PHASE_A_ARCHITECTURE.md` § 9); these are backlog entries, not ex
    but produces phantom local slots. `T-bag-manage-5`.
 8. **`No discs in your collection yet.` is styled `className="loading"`.** An empty state wearing a
    loading class, and the string `COPY_AND_TERMINOLOGY.md` T-2 attributes to `/bag/locker`. Logged in
-   `_corrections/discs-screens.md` D-1.
+   `_corrections/discs-screens.md` D-2.
 
 ## 13. Blueprint divergence
 

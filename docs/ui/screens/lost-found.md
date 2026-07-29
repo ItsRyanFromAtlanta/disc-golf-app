@@ -543,6 +543,10 @@ exists (`PHASE_A_ARCHITECTURE.md` § 9); these are backlog entries, not existing
    record is populated from the shared course directory. Correct for a public directory; worth
    confirming that no private course data can be inferred from the selection.
 
+Entry in `_corrections/` touching this screen: `discs-screens.md` D-5 — the "Expansion Screens 22–25"
+provenance this screen is attributed to does not exist in the repository, which is why § 13 has no
+drawn intent to compare against.
+
 ## 13. Blueprint divergence
 
 **N/A** — screen has no blueprint counterpart. `MASTER_PROJECT_BLUEPRINT.md` § 3 contains no lost-disc
@@ -556,7 +560,7 @@ application tree" — and `PRODUCT_ROADMAP.md` Phase B item 4, shipped 2026-07-1
 screens are **not in this repository**: nothing under `MASTER_PROJECT_BLUEPRINT.md` or any other root
 document defines Screens 22–25, and `SCREEN_SPECS.md:16` is their only mention anywhere. There is
 therefore no drawn intent to diverge from, and no wireframe to compare against. Logged in
-`_corrections/discs-screens.md` D-2.
+`_corrections/discs-screens.md` D-5.
 
 Standing divergences #1 (React/Vite, not Expo) and #3 (append-only schema — followed unusually
 literally here) apply; see `SCREEN_SPECS.md`.

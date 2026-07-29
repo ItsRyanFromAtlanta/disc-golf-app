@@ -475,7 +475,13 @@ are backlog entries, not existing coverage.
    only as a fallback for the `front` slot. Offering a raw public URL field on the create form
    contradicts the privacy posture Phase B item 3 established. Keep, or drop?
 7. **`filterCatalogMolds` caps at 20 results and `MoldPicker` shows no count.** A search matching more
-   than 20 approved molds silently truncates, and neither the picker nor the Universe browser says so.
+   than 20 approved molds silently truncates
+   (`src/lib/repository/catalogRepository.js:97`), and neither the picker nor the Universe browser
+   says so.
+
+Entry in `_corrections/` touching this screen: `lib-api-index.md` item 1 — `SCREEN_SPECS.md:120,163`
+cite `discLocker.searchMolds` for this screen's mold search; the export was removed in `6c88410`.
+Referenced, not re-logged.
 
 ## 13. Blueprint divergence
 

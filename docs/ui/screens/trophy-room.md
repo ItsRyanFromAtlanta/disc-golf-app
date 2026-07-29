@@ -37,7 +37,8 @@ failed or never ran catches up before anything renders.
 `?distance=<n>` when the badge implies a distance, and with no query string when it does not.
 `FreeformLogPage.jsx:62-66` reads it (`Number(searchParams.get('distance')) || null`) and seeds the
 launcher's pending distance. This is the **second** query-parameter contract in the shipped app, after
-`/bag/lost-found?disc=:discId`; `NAVIGATION_MAP.md` § Deep links currently documents only the first.
+`/bag/lost-found?disc=:discId`; `NAVIGATION_MAP.md:169-172` documents only the first, and in fact
+eight parameter contracts ship across seven routes.
 Logged as C-6 in `docs/ui/_corrections/me-screens.md`.
 
 The destination is an **active-shell** route (`freeform-active`), so the launch discards the header,

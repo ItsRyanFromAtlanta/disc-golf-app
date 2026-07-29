@@ -93,3 +93,41 @@ second, weaker enforcement.
 **Consequence already recorded:** `screens/disc-detail.md` § 12 item 1, including the count discrepancy
 — the trigger counts every `bag_discs` row while the `discs-root` readout counts `in_locker` members
 only, so a bag can display `30 / 35` and still reject an insert.
+
+---
+
+## C-9 ADJUDICATION — two agents reached opposite conclusions; here is the resolved answer
+
+`_corrections/discs-screens.md` D-1 states there is "no constraint of any kind limiting `bag_discs`
+cardinality." **That is incorrect**, and since it is filed as high severity it must not stand.
+
+**Resolved by direct read of the schema:**
+
+- `layer1_foundation_schema.sql:230-253` defines `enforce_bag_capacity()` and attaches it as
+  `bag_discs_capacity_check`, a `before insert` trigger on `bag_discs`. It row-locks the parent bag,
+  counts members, and raises above 35.
+- The only `drop` of that trigger is line 250 — the idempotent `drop trigger if exists` immediately
+  preceding its own `create`. Nothing anywhere else drops it.
+- `grep -rn "enforce_bag_capacity\|bag_discs_capacity_check"` over all SQL returns exactly those four
+  lines.
+
+**Where D-1 is right:** there is no `CHECK` *constraint*, and there could not be — a `CHECK` cannot count
+sibling rows. `SCREEN_SPECS.md`'s "DB `CHECK` constraint" wording is wrong either way, which is the
+substance of both C-9 and D-1.
+
+**Where D-1 is wrong, and it matters:** its conclusion that "a bag can exceed 35 today" does not follow.
+The trigger fires on *every* insert into `bag_discs` regardless of which app path issued it, so the
+unguarded paths (`/bag/locker?addToBag=`, `disc-detail` chips) fail loudly rather than silently
+overfilling. That inverts the user-facing consequence: not silent corruption, but a raw Postgres string.
+
+D-1's survey of the *other* enforcement points is valuable and stands: `bag_versions.capacity between 0
+and 35`, the `cardinality(normalized_ids) > 35` guard inside `grouped_save_bag`, the absence of an
+equivalent guard in `restore_bag_version`, and the four app surfaces counting three different ways.
+
+**One limit on all of this.** Every statement here is read from the applied schema files. Nothing in this
+session verified the live database — Supabase MCP calls require approval and were never reachable
+(`docs/development/CURRENT_WORK.md` § Staged next actions). Before acting on capacity behavior, confirm
+the trigger exists in the live project.
+
+**Proposed edit:** amend D-1 in `discs-screens.md` to the resolution above, keeping its enforcement-point
+survey and dropping the "no constraint of any kind" and "a bag can exceed 35" claims.
