@@ -159,6 +159,38 @@ but the quick-course form never sets `tee_type`, so **every** quick course lives
 is unprotected today. There is a passing assertion recording the current behaviour so it stays
 documented rather than assumed. Fix: `nulls not distinct` on the index, or a synthetic default tee.
 
+## 9. `isPermanentError` misclassifies most Postgres errors as transient — OPEN
+
+**Severity: high.** Systemic, latent on all three outboxes, and the same failure mode as finding 2 on
+a layer we just declared fixed.
+
+Surfaced while wiring the course outbox's classifier. `PERMANENT_POSTGRES_CODES` holds exactly four
+codes — `23505`, `23514`, `23503`, `22P02` — and the only other permanent signal is
+`error.status >= 400`. But a supabase-js `PostgrestError` carries `code`, `details`, `hint` and
+`message` and **no `status`**: the HTTP status lives on the response envelope, not the error object.
+
+So any Postgres error outside those four codes, arriving without an explicitly attached status,
+classifies as **transient and retries forever**. That includes every error the two new RPCs raise
+themselves — `22023` (invalid parameter), `28000` (no authenticated user), `42501` (insufficient
+privilege) — and, more importantly, `42501` from an ordinary **RLS denial** on any queued write.
+
+The course path was fixed at its send site: `createCourseWithLayoutRpc` now attaches the HTTP status
+from the `{data, error, status}` envelope. The activity and round paths were **not** audited for this
+and are the open half of the finding.
+
+Two subtleties that make this worth care rather than a quick patch:
+
+- **Do not simply widen `PERMANENT_POSTGRES_CODES`.** `28000` is genuinely ambiguous — an expired JWT
+  that gets refreshed makes the identical payload succeed on retry, so marking it permanent would
+  poison writes that were about to work. Attaching the real HTTP status at each send site is the safer
+  shape, and it is what the course path now does.
+- `PGRST202`/`42883` ("function not deployed yet") must stay **transient** on purpose. The migration is
+  coming, and a queued write should wait for it rather than poison. The course path deliberately leaves
+  those statusless for exactly this reason.
+
+Fix: audit every send site that feeds a queue and attach the response status, then add regression tests
+covering an RLS denial and a validation error on each queue.
+
 ---
 
 ## Disposition
@@ -172,6 +204,7 @@ documented rather than assumed. Fix: `nulls not distinct` on the index, or a syn
 | 5 | Unbounded course directory fetch | Medium | Deferred, trigger recorded |
 | 6 | Round holes ordered by UUID | Low | With 2 or 3 |
 | 8 | Duplicate hole numbers possible when `tee_type` is NULL | Medium | Open, found 2026-07-29 |
+| 9 | `isPermanentError` misclassifies most Postgres errors as transient | High | **Partly fixed** — course send site done; activity and round paths open |
 | 7 | No-op `idList` map | Cosmetic | While touching |
 
 Findings 2 and 3 are the next checkpoint. They are independent of each other and of the E2 feature

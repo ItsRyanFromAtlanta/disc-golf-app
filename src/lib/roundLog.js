@@ -209,10 +209,14 @@ export async function fetchCourse(courseId) {
 }
 
 // PostgREST cannot find the function in its schema cache; Postgres does not know
-// it at all. Both mean the migration behind `createCourseWithLayout` has not
+// it at all. Both mean the migration behind `create_course_with_layout` has not
 // landed yet — `main` auto-deploys and a migration cannot ride in the same
 // atomic step as the client that calls it, so there is always a window where the
 // button is live and the function is not. Same pattern as `accountDeletion.js`.
+//
+// Deliberately mapped to a plain Error with no status: the classifier reads that
+// as transient, which is right — the migration is coming, so a queued course
+// should wait for it rather than poison on a deploy-ordering gap.
 const MISSING_COURSE_RPC_CODES = new Set(['PGRST202', '42883'])
 
 export const COURSE_CREATE_UNAVAILABLE_MESSAGE =

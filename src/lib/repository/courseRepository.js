@@ -170,7 +170,6 @@ export function createCourseSyncAdapter({
 
   return {
     flush,
-    rows: outbox.rows,
     listPoisoned: async () => (await outbox.rows()).filter((row) => row.poison),
     retryPoisoned: outbox.retryPoisoned,
     outbox,
