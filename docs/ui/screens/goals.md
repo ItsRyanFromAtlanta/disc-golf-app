@@ -199,24 +199,36 @@ target, optionally a date → `Create goal` → the RPC inserts the goal plus it
 re-reads → the new card appears with `active` status and a one-entry history.
 
 **First run / empty.** `list` returns `{ goals: [], events: [] }`. The create form renders in full and
-`list-empty` renders in place of the cards. The form is the primary affordance on an empty screen,
-which is the right emphasis.
+`list-empty` renders in place of the cards (`S-EMPTY`, `GoalsPage.jsx:61` — `No goals yet. Choose one
+measurable target to begin.`, one of the fourteen bare-`<p>` instances the row catalogues rather than a
+`.empty-state` block). The form is the primary affordance on an empty screen, which is the right
+emphasis, and the copy carries its own next action — better than the row's average even though the
+markup is not.
 
-**Error.** Every failure renders inline via `err-inline` and **leaves the rest of the page intact** —
-the form keeps its values, the cards stay rendered, the user can retry immediately. This is materially
-better than `settings` (which blanks the page on any error) and better than `me-root` /
-`profile-details` / `trophy-room` (which blank the page on load failure). Note the loading guard is
-`if (!snapshot && !error)`, so a load failure falls through to a rendered page with an empty goal list
-plus the error — degraded, but navigable.
+**Error.** `S-ERR-INLINE` (`GoalsPage.jsx:49`) — every failure renders inline via `err-inline` and
+**leaves the rest of the page intact** — the form keeps its values, the cards stay rendered, the user
+can retry immediately. **This screen is deliberately outside `S-ERR-BLOCK`**, one of the minority the
+row does not list among its 19. That is materially better than `settings` (which blanks the page on any
+error) and better than `me-root` / `profile-details` / `trophy-room` (which blank the page on load
+failure). Note the loading guard is `if (!snapshot && !error)` (`:44`), so a load failure falls through
+to a rendered page with an empty goal list plus the error — degraded, but navigable.
+
+`S-RETRY` still binds in the strict sense — there is no retry *control* — but the row's harm does not
+land here: the page stays interactive, so re-submitting or re-navigating is reachable without a browser
+reload. This screen is one of the few where the `S-RETRY` gap is nominal rather than a dead end.
 
 The messages themselves are the weak point: `active_goal_exists`, `version_conflict`,
 `invalid_goal_transition`, `goal_not_found`, `idempotency_key_conflict`, and `unauthenticated` are
 machine strings raised by the RPCs and rendered verbatim. See § 12.
 
-**Offline.** As § 5: cached list renders, both write paths fail with a raw network message.
+**Offline.** `S-OFFLINE-READ` — on the working side: `goalRepository` is cache-backed, so the list
+renders from Dexie. `S-STALE` then applies unannounced — nothing on this screen distinguishes a cached
+list from a live one, and the row records `rounds-root` as the app's only screen that does. **Diverges
+from `S-OFFLINE-WRITE`:** both write paths are direct RPCs with no outbox, so create and transition fail
+with a raw network message and nothing queues; no `S-SYNC` label is displayable. As § 5.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally in
-`load` (`GoalsPage.jsx:22-24`), so there is no anonymous rendering path. The RPCs independently reject
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell. `user.id` is dereferenced
+unconditionally in `load` (`GoalsPage.jsx:22-24`), so there is no anonymous rendering path. The RPCs independently reject
 a null `auth.uid()` with `unauthenticated`, so the server does not trust the client's scoping.
 
 **Interlock.** **One active goal per type**, enforced server-side in two places (the partial unique
@@ -230,16 +242,24 @@ This is the inverse of standing divergence #6's stated pattern ("app-side disabl
 `CHECK`") for the 35-disc and 100-putt interlocks: here only the database half exists. See § 11
 T-goals-1.
 
+`S-INTERLOCK-CAP` surveys three ceilings and does not include this one, which is a fourth: a cardinality
+ceiling of one active goal per type. It belongs in the row's tally and is its **worst** case on the
+row's own criterion — the row's three caps are all "enforced, inconsistently pre-empted," while this one
+is enforced with *no* app-side pre-emption whatsoever. Noted in `_corrections/state-citations-2.md`.
+
 **Destructive.** `Complete` and `Cancel` are terminal — `TRANSITIONS` gives both an empty set of
 successors (`lib/goals.js:19-24`), and the server enforces the same. Both are gated by
 `window.confirm(`${actionLabel[status]} this goal? This status is final.`)`
 (`GoalsPage.jsx:38`) — so the prompts read `Complete this goal? This status is final.` and
 `Cancel this goal? This status is final.`
 
-A native `window.confirm` is a blocking, unstyled browser dialog: it cannot be themed, it does not
-respect the app's sheet contract in `PHASE_A_ARCHITECTURE.md` § 12, its focus behavior is
-browser-defined, and it looks nothing like `DeleteAccountPanel`'s typed-phrase pattern — the only
-other destructive confirmation in the app. `COMPONENT_LIBRARY.md` § Gaps records that there is no
+`S-CONFIRM` — this is the second of the row's three `window.confirm` sites. A native `window.confirm` is
+a blocking, unstyled browser dialog: it cannot be themed, it does not respect the app's sheet contract
+in `PHASE_A_ARCHITECTURE.md` § 12, its focus behavior is browser-defined, and it looks nothing like
+`DeleteAccountPanel`'s typed-phrase pattern (`S-CONFIRM-PHRASE`) — the only other destructive
+confirmation in the app. The row's `contract-violation` verdict applies here without divergence: no
+focus entry or return, no inert background, no 320px or reduced-motion handling, and `SheetHost` shell-
+owned and unused for it. `COMPONENT_LIBRARY.md` § Gaps records that there is no
 shared confirm dialog; this screen is the reason it is needed.
 
 Nothing is deleted: a cancelled goal keeps its row and its full event history, consistent with the

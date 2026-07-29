@@ -213,16 +213,31 @@ telemetry reads `0` / `—` / `0`, all five radar axes read `Insufficient data` 
 and `putt-empty` renders. Nothing crashes and no section is hidden — the page is uniformly honest about
 having no evidence.
 
-**Error.** Any of the five queries failing renders `<p className="form-error">Career summary
-unavailable: {error}</p>` **as the entire page** — no header content, no retry, no navigation other
-than the shell tab bar. Recovering requires a tab round-trip or a reload.
+Most of that is `S-INSUFFICIENT`, not `S-EMPTY`, and the distinction is the row's whole point.
+`SkillRadar.jsx:25` and `CareerHubPage.jsx:50` (`Personal evidence only; division benchmarks remain
+unavailable.`) are both named instances, and the `—` readouts are the row's `pct()`-helper pattern. The
+row rates this the strongest state in the codebase and records no divergence; this screen is a clean
+example of it rather than an exception.
 
-**Offline.** As § 5: identical to the Error path. No cached rendering exists.
+**Error.** `S-ERR-BLOCK` — any of the five queries failing renders `<p className="form-error">Career
+summary unavailable: {error}</p>` **as the entire page** — no header content, no retry (`S-RETRY`), no
+navigation other than the shell tab bar. `CareerHubPage.jsx:20` is one of the thirteen **unguarded**
+instances: there is no `&& !data` test, so an error wins over an already-resolved summary. Recovering
+requires a tab round-trip or a reload. This screen has no `S-ERR-INLINE` path at all — every failure is
+total.
 
-**Auth / guard.** `ProtectedRoute` gates the whole shell. `user.id` is dereferenced unconditionally at
-`CareerHubPage.jsx:17-18`, so there is no anonymous rendering path. A Supabase anonymous ("guest")
-session is a real user with a real id and renders normally. `useOnboardingGate` redirects a
-never-onboarded user to `/onboarding` before this route paints.
+**Offline.** `S-OFFLINE-READ`, and this screen is the row's sharpest instance: `careerRepository` has
+**no cache**, so the ME landing screen cannot render offline at all. Identical to the Error path; no
+cached rendering exists, so `S-STALE` never arises and none of `S-SYNC`'s four calm labels is
+displayable. As § 5.
+
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the whole shell and redirects to `/login`
+with no explanatory copy and no preserved return destination, per the row. `user.id` is dereferenced
+unconditionally at `CareerHubPage.jsx:17-18`, so there is no anonymous rendering path. A Supabase
+anonymous ("guest") session is a real user with a real id and renders normally — consistent with
+`S-GUEST`, whose single consumer is `AuthPage`: no screen in ME branches on `isGuest`, so a guest sees
+an ordinary career hub with no conversion nudge. `S-ONBOARD` — `useOnboardingGate` redirects a
+never-onboarded user to `/onboarding` before this route paints, and fails open on a fetch rejection.
 
 **Interlock.** **N/A** — no cap or constraint is enforced or displayed on this screen.
 

@@ -223,34 +223,50 @@ version *n+1* with `supersedes_id` pointing at version *n* and reason `correctio
 previous card moves into `Earlier versions (n)` and is relabelled `Superseded snapshot`. Nothing is
 mutated or removed.
 
-**First run / empty.** `list` returns `[]`; `reports-empty` renders below the intro. The generate
+**First run / empty.** `S-EMPTY` — `list` returns `[]`; `reports-empty` renders below the intro
+(`WeeklyReportsPage.jsx:68`, with a second per-report empty at `:29`). The generate
 button is fully enabled, so the empty state is one tap from resolution — provided the last completed
 week contains any activity. If it does not, generation still succeeds and produces a version-1 card
 whose highlights list is replaced by `No completed activity was recorded in this window.` — an empty
 report, not an absent one. That is the correct behavior for a deterministic snapshot and worth not
 "fixing."
 
-**Error.** Every failure — load, generation, timezone read, or the two-attempt insert — renders inline
-via `err-inline` and leaves the page usable. The loading guard is `if (!reports && !error)`, so a load
-failure falls through to a page with the intro, the generate button, and the error, rather than a
-blank screen. `busy` clears in a `finally`, so a failed generation never leaves the button stuck.
+**Error.** `S-ERR-INLINE` (`WeeklyReportsPage.jsx:67`) — every failure (load, generation, timezone read,
+or the two-attempt insert) renders inline via `err-inline` and leaves the page usable. **This screen is
+deliberately outside `S-ERR-BLOCK`**, one of the minority the row does not list among its 19. The
+loading guard is `if (!reports && !error)` (`:61`), so a load failure falls through to a page with the
+intro, the generate button, and the error, rather than a blank screen. `busy` clears in a `finally`, so
+a failed generation never leaves the button stuck — that in-flight state is the screen's `S-SAVING`
+instance (`Generating…`), a page-owned hand replication of `EditableSection`'s pattern rather than the
+shared component, but a complete one: the control is disabled while busy.
+
+**Partially satisfies `S-RETRY`, and is one of only three screens the row credits at all.** `Generate
+last week` is a *regenerate*, not a read-retry: it re-runs the snapshot build, not the failed `list`.
+A failed initial read still has no control that re-runs it, so the row's `⚠️ regenerate, not retry`
+cell is exact. The distinction matters because regeneration writes a new version row (see below), so it
+is not a safe substitute for a retry.
 
 Messages are raw: a Supabase error string, or `weekly_report_generation_failed` from the repository,
 or `week_start_must_be_monday` / `invalid_week_window` from the pure builder. See § 12.
 
-**Offline.** As § 5.
+**Offline.** `S-OFFLINE-READ` — on the working side: `weeklyReportRepository` is cache-backed, so the
+snapshot list renders from Dexie. `S-STALE` applies unannounced — a cached report list is presented
+identically to a live one, which is more consequential here than elsewhere because the cards carry
+version numbers and a `Current version` label that a stale read can misattribute. Generation itself has
+no outbox (**diverges from `S-OFFLINE-WRITE`**) and no `S-SYNC` label is displayable. As § 5.
 
 **Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally
 (`WeeklyReportsPage.jsx:46`), so there is no anonymous rendering path. RLS restricts both select and
 insert to the owner (`20260716220000_...:126-129`).
 
-**Interlock.** **N/A** — no cap or capacity constraint applies. The `unique (user_id, week_start,
-version)` constraint is a correctness guard, not a user-facing interlock: the repository's retry
-handles the race silently.
+**Interlock.** **N/A** — no cap or capacity constraint applies, so `S-INTERLOCK-CAP` is genuinely `➖`.
+The `unique (user_id, week_start, version)` constraint is a correctness guard, not a user-facing
+interlock: the repository's retry handles the race silently.
 
-**Destructive.** **N/A** — nothing on this screen deletes, retires, or overwrites. Regeneration is
-explicitly additive, and the grant set makes deletion impossible from the client. This is the only
-ME screen with no destructive path at all.
+**Destructive.** **N/A** — nothing on this screen deletes, retires, or overwrites, so neither
+`S-CONFIRM` nor `S-CONFIRM-PHRASE` applies and neither is a gap. Regeneration is explicitly additive,
+and the grant set makes deletion impossible from the client. This is the only ME screen with no
+destructive path at all.
 
 ## 7. Dependencies
 

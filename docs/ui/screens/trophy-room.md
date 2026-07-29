@@ -267,30 +267,50 @@ Pursuits section is absent** (`ActivePursuits` returns `null` at zero pursuits �
 state); and the wall renders all 25 badges as `locked` with counts `All (25) / Unlocked (0) /
 In progress (0) / Locked (25)`. Opening the ledger shows `No XP earned in the last 30 days.`
 
-The missing pursuits section is a real hole: the one moment a player most needs "here is what to chase
-next" is their first visit, and the screen says nothing.
+Two `S-EMPTY` instances, both bare `<p>` rather than `.empty-state`: `TrophyWall.jsx:36`
+(`Nothing here yet.`) and `XpLedgerModal.jsx:34`. The wall's is also one of the row's three named
+`S-EMPTY-FILTER` misreports (`TrophyWall.jsx:35`): the `All / Unlocked / In progress / Locked` chips
+filter the same grid, so selecting `Unlocked` on a new account produces `Nothing here yet.` — a
+statement about the account when it is a statement about the filter.
 
-**Error.** Any `fetchTrophyRoomData` rejection renders `<p className="form-error">{error}</p>` as the
-**entire page** — no header, no retry, no navigation but the shell. Identical to `disc-detail`'s and
-`me-root`'s pre-load failure posture, and worse than `goals` / `weekly-reports`, which contain their
-errors inline. An evaluator failure is invisible: it is swallowed, so the user sees a stale but
-complete wall with no indication reconciliation did not run.
+The missing pursuits section is a real hole and is **not** an `S-EMPTY` divergence but the absence of
+the state entirely: `ActivePursuits` returns `null` at zero pursuits, so there is no heading and no
+empty affordance to diverge from. The one moment a player most needs "here is what to chase next" is
+their first visit, and the screen says nothing.
 
-**Offline.** As § 5: identical to the Error path.
+**Error.** `S-ERR-BLOCK` — any `fetchTrophyRoomData` rejection renders `<p className="form-error">
+{error}</p>` as the **entire page** (`TrophyRoomPage.jsx:57`) — no header, no retry (`S-RETRY`), no
+navigation but the shell. It is one of the thirteen **unguarded** instances, with no `&& !data` test.
+Identical to `disc-detail`'s and `me-root`'s pre-load failure posture, and worse than `goals` /
+`weekly-reports`, which contain their errors inline; this screen has no `S-ERR-INLINE` path at all.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally
-(`TrophyRoomPage.jsx:35`), so there is no anonymous rendering path. The RPCs derive their subject from
+`S-ERR-SILENT` — an evaluator failure is invisible: `evaluateAndPersistBadges` is swallowed, so the user
+sees a stale but complete wall with no indication reconciliation did not run. The row rates most
+swallow sites `cosmetic` and defensible; this one is closer to its two `data-risk` cases in effect, in
+that a silently un-run reconciliation is indistinguishable from a correct one, and the badges are the
+screen's entire content.
+
+**Offline.** `S-OFFLINE-READ`, on the failing side: `lib/gamification/trophyRoom` is one of the eight
+modules with no cache, so the screen collapses into `S-ERR-BLOCK`. Identical to the Error path;
+`S-STALE` never arises and no `S-SYNC` label is displayable. As § 5.
+
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell. `user.id` is dereferenced
+unconditionally (`TrophyRoomPage.jsx:35`), so there is no anonymous rendering path. The RPCs derive their subject from
 `auth.uid()` independently of the client.
 
 **Interlock.** Level is capped at 50 (`MAX_LEVEL`, `lib/gamification/xp.js:14`). At the cap the XP bar
 reads full and the caption switches to `Max level — <n> XP`; XP continues to accrue in the ledger but
 stops minting levels. This is the only cap on the screen and it is handled correctly and visibly.
+`S-INTERLOCK-CAP` surveys three ceilings and does not include this one; it is the only ceiling in the
+app that is reached passively rather than by a user action, so the row's "pre-emptive disable" criterion
+does not apply — there is no control to disable, only a readout to relabel, and it is relabelled.
 
 `IMPORT_XP_CAP = 10000` exists in `constants.js` to stop a large UDisc backlog vaulting a user to the
 ceiling, but Screen 13 (ingestion) is unbuilt, so no code path applies it.
 
-**Destructive.** **N/A** — nothing here deletes, retires, or overwrites. `xp_events` is an immutable
-ledger and the modal says so; `badge_progress` is upsert-only and monotonic in practice.
+**Destructive.** **N/A** — nothing here deletes, retires, or overwrites, so neither `S-CONFIRM` nor
+`S-CONFIRM-PHRASE` applies and neither is a gap. `xp_events` is an immutable ledger and the modal says
+so; `badge_progress` is upsert-only and monotonic in practice.
 
 ## 7. Dependencies
 

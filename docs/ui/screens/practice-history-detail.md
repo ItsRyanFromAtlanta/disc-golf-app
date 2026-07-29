@@ -275,32 +275,46 @@ entire page**:
 Case 4 is the common one in practice and its copy is misleading; see § 12.
 
 A `hideActivity` failure is handled differently and better: it sets the error state
-(`HistoryDetailPage.jsx:116`) — which still replaces the page — but at least does not navigate away. A
-`NotesTagsEditor` save failure is handled best of all: the editor catches it and renders
-`<p class="form-error">` **inside itself** (`NotesTagsEditor.jsx:77`), leaving the report intact. That is
-the pattern the page should adopt.
+(`HistoryDetailPage.jsx:116`) — which still replaces the page, so it is a *mutation* landing in
+`S-ERR-BLOCK`, a divergence beyond that row's read-failure definition — but at least does not navigate
+away. A `NotesTagsEditor` save failure is handled best of all: `S-ERR-INLINE` (`NotesTagsEditor.jsx:77`),
+the editor catching it and rendering `<p class="form-error">` **inside itself**, leaving the report
+intact. That is the pattern the page should adopt, and it is this screen's only `S-ERR-INLINE` instance.
 
-**Offline.** As § 5.
+**Offline.** As § 5. `S-OFFLINE-READ` **fails outright** — `lib/history` is one of the eight uncached
+modules that row names, and this is one of the four routes it takes down. `S-OFFLINE-WRITE` is intact
+underneath: the hide/restore path is `activityRepository`-mediated and outbox-backed.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; `user.id` is used for `fetchUserDiscs` and
-`fetchHistory`. The entry query itself is **not** user-scoped in the client — it filters on `id` alone
-and relies on RLS to prevent reading another user's session. That is correct but implicit.
+**Sync labelling.** `S-SYNC` via `SessionReport.jsx:67-71`, and this is the fullest vocabulary any
+surface renders — `Saved on device` / `Needs attention` / `Synced`. It is still a divergence: three of
+§ 12's four labels, with no `Syncing` state and no reserved layout space. `S-SYNC-ATTENTION` is reachable
+from here through `onRetrySync` (`HistoryDetailPage.jsx:184`), which per `S-RETRY` is a sync retry and
+not a read retry.
 
-**Interlock.** **N/A** — no cap is enforced here.
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`); `user.id` is used for
+`fetchUserDiscs` and `fetchHistory`. The entry query itself is **not** user-scoped in the client — it
+filters on `id` alone and relies on RLS to prevent reading another user's session. That is correct but
+implicit.
 
-**Destructive.** `Hide from History` is the app's user-facing Delete. The confirmation is a raw
-`window.confirm` (`HistoryDetailPage.jsx:111`): *"Hide this activity from History and statistics? You can
-restore it for 30 days."* On accept, `recovery.hide` commits locally and the page navigates to
-`/practice/history`. Three things to note:
+**Interlock.** **N/A** — no cap is enforced here, so `S-INTERLOCK-CAP` has no instance.
+
+**Destructive.** `S-CONFIRM`, and `HistoryDetailPage.jsx:111` is one of that row's three
+`window.confirm()` calls. `Hide from History` is the app's user-facing Delete; the confirmation reads
+*"Hide this activity from History and statistics? You can restore it for 30 days."* On accept,
+`recovery.hide` commits locally and the page navigates to `/practice/history`. Three things to note:
 
 - `window.confirm` is an unstyled OS dialog that bypasses the design system entirely, and behaves
-  differently in a Capacitor/WKWebView shell. It is one of three such calls in the app
+  differently in a Capacitor/WKWebView shell. Per the row it satisfies none of § 12's sheet clauses —
+  no focus entry or return, no inert background, no reduced-motion or 320px control — even though
+  `SheetHost` is shell-owned and available. One of three such calls in the app
   (`COMPONENT_LIBRARY.md` § Gaps item 8).
 - The `30 days` in that sentence is a **third independent literal** of the same policy, alongside
   `RECENTLY_DELETED_DAYS` (`history.js:10`) and the copy on `practice-history-deleted`
   (`HistoryPage.jsx:209`). `PHASE_A_ARCHITECTURE.md` § 15 asks for exactly this to be centralized.
-- There is no undo toast after the redirect. Recovery requires finding
-  `/practice/history/deleted`, which is reachable only from the History toolbar.
+- There is no undo toast after the redirect — `S-TOAST` is inert app-wide, so it cannot exist, and
+  `S-UNDO` is scoped to unsynced capture input and does not cover a committed hide. Recovery requires
+  finding `/practice/history/deleted`, which is reachable only from the History toolbar. What *is*
+  produced is the `S-GHOST` presentation on that other route.
 
 Shared-state rows: `S-LOAD`, `S-ERR-BLOCK`, `S-ERR-INLINE` (inside `NotesTagsEditor` only), `S-RETRY`
 (sync-retry only, never a read retry), `S-SAVING`, `S-SYNC` — this screen renders the fullest vocabulary

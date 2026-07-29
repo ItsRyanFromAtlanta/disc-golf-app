@@ -277,42 +277,59 @@ screen — there is no sync indicator at all.
 
 ## 6. Flow paths
 
-**Happy path.** Arrive from the `play-root` chart icon → `Loading...` → four panels render → read the
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
+
+**Happy path.** Arrive from the `play-root` chart icon → `S-LOAD` (`ConfidenceMapPage.jsx:35`, keyed on
+`!bands` rather than an explicit flag, and carrying no `aria-live`) → four panels render → read the
 bands, expand a putter's distance evidence, add an experiment marker → the page refetches and the marker
 appears.
 
-**First run / empty.** Every panel has its own empty state and they are unusually well written:
+**First run / empty.** `S-EMPTY` (`ConfidenceMapPage.jsx:53-54` and three sibling panels). Every panel
+has its own empty state and they are unusually well written:
 `No putts logged yet — the map fills in as you practice.`,
 `No real-time misses in completed visible sessions yet.`,
-`No real-time attempts in completed visible sessions yet.`, and `No experiment markers yet.` The
-experiment form still renders and is usable — but its disc `<select>` will be empty for a user with no
-discs, and `ex-submit` is then disabled with no explanation of why.
+`No real-time attempts in completed visible sessions yet.`, and `No experiment markers yet.` All four are
+bare `<p>` elements rather than the shared `.empty-state` block, which is the row's structural defect —
+but the copy is the best in the app and none of them can be confused with `S-EMPTY-FILTER`, because this
+screen has no filter control. The experiment form still renders and is usable — but its disc `<select>`
+will be empty for a user with no discs, and `ex-submit` is then disabled with no explanation of why.
 
-**Partially-populated.** The screen's most common real state, and the one it handles best: bands exist
-but sit in `coin-flip` with visible intervals; misses are recorded but unzoned, so `mt-nozones` explains
-how to fix that (`Turn on Diagnostic during a live session`); one putter is attributed so `pc-notready`
-explains that two are needed; a marker exists but `exc-needs` names the 10-attempt requirement. Each
-panel says what is missing and how to get it. This is the model for empty-state copy elsewhere in the
-app.
+**Partially-populated.** `S-INSUFFICIENT`, and this screen is that row's densest implementation. It is
+the screen's most common real state and the one it handles best: bands exist but sit in `coin-flip`
+because `confidenceMap` classifies from the Wilson interval rather than the point estimate, with the
+intervals visible; misses are recorded but unzoned, so `mt-nozones` explains how to fix that (`Turn on
+Diagnostic during a live session`); one putter is attributed so `pc-notready` explains that two are
+needed; a marker exists but `exc-needs` names the 10-attempt requirement. Each panel says what is missing
+and how to get it, which is the row's "declare minimum samples and confidence behavior" requirement
+surfacing. This is the model for empty-state copy elsewhere in the app, and note that `S-INSUFFICIENT` is
+deliberately **distinct from `S-EMPTY`** here: the same panel has separate treatments for no data and too
+little data.
 
-**Error.** A `fetchPracticeInsights` rejection renders `<p class="form-error">{message}</p>` **as the
-entire page** (`ConfidenceMapPage.jsx:34`) — no header, no retry. The refetch after creating a marker
-routes into the same state, so a transient failure there replaces a page the user was reading.
-A marker *insert* failure is handled better: `ExperimentMarkerPanel.jsx:38,55` renders it inside the form
-and preserves the entered values.
+**Error.** `S-ERR-BLOCK` (`ConfidenceMapPage.jsx:34`), unguarded, and `S-RETRY` absent. A
+`fetchPracticeInsights` rejection renders `<p class="form-error">{message}</p>` **as the entire page** —
+no header, no way back but the tab bar. The refetch after creating a marker routes into the same state,
+so a transient failure there replaces a page the user was reading — a *mutation-triggered* instance,
+which goes beyond the row's read-failure definition. A marker *insert* failure is handled better:
+`S-ERR-INLINE` at `ExperimentMarkerPanel.jsx:38,55`, rendered inside the form with the entered values
+preserved. That is this screen's only `S-ERR-INLINE` instance.
 
-**Offline.** As § 5: full-page error.
+**Offline.** `S-OFFLINE-READ` **fails outright**: `lib/history` is one of the eight uncached modules that
+row names, and `/practice/stats` is one of the four routes `fetchHistory` takes down. As § 5: full-page
+error. `S-STALE` and `S-SYNC` are inapplicable — nothing here is cache-served and nothing here is a local
+write awaiting sync.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; `user.id` is dereferenced on mount
-(`ConfidenceMapPage.jsx:26`) and passed to `ExperimentMarkerPanel` for the marker's `user_id`. No
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`); `user.id` is dereferenced on
+mount (`ConfidenceMapPage.jsx:26`) and passed to `ExperimentMarkerPanel` for the marker's `user_id`. No
 anonymous path.
 
-**Interlock.** **N/A** — no cap. The five thresholds on this screen are *evidence* gates, not
-interlocks: they withhold a claim rather than blocking an action.
+**Interlock.** **N/A** — no cap, so `S-INTERLOCK-CAP` has no instance. The five thresholds on this screen
+are *evidence* gates belonging to `S-INSUFFICIENT`, not interlocks: they withhold a claim rather than
+blocking an action.
 
-**Destructive.** **N/A** — nothing on this screen deletes. Worth noting the inverse risk: marker
-creation is irreversible with no confirmation, which is a one-way action even though it is not a
-destructive one. See § 12.
+**Destructive.** **N/A** — nothing on this screen deletes, so `S-CONFIRM` has no instance. Worth noting
+the inverse risk: marker creation is irreversible with no confirmation and no `S-UNDO` window, which is a
+one-way action even though it is not a destructive one. See § 12.
 
 Shared-state rows: **`S-INSUFFICIENT`** — this screen is that row's densest implementation, with five
 distinct threshold treatments — plus `S-LOAD`, `S-EMPTY` (four separate, well-written empty states),

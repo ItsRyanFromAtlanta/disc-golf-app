@@ -227,9 +227,11 @@ as opted-in. Nothing distinguishes "never touched" from "explicitly enabled" in 
 toggle-off writes the first row. `timezone` renders `UTC` (the column default). The export and delete
 panels render identically regardless of account age.
 
-**Error.** This is the screen's weakest behavior and it is not confined to load failure.
-`SettingsPage.jsx:39` is `if (error) return <p className="form-error">Settings unavailable:
-{error}</p>` — an unconditional early return. Every failure path sets that same `error`:
+**Error.** `S-ERR-BLOCK`, **and this screen diverges from the row by extending it past the read path.**
+The row scopes `S-ERR-BLOCK` to "a read fails and replaces the whole screen"; here a *write* does it
+too. `SettingsPage.jsx:39` is `if (error) return <p className="form-error">Settings unavailable:
+{error}</p>` — an unconditional early return, and one of the thirteen with no `&& !data` guard. Every
+failure path sets that same `error`:
 
 - the initial `Promise.all` (`SettingsPage.jsx:20`)
 - the round-turn toggle's catch (`:47`)
@@ -237,19 +239,37 @@ panels render identically regardless of account age.
 - each notification toggle's catch (`:53`)
 
 So a **typo in the timezone field blanks the entire settings screen**, taking the export panel and the
-delete panel with it, and leaving no retry control. Recovery requires navigating away and back. See
-§ 11 T-settings-1.
+delete panel with it, and leaving no retry control (`S-RETRY`). Recovery requires navigating away and
+back. See § 11 T-settings-1. This screen has no `S-ERR-INLINE` path for its preference writes at all,
+which is precisely what forces every failure into the blocking one — the row's open question 2 ("should
+`S-ERR-BLOCK` become a shared component, or should every page adopt `S-ERR-INLINE`?") is decidable here
+in one direction only.
 
-**Offline.** As § 5. Reads fail as a unit; writes fail and blank the page; export refuses with a clear
-message and no page loss (its status is panel-local, not the page `error`).
+**Diverges from `S-SAVING`, and this screen is the row's named `data-risk` case.** Confirmed against the
+code: `toggleCategory`, `saveTimezone`, and the round-turn toggle are each invoked inline from an
+`onChange`/`onBlur` handler with `.catch((err) => setError(err.message))` and **no `saving` state and no
+`disabled`** (`SettingsPage.jsx:23,28,33` defining them; `:47,48,53` invoking them from the inputs).
+Nothing prevents a repeat submit while one is in flight,
+and per § 14 none of these paths carries an idempotency key. The row's severity — `cosmetic` rising to
+`data-risk` for `SettingsPage` unguarded repeat submits — is accurate as written.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally
-(`SettingsPage.jsx:18`), so there is no anonymous rendering path. A Supabase anonymous session renders
-and can export — and can attempt deletion, which is the correct behavior for a guest who wants to
-leave.
+**Offline.** `S-OFFLINE-READ` — mixed: `settingsRepository` is cache-backed but `lib/profile` is one of
+the eight uncached modules, and the read is a single `Promise.all`, so a `fetchProfile` rejection takes
+both down as a unit. **Diverges from `S-OFFLINE-WRITE`:** neither the preference upsert nor the profile
+upsert is outbox-backed, so writes fail *and* blank the page, and no `S-SYNC` label is displayable.
+Export refuses with a clear message and no page loss (its status is panel-local, not the page `error`) —
+and `DataExportPanel.jsx:12` is the app's **only** reader of `navigator.onLine`, the single exception the
+`S-OFFLINE-READ` row records. As § 5.
 
-**Interlock.** **N/A** — no cap or capacity constraint applies. The `DELETE` phrase gate is a
-confirmation, not an interlock.
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell. `user.id` is dereferenced
+unconditionally (`SettingsPage.jsx:18`), so there is no anonymous rendering path. A Supabase anonymous
+session renders and can export — and can attempt deletion, which is the correct behavior for a guest who
+wants to leave. Note against `S-GUEST`: this is the one screen where a guest-specific affordance would
+plausibly belong (the row's open question 5 — `SplashPage` promises "save progress later" and nothing
+follows up), and none exists here either.
+
+**Interlock.** **N/A** — no cap or capacity constraint applies, so `S-INTERLOCK-CAP` is genuinely `➖`.
+The `DELETE` phrase gate is a confirmation (`S-CONFIRM-PHRASE`), not an interlock.
 
 **Destructive.** Two, of very different weight.
 
@@ -264,7 +284,9 @@ labeled `owner`, `owner-via-parent-rls`, `referenced-shared`, and `owner-or-refe
 Exclusions are stated in the manifest itself: unsynced device-only data, private photo **binaries**
 (metadata and storage paths are included), and server-only catalog/admin/secret data.
 
-*Deletion* is the codebase's only typed-confirmation pattern and its only irreversible action.
+*Deletion* is `S-CONFIRM-PHRASE` — the codebase's only typed-confirmation pattern, its only irreversible
+action, and the row's single instance, which it rates `none` (correct, no divergence). It is also the
+one destructive flow in the app that does **not** fall under `S-CONFIRM`'s `window.confirm` finding.
 Collapsed → `Delete my account` → type `DELETE` exactly → `Permanently delete`. On success the RPC
 releases community attribution to `null` on `courses`, `course_aliases`, and `disc_molds`, deletes
 `catalog_submission_reviews` rows the user authored, deletes private Storage objects under the user's

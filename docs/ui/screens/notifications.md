@@ -217,36 +217,53 @@ irony is that this is the one screen whose data model could show all four states
 
 ## 6. Flow paths
 
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
+
 **Happy path.** Open `/notifications` → the live query resolves from Dexie (no spinner: `notifications`
 starts as `[]`, so the empty state renders first and is replaced) → tap `Review` → `read_at` is written
 → navigate to the activity or to History.
 
-**First run / empty.** `You're all caught up.` The same string covers "no notifications have ever been
-produced," "all resolved," and "the live query has not emitted yet." There is **no loading state** — the
-initial render of a user with pending notifications briefly shows the caught-up message. On a warm Dexie
-that flash is sub-frame; on a cold start after `sync.pull`, it is visible.
+**First run / empty.** `S-EMPTY` (`NotificationSheet.jsx:13`) — `You're all caught up.` The same string
+covers "no notifications have ever been produced," "all resolved," and "the live query has not emitted
+yet." **`S-LOAD` is absent** — this is one of the eight page components with no loading state at all, and
+the row's grid records that as ❌ rather than ➖ — so the initial render of a user with pending
+notifications briefly shows the caught-up message. On a warm Dexie that flash is sub-frame; on a cold
+start after `sync.pull`, it is visible. That collision is what makes this screen's `S-EMPTY` cell ⚠️: the
+empty state is indistinguishable from loading, and (below) from error.
 
-**Error.** No error state exists anywhere on this screen. `useNotifications`'s producer/sync chain ends
-in `.catch(() => {})` (`useNotifications.js:28`); `observe`'s error callback sets the list to `[]`
+**Error.** `S-ERR-SILENT`, and this screen is that row's strongest and most damaging case — the row files
+it as `data-risk` for exactly this reason. No error state exists anywhere on this screen: no
+`S-ERR-BLOCK`, no `S-ERR-INLINE`, no `S-RETRY`. `useNotifications`'s producer/sync chain ends in
+`.catch(() => {})` (`useNotifications.js:28`); `observe`'s error callback sets the list to `[]`
 (`useNotifications.js:31`), which renders as `You're all caught up.`; `onResolve` is not awaited, so a
 failed resolve is silent. **A total failure of the notification subsystem is indistinguishable from
-having no notifications.** That is the most significant behavior on this screen.
+having no notifications.** That is the most significant behavior on this screen, and it defeats § 7's
+requirement that actionable items badge: a swallowed failure cannot badge.
 
-**Offline.** As § 5: the screen works. Its outbound links do not.
+**Offline.** `S-OFFLINE-READ` is **satisfied** — `notificationRepository` is Dexie-primary, one of the few
+PLAY routes for which that row is ✅ — so as § 5 the screen works. Its outbound links do not.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. Uniquely in this batch the page uses **optional
-chaining** — `user?.id` (`NotificationsPage.jsx:12`) — and `useNotifications` returns an empty list for a
-falsy `userId` (`useNotifications.js:12-15`). So the page degrades to the empty state rather than
-throwing if it renders before auth resolves.
+**Sync attention.** `S-SYNC-ATTENTION` terminates here: `produceSyncAttentionNotification`
+(`notificationProducers.js:21-31`) raises the `CRITICAL` `Sync needs attention` row that this screen
+lists, and `S-INCOMPLETE`'s `Review incomplete activity` rows arrive the same way. This screen renders no
+`S-SYNC` badge of its own; it is the destination for the attention state, not a display of it.
 
-**Interlock.** **N/A** — no cap. The badge clamps at `99+` (`GlobalHeader.jsx:29`), which is display
-formatting, not an interlock.
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`). Uniquely in this batch the page
+uses **optional chaining** — `user?.id` (`NotificationsPage.jsx:12`) — and `useNotifications` returns an
+empty list for a falsy `userId` (`useNotifications.js:12-15`). So during `S-AUTH-BOOT` the page degrades
+to the empty state rather than throwing if it renders before auth resolves — correct, but it is the same
+`You're all caught up.` string again, now covering a fourth condition.
 
-**Destructive.** **N/A** — nothing here deletes. `row-resolve` sets `resolved_at`, which removes the row
-from the list and the badge permanently: `dedupeNotifications` only matches unresolved rows
-(`notifications.js:32-45`) and the server's partial unique index is likewise scoped to
-`resolved_at is null`, so re-resolving is impossible and a resolved notification can be superseded by a
-freshly produced one with the same dedupe key. There is no undo and no archive view.
+**Interlock.** **N/A** — no cap, so `S-INTERLOCK-CAP` has no instance. The badge clamps at `99+`
+(`GlobalHeader.jsx:29`), which is display formatting, not an interlock.
+
+**Destructive.** **N/A** — nothing here deletes, so `S-CONFIRM` has no instance. `row-resolve` sets
+`resolved_at`, which removes the row from the list and the badge permanently: `dedupeNotifications` only
+matches unresolved rows (`notifications.js:32-45`) and the server's partial unique index is likewise
+scoped to `resolved_at is null`, so re-resolving is impossible and a resolved notification can be
+superseded by a freshly produced one with the same dedupe key. There is no `S-UNDO` window and no archive
+view, and `S-TOAST` cannot acknowledge the action either.
 
 Shared-state rows: `S-EMPTY` (`You're all caught up.`), **`S-ERR-SILENT`** — this screen is that row's
 strongest case, since every failure path resolves to the empty state — `S-LOAD` (**absent**: no loading

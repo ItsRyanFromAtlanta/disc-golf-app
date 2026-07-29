@@ -210,26 +210,43 @@ with a `Fill it out` button that smooth-scrolls to the Throwing section. Every f
 the two confidences (which default to `none`) and `units` (which defaults to `feet`). The nudge
 disappears on the next render after either confidence moves off `none` or either max distance is set.
 
-**Error.** A rejected initial `fetchProfile` renders the raw error message as the entire page — no
-header content, no retry control, no navigation but the shell. A rejected *save* is contained: the
-section stays in edit mode, the draft is intact, and `sec-error` renders the raw message above the
-actions. This is a materially better error posture than the pre-load case and than
-`disc-detail`'s equivalent.
+**Error.** `S-ERR-BLOCK` — a rejected initial `fetchProfile` renders the raw error message as the entire
+page (`ProfilePage.jsx:33`) — no header content, no retry control (`S-RETRY`), no navigation but the
+shell. It is one of the thirteen **unguarded** instances, with no `&& !data` test. A rejected *save* is
+contained: the section stays in edit mode, the draft is intact, and `sec-error` renders the raw message
+above the actions — `S-ERR-INLINE` via `EditableSection.jsx:51`, one of the row's named instances. This
+is a materially better error posture than the pre-load case and than `disc-detail`'s equivalent.
 
-**Offline.** As § 5. Reads fail hard; writes fail visibly but non-destructively.
+**Conforms to `S-SAVING`, contrary to the row's text.** `S-SAVING` states that "`ProfilePage` and
+`SettingsPage` save without any in-flight guard (`ProfilePage.jsx:28` …)". For `ProfilePage` that is a
+misreading: `saveFields` (`:28`) is bare, but it is never invoked directly — it is passed as `onSave` to
+all four `EditableSection` instances (`:62,132,201,276`), and `EditableSection` owns the `saving` state,
+swaps the label to `Saving...`, and disables **both** Save and Cancel (`EditableSection.jsx:25-35,53-56`).
+So this screen has the row's *correct* shared-component behavior, not the unguarded one. The finding
+holds for `SettingsPage`, whose toggles genuinely have no guard. Logged in
+`_corrections/state-citations-2.md`.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally
-(`ProfilePage.jsx:23`), so there is no anonymous rendering path. A Supabase anonymous session renders
-normally and can edit its own profile.
+**Offline.** `S-OFFLINE-READ` — on the failing side: `lib/profile` is one of the eight modules with no
+cache, so reads fail hard into `S-ERR-BLOCK`. **Diverges from `S-OFFLINE-WRITE`:** `upsertProfileFields`
+is a direct Supabase write with no outbox, so writes fail visibly but non-destructively — the draft is
+retained in the open section, which is the mitigation, not a queue. No `S-SYNC` label is displayable.
+As § 5.
 
-**Interlock.** **N/A** — no cap or constraint is enforced on this screen. The DB CHECK constraints on
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell. `user.id` is dereferenced
+unconditionally (`ProfilePage.jsx:23`), so there is no anonymous rendering path. A Supabase anonymous
+session renders normally and can edit its own profile; per `S-GUEST` nothing on this screen branches on
+`isGuest`, so a guest editing a throwing profile gets no indication that the account is unconverted.
+
+**Interlock.** **N/A** — no cap or constraint is enforced on this screen, and `S-INTERLOCK-CAP` is
+genuinely `➖` here rather than unenforced. The DB CHECK constraints on
 `handedness`, `bh_confidence`, `fh_confidence`, `units`, and the `*_source` columns
 (`phase_a_profile_schema.sql:5-16`) are the only enforcement, and a violation surfaces as a raw
 Postgres error string in `sec-error`. See § 12.
 
-**Destructive.** **N/A** — no delete, retire, clear, or discard action exists here. `Cancel` discards a
-draft without confirmation, which is conventional for an inline edit and not treated as destructive.
-Account deletion lives on `/profile/settings`.
+**Destructive.** **N/A** — no delete, retire, clear, or discard action exists here, so neither
+`S-CONFIRM` nor `S-CONFIRM-PHRASE` applies. `Cancel` discards a draft without confirmation, which is
+conventional for an inline edit and not treated as destructive. Account deletion lives on
+`/profile/settings`, where `S-CONFIRM-PHRASE` is satisfied.
 
 ## 7. Dependencies
 

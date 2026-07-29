@@ -229,12 +229,19 @@ layout space. As § 5.
 **Auth / guard.** `ProtectedRoute` gates the whole shell. `user.id` is dereferenced unconditionally in
 `loadAll()`, so this screen assumes an authenticated session and has no anonymous rendering path.
 
-**Interlock.** No capacity interlock is enforced here. Equipping via `bag-row` writes directly. The
-35-disc bag capacity described in `SCREEN_SPECS.md` Screen 5 is not checked on this screen — see § 12.
+**Interlock.** **Diverges from `S-INTERLOCK-CAP`: no capacity interlock is enforced here**, and the row
+cites this screen as the 35-disc cap's one unguarded surface ("Not enforced on `DiscDetailPage`").
+Equipping via `bag-row` writes directly. The 35-disc bag capacity described in `SCREEN_SPECS.md`
+Screen 5 is not checked on this screen — see § 12, whose item 1 resolves what the missing guard actually
+costs: the `enforce_bag_capacity()` trigger blocks the insert regardless, so the failure is a raw
+Postgres string rather than an overfilled bag.
 
 **Destructive.** Photo delete is soft, with `restoreDiscPhoto` recovering it. Retirement is not a
 distinct workflow: it is the `status` field in the Details section, set to `retired` through an ordinary
-select with no confirmation step. Blueprint divergence, § 13.
+select with no confirmation step. **Diverges from `S-CONFIRM`:** the row names disc retirement as one of
+the genuinely destructive actions with *no* confirmation at all — not even the `window.confirm` the row
+otherwise faults. This screen therefore falls outside the row's three native-dialog sites and below
+them. Blueprint divergence, § 13.
 
 ## 7. Dependencies
 
