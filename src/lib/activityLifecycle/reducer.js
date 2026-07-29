@@ -145,6 +145,22 @@ export function reduceActivityLifecycle(activity, command) {
   return { outcome: 'applied', activity: nextActivity, stateEvent }
 }
 
+/**
+ * § 1: starting an activity while a *round* is current requires the user's
+ * confirmation, because the round is what gets closed as incomplete.
+ *
+ * Exported so a launcher can ask the question before it flips any UI state,
+ * while `planActivityStart` below stays the authority that enforces it. One
+ * rule, two callers — a launcher that reimplemented this check could drift out
+ * of agreement with the repository and let a start through that the repository
+ * then refuses, which is precisely the failure this codebase already had.
+ */
+export function requiresRoundReplacementConfirmation(existingActivity) {
+  if (!existingActivity) return false
+  if (!isCurrentActivityState(existingActivity.state)) return false
+  return isRoundActivityType(existingActivity.type)
+}
+
 export function planActivityStart({ existingActivity, replacementActivity }) {
   validateActivity(replacementActivity)
   if (replacementActivity.state !== ACTIVITY_STATES.DRAFT) {
@@ -165,7 +181,7 @@ export function planActivityStart({ existingActivity, replacementActivity }) {
     fail(LIFECYCLE_ERROR_CODES.INVALID_TRANSITION, 'An activity cannot replace itself.')
   }
 
-  if (isRoundActivityType(existingActivity.type)) {
+  if (requiresRoundReplacementConfirmation(existingActivity)) {
     return {
       kind: 'round_confirmation_required',
       closeExisting: false,

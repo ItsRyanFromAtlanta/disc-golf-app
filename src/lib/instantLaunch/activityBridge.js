@@ -42,6 +42,12 @@ export async function mirrorInstantLaunchActivity({
   recordedAt = occurredAt,
   installationId,
   source = ACTIVITY_SOURCES.LIVE_CAPTURE,
+  // Carries the user's answer to the round-replacement prompt through to
+  // `repository.start`. Without it the repository returns
+  // `confirmation_required` and the activity stays a draft — which, because
+  // DRAFT accepts only START, can never be finalized and so never reaches
+  // History, while capture rows sync happily against it.
+  confirmRoundReplacement = false,
 }) {
   const buffer = instantLaunchState?.crashRecoveryBuffer
   if (!buffer?.hasActiveSession) {
@@ -115,7 +121,7 @@ export async function mirrorInstantLaunchActivity({
       expectedVersion: activity.version,
       reason: ACTIVITY_STATE_REASONS.CRASH_RECOVERY,
       idempotencyKey: `instant-launch:${activityId}:start`,
-    })
+    }, { confirmRoundReplacement })
     if (started.outcome === 'confirmation_required') {
       return {
         instantLaunchState,

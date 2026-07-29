@@ -70,6 +70,10 @@ export default function FreeformLogPage() {
   const [suggestion, setSuggestion] = useState(null)
   const [pendingDistance, setPendingDistance] = useState(pursuitDistance)
   const [starting, setStarting] = useState(false)
+  // Holds the session id generated for a start that is waiting on the
+  // round-replacement prompt, so confirming reuses it rather than minting a
+  // second one the queued parent write would not match.
+  const [pendingStartId, setPendingStartId] = useState(null)
   const [silenced, setSilenced] = useState(false)
   const [diagnosticMode, setDiagnosticMode] = useState(false)
   const [inputMode, setInputMode] = useState('tap')
@@ -281,8 +285,12 @@ export default function FreeformLogPage() {
     setLoadingLogs(false)
   }
 
-  function handleStart() {
-    setStarting(true)
+  // Local page state only moves once the start is actually permitted. It used
+  // to move first: `setPhase('running')` ran before the session was mirrored,
+  // so a start blocked by a live round still showed the capture canvas while
+  // its activity stayed a draft — unfinalizable, invisible in History, and
+  // silently collecting synced putts.
+  function beginLocalSession(sessionId) {
     setBatchRibbonConfirming(false)
     setPhase('running')
     setCompletedDistances([])
@@ -290,21 +298,49 @@ export default function FreeformLogPage() {
     setExternalFactors([])
     setPerceivedEffort(null)
     setFatiguePrompt(null)
-    const newSessionId = crypto.randomUUID()
-    setFreeformSessionId(newSessionId)
-    session.startSession({
+    setFreeformSessionId(sessionId)
+  }
+
+  function startArgsFor(sessionId) {
+    return {
       sessionType: 'freeform',
       matchModeEnabled: session.profileDefaults.matchModeEnabled,
-      parentIds: { freeformSessionId: newSessionId },
+      parentIds: { freeformSessionId: sessionId },
       initialStage: stageAt(pendingDistance, DEFAULT_VOLUME),
       parentWriteRow: {
-        id: newSessionId,
+        id: sessionId,
         _op: 'insert',
         user_id: user.id,
         session_date: todayLocalDate(),
       },
-    })
+    }
+  }
+
+  async function handleStart() {
+    setStarting(true)
+    const newSessionId = crypto.randomUUID()
+    const result = await session.requestStartSession(startArgsFor(newSessionId))
+    if (result.outcome === 'confirmation_required') {
+      // Hold the id so confirming reuses it — the queued parent write and the
+      // page's own state have to agree on which session this is.
+      setPendingStartId(newSessionId)
+      setStarting(false)
+      return
+    }
+    beginLocalSession(newSessionId)
     setStarting(false)
+  }
+
+  function handleConfirmRoundReplacement() {
+    const sessionId = pendingStartId
+    setPendingStartId(null)
+    session.confirmRoundReplacement()
+    beginLocalSession(sessionId)
+  }
+
+  function handleCancelRoundReplacement() {
+    setPendingStartId(null)
+    session.cancelRoundReplacement()
   }
 
   function handleGestureMake() {
@@ -503,13 +539,51 @@ export default function FreeformLogPage() {
             if (match) setPendingDistance(match.distanceFt)
           }}
           onStart={handleStart}
-          starting={starting}
+          starting={starting || Boolean(session.pendingRoundReplacement)}
           matchModeEnabled={session.profileDefaults.matchModeEnabled}
           onToggleMatchMode={() => session.updateProfileDefaults({
             matchModeEnabled: !session.profileDefaults.matchModeEnabled,
             ...(!session.profileDefaults.matchModeEnabled ? { diagnosticModeDefault: true } : {}),
           })}
         />
+      )}
+
+      {session.pendingRoundReplacement && (
+        // § 1: a round is closed as incomplete rather than replaced silently,
+        // so the athlete decides. Named and described by role so the choice is
+        // announced rather than just drawn.
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onPointerDown={handleCancelRoundReplacement}
+        >
+          <section
+            className="sheet-host"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="round-replacement-title"
+            aria-describedby="round-replacement-body"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <div className="sheet-host-header">
+              <h2 id="round-replacement-title">Close your round first?</h2>
+            </div>
+            <div className="sheet-host-content">
+              <p id="round-replacement-body">
+                You have a round in progress. Starting a practice session closes that round as
+                incomplete — its scores are kept and stay in your history.
+              </p>
+              <div className="profile-section-actions">
+                <button type="button" className="btn-primary" onClick={handleConfirmRoundReplacement}>
+                  Close round &amp; start practice
+                </button>
+                <button type="button" className="link-button" onClick={handleCancelRoundReplacement}>
+                  Keep playing my round
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       )}
 
       {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState && (

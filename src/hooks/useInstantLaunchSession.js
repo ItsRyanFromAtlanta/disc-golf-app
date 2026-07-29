@@ -19,7 +19,12 @@ import {
 } from '../lib/instantLaunch/stateReducer'
 import { readInstantLaunchState, updateInstantLaunchState } from '../lib/instantLaunch/storage'
 import { createSyncScheduler, SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
-import { ACTIVITY_SOURCES, ACTIVITY_STATE_REASONS, ACTIVITY_STATES } from '../lib/activityLifecycle'
+import {
+  ACTIVITY_SOURCES,
+  ACTIVITY_STATE_REASONS,
+  ACTIVITY_STATES,
+  requiresRoundReplacementConfirmation,
+} from '../lib/activityLifecycle'
 import { activityRepository } from '../lib/repository/activityRepository'
 import { createActivitySyncAdapter } from '../lib/repository/activitySync'
 import { getInstallationId } from '../lib/instantLaunch/installationId'
@@ -77,7 +82,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
   userIdRef.current = userId
   if (!activitySyncRef.current) activitySyncRef.current = createActivitySyncAdapter()
 
-  const mirrorActiveActivity = useCallback(async (state = readInstantLaunchState()) => {
+  const mirrorActiveActivity = useCallback(async (state = readInstantLaunchState(), { confirmRoundReplacement = false } = {}) => {
     if (!userIdRef.current || !state.crashRecoveryBuffer?.hasActiveSession) return null
     const occurredAt = new Date().toISOString()
     const result = await mirrorInstantLaunchActivity({
@@ -88,6 +93,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       recordedAt: occurredAt,
       installationId: getInstallationId(),
       source: ACTIVITY_SOURCES.LIVE_CAPTURE,
+      confirmRoundReplacement,
     })
     if (result.activity?.id) {
       const current = readInstantLaunchState()
@@ -226,7 +232,7 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     return () => scheduler.stop()
   }, [flush])
 
-  const startSession = useCallback(({ sessionType, parentIds, activeRegimenSnapshot, ghostProfile, matchModeEnabled, initialStage, parentWriteRow }) => {
+  const startSession = useCallback(({ sessionType, parentIds, activeRegimenSnapshot, ghostProfile, matchModeEnabled, initialStage, parentWriteRow }, { confirmRoundReplacement = false } = {}) => {
     const state = updateInstantLaunchState((s) => {
       let next = applySetCrashRecoveryBuffer(s, {
         hasActiveSession: true,
@@ -250,8 +256,42 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     setFsm({ status: FSM_STATES.ACTIVE_SESSION })
     // Mirror locally before notifying the scheduler so the A6 parent FK can
     // never race ahead of its activity row during the first online flush.
-    mirrorPromiseRef.current = mirrorActiveActivity(state).finally(() => schedulerRef.current?.notifyOutboxChanged())
+    mirrorPromiseRef.current = mirrorActiveActivity(state, { confirmRoundReplacement }).finally(() =>
+      schedulerRef.current?.notifyOutboxChanged(),
+    )
   }, [mirrorActiveActivity])
+
+  // Round-replacement confirmation (§ 1).
+  //
+  // The launcher must ask *before* any session state moves, because
+  // `startSession` flips the FSM to ACTIVE_SESSION synchronously and only then
+  // mirrors. When the mirror came back `confirmation_required` nothing read it,
+  // so the user landed on a live capture canvas whose parent activity stayed a
+  // draft — and DRAFT accepts only START, so that activity could never be
+  // finalized, never reached History, and quietly collected synced putt rows
+  // it would never surface. Asking first is what keeps that state unreachable.
+  const [pendingRoundReplacement, setPendingRoundReplacement] = useState(null)
+
+  const requestStartSession = useCallback(async (args) => {
+    if (userIdRef.current) {
+      const existing = await activityRepository.getActive(userIdRef.current).catch(() => null)
+      if (requiresRoundReplacementConfirmation(existing)) {
+        setPendingRoundReplacement({ args, round: existing })
+        return { outcome: 'confirmation_required', round: existing }
+      }
+    }
+    startSession(args)
+    return { outcome: 'started' }
+  }, [startSession])
+
+  const confirmRoundReplacement = useCallback(() => {
+    const pending = pendingRoundReplacement
+    if (!pending) return
+    setPendingRoundReplacement(null)
+    startSession(pending.args, { confirmRoundReplacement: true })
+  }, [pendingRoundReplacement, startSession])
+
+  const cancelRoundReplacement = useCallback(() => setPendingRoundReplacement(null), [])
 
   const gestureMake = useCallback((occurredAt, distanceFt, putterDiscId = null, isPressure = false) => {
     const id = crypto.randomUUID()
@@ -440,6 +480,10 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     parentIds: launchState.crashRecoveryBuffer.parentIds,
     syncStatus,
     startSession,
+    requestStartSession,
+    pendingRoundReplacement,
+    confirmRoundReplacement,
+    cancelRoundReplacement,
     gestureMake,
     gestureMiss,
     undo,

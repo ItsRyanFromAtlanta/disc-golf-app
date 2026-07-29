@@ -1,5 +1,42 @@
 # Dev Log
 
+## 2026-07-29 — the round-replacement dead-end: a practice you could never see
+
+**What:** Starting a practice while a round was live now prompts before anything moves.
+`requestStartSession` runs a pre-flight, the answer threads through `mirrorInstantLaunchActivity` to
+`repository.start`, and `FreeformLogPage` only touches its own state once the start is permitted.
+
+**The defect, confirmed in a browser rather than inferred.** § 9 recorded this as "the confirmed
+branch is unreachable", which undersold it. What actually happened: the capture screen appeared
+normally with no prompt and no error, putts were captured **and synced** (`putt_sessions` and
+`putt_events` both reached the backend), and the parent activity stayed a `draft` forever. `DRAFT`
+accepts only `START` in the transition table, so that activity could never be finalized — and
+`fetchHistory` selects only `completed`/`incomplete`, so the session could never appear in History.
+The user practiced, their putts reached the server, and the session was invisible and unfinishable.
+Silent orphaning, not a no-op.
+
+**Why it happened:** `startSession` flips the FSM to ACTIVE_SESSION synchronously and *then* mirrors,
+and every caller read `result.activity?.id` while ignoring `result.outcome`. The
+`confirmation_required` outcome existed and was plumbed all the way to the bridge — it just had
+nobody listening at the end of the wire.
+
+**Design note:** the pre-flight uses a new `requiresRoundReplacementConfirmation`, exported from the
+lifecycle module and called by `planActivityStart` itself. One rule, two callers. A launcher with its
+own copy of the round check could drift out of agreement with the repository and wave through a start
+the repository then refuses — which is the exact shape of the bug being fixed, so it was worth the
+extra export to make that impossible rather than merely unlikely.
+
+Local page state moving only after permission is the other half: it is what makes the orphaned state
+unreachable instead of just unlikely.
+
+**Verification:** three specs — the prompt appears and nothing has moved, declining leaves the round
+running, and confirming closes the round as `incomplete` with a `round_replacement_confirmed` event
+and starts the practice. That last branch had no browser path in the app at all before today. 29
+phone E2E specs and 534 unit tests green, build clean.
+
+**Still open in § 9:** the auto-close toast. `AppShell` renders `<ToastHost toast={null} />`
+unconditionally, so the "we closed your last session" notice § 1 asks for does not exist.
+
 ## 2026-07-28 — the reconnect double-send, fixed; lint reaches zero
 
 **What:** Fixed all three defects the live-capture specs found, plus the last lint warning. The

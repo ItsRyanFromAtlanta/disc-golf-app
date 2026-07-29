@@ -130,7 +130,7 @@ test.describe('single-active auto-close', () => {
 })
 
 test.describe('round-close confirmation', () => {
-  test('a live round is not closed by starting a practice', async ({ page, supabase }) => {
+  test('starting a practice with a live round asks before closing it', async ({ page, supabase }) => {
     supabase.stubActivityRpcs()
     await supabase.signIn()
     await page.goto('/practice')
@@ -139,29 +139,76 @@ test.describe('round-close confirmation', () => {
     await supabase.seedLocalActivity({ id: ACTIVE_ROUND_ID, type: 'disc_golf_round', state: 'active', version: 1 })
     await page.reload()
 
-    await startFreeformCapture(page)
+    await page.goto('/practice/freeform')
+    await page.getByRole('button', { name: 'Start' }).click()
+
+    // The prompt stands in for the whole guarantee: nothing has moved yet.
+    const dialog = page.getByRole('alertdialog', { name: 'Close your round first?' })
+    await expect(dialog).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Made' })).toHaveCount(0)
+
+    // No draft was minted, the round is untouched, and nothing left the device.
+    // The old behaviour created a draft here and walked the user into a live
+    // capture canvas whose parent could never be finalized.
+    const activities = await localActivities(supabase)
+    expect(activities).toHaveLength(1)
+    expect(activities[0]).toMatchObject({ id: ACTIVE_ROUND_ID, state: 'active', version: 1 })
+    expect(await stateEventsFor(supabase, ACTIVE_ROUND_ID)).toEqual([])
+    expect(supabase.writesTo('rpc:activity_transition')).toEqual([])
+  })
+
+  test('declining the prompt leaves the round running and starts nothing', async ({ page, supabase }) => {
+    supabase.stubActivityRpcs()
+    await supabase.signIn()
+    await page.goto('/practice')
+    await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
+
+    await supabase.seedLocalActivity({ id: ACTIVE_ROUND_ID, type: 'disc_golf_round', state: 'active', version: 1 })
+    await page.reload()
+
+    await page.goto('/practice/freeform')
+    await page.getByRole('button', { name: 'Start' }).click()
+    await page.getByRole('button', { name: 'Keep playing my round' }).click()
+
+    await expect(page.getByRole('alertdialog')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Made' })).toHaveCount(0)
+
+    const activities = await localActivities(supabase)
+    expect(activities).toHaveLength(1)
+    expect(activities[0]).toMatchObject({ id: ACTIVE_ROUND_ID, state: 'active', version: 1 })
+  })
+
+  test('confirming closes the round as incomplete and starts the practice', async ({ page, supabase }) => {
+    // The branch that had no browser path at all before this: nothing in the
+    // app ever passed `confirmRoundReplacement: true`, so the confirmed half of
+    // the § 1 contract was unreachable and untested.
+    supabase.stubActivityRpcs()
+    await supabase.signIn()
+    await page.goto('/practice')
+    await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
+
+    await supabase.seedLocalActivity({ id: ACTIVE_ROUND_ID, type: 'disc_golf_round', state: 'active', version: 1 })
+    await page.reload()
+
+    await page.goto('/practice/freeform')
+    await page.getByRole('button', { name: 'Start' }).click()
+    await page.getByRole('button', { name: 'Close round & start practice' }).click()
+
+    await expect(page.getByRole('button', { name: 'Made' })).toBeVisible()
     await waitForCaptureSync(supabase)
 
-    // `planActivityStart` returns `round_confirmation_required` rather than
-    // closing the round the way it closes a practice, and `start` refuses to
-    // proceed without `confirmRoundReplacement`. So the round survives
-    // untouched and the practice never leaves draft.
     const activities = await localActivities(supabase)
     expect(activities).toHaveLength(2)
     const round = activities.find((row) => row.id === ACTIVE_ROUND_ID)
     const practice = activities.find((row) => row.id !== ACTIVE_ROUND_ID)
 
-    expect(round).toMatchObject({ state: 'active', version: 1 })
-    expect(practice).toMatchObject({ type: 'putting_freeform', state: 'draft' })
+    // The round is closed as incomplete — kept and visible, not discarded —
+    // and the practice is genuinely current rather than a stranded draft.
+    expect(round).toMatchObject({ state: 'incomplete' })
+    expect(practice).toMatchObject({ type: 'putting_freeform', state: 'active' })
 
-    expect(await stateEventsFor(supabase, ACTIVE_ROUND_ID)).toEqual([])
-    expect(supabase.writesTo('rpc:activity_transition')).toEqual([])
-
-    // What this spec cannot reach: confirming the replacement. Nothing in the
-    // app ever calls `start` with `confirmRoundReplacement: true` — the
-    // capture screen does not surface the `confirmation_required` outcome at
-    // all, it simply carries on with a draft parent. Until a confirmation
-    // affordance exists there is no browser path to the confirmed branch.
+    const roundEvents = await stateEventsFor(supabase, ACTIVE_ROUND_ID)
+    expect(roundEvents.map((event) => event.reason)).toContain('round_replacement_confirmed')
   })
 })
 
