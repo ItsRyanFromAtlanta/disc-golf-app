@@ -139,6 +139,34 @@ part of the app") stands and is if anything understated.
 
 ---
 
+## CS-9 — ADR 0001 names three blocked screens; `SCREEN_INVENTORY.md` marks two
+
+**Where:** `docs/decisions/0001-live-round-interaction-model.md:18-20` against
+`docs/ui/SCREEN_INVENTORY.md:61-64`
+
+**Claims:** the ADR's Context says "The screen documents for `round-scorecard`, **`round-start`**, and
+`round-summary` cannot state a stable interaction contract until this closes." `SCREEN_INVENTORY.md`
+marks `round-scorecard` and `round-summary` as `🔶 blocked on ADR 0001` and leaves `round-start` as `⬜`.
+
+**Reality:** the two documents disagree about scope, and `SCREEN_INVENTORY.md` is the declared authority
+("**Screen status lives here and nowhere else**", `SCREEN_INVENTORY.md:3`).
+
+On the merits, the inventory's narrower reading looks right: all three of the ADR's options require a
+round row to exist before capture begins, and none of them changes what `round-start` collects (course,
+layout, bag) or how it writes it. Option C — the recommendation — explicitly keeps the structured
+scorecard as the primary surface, which leaves the setup form untouched; Option B (conversational
+capture) would replace the scorecard but would still need a round created somewhere.
+
+**How it was handled:** `screens/round-start.md` follows the inventory and is written as unblocked, with
+the discrepancy recorded in its § 12 question 5 and the ADR cited in its § 7 Contracts and decisions.
+`screens/round-scorecard.md` and `screens/round-summary.md` are marked provisional per the inventory.
+
+**Proposed edit:** either narrow the ADR's Context sentence to the two screens, or change the
+`round-start` row to 🔶. Do not leave them disagreeing — a future author will not know which document
+governs. **The ADR itself is not resolved by this entry.**
+
+---
+
 ## Cross-screen code defects found while writing these documents
 
 Not document contradictions — code. Recorded here because each spans a screen outside this batch and
