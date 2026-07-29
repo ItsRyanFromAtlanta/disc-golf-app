@@ -62,7 +62,13 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
+    // `--host 127.0.0.1` is load-bearing, not decoration. Without it `vite
+    // preview` binds `localhost`, which on a GitHub runner resolves to ::1
+    // first while `url` below is polled over IPv4 — the server comes up
+    // healthy and Playwright waits out the full timeout anyway. It passes
+    // locally in any environment whose `localhost` resolves to IPv4 first, so
+    // a green local run is not evidence this is safe to remove.
+    command: `npm run build && npm run preview -- --port ${PORT} --strictPort --host 127.0.0.1`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
