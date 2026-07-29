@@ -5,7 +5,7 @@ import TabBar from './TabBar'
 import GlobalHeader from './GlobalHeader'
 import ScreenScrollRegion from './ScreenScrollRegion'
 import SheetHost from './SheetHost'
-import ToastHost from './ToastHost'
+import ToastHost, { ToastProvider, useToastController } from './ToastHost'
 import { useCrashRecoveryRedirect } from '../hooks/useCrashRecoveryRedirect'
 import { useOnboardingGate } from '../hooks/useOnboardingGate'
 import { useActiveActivity } from '../hooks/useActiveActivity'
@@ -28,6 +28,9 @@ export default function AppShell() {
   const requestedTopRef = useRef(false)
   const [isAtTop, setIsAtTop] = useState(true)
   const [sheet, setSheet] = useState(null)
+  // § 6/§ 13: the shell owns the toast host. Anything rendered beneath it
+  // raises a toast through `useToast()`; nothing else stores toast state.
+  const { toast, showToast, dismissToast } = useToastController()
   // Resumes a killed-and-relaunched PWA that reopened on the wrong page —
   // checked once per app load, not on every navigation. See the hook's own
   // comment for why that distinction matters.
@@ -77,6 +80,7 @@ export default function AppShell() {
 
   return (
     <ProtectedRoute>
+      <ToastProvider showToast={showToast}>
       <div className={`app-shell ${isActiveShell ? 'app-shell-active' : 'app-shell-standard'}`}>
         {isActiveShell ? (
           <div className="active-activity-shell">

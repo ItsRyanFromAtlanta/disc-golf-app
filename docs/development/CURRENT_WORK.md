@@ -48,7 +48,7 @@ below.
 | 1 | ~~Apply the three Phase E migrations~~ — **APPLIED AND VERIFIED 2026-07-29** on `icqzbvtjisxwycvioiup`. See "Migrations applied" below | — | — |
 | 2 | ~~Review and merge PR #4~~ — **MERGED 2026-07-28** as `eb9fd2b` | — | — |
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
-| 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
+| 4 | ~~Delete the empty `catalog-import-raw` Storage bucket~~ — **MOOT 2026-07-29.** It does not exist; `storage.buckets` holds only `disc-private-photos`. Open since 2026-07-14 against a bucket that was already gone | — | — |
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
 | 7 | E2 round/course reconciliation — **audit done; checkpoints 1–3 landed** (findings 1, 2, 3 fixed). See `docs/development/E2_ROUND_COURSE_AUDIT.md`. Remaining: 4 (no offline course path), 5, 6, 7, 8. The offline layer is now trustworthy enough for E2 feature work to start | agent | — |
@@ -67,6 +67,33 @@ green (`verify` + Vercel preview).
 post-apply state. They were written and locally proved across 2026-07-27/28/29 and sat unapplied for
 two days because every Supabase MCP call was refused; that block turned out to be specific to one of
 the connector's two tool namespaces, not an authorization gap.
+
+## RLS and storage negative tests — run 2026-07-29
+
+The one unchecked box on PR #5, unchecked only because Supabase was unreachable. Executed against the
+live database inside transactions that were rolled back.
+
+| Check | Result |
+|---|---|
+| `anon` executing `delete_own_account()` | refused — `42501 permission denied` |
+| `anon` executing `create_course_with_layout(...)` | refused — `42501 permission denied` |
+| `delete_own_account()` with no `auth.uid()` | refused — `28000`, raised at line 6 before any deletion |
+| `create_course_with_layout(...)` with no `auth.uid()` | refused — `28000`, raised at line 11 |
+| User B claiming user A's course id | refused — `42501` |
+| Owner replaying the same course id | returned the existing id, still 1 row — no duplicate |
+| Invoker path under RLS for the caller's own `auth.uid()` | allowed, as the `courses` INSERT policy intends |
+
+Residue check afterwards: 0 courses, 0 layouts, 0 holes, users unchanged at 28. The rollbacks held.
+
+**No real account was ever deleted.** The purge was only exercised on its refusal paths, which raise
+before touching data — that is deliberate, and it is also the limit of what these results prove. The
+cascade itself (a second user's rows surviving, private Storage objects removed by prefix) is still
+evidenced structurally, by the function body and the FK/RLS configuration, not behaviourally.
+
+**Live data context, worth knowing before reading too much into any of this:** the database currently
+holds 28 users, 0 courses, 0 layouts, 0 holes, 0 catalog reviews and 0 private photo objects. The
+moderation-history fix therefore protects a table that is empty today — correct to have fixed, and it
+protects future rows, but nothing was at risk in the interim.
 
 ## Migrations applied 2026-07-29
 

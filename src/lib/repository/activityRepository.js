@@ -351,12 +351,20 @@ export function createActivityRepository({
           activity: replacement,
           stateEvent: null,
           replacedActivity: existing,
+          replacedStateEvent: null,
           syncState: 'local',
           warnings: ['round_replacement_confirmation_required'],
         }
       }
 
+      // Both close branches record *why* the previous activity ended, and the
+      // two reasons mean different things to the UI: `replaced_by_activity` is
+      // an auto-close the user never agreed to (§ 1's toast), while
+      // `round_replacement_confirmed` is one they just approved in a dialog.
+      // Return the close event alongside the closed activity so callers read
+      // that decision instead of re-deriving it from the replaced type.
       let replacedActivity = null
+      let replacedStateEvent = null
       if (existing && plan.closeExisting) {
         const closeResult = await applyTransition(existing, {
           ...mutation,
@@ -368,6 +376,7 @@ export function createActivityRepository({
           idempotencyKey: `${mutation.idempotencyKey}:replace:${existing.id}`,
         })
         replacedActivity = closeResult.activity
+        replacedStateEvent = closeResult.stateEvent
       } else if (existing && plan.closeExistingOnConfirm && confirmRoundReplacement) {
         const closeResult = await applyTransition(existing, {
           ...mutation,
@@ -379,6 +388,7 @@ export function createActivityRepository({
           idempotencyKey: `${mutation.idempotencyKey}:replace:${existing.id}`,
         })
         replacedActivity = closeResult.activity
+        replacedStateEvent = closeResult.stateEvent
       }
 
       const started = await applyTransition(replacement, {
@@ -392,6 +402,7 @@ export function createActivityRepository({
       return {
         ...started,
         replacedActivity,
+        replacedStateEvent,
         warnings: replacedActivity ? ['previous_activity_marked_incomplete'] : [],
       }
     })
