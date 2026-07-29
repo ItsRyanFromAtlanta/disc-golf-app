@@ -247,8 +247,10 @@ the minority the row does not list among its 19, which is the right shape and th
 control, but it costs nothing here: the form is live and resubmitting *is* the retry.
 
 **Offline.** `S-OFFLINE-READ` — mixed: `catalogRepository` is cache-backed so `MoldPicker` browses from
-Dexie, while `lib/discLocker` is uncached. **Diverges from `S-OFFLINE-WRITE`:** `upsertDisc` is a direct
-Supabase write with no outbox and no flush, so submit fails with a network error and nothing is queued —
+Dexie, while `lib/discLocker` is uncached. **Diverges from `S-OFFLINE-WRITE`:** `createDiscCopies`
+(`discLocker.js:57-63`) is a direct Supabase upsert with no outbox and no flush — client-generated ids
+make it *replay*-safe, but nothing on this screen ever replays it — so submit fails with a network error
+and nothing is queued —
 the same uncovered-write shape the row flags for `fatigueCheckinRepository`, though without that path's
 false `pending` claim, since nothing here reports a queued state at all. None of `S-SYNC`'s four calm
 labels is displayable. As § 5.
@@ -258,16 +260,20 @@ RLS on `discs` scopes the insert to the caller.
 
 **Interlock.** The quantity ceiling of 10 is enforced twice — `qty-select` offers exactly 1–10, and
 `buildDiscCopies` throws outside that range regardless of caller (`discLocker.js:51`). It is a genuine
-app-side interlock with a pure, tested guard behind it.
+app-side interlock with a pure, tested guard behind it. `S-INTERLOCK-CAP` surveys three caps and does
+not include this one; on the row's criterion it is fully pre-empted, so the row's `cosmetic`
+"inconsistently pre-empted" verdict does not describe this ceiling.
 
 **No bag-capacity interlock applies here, and none is needed:** a created disc joins no bag. Membership
 is a separate action on `disc-detail` or in the locker picker. This is why `disc-new` does not appear
-in the capacity table in `screens/discs-root.md` § 12 item 1.
+in the capacity table in `screens/discs-root.md` § 12 item 1, and why `S-INTERLOCK-CAP`'s 35-disc clause
+is genuinely `➖` for this route rather than unenforced.
 
 **Destructive.** **N/A** — this screen only creates. `mold-change` discards the mold selection without
 confirmation, and navigating away discards the entire form without confirmation (§ 12 item 3), but
 neither destroys persisted data. This page calls no `window.confirm` and is not among the three named
-in `COMPONENT_LIBRARY.md` § Gaps item 8.
+in `COMPONENT_LIBRARY.md` § Gaps item 8 or in `S-CONFIRM`, correctly — there is no persisted state to
+confirm against.
 
 ## 7. Dependencies
 

@@ -226,25 +226,33 @@ no longer shown" copy, no count, and no way to reach it. `policy-copy` is the on
 phrased as a promise ("remain restorable here for 30 days") rather than as an explanation of what is
 missing.
 
-**Error.** Two paths land in the same place. A `fetchHistory` rejection renders
-`<p class="form-error">{message}</p>` **as the entire page** (`HistoryPage.jsx:178`). A `restore`
-rejection does the same thing (`HistoryPage.jsx:169-176` → `setError`), which is worse: the list the user
-was working in is replaced by a bare error string with no retry and no way back except the shell tab bar.
-A version conflict — restoring an activity that another device already restored — is exactly this case.
+**Error.** `S-ERR-BLOCK` (`HistoryPage.jsx:178`), unguarded, and two paths land in it. A `fetchHistory`
+rejection renders `<p class="form-error">{message}</p>` **as the entire page**. A `restore` rejection does
+the same thing (`HistoryPage.jsx:169-176` → `setError`), which is worse and is a **divergence beyond what
+the row describes**: `S-ERR-BLOCK` is defined as *a read* failing and replacing the screen, whereas here a
+failed *mutation* replaces a list the user was working in. `S-RETRY` offers no way out — no read retry
+exists, and the only retry control on the page is `Retry activity sync` (`:273`), which belongs to
+`S-SYNC-ATTENTION`. A version conflict — restoring an activity that another device already restored — is
+exactly this case.
 
-**Offline.** As § 5: the read fails, so the screen is unusable offline even though the write it offers
-would have worked.
+**Offline.** `S-OFFLINE-READ` **fails outright**: `lib/history` is one of the eight uncached modules that
+row names, so the read fails and the screen is unusable offline even though the write it offers is
+`S-OFFLINE-WRITE`-backed and would have worked. The row calls this out by name — this is one of the four
+routes `fetchHistory` takes down, and it is where the `Saved on device` badges live.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; `user.id` is dereferenced in `loadHistory`
-(`HistoryPage.jsx:109`). No anonymous path.
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`); `user.id` is dereferenced in
+`loadHistory` (`HistoryPage.jsx:109`). No anonymous path.
 
-**Interlock.** **N/A** — no cap. The 30-day window is a visibility policy
-(`PHASE_A_ARCHITECTURE.md` § 15), not an interlock: nothing is blocked when it elapses, an item simply
-stops being listed.
+**Interlock.** **N/A** — no cap, so `S-INTERLOCK-CAP` has no instance. The 30-day window is a visibility
+policy (`PHASE_A_ARCHITECTURE.md` § 15), not an interlock: nothing is blocked when it elapses, an item
+simply stops being listed.
 
-**Destructive.** **N/A** — this screen is the *opposite* of destructive. It contains no delete, purge, or
+**Destructive.** **N/A** — this screen is the *opposite* of destructive, so `S-CONFIRM` has no instance
+here (the row's grid marks it ➖ for exactly this reason). It contains no delete, purge, or
 "empty recently deleted" control. Deletion is initiated on `practice-history-detail` behind a
-`window.confirm` (`HistoryDetailPage.jsx:111`). Restoration here is non-destructive and, per
+`window.confirm` (`HistoryDetailPage.jsx:111`). Restoration here is not `S-UNDO` either — that row is
+scoped to the immediate removal of unsynced capture input, whereas this is a durable, server-committed
+reversal of a soft delete. It is non-destructive and, per
 `PHASE_A_ARCHITECTURE.md` § 11, "performs scoped recalculation" with immutable reward-ledger rules
 preventing duplicate rewards — that recalculation is server-side and not observable on this screen.
 
