@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { formatRelativeToPar, relativeToPar } from '../lib/rounds'
-import { loadRound, useRoundList } from '../lib/repository/roundRepository'
+import { loadRound, useRoundList, useRoundSync } from '../lib/repository/roundRepository'
 
 function formatPlayedAt(value) {
   if (!value) return 'Date not set'
@@ -12,6 +12,7 @@ function formatPlayedAt(value) {
 export default function RoundsPage() {
   const { user } = useAuth()
   const roundsQuery = useRoundList(user.id)
+  const roundSync = useRoundSync(user.id)
   const [details, setDetails] = useState({})
 
   useEffect(() => {
@@ -57,6 +58,18 @@ export default function RoundsPage() {
 
       {roundsQuery.error && <p className="form-error">Showing saved rounds from this device.</p>}
 
+      {roundSync.unsyncedRoundIds.length > 0 && (
+        <p className="form-error" role="status">
+          {roundSync.unsyncedRoundIds.length === 1
+            ? '1 round has not reached the server.'
+            : `${roundSync.unsyncedRoundIds.length} rounds have not reached the server.`}{' '}
+          They are saved on this device only.{' '}
+          <button type="button" className="link-button" onClick={roundSync.retrySync}>
+            Retry round sync
+          </button>
+        </p>
+      )}
+
       {rounds.length === 0 ? (
         <div className="empty-state">
           <p>No rounds logged yet.</p>
@@ -80,6 +93,9 @@ export default function RoundsPage() {
                     <small>
                       {formatPlayedAt(round.played_at)} · {round.status === 'completed' ? 'Completed' : 'In progress'}
                     </small>
+                    {roundSync.unsyncedRoundIds.includes(round.id) && (
+                      <span className="history-sync-badge history-sync-attention">Needs attention</span>
+                    )}
                   </span>
                   <span className="course-card-score">
                     <strong>{relative}</strong>

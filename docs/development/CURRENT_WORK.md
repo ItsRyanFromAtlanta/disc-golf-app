@@ -45,13 +45,13 @@ below.
 
 | # | Action | Owner | Blocks |
 |---|---|---|---|
-| 1 | Apply `20260727120000_phase_e_account_deletion.sql`, **then** `20260728120000_phase_e_preserve_moderation_history.sql`, then run the smoke checks below | **owner** — see note | account deletion; App Review |
+| 1 | Apply three migrations **in order**: `20260727120000_phase_e_account_deletion.sql`, `20260728120000_phase_e_preserve_moderation_history.sql`, `20260729120000_phase_e_atomic_course_creation.sql`, then the smoke checks below | **owner** — see note | account deletion; App Review; atomic course creation |
 | 2 | ~~Review and merge PR #4~~ — **MERGED 2026-07-28** as `eb9fd2b` | — | — |
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
 | 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
-| 7 | E2 round/course reconciliation — **audit done, checkpoint 1 landed.** See `docs/development/E2_ROUND_COURSE_AUDIT.md`; findings 2 and 3 are next | agent | E2 feature work |
+| 7 | E2 round/course reconciliation — **audit done; checkpoints 1–3 landed** (findings 1, 2, 3 fixed). See `docs/development/E2_ROUND_COURSE_AUDIT.md`. Remaining: 4 (no offline course path), 5, 6, 7, 8. The offline layer is now trustworthy enough for E2 feature work to start | agent | — |
 | 8 | ~~Extend E2E with live-capture fixtures~~ — **DONE 2026-07-28**, suite at 32 specs. Remaining § 9 gaps are app defects and unreachable branches, not missing fixtures | agent | — |
 | 9 | ~~Reconnect double-send in `syncScheduler.js`~~ — **FIXED 2026-07-28**, 11 unit tests plus a dedicated `online`-event E2E spec. The round outbox's silent `catch` (E2 audit finding 2) is still open and is the same class | agent | — |
 
@@ -63,7 +63,14 @@ window degrades instead of breaking. Applying the migrations first is still pref
 does not work until they land — but it is no longer a correctness gate on the merge. CI on #4 is
 green (`verify` + Vercel preview).
 
-**Two migrations now, in order.** `20260728120000` makes `catalog_submission_reviews.reviewer_id`
+**Three migrations now, in order.** `20260729120000` adds the `security invoker`
+`create_course_with_layout` RPC so a quick course and its layout land in one transaction instead of
+three sequential upserts. Proved against a throwaway Postgres 16 cluster with 27 assertions, three
+independent rollback proofs, and a contrast case reproducing the orphan course the old path leaves
+behind. Until it is applied, quick-course creation shows "temporarily unavailable" rather than a raw
+PostgREST error (the `AGENTS.md` deploy-gap convention).
+
+ `20260728120000` makes `catalog_submission_reviews.reviewer_id`
 nullable and replaces `delete_own_account()` so a departing user's moderation history is kept and
 nulled rather than hard-deleted — matching how `created_by` is already handled. Both are unapplied.
 Verified against a throwaway local Postgres 16 cluster: both apply cleanly, the second is idempotent,

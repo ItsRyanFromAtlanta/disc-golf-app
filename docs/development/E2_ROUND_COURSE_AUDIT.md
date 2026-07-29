@@ -35,7 +35,7 @@ is removed when the server turns out to own a different id for the same hole.
 Regression coverage: `src/lib/roundLog.test.js`, 8 tests, including the two-local-ids convergence case
 that used to poison the outbox.
 
-## 2. `flushRoundOutbox` swallows every error — OPEN
+## 2. `flushRoundOutbox` swallows every error — FIXED (2026-07-29)
 
 **Severity: high.** This is what made finding 1 invisible, and it will do the same for the next one.
 
@@ -51,8 +51,37 @@ contract its sibling honours. A permanently failing round write is indistinguish
 succeeding one from the user's side: the scorecard shows their scores from the local mirror, and they
 have no way to learn the round never reached the server.
 
-Fix: reuse the activity outbox's retry/poison record rather than inventing a second scheme, and
-surface poisoned round entries the same way `useHistoryRecovery` surfaces activity ones.
+Fixed by reusing the activity path wholesale — `isPermanentError`, `nextBackoffDelayMs`, and
+`createSyncScheduler` all drive the round flush unchanged, because it now returns the same
+`{hasPending, error, permanentFailureIds}` shape the scheduler already consumes.
+
+Rather than add a third copy of the queue, `activityOutbox.js` and `historyRecoveryOutbox.js` — which
+were the same forty lines with a different table constant — were collapsed into a shared
+`outboxQueue.js`. Their one real difference is dependency-key scope, now a parameter: lifecycle rows
+resolve against lifecycle rows (`'own'`), history-recovery rows against every queued row (`'all'`).
+Verified equivalent by the 26 existing tests passing untouched, and by inspection: `nextRetryAt == null`
+matches the originals' explicit null/undefined check.
+
+Two things that only surfaced during the wiring, both worth keeping in mind:
+
+- Round-hole and round-update entries now carry a `dependencyKey` pointing at the round create.
+  Without it, adding poisoning would have been a **regression** — a hole replayed while its create was
+  still queued gets a `23503` foreign-key violation, which classifies as permanent, so a child that
+  was never broken would have been poisoned.
+- That key is namespaced `round-outbox:{id}:create` rather than `round:{id}:create`, because the
+  latter is already the activity-lifecycle mutation key for the same round and the history-recovery
+  queue resolves dependencies against *every* queued row. Reusing the string would have coupled two
+  independent queues.
+
+`flushRoundOutbox` is also serialized now: four surfaces call it, and two concurrent passes would read
+the same snapshot and double-send — the same defect fixed in `syncScheduler.js` the day before.
+
+A user whose round has not reached the server now sees it: a banner on the scorecard and summary with
+a retry, a count banner and per-row badges on the rounds list, and a live sync state where the toolbar
+previously showed a fixed `Autosaves` label. The count banner matters because a round whose *create*
+poisoned never appears in the remote list at all, so per-row badges alone could not surface it.
+
+Coverage: `roundRepository.test.js`, 10 tests against an isolated Dexie database — the file had zero.
 
 ## 3. `createCourseWithLayout` is not atomic — FIXED (2026-07-29)
 
@@ -124,7 +153,7 @@ documented rather than assumed. Fix: `nulls not distinct` on the index, or a syn
 | # | Finding | Severity | Status |
 |---|---|---|---|
 | 1 | Round-hole upsert resolved on surrogate id | High | **Fixed** |
-| 2 | Round outbox swallows errors, diverging from § 8 | High | Next checkpoint |
+| 2 | Round outbox swallows errors, diverging from § 8 | High | **Fixed** |
 | 3 | Course creation is not atomic | High | **Fixed** |
 | 4 | Course creation has no offline path | Medium | After 3 (shares the RPC) |
 | 5 | Unbounded course directory fetch | Medium | Deferred, trigger recorded |

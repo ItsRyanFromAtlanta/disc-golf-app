@@ -5,6 +5,7 @@ import {
   finalizeRoundActivity,
   flushRoundOutbox,
   loadRound,
+  useRoundSync,
   useUpdateRound,
 } from '../lib/repository/roundRepository'
 import { formatRelativeToPar, relativeToPar, roundTotal } from '../lib/rounds'
@@ -18,6 +19,7 @@ export default function RoundSummaryPage() {
   const { roundId } = useParams()
   const { user } = useAuth()
   const updateRound = useUpdateRound(user.id)
+  const roundSync = useRoundSync(user.id)
   const [round, setRound] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -98,6 +100,14 @@ export default function RoundSummaryPage() {
       </header>
 
       {notice && <p className="form-info">{notice}</p>}
+      {roundSync.unsyncedRoundIds.includes(round.id) && (
+        <p className="form-error" role="status">
+          This round hasn’t reached the server, so it is saved on this device only.{' '}
+          <button type="button" className="link-button" onClick={roundSync.retrySync}>
+            Retry round sync
+          </button>
+        </p>
+      )}
 
       <div className="round-summary-grid">
         <div className="round-summary-stat">

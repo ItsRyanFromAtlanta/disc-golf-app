@@ -1,5 +1,60 @@
 # Dev Log
 
+## 2026-07-29 — E2 checkpoints 2 and 3: the round outbox tells the truth, courses land atomically
+
+**What:** The two remaining high-severity findings from the E2 audit. The round outbox now carries the
+§ 8 retry/poison record and surfaces unsynced rounds to the user; quick-course creation is one
+transaction instead of three sequential upserts.
+
+**Round outbox (finding 2).** The bare `catch {}` is gone. `isPermanentError`, `nextBackoffDelayMs`,
+and `createSyncScheduler` are all reused unchanged — the round flush returns the same
+`{hasPending, error, permanentFailureIds}` shape the scheduler already consumes, so nothing about the
+scheduler had to move. Rather than add a third copy of the queue, `activityOutbox.js` and
+`historyRecoveryOutbox.js` (the same forty lines with a different table constant) collapsed into a
+shared `outboxQueue.js`, with their one real difference — dependency-key scope — as a parameter. The
+26 existing tests pass untouched, which is the evidence that the activity path is unchanged.
+
+Two things only visible once it was wired up. Round-hole and round-update entries now carry a
+`dependencyKey` pointing at the round create; without it, *adding* poisoning would have been a
+regression, because a hole replayed while its create was still queued gets a `23503` foreign-key
+violation, classifies as permanent, and would poison a child that was never broken. And that key is
+namespaced `round-outbox:{id}:create` rather than `round:{id}:create` — the latter is already the
+lifecycle mutation key for the same round, and the history-recovery queue resolves dependencies
+against *every* queued row, so reusing the string would have coupled two independent queues.
+
+`flushRoundOutbox` is serialized too: four surfaces call it, and two concurrent passes would read the
+same snapshot and double-send — the same defect fixed in `syncScheduler.js` a day earlier, found
+independently in a second place. That is twice now in one week, in the same layer.
+
+The user-visible half matters as much: previously a round that never synced was indistinguishable
+from one that did, because the scorecard renders from the local mirror either way. Now there is a
+banner with a retry on the scorecard and summary, a count banner and per-row badges on the rounds
+list, and a live sync state where the toolbar used to show a fixed `Autosaves` label. The count banner
+is load-bearing — a round whose *create* poisoned never appears in the remote list at all, so per-row
+badges alone could not surface it. `roundRepository.test.js` covers it with 10 tests; the file had zero.
+
+**Atomic course creation (finding 3).** One `security invoker` RPC. Invoker not definer because this
+writes community-visible rows and the caller's RLS must still apply. The function reads `auth.uid()`
+itself and takes no owner argument, so `created_by` stopped being client-supplied and a caller cannot
+attribute a course to someone else. Course and layout ids are client-generated, so replaying a call
+that actually succeeded returns the existing course instead of duplicating it — the property finding 1
+taught the round outbox to need, added deliberately this time rather than discovered later. That also
+turns finding 4 (no offline path) into a single queueable unit.
+
+Proved against a throwaway Postgres 16 cluster: 27 assertions, three independent rollback proofs, each
+in its own autocommit transaction rather than inside a plpgsql `EXCEPTION` block that would have
+rolled back by itself. The part worth copying next time is the **contrast case** — the old
+three-statement sequence run under the same fault, reproducing exactly the orphan course the audit
+describes. That is the harness proving it can detect the defect rather than merely blessing the fix.
+
+**New finding recorded (8).** `holes_layout_hole_tee_uniq` does not prevent duplicate hole numbers
+when `tee_type` is NULL, since Postgres treats NULLs as distinct in a unique index — and the
+quick-course form never sets `tee_type`, so every quick course is unprotected today. Pre-existing,
+now documented with a passing assertion instead of assumed.
+
+**Verification:** 544 unit tests across 78 files, 29 phone E2E specs, lint at zero, build clean. Both
+migrations remain unapplied; there are now three, and they are order-dependent.
+
 ## 2026-07-29 — the round-replacement dead-end: a practice you could never see
 
 **What:** Starting a practice while a round was live now prompts before anything moves.

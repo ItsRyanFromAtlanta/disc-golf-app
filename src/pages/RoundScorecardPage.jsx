@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
 import { useDiscList } from '../lib/repository/discRepository'
-import { flushRoundOutbox, loadRound, saveRoundHole } from '../lib/repository/roundRepository'
+import { flushRoundOutbox, loadRound, saveRoundHole, useRoundSync } from '../lib/repository/roundRepository'
 import { formatRelativeToPar, relativeToPar, roundTotal } from '../lib/rounds'
 import { fetchProfile, upsertProfileFields } from '../lib/profile'
 
@@ -42,6 +43,15 @@ function replaceRoundHole(round, holeId, patch) {
   return { ...round, round_holes: rows }
 }
 
+// The calm sync vocabulary from PHASE_A_ARCHITECTURE.md § 12. The label holds
+// the same slot whatever the state, so it never reflows the toolbar.
+function syncLabel(status) {
+  if (status === SYNC_STATUS.FAILED) return 'Needs attention'
+  if (status === SYNC_STATUS.SYNCING) return 'Syncing'
+  if (status === SYNC_STATUS.PENDING || status === SYNC_STATUS.ERROR_RETRYING) return 'Saved on device'
+  return 'Synced'
+}
+
 function discLabel(disc) {
   return disc.nickname || disc.moldInfo?.mold_name || disc.mold || disc.manufacturer || 'Disc'
 }
@@ -50,6 +60,7 @@ export default function RoundScorecardPage() {
   const { roundId } = useParams()
   const { user } = useAuth()
   const discsQuery = useDiscList(user.id)
+  const roundSync = useRoundSync(user.id)
   const [round, setRound] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -143,6 +154,11 @@ export default function RoundScorecardPage() {
   if (loading) return <p className="loading">Loading scorecard...</p>
   if (error || !round) return <p className="form-error">{error || 'Round not found'}</p>
 
+  // A round that never reaches the server still renders perfectly from the
+  // local mirror, so nothing else on this screen would ever reveal the failure.
+  // This banner is the only place the user can learn about it.
+  const roundStuck = roundSync.unsyncedRoundIds.includes(round.id)
+
   return (
     <section className="scorecard-page">
       <header className="practice-header">
@@ -159,10 +175,19 @@ export default function RoundScorecardPage() {
         <span>
           <strong>{currentRelative}</strong> · {currentTotal} strokes
         </span>
-        <span>{savingHoleId ? 'Saving…' : 'Autosaves'}</span>
+        <span>{savingHoleId ? 'Saving…' : syncLabel(roundSync.syncStatus)}</span>
       </div>
 
       {notice && <p className="form-info">{notice}</p>}
+      {roundStuck && (
+        <p className="form-error" role="status">
+          This round hasn’t reached the server. Your scores are safe on this device, but they are not
+          backed up or visible on your other devices.{' '}
+          <button type="button" className="link-button" onClick={roundSync.retrySync}>
+            Retry round sync
+          </button>
+        </p>
+      )}
       {roundTurnPromptEnabled && frontNineComplete && !roundTurnDismissed && (
         <aside className="round-turn-prompt" aria-label="Round turn check-in">
           <strong>At the turn</strong>
