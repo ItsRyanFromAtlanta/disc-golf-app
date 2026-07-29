@@ -66,10 +66,14 @@ imports of the page component, and correct it here if the inference is wrong.
 | `round-scorecard` | `rounds` | `roundTotal`, `parTotal`, `relativeToPar`, `formatRelativeToPar` only |
 | `round-summary` | `rounds` | |
 
-**The COURSES section is the least-covered part of the app.** There is no `roundLog.test.js` and no
-course test of any kind, despite `src/lib/roundLog.js` owning every course and round query
-(`DEVELOPMENT_PLAN.md` § J1). E2 is "audit and harden the existing course/layout and offline round
-routes" — this table is the strongest available argument for what that audit should start with.
+**The COURSES section is the least-covered part of the app.** `src/lib/roundLog.js` exports **9
+functions and has no test file at all** — it owns every course and round query in the app
+(`DEVELOPMENT_PLAN.md` § J1). The only coverage in this entire section is `rounds.test.js` against four
+pure functions: `roundTotal`, `parTotal`, `relativeToPar`, `formatRelativeToPar`.
+
+So the four tested functions compute totals, and the nine untested ones do all the reading and writing.
+E2 is "audit and harden the existing course/layout and offline round routes" — this is the strongest
+available argument for where that audit should start.
 
 ## ME
 
