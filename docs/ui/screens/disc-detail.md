@@ -316,10 +316,24 @@ while offline, then flush on reconnect. No automated browser E2E suite exists
 
 ## 12. Open questions
 
-1. **Bag capacity is not enforced here.** `SCREEN_SPECS.md` Screen 5 specifies a 35-disc interlock with
-   both app-side disabling and a DB `CHECK`. `bag-row` on this screen calls `addDiscToBag` with no
-   capacity check. Either the DB constraint rejects it — in which case the user sees a raw error string —
-   or capacity is not actually enforced. Needs verification against the live constraint.
+1. ~~**Bag capacity is not enforced here.**~~ **RESOLVED 2026-07-29.** The database does enforce it, and
+   this screen has no app-side guard, so the raw exception reaches the user.
+
+   `layer1_foundation_schema.sql:230-253` defines `enforce_bag_capacity()` on a `before insert` trigger
+   over `bag_discs`. It takes a row lock (`perform 1 from bags where id = new.bag_id for update`) so
+   two parallel adds at 34 discs cannot both pass, then raises
+   `'Bag % is at the 35-disc capacity limit'` with `errcode = 'check_violation'`.
+
+   `bag-row` calls `addDiscToBag` with no capacity check, and the handler surfaces `err.message`
+   verbatim — so equipping a 36th disc from this screen shows the user a raw Postgres exception string.
+   `discs-root` suppresses its `Add from locker` action at capacity; this screen does not.
+
+   **A discrepancy worth knowing:** the trigger counts **every** `bag_discs` row, while the capacity
+   readout on `discs-root` counts `in_locker` members only (via `bagViewDiscs`). A bag holding 35
+   members of which 5 are `lost` therefore displays `30 / 35` and still rejects the next insert.
+
+   `T-disc-detail-3` is unblocked by this and should now catch the error and render a written message
+   rather than adding a client-side count that would inherit the same divergence.
 2. **`handleCreateShotTag` is not atomic.** `createShotTag` then `assignShotTag` are sequential awaits
    with no rollback. A failure between them leaves an orphaned unassigned tag.
 3. **Equip state is optimistic without rollback on refetch.** The local `Set` updates after a successful

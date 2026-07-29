@@ -67,3 +67,29 @@ both; task `T-freeform-active-3` proposes extracting a shared constant for the p
   fills never create `putt_events` rows, so the breakdown is structurally incomplete by design.
 - `DEVLOG.md:1561-1571` — `TapZone` deliberately omits the streak-driven zone growth that `GestureZone`
   has. Confirmed in both call sites.
+
+---
+
+## C-9 — The 35-disc interlock is a trigger, not a `CHECK` constraint
+
+**Where:** `SCREEN_SPECS.md:174` and standing divergence #6 (`:74-75`)
+
+**Claims:** the interlock is enforced "with app-side disabling AND a DB `CHECK` constraint," and the
+dependency line reads "35-disc interlock needs the Layer 1 `bags.capacity` default/CHECK migration."
+
+**Reality:** `layer1_foundation_schema.sql:230-253` implements it as a `before insert` trigger,
+`enforce_bag_capacity()` on `bag_discs`. It cannot be a `CHECK` constraint — a `CHECK` cannot count
+sibling rows. The trigger takes a row lock so concurrent adds at 34 discs cannot both pass, and raises
+with `errcode = 'check_violation'`, which is presumably where the "CHECK" description came from.
+
+Separately, `bags.capacity` is **not** the interlock. The schema comment is explicit: it is "a separate,
+user-set soft target," while the hard 35 ceiling lives in the trigger. Two different concepts sharing
+one word.
+
+**Proposed edit:** correct both lines to say trigger rather than `CHECK`, and note the soft-target vs
+hard-ceiling distinction. An agent told to "add the CHECK constraint" would find it missing and add a
+second, weaker enforcement.
+
+**Consequence already recorded:** `screens/disc-detail.md` § 12 item 1, including the count discrepancy
+— the trigger counts every `bag_discs` row while the `discs-root` readout counts `in_locker` members
+only, so a bag can display `30 / 35` and still reject an insert.
