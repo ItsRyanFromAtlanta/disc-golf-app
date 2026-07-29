@@ -47,7 +47,7 @@ only gate, and it is a plain ternary on `useAuth()`:
 | Out | `cta-start` | `navigate('/login')` | Push, not replace |
 | Out | `link-signin` | `<Link to="/login">` | Same destination as `cta-start` |
 | Out | `link-guest`, success | `signInAnonymously()` → `navigate('/onboarding')` | See § 6 |
-| Out | `link-guest`, failure | `navigate('/login')` | Deliberate: a disabled anonymous provider must not dead-end the tap (`SplashPage.jsx:15-17`) |
+| Out | `link-guest`, failure | `navigate('/login')` | Deliberate: a disabled anonymous provider must not dead-end the tap (`SplashPage.jsx:13-18`) |
 
 **Back behavior.** There is no back control — `GlobalHeader` is shell-owned and does not exist here.
 Browser/system back from `/` leaves the app or returns to whatever preceded it in history.
@@ -171,12 +171,20 @@ Two behaviors that are not obvious:
 
 None of the four calm states from `PHASE_A_ARCHITECTURE.md` § 12 (`Saved on Device`, `Syncing`,
 `Synced`, `Needs Attention`) is displayed on this screen, and none is applicable — there is no local
-work to report on.
+work to report on. `S-OFFLINE-READ` is marked "static" for this route in `STATE_MATRIX.md`;
+`S-OFFLINE-WRITE`, `S-SYNC`, and `S-STALE` do not apply.
 
 ## 6. Flow paths
 
-**Happy path.** Cold start at `/` → `loading` true, blank frame → `getSession()` resolves to `null` →
-`SplashPage` renders → tap `cta-start` → `/login`. Terminal state: the `login` screen, signed out.
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
+
+**Happy path.** Cold start at `/` → `loading` true → `getSession()` resolves to `null` → `SplashPage`
+renders → tap `cta-start` → `/login`. Terminal state: the `login` screen, signed out.
+
+The pre-resolution frame is `S-AUTH-BOOT`, and this route is its worse half: `App.jsx:49` renders
+**`null`** rather than the `Loading...` paragraph `ProtectedRoute` shows inside the shell. A blank
+screen is the first thing every cold start displays.
 
 **Returning user.** Cold start at `/` → `getSession()` resolves a persisted session → the route element
 returns `<Navigate to="/practice" replace />` → `AppShell` mounts and `useOnboardingGate` runs there.
@@ -185,19 +193,23 @@ Terminal state: `/practice`, or `/onboarding` if the gate finds zero bags. `Spla
 **First run / empty.** **N/A** — the screen has no data-bearing region. Its content is identical for
 every signed-out visitor.
 
-**Error.** The single failure mode is `signInAnonymously()` rejecting or returning an error. It is
-**not surfaced to the user**: the handler discards the error object and navigates to `/login`
-(`SplashPage.jsx:14-18`). The user experiences a tap on "Play instantly as guest" that silently produces
-the sign-in screen instead of the wizard, with no explanation. Deliberate — the comment argues a dead-end
-is worse — but the silence is a real gap. See § 12.
+**Error.** `S-ERR-SILENT`, and `STATE_MATRIX.md`'s pre-shell table marks this screen's instance ❌. The
+single failure mode is `signInAnonymously()` rejecting or returning an error, and it is **not surfaced**:
+the handler discards the error object and navigates to `/login` (`SplashPage.jsx:13-18`). The user
+experiences a tap on "Play instantly as guest" that silently produces the sign-in screen instead of the
+wizard, with no explanation. Deliberate — the comment argues a dead-end is worse — but the silence is a
+real gap. `S-ERR-BLOCK` and `S-ERR-INLINE` do not apply: this screen has no read to fail and no error
+region at all. See § 12.
 
 **Offline.** As § 5. The page renders; `link-guest` fails and bounces to `/login`; no offline path exists
 past this screen for a user with no persisted session.
 
 **Auth / guard.** No `ProtectedRoute`, no onboarding gate, no crash-recovery redirect, no activity
 lifecycle interception — none of those live outside `AppShell`. The route element's own ternary is the
-complete guard set. Note that it treats a guest (`is_anonymous: true`) as a signed-in user and redirects
-them away, so a guest can never see this screen again without signing out.
+complete guard set, so `S-AUTH-REQUIRED` never fires here. It treats a guest as a signed-in user
+(`S-GUEST`) and redirects them away, so a guest can never see this screen again without signing out —
+which, per `S-GUEST`, no screen offers them. `S-ONBOARD` fires only *after* the redirect, inside
+`AppShell`.
 
 **Interlock.** **N/A** — no cap or constraint is enforced or reachable from this screen.
 
@@ -240,12 +252,12 @@ Beyond the `PHASE_A_ARCHITECTURE.md` § 12 baseline:
   three shell-less screens inherit nothing. § 12 requires "logical landmarks/focus."
 - **Gap — secondary tap targets.** `cta-start` gets `min-height: var(--tap-target-min)` via `.btn-primary`
   (`App.css:433-446`), but `link-signin` and `link-guest` are `.link-button` text links with no minimum
-  height (`App.css:456+`). § 12 requires 44×44pt secondary targets; `link-guest` in particular is the
+  height (`App.css:455`). § 12 requires 44×44pt secondary targets; `link-guest` in particular is the
   guest-mode entry point for the whole product.
 - **Gap — no in-flight feedback.** `link-guest` awaits a network call with no `disabled`, no busy state,
   and no live region. A slow or repeated tap produces concurrent `signInAnonymously()` calls and, on
   failure, an unannounced route change.
-- **Known token-level issue, not screen-specific.** `App.css:426-432` documents that the `.btn-primary`
+- **Known token-level issue, not screen-specific.** `App.css:427-432` documents that the `.btn-primary`
   fill and its best available label token land at ~3.9:1 — short of 4.5:1 for normal text — and that the
   label was bumped to bold/17px to clear the 3:1 large-text allowance instead. `cta-start` inherits this.
   It is a design-token decision recorded in CSS, not a defect of this screen.
@@ -338,7 +350,7 @@ commands). These are backlog entries, not existing coverage.
 
 ## 12. Open questions
 
-1. **Guest sign-in failure is silent.** `SplashPage.jsx:14-18` discards the error and navigates to
+1. **Guest sign-in failure is silent.** `SplashPage.jsx:13-18` discards the error and navigates to
    `/login`. The user gets no reason and no retry. The comment justifies avoiding a dead end, not
    avoiding an explanation. Decision needed: show the failure and stay, or keep the bounce and add a
    message on arrival. Blocks `T-root-2`'s exact behavior.

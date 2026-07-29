@@ -237,6 +237,10 @@ at all, at which point they are stuck.
 
 ## 6. Flow paths
 
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7. The rows that bear on this screen are `S-AUTH-REQUIRED` (how users arrive),
+`S-GUEST` (the conversion variant), `S-SAVING`, `S-ERR-INLINE`, `S-ERR-SILENT`, and `S-RETRY`.
+
 **Happy path — email OTP (default).**
 1. Arrive signed out. `entryMethod` is `otp`, `mode` is `login`, `otpSent` is `false`.
 2. Type an email → `Send Code` → `signInWithOtp(email)` with `shouldCreateUser: true`.
@@ -256,8 +260,9 @@ password → `Sign In` → `navigate('/practice')`. Terminal state: same as abov
 (`AuthPage.jsx:59-63`). Terminal state: this screen, in login mode, with an info message. Nothing is
 navigated.
 
-**Guest conversion.** Reachable only with an anonymous session *and* a manual navigation to `/login`
-(§ 12). `h1` reads `Save Your Progress`; the mode chips and the guest link are both suppressed; `Send
+**Guest conversion.** `S-GUEST` — and `STATE_MATRIX.md` records that this page is that row's **only**
+consumer in the entire app. Reachable only with an anonymous session *and* a manual navigation to
+`/login` (§ 12). `h1` reads `Save Your Progress`; the mode chips and the guest link are both suppressed; `Send
 Code` calls `convertGuestWithOtp` (`updateUser({ email })`) and `Verify & Continue` calls
 `verifyGuestConversion` (`verifyOtp` with `type: 'email_change'`). Terminal state: `/practice`, same
 `user.id`, now with an email identity. Every bag, disc, and session recorded as a guest is retained.
@@ -282,19 +287,30 @@ broken flow. See § 12.
 **First run / empty.** **N/A** — the screen has no data-bearing region and looks identical on a first
 visit and a thousandth.
 
-**Error.** Every handler follows the same shape: clear `error`, set `submitting`, await, clear
-`submitting`, and on failure `setError(error.message)` and return without navigating. The user stays on
-the screen with all input preserved and can retry immediately. Two exceptions: `handleOAuth` does not
-manage `submitting` at all, and `handleGuest` discards its error entirely.
+**Error.** `S-ERR-INLINE` throughout, and this screen is one of the app's better instances of it: every
+handler clears `error`, sets `submitting`, awaits, clears `submitting`, and on failure calls
+`setError(error.message)` and returns without navigating. The user stays put with all input preserved.
+**`S-ERR-BLOCK` never occurs here** — no read can fail, so nothing can replace the page. `S-RETRY` is
+satisfied trivially rather than by an affordance: re-submitting the form *is* the retry, which is why
+this screen escapes the "0 of 32 components" finding in `STATE_MATRIX.md`.
 
-**Offline.** As § 5. Every action fails with a raw fetch error string in `.form-error`; the screen
-remains usable and retryable, and no full-screen error replaces it. `PHASE_A_ARCHITECTURE.md` § 12's
+Two exceptions, both `S-ERR-SILENT`-adjacent: `handleOAuth` does not manage `submitting` at all
+(diverges from `S-SAVING`, which `AuthPage.jsx:172,207` otherwise implements correctly), and
+`handleGuest` discards its error entirely — the same silent bounce documented for `root`.
+
+**Offline.** As § 5 — `S-OFFLINE-READ` is "requires network" for this route and there is no
+`S-OFFLINE-WRITE` path, because no auth call is queueable. Every action fails with a raw fetch error
+string in `.form-error`; the screen remains usable and retryable, and no full-screen error replaces it.
+`PHASE_A_ARCHITECTURE.md` § 12's
 "a network failure never replaces active capture with a full-screen error" is about capture and does not
 bind here, but this screen satisfies it anyway.
 
-**Auth / guard.** No guard runs on this route. An already-signed-in non-guest who navigates here sees the
-full `Account` sign-in form rather than a redirect — unlike `/`, which redirects. Signing in again as the
-same or a different user simply replaces the session.
+**Auth / guard.** No guard runs on this route — it is `S-AUTH-REQUIRED`'s *destination*, never its
+subject. An already-signed-in non-guest who navigates here sees the full `Account` sign-in form rather
+than a redirect, unlike `/`. Signing in again as the same or a different user simply replaces the
+session. Note the `S-AUTH-REQUIRED` gap that lands users here: `ProtectedRoute` preserves no
+return-to destination, so a user redirected from `/bag/discs/:id` and signed back in arrives at
+`/practice`, not where they were.
 
 **Interlock.** The only enable-rule interlock is the six-digit floor on `otp-submit`
 (`AuthPage.jsx:207`). Password minimum length is enforced by the browser through `minLength={6}`, not by
@@ -370,7 +386,7 @@ Beyond the `PHASE_A_ARCHITECTURE.md` § 12 baseline:
   (`App.css:433-446`, `:3955-3968`); `.otp-input-box` is a fixed 56px tall (`App.css:3931-3939`). The
   three `.link-button` controls (`otp-change-email`, `link-guest`) have no minimum height — same
   shortfall as the splash links.
-- **Known token-level issue.** The `.btn-primary` contrast note at `App.css:426-432` applies to both
+- **Known token-level issue.** The `.btn-primary` contrast note at `App.css:427-432` applies to both
   submit buttons here.
 
 ## 9. Events and telemetry
