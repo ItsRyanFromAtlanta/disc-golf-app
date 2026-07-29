@@ -192,33 +192,47 @@ No calm state from `PHASE_A_ARCHITECTURE.md` § 12 (`Saved on Device`, `Syncing`
 **Happy path.** COURSES tab → `fetchCourses` and `useRoundList` resolve → directory renders sorted by
 name with a count, My rounds renders up to three cards → tap a course → `/courses/:courseId`.
 
-**First run / empty.** A brand-new account has no courses and no rounds. Both sections render their own
-empty affordance and the screen is fully usable: `dir-empty` offers `Build a course`, `rounds-empty`
-states that rounds will appear. Because courses are community data, a new user on a populated instance
-sees other people's courses immediately — the "empty" directory is rarer than it looks.
+**First run / empty.** `S-EMPTY`, and this screen is one of only **four** in the app that use the shared
+`.empty-state` block — `CoursesPage.jsx:46` for the directory and `:78` for My rounds. A brand-new
+account has no courses and no rounds. Both sections render their own empty affordance and the screen is
+fully usable: `dir-empty` offers `Build a course`, `rounds-empty` states that rounds will appear. No
+divergence from the row; this is the pattern the fourteen bare-`<p>` screens should adopt. Because
+courses are community data, a new user on a populated instance sees other people's courses immediately —
+the "empty" directory is rarer than it looks.
 
 **Error.** Two distinct behaviors, which is the screen's main structural inconsistency:
 
-- `fetchCourses` rejects → `CoursesPage.jsx:24` returns `<p class="form-error">{error}</p>` as the whole
-  page. No retry control; recovery requires a reload or a tab round-trip that remounts the component.
-  The message is a raw `err.message` from Supabase, not house copy.
+- `fetchCourses` rejects → `S-ERR-BLOCK`. `CoursesPage.jsx:24` returns `<p class="form-error">{error}</p>`
+  as the whole page. No retry control (`S-RETRY`); recovery requires a reload or a tab round-trip that
+  remounts the component. It is one of the six **guarded** instances (`error && !courses`), though the
+  guard buys nothing here because `fetchCourses` has no cache to win with. The message is a raw
+  `err.message` from Supabase, not house copy.
 - `useRoundList` rejects with a populated cache → the query succeeds, nothing is shown. Rejects with an
   empty cache → `roundsQuery.error` is set, `roundsQuery.isLoading` is false, and the page renders
-  normally with `err-inline` showing `roundError` and an empty My rounds section. Non-blocking, correct.
+  normally with `err-inline` (`S-ERR-INLINE`, `:38`) showing `roundError` and an empty My rounds
+  section. Non-blocking, correct.
 
-**Offline.** As § 5. Directory read fails hard; round list degrades gracefully. The screen has no way to
-express "these courses are stale" because it never caches them in the first place.
+**Offline.** `S-OFFLINE-READ` — mixed, and the two halves diverge in opposite directions:
+`roundRepository` is cache-backed so My rounds degrades gracefully, while `lib/roundLog` is one of the
+eight uncached modules so the directory read fails hard. **Diverges from `S-STALE` by omission:** when
+the round cache does win, the screen has no way to express "these rounds are stale," and it has no way to
+express it for courses either because it never caches them in the first place. `rounds-root` — the same
+data through the same repository — *does* carry that notice, so the divergence is between two screens
+over one cache. As § 5.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. `CoursesPage.jsx:13` dereferences `user.id`
-unconditionally for `useRoundList`, so there is no anonymous render path. A Supabase anonymous ("guest")
-session is a real user for this purpose and sees the community directory normally. The onboarding gate
-runs first, so a zero-bag user never reaches this screen.
+**Auth / guard.** `S-AUTH-REQUIRED` — `ProtectedRoute` gates the shell. `CoursesPage.jsx:13` dereferences
+`user.id` unconditionally for `useRoundList`, so there is no anonymous render path. A Supabase anonymous
+("guest") session is a real user for this purpose and sees the community directory normally — per
+`S-GUEST`, nothing here branches on `isGuest`, which matters more than usual because a guest's courses
+are written into shared community data (see the Destructive path). `S-ONBOARD` — the onboarding gate runs
+first, so a zero-bag user never reaches this screen.
 
-**Interlock.** **N/A** — no cap or constraint is enforced or displayed here. Courses are unbounded; the
-recent-rounds list is truncated to 3 by `.slice(0, 3)` (`CoursesPage.jsx:27`), which is presentation, not
-an interlock.
+**Interlock.** **N/A** — no cap or constraint is enforced or displayed here, so `S-INTERLOCK-CAP` is
+genuinely `➖`. Courses are unbounded; the recent-rounds list is truncated to 3 by `.slice(0, 3)`
+(`CoursesPage.jsx:27`), which is presentation, not an interlock.
 
-**Destructive.** **N/A** — nothing on this screen deletes, retires, or discards. Worth stating why: the
+**Destructive.** **N/A** — nothing on this screen deletes, retires, or discards, so `S-CONFIRM` is `➖`.
+Worth stating why: the
 J1 RLS migration deliberately ships **no delete policy** for `courses`
 (`20260714150000_phase_c_round_logging_rls.sql:29` — "there is deliberately no delete policy in J1"),
 so a course created by mistake cannot be removed from this directory by any user, including its creator.
