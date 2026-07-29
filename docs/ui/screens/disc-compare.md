@@ -248,11 +248,26 @@ locker's `cmp-submit` stays disabled below `COMPARE_MIN`, and arriving directly 
 message, and a recovery action — the best-behaved failure state in the section.
 
 **Error.** Three distinct shapes, correctly separated: a disc-query failure with no cache is a
-page-level error; unresolvable ids are an inline `note-missing` above a comparison that still works
-with whatever resolved; a bag-context failure is a scoped `bag-unavailable` message inside its own
-panel.
+page-level error (`S-ERR-BLOCK`, `:105` — one of the six **guarded** instances, conditioned on
+`&& !data`, so a warm cache wins); unresolvable ids are an inline `note-missing` above a comparison that
+still works with whatever resolved; a bag-context failure is a scoped `bag-unavailable` message inside
+its own panel. The latter two are `S-ERR-INLINE` (`:157,235`), and the row singles this screen out as
+carrying **the best copy in the app** for that state — `Community benchmark unavailable: {reason}
+Showing official catalog numbers instead.` and `Bag context is unavailable; the disc comparison above
+remains usable.` Both name what still works.
 
-**Offline.** As § 5. Comparison works from cache; bag context degrades in place.
+Two shared gaps still bind. `S-RETRY`: none of the three shapes offers a retry control. And the
+`S-ERR-INLINE` severity divergence is at its sharpest here — both of those benign-degradation messages
+are `.form-error`, so the app's calmest copy is rendered in `--color-negative`.
+
+The bag-context panel is also the row's named instance of `S-LOAD-PARTIAL` (`:233`,
+`Loading bag context...`), which the matrix calls the *better* pattern: a secondary panel resolving
+after the page, inside the body, rather than as an early return.
+
+**Offline.** `S-OFFLINE-READ` — mixed and correctly so: `useDiscList` is cache-backed, so the comparison
+works from Dexie, while `lib/discLocker` is uncached, so bag context degrades in place into its own
+inline message. As § 5. `S-STALE` applies unannounced: the cached comparison is presented identically to
+a live one.
 
 **Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally in
 `useDiscList(user.id)` and the bag-context effect.
@@ -263,8 +278,14 @@ refusal: the locker's chip is `disabled` at 4 (`BagLockerPage.jsx:264`), and thi
 valid state. Both bounds live in `lib/discCompare` and are shared by both screens — the
 single-definition pattern the 35-disc cap does not follow (see `screens/discs-root.md` § 12 item 1).
 
+`S-INTERLOCK-CAP` surveys three caps and does not include this one. Measured against the row's own
+criterion — enforcement plus pre-emptive disabling — this is the only ceiling in the app that satisfies
+both *and* explains itself when it clamps, so the row's `cosmetic` "inconsistently pre-empted" verdict
+does not describe this screen.
+
 **Destructive.** **N/A** — this screen performs no destructive action, calls no `window.confirm`, and
-writes nothing. It is not among the three pages named in `COMPONENT_LIBRARY.md` § Gaps item 8.
+writes nothing. It is not among the three pages named in `COMPONENT_LIBRARY.md` § Gaps item 8 or in
+`S-CONFIRM`, and correctly so — there is nothing here to confirm.
 
 ## 7. Dependencies
 

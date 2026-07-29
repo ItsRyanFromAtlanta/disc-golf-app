@@ -248,8 +248,10 @@ from the list and the badge permanently: `dedupeNotifications` only matches unre
 `resolved_at is null`, so re-resolving is impossible and a resolved notification can be superseded by a
 freshly produced one with the same dedupe key. There is no undo and no archive view.
 
-`STATE_MATRIX.md` does not exist (`_corrections/play-screens.md` P-10), so these states are described
-inline.
+Shared-state rows: `S-EMPTY` (`You're all caught up.`), **`S-ERR-SILENT`** — this screen is that row's
+strongest case, since every failure path resolves to the empty state — `S-LOAD` (**absent**: no loading
+state exists), `S-OFFLINE-READ` and `S-OFFLINE-WRITE` (both satisfied, uniquely in PLAY), and `S-SYNC`
+(absent). See `STATE_MATRIX.md`.
 
 ## 7. Dependencies
 
@@ -448,7 +450,7 @@ read. Poison an outbox row → verify a `sync_review` notification and its desti
 - **Done when:** Either `weekly_report` notifications are produced (the `weekly_report_snapshots` table
   and `weeklyReportRepository` already exist), or `notificationDestination`'s `weekly_report` branch and
   the six unused category values are recorded as reserved-for-future with the trigger that would activate
-  them.
+  them. Resolve alongside `_corrections/me-screens.md` C-5, which owns the weekly-report half.
 - **Verify:** `grep -rn "weekly_report" src/lib/notificationProducers.js` finds a producer, or the
   decision is recorded in `PHASE_A_ARCHITECTURE.md` § 7.
 - **Commit:** `docs: record the notification category roadmap`
@@ -466,10 +468,11 @@ read. Poison an outbox row → verify a `sync_review` notification and its desti
    decided, the page is untested surface area that a deep link can land a user on.
    `_corrections/play-screens.md` P-4.
 3. **Six of eight categories and one of three destination types are unreachable.** Only `activity` and
-   `sync` are produced; `notificationDestination`'s `weekly_report` branch (`notifications.js:28`) has no
-   producer, and `lost_disc`, `equipment`, `community_review`, `achievement`, and `coaching` exist only in
-   the schema CHECK and the preferences list. A user can toggle preferences for notifications that cannot
-   occur.
+   `sync` are produced; `lost_disc`, `equipment`, `community_review`, `achievement`, and `coaching` exist
+   only in the schema CHECK and the preferences list, so a user can toggle preferences for notifications
+   that cannot occur. The `weekly_report` case is already logged in detail as
+   `_corrections/me-screens.md` C-5 — no producer, no scheduler, and a default destination
+   (`notifications.js:28` → `/profile`) that points at `me-root` rather than at `weekly-reports`.
 4. **Nothing resolves an `activity_review` notification when the user acts on it.** `Review` writes
    `read_at` and navigates; `isBadgeEligible` ignores `read_at` entirely
    (`notifications.js:16-22`), so the badge persists until the underlying activity is completed, hidden,
@@ -480,8 +483,10 @@ read. Poison an outbox row → verify a `sync_review` notification and its desti
 6. **No sync indicator on the one screen whose data supports it.** Every notification row has a local
    pending/synced state available through its outbox row, and none of the four calm states from
    `PHASE_A_ARCHITECTURE.md` § 12 is rendered.
-7. `_corrections/play-screens.md` P-4 (no entry point) and P-10 (missing `STATE_MATRIX.md`) touch this
-   screen. P-7 (double `<h1>`) notably does **not** — this screen gets it right.
+7. `_corrections/play-screens.md` P-4 (no entry point) touches this screen, as does
+   `_corrections/me-screens.md` C-5 (the weekly-report notification is unproduced and its default
+   destination is the wrong screen). P-7 (double `<h1>`) notably does **not** — this screen gets it
+   right.
 
 ## 13. Blueprint divergence
 

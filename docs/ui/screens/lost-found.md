@@ -259,26 +259,49 @@ history, the disc's status becomes `lost` → later, select the case, choose `Si
 the disc to `in_locker`.
 
 **First run / empty.** A user with discs but no cases sees the full report form and
-`No Lost & Found cases yet.` A user whose every disc is retired, sold, or already cased sees `rep-none`
+`No Lost & Found cases yet.` (`S-EMPTY`, `LostFoundPage.jsx:194` — a bare `<p>`, not `.empty-state`, on
+the row's weaker side). A user whose every disc is retired, sold, or already cased sees `rep-none`
 instead of the form. A user with no discs at all sees the same message, which is accurate but reads
 oddly on an empty account.
 
-**Error.** Every failure funnels into one `err-inline` at the top of the page: load failures,
-geolocation failures, validation throws from `normalizeLostFoundFields`, and raw RPC exception strings
-(`Disc already has an open Lost & Found case`, `Lost & Found case is already resolved`). There is no
-retry control and no per-field validation display; a coordinate-pair error appears far above the
-coordinate inputs. The page chrome always renders, so an error is never a full-screen replacement —
-better than every other DISCS screen.
+**Diverges from `S-LOAD`: this screen has no loading state at all.** `LostFoundPage.jsx` declares no
+`loading` flag and takes no early return; `discs`, `courses`, `cases`, and `updates` all initialize to
+`[]` and the page renders immediately. So during the initial read the Case history section shows
+`No Lost & Found cases yet.` — the empty state doubles as the loading state, and a user with cases sees
+"no cases" until the fetch lands. This is the same defect the matrix records for `NotificationsPage`
+(`S-EMPTY`: "indistinguishable from loading"). It resolves the `?` in the `S-LOAD` cell for this route
+to ❌; logged in `_corrections/state-citations-2.md`.
 
-**Offline.** As § 5. Capture continues and is honestly labelled; the history does not render. This is a
-partial satisfaction of § 12's "a network failure never replaces active capture with a full-screen
-error" — the form does survive — with a real gap in the read path.
+**Error.** `S-ERR-INLINE` (`:174`) — every failure funnels into one `err-inline` at the top of the page:
+load failures, geolocation failures, validation throws from `normalizeLostFoundFields`, and raw RPC
+exception strings (`Disc already has an open Lost & Found case`, `Lost & Found case is already
+resolved`). There is no retry control (`S-RETRY`) and no per-field validation display; a coordinate-pair
+error appears far above the coordinate inputs. The page chrome always renders, so an error is never a
+full-screen replacement — **this screen is deliberately outside `S-ERR-BLOCK`**, one of the minority the
+row does not list among its 19, and better than every other DISCS screen.
+
+**Offline.** `S-OFFLINE-READ` — on the working side: `lostFoundRepository` is cache-backed with an
+outbox, and `S-OFFLINE-WRITE` is satisfied properly here (queued before the remote attempt, replayed by
+a flush), which is the row's `none`-gap path rather than the stranded `fatigueCheckinRepository` case.
+As § 5. Capture continues and is honestly labelled; the history does not render. This is a partial
+satisfaction of § 12's "a network failure never replaces active capture with a full-screen error" — the
+form does survive — with a real gap in the read path.
+
+**Diverges from `S-SYNC`.** The row names `LostFoundPage.jsx:109,132` as the app's **fourth** of five
+competing sync vocabularies: `Saved on this device. It will sync when connectivity returns.` — a
+sentence, not one of § 12's four labels, in a `.success-message` paragraph that reserves no layout space.
+Two further strings on this screen are not in the row's tally and widen the divergence rather than
+narrow it: `Waiting to sync` on a pending timeline entry (`:39`) and a `· pending` suffix on the case
+status chip (`:200`). Three wordings for one status, on one screen. Noted in
+`_corrections/state-citations-2.md`.
 
 **Auth / guard.** `ProtectedRoute` gates the shell. Both RPCs re-check `auth.uid()` server-side and
 raise `Authentication required`. `user.id` is dereferenced unconditionally in `load()`.
 
 **Interlock.** One, and it is enforced in three places consistently — the shape the 35-disc bag cap
-does not have:
+does not have. `S-INTERLOCK-CAP` surveys three caps and does not include this one; measured against the
+row's criterion (enforcement *plus* pre-emptive disabling), this ceiling of one open case per disc is
+the section's reference implementation:
 
 1. **UI:** `reportableDiscs` excludes `retired`/`sold` discs and discs with an open case, so the
    `<select>` cannot offer an ineligible disc.
@@ -304,7 +327,10 @@ the UI:
   routine ones).
 
 This page calls no `window.confirm` and is not among the three named in `COMPONENT_LIBRARY.md` § Gaps
-item 8.
+item 8. **Diverges from `S-CONFIRM` by omission rather than by mechanism:** the row's failure mode on
+this screen is not an unstyled native dialog but two irreversible, un-reopenable actions with no
+confirmation of any kind — the same category as the disc-retirement gap the row records for
+`disc-detail`.
 
 ## 7. Dependencies
 

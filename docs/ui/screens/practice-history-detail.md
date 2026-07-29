@@ -240,7 +240,7 @@ error.
 This screen displays **three** of the four calm states from `PHASE_A_ARCHITECTURE.md` § 12 —
 `Saved on Device` (as `Saved on device`), `Needs Attention` (as `Needs attention`), and `Synced` — inside
 a labelled status cluster. It is the only PLAY screen that renders `Synced` at all; `practice-history`
-renders nothing for that state (`_corrections/play-screens.md` P-8). `Syncing` is never produced by the
+renders nothing for that state (`STATE_MATRIX.md` `S-SYNC`). `Syncing` is never produced by the
 derivation at `HistoryDetailPage.jsx:150-157`.
 
 ## 6. Flow paths
@@ -292,8 +292,10 @@ restore it for 30 days."* On accept, `recovery.hide` commits locally and the pag
 - There is no undo toast after the redirect. Recovery requires finding
   `/practice/history/deleted`, which is reachable only from the History toolbar.
 
-`STATE_MATRIX.md` does not exist (`_corrections/play-screens.md` P-10), so these states are described
-inline.
+Shared-state rows: `S-LOAD`, `S-ERR-BLOCK`, `S-ERR-INLINE` (inside `NotesTagsEditor` only), `S-RETRY`
+(sync-retry only, never a read retry), `S-SAVING`, `S-SYNC` — this screen renders the fullest vocabulary
+of any surface — `S-INCOMPLETE`, `S-OFFLINE-WRITE`, and **`S-CONFIRM`**, of whose three
+`window.confirm()` calls `HistoryDetailPage.jsx:111` is one. See `STATE_MATRIX.md`.
 
 ## 7. Dependencies
 
@@ -527,8 +529,8 @@ the required E2E flows and records that no suite was built.
    effort can be set during capture and never corrected afterwards — while notes and tags can be.
    `PHASE_A_ARCHITECTURE.md` § 11 says "Old incomplete activities may be corrected"; this asymmetry
    restricts what correction means.
-7. `_corrections/play-screens.md` P-7 (double `<h1>`), P-9 (metric eligibility), P-10 (missing
-   `STATE_MATRIX.md`), and P-11 (`—` vs `Insufficient data`) touch this screen.
+7. `_corrections/play-screens.md` P-7 (double `<h1>`), P-9 (metric eligibility), and P-11 (`—` vs
+   `Insufficient data`) touch this screen, as does `_corrections/state-matrix.md` C-2 (sync labels).
 
 ## 13. Blueprint divergence
 

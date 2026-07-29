@@ -125,7 +125,7 @@ than by when it was deleted. That is not obviously the right order for a recover
 | `ghost-row` | div | composed by `EntryContents` | static | — | — | never interactive; the `<Link>` branch is unreachable when `deleted` is true |
 | `ec-state` | badge | `Incomplete` / `Completed` | — | — | — | freeform renders a badge only when incomplete; regimen renders one always |
 | `ec-pb` | badge | `PB` | present / absent | — | — | PB sets are computed over the **hidden** activities only, because `fetchHistory(HIDDEN)` returns nothing else — so a "PB" here means best among deleted items, not a real personal best. See § 12 |
-| `ec-sync` | badge | `Saved on device` / `Needs attention` | pending / needs_attention / nothing | — | — | `synced` and `syncing` render `null` (`_corrections/play-screens.md` P-8) |
+| `ec-sync` | badge | `Saved on device` / `Needs attention` | pending / needs_attention / nothing | — | — | `synced` and `syncing` render `null` (`STATE_MATRIX.md` `S-SYNC`) |
 | `row-restore` | button | `Restore` | idle | `handleRestore(entry.activity)` → `recovery.restore` then `loadHistory()` | `activities.hidden_at` → null, plus an audit event and an outbox row | **always enabled — no confirmation, no per-row pending state, no disabled state while the await is in flight.** Double-tapping issues two mutations |
 | `sync-retry` | button | `Retry activity sync` | present / absent | `recovery.retrySync()` | activity outbox | only when `recovery.syncStatus === SYNC_STATUS.FAILED` |
 
@@ -194,18 +194,32 @@ cannot reach the Restore buttons at all.
 
 Of the four calm states in `PHASE_A_ARCHITECTURE.md` § 12, rows here can display `Saved on Device` (as
 `Saved on device`) and `Needs Attention` (as `Needs attention`); `Syncing` and `Synced` render nothing
-and reserve no space (`_corrections/play-screens.md` P-8). Immediately after a restore the row is gone
+and reserve no space (`STATE_MATRIX.md` `S-SYNC`). Immediately after a restore the row is gone
 from the list, so its `pending` state is never actually seen on this screen.
 
 ## 6. Flow paths
 
-**Happy path.** Arrive from the History toolbar → `Loading...` → day-grouped ghost rows → tap `Restore` →
-`activityRepository.restore` commits locally → `loadHistory()` re-runs with `HIDDEN` visibility → the row
-is gone. The user gets no confirmation message; the disappearance is the only feedback.
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
 
-**First run / empty.** With nothing deleted — the normal case — the screen renders the header, the
-30-day policy line, and `Nothing deleted recently.` That is a complete and honest empty state, and it is
-better than ordinary History's, which cannot distinguish empty from filtered.
+**Happy path.** Arrive from the History toolbar → `S-LOAD` (`HistoryPage.jsx:179`) → day-grouped ghost
+rows → tap `Restore` → `activityRepository.restore` commits locally → `loadHistory()` re-runs with
+`HIDDEN` visibility → the row is gone. The user gets no confirmation message; the disappearance is the
+only feedback — `S-TOAST` would be the mechanism and it is permanently inert, so this screen cannot
+acknowledge a restore even in principle.
+
+**Ghost rows.** `S-GHOST`, and this screen is that row's only implementation. `.history-row-ghost`
+(applied at `HistoryPage.jsx:236`) supplies all four required signals — `opacity: 0.72`, a dashed
+outline, and a `::before` carrying `◌ Hidden` as both icon and label. The row's single caveat applies
+here and only here: the icon and label are CSS `content:` on a pseudo-element rather than DOM text, so
+they are unselectable, untranslatable, and their announcement depends on the screen reader. Do not
+confuse this with `S-GHOST-SLOT`, which is an unrelated DISCS concept sharing the word.
+
+**First run / empty.** `S-EMPTY` (`HistoryPage.jsx:226`) — `Nothing deleted recently.` With nothing
+deleted, the normal case, the screen renders the header, the 30-day policy line, and that string. It is a
+bare `<p>` rather than the shared `.empty-state` block, which is the row's documented defect, but the
+copy itself is a complete and honest empty state and unlike ordinary History it cannot be confused with
+`S-EMPTY-FILTER` — this branch has no filter chips.
 
 **Aged-out.** An activity hidden more than 30 days ago is silently absent. There is no "older items are
 no longer shown" copy, no count, and no way to reach it. `policy-copy` is the only hint, and it is
@@ -234,8 +248,9 @@ stops being listed.
 `PHASE_A_ARCHITECTURE.md` § 11, "performs scoped recalculation" with immutable reward-ledger rules
 preventing duplicate rewards — that recalculation is server-side and not observable on this screen.
 
-`STATE_MATRIX.md` does not exist (`_corrections/play-screens.md` P-10), so these states are described
-inline.
+Shared-state rows: **`S-GHOST`** — this screen is that row's only implementation, and the one place in
+the app where all four required ghost signals are present — plus `S-LOAD`, `S-EMPTY`, `S-ERR-BLOCK`,
+`S-OFFLINE-WRITE` (correctly implemented here), and `S-SYNC`. See `STATE_MATRIX.md`.
 
 ## 7. Dependencies
 
@@ -303,7 +318,7 @@ Beyond the § 12 baseline:
 - **Gap — `row-restore` gives no in-flight or success feedback.** It is never disabled, never shows a
   pending label, and success is signalled only by the row vanishing. Nothing is announced.
 - **Gap — `ec-sync` omits two calm states and reserves no space**
-  (`_corrections/play-screens.md` P-8).
+  (`STATE_MATRIX.md` `S-SYNC`; `_corrections/state-matrix.md` C-2).
 - **Gap — `ec-pb` is an unexpanded abbreviation** with no `<abbr>` or title, and on this branch its
   meaning is additionally wrong (§ 12).
 - **Good — day-group headings are real `<h2>`s.**
@@ -439,8 +454,8 @@ backlog entries, not existing coverage.
    literals." Task `T-practice-history-deleted-5`.
 5. **A deleted activity cannot be inspected before restoring it.** There is no read-only route to its
    detail report, so a user with several similar rows must restore to identify, then re-delete.
-6. `_corrections/play-screens.md` P-7 (double `<h1>`), P-8 (calm states), P-9 (metric eligibility), and
-   P-10 (missing `STATE_MATRIX.md`) all touch this screen.
+6. `_corrections/play-screens.md` P-7 (double `<h1>`) and P-9 (metric eligibility) touch this screen, as
+   does `_corrections/state-matrix.md` C-2 (the five sync vocabularies).
 
 ## 13. Blueprint divergence
 

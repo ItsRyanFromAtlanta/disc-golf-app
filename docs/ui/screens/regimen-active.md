@@ -186,6 +186,12 @@ the outbox flushes; the same run later viewed through History shows the complete
 
 ## 6. Flow paths
 
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7. One row bears on this screen without appearing in any path below:
+`S-INTERLOCK-ACTIVE` names `regimen-active` as an affected screen, and its single-active confirmation is
+fully built in `activityRepository.start` yet reaches no component — starting a run during a live round
+shows no dialog here, because there is nothing in this page to show one.
+
 **Happy path.** `READY_DEFAULT` → configure putter/presets/match mode → `handleStart` validates the
 drill contract, mints a run id, and calls `session.startSession` with a frozen regimen snapshot →
 `ACTIVE_SESSION` → capture putts → `handleFinishStage` scores the stage synchronously, computes the
@@ -195,31 +201,58 @@ Scoring is computed **synchronously from `session.sessionState`**, never from a 
 back later, so the summary row and the final `total_score` are built from the real final numbers within
 the same call.
 
-**Crash recovery.** A killed PWA relaunches, `useCrashRecoveryRedirect` routes here, and
-`activeRegimenSnapshot` rehydrates regimen, sets, stage, running total, and `regimenRunId` from the
-persisted buffer with **zero network reads**. Drill progress rides inside the stage snapshot precisely
-so the attempt cap and score survive.
+**Crash recovery.** `S-RECOVERY`, and this screen is that row's strongest instance. A killed PWA
+relaunches, `useCrashRecoveryRedirect` routes here, and `activeRegimenSnapshot` rehydrates regimen, sets,
+stage, running total, and `regimenRunId` from the persisted buffer with **zero network reads**. Drill
+progress rides inside the stage snapshot precisely so the attempt cap and score survive. The row's one
+gap applies unchanged: nothing explains *why* the session paused, as § 11 requires. `S-PAUSE` is the
+adjacent gap — `useActivityNavigationLifecycle` pauses this route on navigation away and tells the user
+nothing, because the toast § 11 specifies cannot fire (`S-TOAST`).
 
 **Abandon.** `handleAbandon` finalizes the current partial stage as a normal summary row but marks the
 run `completed: false` — the same status History already renders. A stage with zero attempts skips the
-summary row entirely.
+summary row entirely. That flag is `S-INCOMPLETE`'s input: it surfaces downstream as the `Incomplete`
+badge and an `ACTIVE`-actionable notification, but per that row the sibling `activities.needs_review`
+column this run can set is never rendered anywhere.
 
-**Offline.** As § 5. Capture continues unaffected.
+**Offline.** As § 5. Capture continues unaffected — `S-OFFLINE-WRITE` is satisfied by the InstantLaunch
+outbox, and this screen is the reference implementation for it. Two divergences on the same path:
+`S-SYNC` is **not met** — `CanvasContextBar` (`RegimenRunPage.jsx:728`) renders `Synced` / `Pending` /
+`Syncing...` / `Retrying...` / `Sync failed`, five states against § 12's four labels, only one of which
+is a contract word, and `.canvas-sync-pill` reserves no `min-width`, so the pill reflows as the status
+changes. And the fatigue check-in path is the one `S-OFFLINE-WRITE` hole that row marks `data-risk`; see
+the Fatigue path below.
 
 **Diagnostic miss.** Audio and haptics fire immediately regardless of diagnostic mode — feel must not
 wait on the picker. The `putt_events` row is deferred until a zone is picked or dismissed, rather than
 written now and patched after.
 
 **Fatigue.** `fatigueCheckinTrigger` inspects stage outcomes and prior stages; a trigger prompts only
-between stages, never mid-capture, and only on an advance — never on the final stage.
+between stages, never mid-capture, and only on an advance — never on the final stage. **Diverges from
+`S-OFFLINE-WRITE`:** the recorded check-in is the app's one repository write with no outbox and no flush.
+`fatigueCheckinRepository.record` returns `{ sync_state: 'pending' }` and the call site
+(`RegimenRunPage.jsx:529`) discards it, so an offline check-in is stranded on-device permanently and is
+never labelled `Saved on Device`. `listForParent`'s `data ?? local` compounds it — a successful empty
+remote response hides the local rows.
 
 **Clutch.** A randomized rest deadline; `ClutchTimerPanel` replaces the canvas; `handleClutchReady`
 fires a haptic and a notification, then advances the stage to `Putt now`. Editing is disabled during
 clutch (`onEdit` is `null`).
 
-**Error.** A pre-start load failure renders `<p className="form-error">` as the whole page — same
-pattern, and same missing retry control, as `disc-detail`. Once active, no error can replace the capture
-surface, per `PHASE_A_ARCHITECTURE.md` § 12.
+**Error.** `S-ERR-BLOCK` (`RegimenRunPage.jsx:320`), and this is the row's **one binding
+contract-violation**: because `regimen-active` is an `active`-shell route, § 12's prohibition applies by
+the letter here and nowhere else. A pre-start load failure renders `<p className="form-error">` as the
+whole page — same pattern, and the same missing `S-RETRY` control, as `disc-detail`. The row's precise
+finding holds on re-reading the page: `error` is set only from the initial regimen load (`:231`) and from
+`handleStart`'s config validation (`:335`), never from a capture-time network failure, so the prohibited
+sequence does not occur today and the page is one `setError` call away from it. Once active, no error can
+replace the capture surface. `S-LOAD` sits immediately above it at `:319` and shares the row's a11y gap —
+no `aria-live`, no `role="status"`.
+
+`S-EMPTY` has no instance on this page: `RegimenRunPage.jsx` contains no `length === 0` branch and no
+empty copy, and its sub-components render `S-INSUFFICIENT` rather than empty states — `GhostPaceCard`
+returns `null` with no profile and otherwise renders `N more real-time attempts to compare.`,
+`SessionReport` renders `no baseline yet` (`:132`). See `_corrections/state-citations.md`.
 
 ## 7. Dependencies
 

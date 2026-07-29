@@ -314,8 +314,10 @@ interlocks: they withhold a claim rather than blocking an action.
 creation is irreversible with no confirmation, which is a one-way action even though it is not a
 destructive one. See § 12.
 
-`STATE_MATRIX.md` does not exist (`_corrections/play-screens.md` P-10), so these states are described
-inline.
+Shared-state rows: **`S-INSUFFICIENT`** — this screen is that row's densest implementation, with five
+distinct threshold treatments — plus `S-LOAD`, `S-EMPTY` (four separate, well-written empty states),
+`S-ERR-BLOCK`, `S-ERR-INLINE` (inside `ExperimentMarkerPanel` only), `S-RETRY` (absent), and
+`S-OFFLINE-READ` (absent). See `STATE_MATRIX.md`.
 
 ## 7. Dependencies
 
@@ -541,7 +543,7 @@ before/after unlocks at 10 attempts per side. Attempt a load offline → verify 
 6. **This screen has no sync or offline indicator at all**, unlike `practice-history` and
    `practice-history-detail`. A user cannot tell whether they are looking at stale numbers.
 7. `_corrections/screen-specs-and-agents.md` C-2 (Screens 10 and 11 never shipped as standalone
-   destinations) and `_corrections/play-screens.md` P-7, P-9, P-10 all touch this screen.
+   destinations) and `_corrections/play-screens.md` P-7 and P-9 all touch this screen.
 
 ## 13. Blueprint divergence
 

@@ -259,20 +259,36 @@ protections both guarantee it), so the bag list is never empty. A user with no d
 which is a loading idiom used for an empty state. Version history and ghost slots both start unloaded
 and reveal nothing until their button is tapped, so a first visit shows no history at all.
 
-**Error.** Before `bags` loads, `page-error` replaces the whole page with no retry control. Afterwards,
-every failure — create, save, delete, restore, ghost add/remove, history load — funnels into one shared
-`error` state rendered as `err-inline` near the top of the page, which may be far above the control
+**Diverges from `S-EMPTY`**, and this screen is the row's named exemplar of the divergence:
+`BagManagePage.jsx:228` is the one instance in the app of an empty state wearing the loading class
+(`PutterLineup.jsx:89` is the other, on `discs-root`). The row's defect list is exactly these two.
+
+**Error.** `S-ERR-BLOCK` — before `bags` loads, `page-error` replaces the whole page with no retry
+control (`S-RETRY`). This is one of the six **guarded** instances: `BagManagePage.jsx:180` is
+conditioned on `&& !data`, so a warm result wins over the error. Afterwards, every failure — create,
+save, delete, restore, ghost add/remove, history load — funnels into one shared `error` state rendered
+as `err-inline` (`S-ERR-INLINE`, `:192`) near the top of the page, which may be far above the control
 that failed. Raw Postgres exception strings surface unmodified (`A bag cannot contain more than 35
 discs`, `Promote a replacement main bag before deleting this bag`, `Bag contains an unavailable or
 foreign disc`). A failed `saveBag` keeps the editor open with the draft intact, which is correct.
 
-**Offline.** As § 5: full-screen error on arrival; every write fails.
+Note the `S-ERR-INLINE` divergence this screen shares with the rest of the app: the row records that
+every inline instance uses `.form-error`, so a benign degradation and a hard failure carry the same
+`--color-negative` signal.
+
+**Offline.** `S-OFFLINE-READ` — mixed on this screen: `bagHistoryRepository` is cache-backed but
+`lib/discLocker` is one of the eight uncached modules, and the membership read is what gates the page,
+so arrival degrades to the full-screen error. **Diverges from `S-OFFLINE-WRITE`:** none of the writes
+here is outbox-backed — `grouped_save_bag`, `delete_bag_with_replacement`, and the ghost-slot mutations
+are direct RPCs — so every write fails outright rather than queueing, and none of the four calm labels
+from `S-SYNC` is displayable. As § 5.
 
 **Auth / guard.** `ProtectedRoute` gates the shell. Every RPC independently re-checks `auth.uid()` and
 raises `Authentication required` if it is null. `user.id` is dereferenced unconditionally in
 `loadAll()`.
 
-**Interlock.** **This is the one screen where the 35-disc cap actually blocks a user action.**
+**Interlock.** `S-INTERLOCK-CAP` — **this is the one screen where the 35-disc cap actually blocks a
+user action**, and it is the row's positive citation for the cap (`:234` disabled at 35).
 `ed-member` sets `disabled={!included && draft.discIds.length >= 35}` (`BagManagePage.jsx:234`) and
 `ed-count` reads `{n}/35`, and the `grouped_save_bag` RPC backs it with
 `if cardinality(normalized_ids) > 35 then raise exception` (`20260716193000_phase_c_grouped_bag_save.sql:92`).
@@ -290,6 +306,16 @@ Three caveats keep it from being the interlock `SCREEN_SPECS.md` standing diverg
    carries no constraint either (`bags_schema.sql:22`). Full table in `screens/discs-root.md` § 12
    item 1.
 
+   **Amendment.** The "no `CHECK` constraint" statement is literally true and remains, but the inference
+   that a bag can be "pushed past 35" does not follow, per `_corrections/capture-screens.md` § "C-9
+   ADJUDICATION": `layer1_foundation_schema.sql:230-253` attaches `enforce_bag_capacity()` as a
+   `before insert` trigger on `bag_discs` that row-locks the parent bag, counts members, and raises above
+   35 on **every** insert regardless of app path. A `CHECK` could not do this — it cannot count sibling
+   rows — which is the substance of the objection. So the unguarded surfaces fail loudly at 36; this
+   editor's `disabled` is a pre-emption of an enforcement that already exists, not the only enforcement.
+   Caveats 1 and 2 (literal `35` vs `bag.capacity`, and the status-inclusive count) are unaffected and
+   stand.
+
 A second, unrelated interlock is real and correct: the last bag cannot be deleted, and the main bag
 cannot be deleted without promoting a replacement. This is enforced three times — `del-bag`'s
 `disabled` rule, `delete_bag_with_replacement`'s `bag_count <= 1` and replacement checks, and the
@@ -299,9 +325,11 @@ guard" looks like when it is actually implemented.
 **Destructive.** Three destructive paths, three different confirmation standards:
 
 - `del-bag` calls **`window.confirm(`Delete ${bag.name}? This cannot be undone.`)`**
-  (`BagManagePage.jsx:103`). This is one of the three `window.confirm` sites named in
-  `COMPONENT_LIBRARY.md` § Gaps item 8 — an unstyled OS dialog that violates the design system by
-  construction and is not equivalently available in a Capacitor/WKWebView shell. The copy
+  (`BagManagePage.jsx:103`). `S-CONFIRM` — this is the first of the row's three `window.confirm` sites,
+  also named in `COMPONENT_LIBRARY.md` § Gaps item 8 — an unstyled OS dialog that violates the design
+  system by construction and is not equivalently available in a Capacitor/WKWebView shell. The row's
+  `contract-violation` verdict applies unchanged: no focus entry or return, no inert background, no
+  320px or 200%-scale handling, and `SheetHost` available and unused. The copy
   (`This cannot be undone.`) is accurate and understated: `bag_versions.bag_id` cascades on delete, so
   the bag's entire version history goes with it. See § 12 item 5.
 - `ghost-slot` removes a persisted slot on a single tap with **no confirmation**. Recoverable in

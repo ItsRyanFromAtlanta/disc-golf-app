@@ -230,33 +230,17 @@ referencing it.
 
 ---
 
-## P-8 — `HistoryPage` never renders the `Synced` or `Syncing` calm states
+## P-8 — ~~`HistoryPage` never renders the `Synced` or `Syncing` calm states~~ (withdrawn)
 
-**Where:** `PHASE_A_ARCHITECTURE.md:195-196`.
+**Superseded by `_corrections/state-matrix.md` C-2**, filed concurrently by the session authoring
+`docs/ui/STATE_MATRIX.md`. That entry documents the same `HistoryPage.jsx:53-58` behavior (`null`
+returned for `synced`, so the badge and its layout space vanish) inside a wider finding: five different
+sync vocabularies across the app, and two underlying enums — `SYNC_STATUS`'s five members and
+`activityRepository`'s three — neither of which is the contract's four.
 
-**Claims:**
-
-> Offline/sync labels **reserve stable layout space** and use calm states: Saved on Device, Syncing,
-> Synced, and Needs Attention.
-
-**Reality:** `HistoryPage.jsx:53-59`:
-
-```jsx
-function SyncBadge({ state }) {
-  if (state === 'pending') return <span …>Saved on device</span>
-  if (state === 'needs_attention') return <span …>Needs attention</span>
-  return null
-}
-```
-
-Two of the four states render; `Synced` and `Syncing` render nothing, and the `null` return reserves no
-space, so a row reflows when its state changes. The copy also differs in case from the contract
-(`Saved on device` vs `Saved on Device`).
-
-`SessionReport.jsx:67-71` — the detail screen — **does** render `Synced`, so the same activity shows a
-badge on `practice-history-detail` and no badge on `practice-history`.
-
-**Proposed action:** code fix. Filed as `T-practice-history-1`.
+The id is retained rather than reused; `STATE_MATRIX.md` row `S-SYNC` is the canonical description.
+Task `T-practice-history-1` in `screens/practice-history.md` remains the PLAY-side fix and should be
+scheduled behind whatever `state-matrix.md` C-2 resolves.
 
 ---
 
@@ -288,22 +272,15 @@ record in § 5 that the registry is descriptive-only for Phase A. Filed as `T-pr
 
 ---
 
-## P-10 — `docs/ui/STATE_MATRIX.md` does not exist
+## P-10 — ~~`docs/ui/STATE_MATRIX.md` does not exist~~ (resolved)
 
-**Where:** `TEMPLATE.md:130` ("Reference `STATE_MATRIX.md` rows by id instead of re-describing shared
-state behavior"), `README.md:29` (linked under Foundation), `TASK_FORMAT.md:93` (worked example cites
-`STATE_MATRIX S-EMPTY`).
+**Resolved 2026-07-29.** The file was written concurrently by another session and now exists at
+`docs/ui/STATE_MATRIX.md`, with stable row ids (`S-LOAD`, `S-EMPTY`, `S-EMPTY-FILTER`,
+`S-INSUFFICIENT`, `S-ERR-BLOCK`, `S-ERR-INLINE`, `S-ERR-SILENT`, `S-RETRY`, `S-OFFLINE-READ`,
+`S-OFFLINE-WRITE`, `S-SYNC`, `S-GHOST`, `S-INCOMPLETE`, `S-INTERLOCK-CAP`, `S-CONFIRM`, and others).
 
-**Reality:** `docs/ui/` contains `COMPONENT_LIBRARY.md`, `COPY_AND_TERMINOLOGY.md`, `LIB_API_INDEX.md`,
-`NAVIGATION_MAP.md`, `README.md`, `SCREEN_INVENTORY.md`, `TASK_FORMAT.md`, `TEMPLATE.md`, `TEST_MAP.md`,
-`_corrections/`, and `screens/`. There is no `STATE_MATRIX.md`, and `screens/disc-detail.md` — the
-reference example — never cites one.
-
-**Consequence:** § 6 of every screen document is instructed to delegate shared state behavior to a file
-that cannot be read, so authors either describe it inline (creating the duplication rule 3 forbids) or
-omit it. The eight PLAY documents describe their states inline and say so.
-
-**Proposed edit:** write `STATE_MATRIX.md`, or drop the three references. Filed as `T-play-root-3`.
+All eight PLAY screen documents cite those ids in their § 6 Flow paths rather than describing shared
+state inline. The id is retained rather than reused. Task `T-play-root-3` is withdrawn.
 
 ---
 

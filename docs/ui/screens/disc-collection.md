@@ -222,32 +222,54 @@ status chips, and `No discs match.` — a message about a filter result, in a si
 applied and nothing to filter. There is no distinct empty state and no call to action beyond the
 `Add a disc` link above the toolbar. See § 12.
 
-**Error.** With no cache, `page-error` replaces the whole page (`BagLockerPage.jsx:128`) — no retry
-control. With a cache, the query error becomes `err-inline` above a fully usable grid, which is the
-better of the two shapes and the one to copy elsewhere. Picker and toggle failures always render
-inline, never blocking.
+This screen is `S-EMPTY` and `S-EMPTY-FILTER` collapsed into one string, and it is the *inverse* of the
+misreport the `S-EMPTY-FILTER` row names elsewhere: `HistoryPage` tells a user with data that they have
+none, while `BagLockerPage.jsx:248` tells a user with no data that a filter excluded it. The row names
+this line as one of its three instances. The copy is wrong in both directions because only one string
+exists.
 
-**Offline.** As § 5. Browse works from Dexie; picker mode degrades to browse mode with an inline error.
+**Error.** `S-ERR-BLOCK` — with no cache, `page-error` replaces the whole page (`BagLockerPage.jsx:128`)
+— no retry control (`S-RETRY`). This is one of the six **guarded** instances the row distinguishes: the
+early return is conditioned on `&& !discs`, so a warm cache wins over the error. With a cache, the query
+error becomes `err-inline` (`S-ERR-INLINE`, `:157`) above a fully usable grid, which is the better of the
+two shapes and the one to copy elsewhere. Picker and toggle failures always render inline, never
+blocking.
+
+**Offline.** `S-OFFLINE-READ` — this screen is on the working side: `useDiscList` is cache-backed, so
+browse works from Dexie and picker mode degrades to browse mode with an inline error. As § 5.
+
+Note the corollary the guard above buys and does not pay for: **`S-STALE`.** When the cache wins, rows
+served from Dexie are presented identically to live rows. This screen has no cached-data notice of any
+kind — `rounds-root` is the app's only screen that says so, and it says it in error red.
 
 **Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally in
 `useDiscList(user.id)` and the picker effect.
 
-**Interlock.** **None on this screen, and this is the hole in the 35-disc cap.** `card-add` calls
-`addDiscToBag` directly with no capacity check, no count of current membership beyond the `Set` used
-for labelling, and no reference to `capacityTier` or `bag.capacity`. `/bag` hides its entry point into
-this page at capacity, but the URL remains directly addressable and the toggle remains live. A player
-who bookmarks `/bag/locker?addToBag=:id` can push a bag past 35 without any surface objecting until the
-next grouped save on `/bag/manage` fails. Full table in `screens/discs-root.md` § 12 item 1.
+**Interlock.** **Diverges from `S-INTERLOCK-CAP`: none on this screen, and this is the hole in the
+35-disc cap.** `card-add` calls `addDiscToBag` directly with no capacity check, no count of current
+membership beyond the `Set` used for labelling, and no reference to `capacityTier` or `bag.capacity`.
+`/bag` hides its entry point into this page at capacity, but the URL remains directly addressable and
+the toggle remains live. A player who bookmarks `/bag/locker?addToBag=:id` can push a bag past 35
+without any surface objecting until the next grouped save on `/bag/manage` fails. Full table in
+`screens/discs-root.md` § 12 item 1.
+
+The row's "enforced, inconsistently pre-empted" verdict is the accurate one for this path: per
+`_corrections/capture-screens.md` § "C-9 ADJUDICATION", the `enforce_bag_capacity()` `before insert`
+trigger fires on every `bag_discs` insert including this one, so the unguarded toggle **fails loudly**
+at 36 rather than overfilling the bag. What is missing here is the pre-emption, not the enforcement.
 
 The compare selection *does* have a working interlock: `toggleCompareDisc` refuses to grow past
 `COMPARE_MAX` (`BagLockerPage.jsx:102-108`), `card-compare` is genuinely `disabled` at the ceiling with
 `aria-pressed` reflecting selection, and `cmp-submit` is `disabled` below `COMPARE_MIN` with a second
-guard inside `openComparison`. This is the pattern the bag cap should follow.
+guard inside `openComparison`. This is the pattern the bag cap should follow. `S-INTERLOCK-CAP` surveys
+three caps and does not include this one; on the row's own criterion — pre-emptive disabling plus a
+backing guard — `COMPARE_MAX`/`COMPARE_MIN` is the best-behaved ceiling in the app.
 
 **Destructive.** `card-add` in `Added` state removes the disc from the bag on tap, with no confirmation
 — the same tap target that added it. This is reversible and low-stakes (membership only; the disc is
 untouched), so no confirmation is warranted. This page calls no `window.confirm` and performs no
-delete. `COMPONENT_LIBRARY.md` § Gaps item 8 names three pages that do; this is not one of them.
+delete. `COMPONENT_LIBRARY.md` § Gaps item 8 names three pages that do; this is not one of them, and it
+is correctly outside `S-CONFIRM`'s scope rather than a screen that should confirm and does not.
 
 ## 7. Dependencies
 

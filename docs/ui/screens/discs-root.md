@@ -222,25 +222,48 @@ Bags shows `0 / 35 discs` and `No discs in this bag yet.`; Putters shows `No put
 — add one to build your lineup.`; Universe shows an empty accordion with no ghost cards, because
 `stabilityGaps` derives gaps only from speed classes the player already carries.
 
-**Error.** Any of `fetchBags`, `fetchUserDiscs`, or `fetchBagDiscs` rejecting renders the message as
-the entire page — no header, no tabs, no retry control, no navigation except the shell chrome. The
-error is sticky: nothing re-runs the effects without a route change or reload. Same shape as the
-`disc-detail` pre-load error and the same gap.
+All four are `S-EMPTY`, and all four sit on the row's weaker side: none uses the shared `.empty-state`
+block, `BagPage.jsx:222` being one of the bare-`<p>` instances the row catalogues. The Putters tab
+carries the row's worst named case — `PutterLineup.jsx:89` renders the literal word `Empty` for an
+empty role swimlane, with `className="loading"`.
 
-**Offline.** As § 5: the page-level error path, not a degraded render. This is not active capture, so
-§ 12's "a network failure never replaces active capture with a full-screen error" does not strictly
-bind — but a cached locker exists and is deliberately not shown, which is the sharper defect.
+**Error.** `S-ERR-BLOCK` — any of `fetchBags`, `fetchUserDiscs`, or `fetchBagDiscs` rejecting renders
+the message as the entire page — no header, no tabs, no retry control (`S-RETRY`), no navigation except
+the shell chrome. **Diverges from the row's better half:** `BagPage.jsx:84` is one of the thirteen
+instances with **no `&& !data` guard**, so an error wins even when a previous successful read is still
+in state. The error is sticky: nothing re-runs the effects without a route change or reload. Same shape
+as the `disc-detail` pre-load error and the same gap. The ghost-slot panel is the screen's one
+`S-ERR-INLINE` (`BagPage.jsx:215`, `Desired slots unavailable: {error}`), and it is non-blocking.
+
+**Offline.** `S-OFFLINE-READ` — and this screen is on the failing side of it: `lib/discLocker` is one of
+the eight modules with no cache at all, so every read here throws straight into `S-ERR-BLOCK`. As § 5:
+the page-level error path, not a degraded render. This is not active capture, so § 12's "a network
+failure never replaces active capture with a full-screen error" does not strictly bind — but a cached
+locker exists and is deliberately not shown, which is the sharper defect. None of the four calm labels
+is reachable here (`S-SYNC` is not applicable to this screen).
 
 **Auth / guard.** `ProtectedRoute` gates the shell. `useOnboardingGate` runs once per app load and
 redirects a zero-bag user to `/onboarding`; it fails open on a fetch error. `user.id` is dereferenced
 unconditionally in all three effects, so there is no anonymous rendering path.
 
-**Interlock.** The 35-disc cap is **advisory on this screen.** `capacityTier` drives the bar color and
-swaps `cta-add` for the non-interactive `cap-blocked` span, which removes the entry point into the
-locker picker. It does not prevent the write: `/bag/locker?addToBag=:bagId` remains directly
-addressable, and its `Add` toggle calls `addDiscToBag` with no capacity check
+**Interlock.** `S-INTERLOCK-CAP` — and this screen is the row's positive citation for the 35-disc cap
+(`capacityTier` at `BagPage.jsx:162,201-205`). The cap is **advisory on this screen.** `capacityTier`
+drives the bar color and swaps `cta-add` for the non-interactive `cap-blocked` span, which removes the
+entry point into the locker picker. It does not prevent the write: `/bag/locker?addToBag=:bagId` remains
+directly addressable, and its `Add` toggle calls `addDiscToBag` with no capacity check
 (`BagLockerPage.jsx:74-89`). No database constraint limits `bag_discs` row count. Full analysis in
 § 12; the sibling enforcement on `/bag/manage` is documented in `screens/bag-manage.md` § 6.
+
+**Correction to the preceding sentence.** "No database constraint limits `bag_discs` row count" is the
+superseded reading (`_corrections/discs-screens.md` D-1) and is resolved against in
+`_corrections/capture-screens.md` § "C-9 ADJUDICATION": `layer1_foundation_schema.sql:230-253` attaches
+`enforce_bag_capacity()` as a **`before insert` trigger** (`bag_discs_capacity_check`) that row-locks the
+parent bag, counts members, and raises above 35 on every insert regardless of the app path. There is no
+`CHECK` *constraint* — a `CHECK` cannot count sibling rows — which is what both D-1 and C-9 correctly
+object to in `SCREEN_SPECS.md`'s wording. The user-facing consequence of the unguarded paths above is
+therefore **a raw Postgres error string, not a silently overfilled bag.** Everything else in this path
+and in § 12 stands, including the count discrepancy: the trigger counts every `bag_discs` row while the
+readout above counts `in_locker` members only.
 
 Two further wrinkles make the readout itself soft. The count is `in_locker`-only, so a bag holding 35
 memberships of which three are `lost` reads `32 / 35` and stays addable. And `cap` is
@@ -249,7 +272,9 @@ memberships of which three are `lost` reads `32 / 35` and stays addable. And `ca
 
 **Destructive.** No destructive action belongs to this page. One is reachable through it: the Putters
 tab's `Retire` (`PutterLineup.jsx:133`) writes `status: 'retired'` **with no confirmation of any kind**
-— no `window.confirm`, no typed phrase, no undo. It sits in the same button stack as the role chips and
+— no `window.confirm`, no typed phrase, no undo. Diverges from `S-CONFIRM`: this is not one of the three
+`window.confirm` sites the row catalogues, it is a fourth destructive action with *nothing*, the same
+shape as `disc-detail`'s unconfirmed retirement. It sits in the same button stack as the role chips and
 the wear slider, which is the arrangement `PHASE_A_ARCHITECTURE.md` § 12 warns against. Recorded in
 `COMPONENT_LIBRARY.md` § Gaps item 8; task in § 11.
 

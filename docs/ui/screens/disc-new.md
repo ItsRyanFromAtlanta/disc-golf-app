@@ -239,12 +239,19 @@ catalog, not on the user's data. `MoldPicker` deliberately renders no result lis
 non-empty, so the initial state is an empty search box with no browse affordance; a player who does not
 know a mold name has to go back to `/bag`'s Universe tab.
 
-**Error.** Three sources, all rendering into one `err-inline` above the button: the missing-mold guard,
-the stale-`?mold=` message, and any raw Supabase error from the upsert. The form is never replaced —
-this screen has no page-level error state, which is the right shape and the opposite of `discs-root`
-and `bag-manage`.
+**Error.** `S-ERR-INLINE` (`DiscFormPage.jsx:205`) — three sources, all rendering into one `err-inline`
+above the button: the missing-mold guard, the stale-`?mold=` message, and any raw Supabase error from
+the upsert. The form is never replaced — **this screen is deliberately outside `S-ERR-BLOCK`**, one of
+the minority the row does not list among its 19, which is the right shape and the opposite of
+`discs-root` and `bag-manage`. `S-RETRY` still binds in the trivial sense that there is no retry
+control, but it costs nothing here: the form is live and resubmitting *is* the retry.
 
-**Offline.** As § 5. Browse and fill work; submit fails with a network error and no queue.
+**Offline.** `S-OFFLINE-READ` — mixed: `catalogRepository` is cache-backed so `MoldPicker` browses from
+Dexie, while `lib/discLocker` is uncached. **Diverges from `S-OFFLINE-WRITE`:** `upsertDisc` is a direct
+Supabase write with no outbox and no flush, so submit fails with a network error and nothing is queued —
+the same uncovered-write shape the row flags for `fatigueCheckinRepository`, though without that path's
+false `pending` claim, since nothing here reports a queued state at all. None of `S-SYNC`'s four calm
+labels is displayable. As § 5.
 
 **Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced in `handleSubmit`, and
 RLS on `discs` scopes the insert to the caller.

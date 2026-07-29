@@ -221,41 +221,62 @@ Tracked in § 12.
 
 ## 6. Flow paths
 
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
+
 **Happy path.** Arrive from the PLAY tab → both effects resolve → hero (if any), Quick Play, launchpad,
 suggestion, and recent activity render → tap `Start Quick Play` → `/practice/regimens/:id/run` under the
-ACTIVE shell.
+ACTIVE shell. The two `Loading...` paragraphs are the `S-LOAD-PARTIAL` shape rather than the ordinary
+`S-LOAD` early return — that row names `PracticeMenuPage.jsx:217,258` explicitly — so Zone B and Recent
+activity resolve independently and neither blocks the other.
 
 **First run / empty.** A brand-new account has zero runs and zero sessions but a non-empty regimen list
 (system regimens seeded by migration). So: no hero card (`heroCardState` returns `first-session`, which
 this page renders as nothing), Quick Play resolves to the Level 1 system regimen via
 `resolveQuickPlayRegimen`'s `level-1` reason, Standard tab lists the system regimens, Custom tab shows
 `No custom routines yet. Build one →`, Zone C shows `zc-fallback`, and Recent activity shows
-`No practice logged yet — pick a mode above to get started.` The screen is never blank.
+`No practice logged yet — pick a mode above to get started.` The screen is never blank. Both strings are
+`S-EMPTY` (`PracticeMenuPage.jsx:221,259`), and both diverge from that row's better half: they are bare
+`<p>` elements, not the shared `.empty-state` block only four pages use.
 
-**Error.** Either rejection renders `<p class="form-error">{message}</p>` as the whole page — no header,
-no retry, no tab-bar-reachable content beyond the shell. Recovery requires navigating away and back, or
-reloading. This is the same defect recorded for `disc-detail` (`screens/disc-detail.md` § 6), and here it
-is worse because a *partial* failure (history down, regimens cached) still blanks the launchpad.
+**Error.** `S-ERR-BLOCK` (`PracticeMenuPage.jsx:137`) with **no** `&& !data` guard, so a cached regimen
+list loses to the error. Either rejection renders `<p class="form-error">{message}</p>` as the whole page
+— no header, no tab-bar-reachable content beyond the shell — and `S-RETRY` is absent, so recovery
+requires navigating away and back, or reloading. This is the same defect recorded for `disc-detail`
+(`screens/disc-detail.md` § 6), and here it is worse because a *partial* failure (history down, regimens
+cached) still blanks the launchpad. That partial-failure trigger is this screen's divergence from the
+row: `S-ERR-BLOCK` describes a failed read replacing the screen, not one failed read of two.
 
 **Offline.** As § 5: the screen degrades to the full-page error rather than to a cached launchpad.
-§ 12's rule that "a network failure never replaces active capture with a full-screen error" does not
-strictly bind — this is not capture — but the calm-state contract in the same section is unmet.
+`S-OFFLINE-READ` is split here — `regimenRepository` is cache-backed and `lib/history` is one of the
+eight uncached modules that row names, and the uncached half wins. `S-STALE` never surfaces: when the
+cache *does* serve Zone B the user is not told. § 12's rule that "a network failure never replaces active
+capture with a full-screen error" does not strictly bind — this is not capture — but the calm-state
+contract in the same section is unmet.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is dereferenced unconditionally
-(`PracticeMenuPage.jsx:60,67`), so there is no anonymous rendering path. `useOnboardingGate` diverts a
-never-onboarded (zero-bag) user to `/onboarding` before this screen mounts.
-`useCrashRecoveryRedirect` may redirect a relaunched PWA past this screen into an active capture route.
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`). `user.id` is dereferenced
+unconditionally (`PracticeMenuPage.jsx:60,67`), so there is no anonymous rendering path.
+`useOnboardingGate` diverts a never-onboarded (zero-bag) user to `/onboarding` before this screen mounts
+(`S-ONBOARD`). `useCrashRecoveryRedirect` may redirect a relaunched PWA past this screen into an active
+capture route; the resume hero is this screen's share of `S-RECOVERY`, and per that row it carries no
+explanation of *why* the session paused. `S-GUEST` is not observed here — per that row `AuthPage` is its
+only consumer, and nothing on this page renders differently for an anonymous user.
 
-**Interlock.** **N/A** — this screen enforces no cap. The 100-putt ceiling belongs to `routine-builder`
-and the 35-disc cap to the DISCS section.
+**Interlock.** **N/A** — this screen enforces no cap, so neither `S-INTERLOCK-CAP` nor `S-INTERLOCK-ACTIVE`
+is presented. The 100-putt ceiling belongs to `routine-builder` and the 35-disc cap to the DISCS section.
+Note that `S-INTERLOCK-ACTIVE` names `play-root` as an affected screen: launching from here during a live
+round is the entry point to the confirmation flow that never reaches the UI.
 
-**Destructive.** `Sign out` is the only irreversible control and has no confirmation step. It sits in the
-page header, one tap away, beside the stats shortcut. Not a § 12 violation on its face (§ 12's rule is
-that destructive actions do not sit beside *scoring* actions), but it is the only destructive control in
-the PLAY section and it is unguarded.
+**Destructive.** `Sign out` is the only irreversible control and has no confirmation step — no
+`S-CONFIRM`, no `S-CONFIRM-PHRASE`. It sits in the page header, one tap away, beside the stats shortcut.
+Not a § 12 violation on its face (§ 12's rule is that destructive actions do not sit beside *scoring*
+actions), but it is the only destructive control in the PLAY section and it is unguarded.
 
-Shared state behavior would normally be referenced by id from `STATE_MATRIX.md`; that file does not exist
-(`_corrections/play-screens.md` P-10), so the states above are described inline.
+Shared-state rows: `S-LOAD` (two independent `Loading...` regions rather than one), `S-ERR-BLOCK` —
+`PracticeMenuPage.jsx:137` is one of the nineteen whole-screen bare errors that row counts — `S-RETRY`
+(absent), `S-EMPTY`, and `S-OFFLINE-READ`. See `STATE_MATRIX.md`. This screen's one divergence from
+`S-ERR-BLOCK` is that a *partial* failure still triggers it: a history outage blanks a launchpad that
+the Dexie regimen cache could have served.
 
 ## 7. Dependencies
 
@@ -394,18 +415,7 @@ relaunch → verify the crash-recovery hero. Offline load with a warm Dexie regi
 - **Commit:** `fix: one h1 per screen in the PLAY section`
 - **Blocked by:** nothing; see `_corrections/play-screens.md` P-7.
 
-#### T-play-root-3 — Write `docs/ui/STATE_MATRIX.md` or drop its references
-
-- **Capability:** `docs`
-- **Touches:** `docs/ui/STATE_MATRIX.md`, `docs/ui/TEMPLATE.md`, `docs/ui/README.md`,
-  `docs/ui/TASK_FORMAT.md`
-- **Done when:** Either the file exists with ids the screen documents can cite (starting with the
-  `S-EMPTY` id `TASK_FORMAT.md:93` already references), or all three references are removed and
-  `TEMPLATE.md` § 7 tells authors to describe states inline.
-- **Verify:** `grep -rn STATE_MATRIX docs/` resolves to an existing file, or returns nothing.
-- **Commit:** `docs: add the UI state matrix`
-
-#### T-play-root-4 — Give the confidence-map shortcut an accessible name
+#### T-play-root-3 — Give the confidence-map shortcut an accessible name
 
 - **Capability:** `ui-routine`
 - **Touches:** `src/pages/PracticeMenuPage.jsx`
@@ -435,8 +445,9 @@ relaunch → verify the crash-recovery hero. Offline load with a warm Dexie regi
 4. **`Sign out` lives on two PLAY pages and nowhere else in the section.** Here and on
    `regimen-select` (`RegimenSelectPage.jsx:45`). Settings owns account actions elsewhere. Is this
    deliberate or leftover?
-5. `_corrections/play-screens.md` P-7 (double `<h1>`) and P-10 (missing `STATE_MATRIX.md`) both touch
-   this screen.
+5. `_corrections/play-screens.md` P-7 (double `<h1>`) touches this screen, as does
+   `_corrections/state-matrix.md` C-1 (`ToastHost` is shell-owned but inert, so the `S-TOAST` behaviors
+   § 11 requires cannot fire).
 
 ## 13. Blueprint divergence
 

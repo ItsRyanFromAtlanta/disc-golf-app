@@ -36,8 +36,13 @@ onboarding).
 | `practice-stats` | `/practice/stats` | `ConfidenceMapPage` | standard | ✓ | [✅](screens/practice-stats.md) |
 | `notifications` | `/notifications` | `NotificationsPage` | standard | ✓ | [✅](screens/notifications.md) |
 
-`notifications` carries `section: 'play'` but sits outside the `/practice` tree — it is the shared
-notification destination reachable from the global header.
+`notifications` carries `section: 'play'` but sits outside the `/practice` tree.
+
+**It is also unreachable in-app.** The route is declared at `App.jsx:68`, but nothing navigates to it:
+the header bell opens `NotificationSheet`, and that sheet routes to each notification's own destination
+via `notificationDestination`, never to `/notifications`. The page is reachable only by typing the URL.
+An earlier revision of this file described it as "reachable from the global header" — that is true of the
+sheet, not the route. See `_corrections/play-screens.md` P-4.
 
 ## DISCS section
 

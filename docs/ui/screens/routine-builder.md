@@ -217,9 +217,15 @@ rendered. This is the least offline-tolerant screen in the PLAY section, which i
 
 ## 6. Flow paths
 
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
+
 **Happy path.** Arrive → Stage 1 seeded from `blankStage()` (20 ft, 10 putts, no pressure) → type a name
 → toggle bonuses → adjust or add stages → totalizer updates live → `Save & Launch` → routine and sets
-insert → `navigate` replaces this route with the run route.
+insert → `navigate` replaces this route with the run route. The in-flight save is `S-SAVING`
+(`RoutineBuilderPage.jsx:166` — the label swaps to `Saving...` and both save buttons disable), which is
+the hand-rolled page-owned variant that row describes rather than the `EditableSection` implementation.
+It is announced to nobody: there is no `aria-live` region on the totalizer.
 
 **Clone path.** Arrive with `?clone=<id>` → `fetchRegimenWithSets` → name becomes `{name} (copy)`, one
 stage per set, `distanceFt = distance_feet_min`, `putts = reps_required`,
@@ -239,36 +245,51 @@ documented ways:
    `makes`-scored drill (`scoreDrillStage` in `drillEngine.js:41-47` returns `points = makes`) into a
    10-points-per-make scored regimen with different completion semantics. The clone is not the same drill.
 
-**First run / empty.** With no `?clone`, state starts as one `blankStage()`. The screen is never empty.
+**First run / empty.** `S-EMPTY` is **not applicable** — this is a form, not a collection view, and the
+row's grid marks it ➖. With no `?clone`, state starts as one `blankStage()`. The screen is never empty.
 `stages.length === 0` is unreachable through the UI — `stage-delete` renders only when
 `stages.length > 1` — so the `stages.length === 0` term in `saveDisabled` and the `stages.length === 0`
 guard in `canAddStage` are both defensive. Note that if the array *could* empty,
 `addStage()` would spread `undefined` (`RoutineBuilderPage.jsx:77`) and push `{}` — a stage with
 undefined `distanceFt` and `putts`, which would make `totalPutts` return `NaN`.
 
-**Error.** Both failure modes render inline above the form; the form remains fully editable and the
-user's work is preserved. This is the correct pattern and is better than `play-root`'s full-page
-replacement. A clone-fetch failure leaves the default single blank stage in place, so the user silently
-gets a new routine instead of a copy — the only signal is the error text.
+**Error.** `S-ERR-INLINE` (`RoutineBuilderPage.jsx:111`). Both failure modes render inline above the
+form; the form remains fully editable and the user's work is preserved. This screen contributes no
+`S-ERR-BLOCK` instance — the correct pattern, and better than `play-root`'s full-page replacement. Per
+that row's caveat, the message is styled `.form-error` even when it describes a benign clone miss rather
+than a failure. A clone-fetch failure leaves the default single blank stage in place, so the user
+silently gets a new routine instead of a copy — the only signal is the error text. `S-RETRY` is satisfied
+only incidentally: re-tapping `Save & Launch` re-issues the write, but nothing retries the clone read.
 
-**Offline.** As § 5.
+**Offline.** As § 5. `S-OFFLINE-READ` is **unimplemented** here — the clone prefill goes to `lib/regimens`
+directly rather than through `regimenRepository`, so it has no Dexie fallback — and there is no
+`S-OFFLINE-WRITE` path either: `createCustomRegimen` is a raw Supabase write with no outbox, so an
+offline save fails outright and none of § 12's four calm labels can be shown. This is the least
+offline-tolerant screen in the PLAY section.
 
-**Auth / guard.** `ProtectedRoute` gates the shell. `user.id` is read only inside `handleSave`
-(`RoutineBuilderPage.jsx:88`), so the form renders before auth matters — but there is no anonymous path
-because the shell already requires a session.
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`). `user.id` is read only inside
+`handleSave` (`RoutineBuilderPage.jsx:88`), so the form renders before auth matters — but there is no
+anonymous path because the shell already requires a session.
 
-**Interlock.** The 100-putt ceiling, dissected in § 4. Summary: `add-stage` is correctly gated;
-`stage-putts` and both save buttons are not; the database backstop is a trigger whose multi-row behavior
-is untested.
+**Interlock.** `S-INTERLOCK-CAP`, and this screen is that row's routine-ceiling case. The 100-putt
+ceiling is dissected in § 4. Summary, matching the row exactly: `add-stage` is correctly gated
+(`RoutineBuilderPage.jsx:150-152`, with the reason `(100-putt max)`); `stage-putts` and both save buttons
+are not, because `saveDisabled` (`:100`) checks only `saving`, the name, and stage count; the database
+backstop is a trigger whose `23514` maps to `This routine exceeds the 100-putt ceiling.` and whose
+multi-row behavior is untested. Per the row, the button lies about being enabled.
 
-**Destructive.** Three unconfirmed destructive paths: `stage-delete` removes a stage immediately;
-`Cancel`, shell Back, and a PLAY tab re-tap all discard the entire draft with no prompt.
+**Destructive.** Three unconfirmed destructive paths — no `S-CONFIRM` instance exists on this screen,
+which is a divergence from that row in the direction of *less* protection, not more: `stage-delete`
+removes a stage immediately; `Cancel`, shell Back, and a PLAY tab re-tap all discard the entire draft
+with no prompt.
 `PHASE_A_ARCHITECTURE.md` § 12 requires that "unsaved text survives accidental dismissal" — that rule is
 scoped to sheets, so it does not strictly bind here, but the spirit is unmet: the only free-text field in
 the routine is lost on a stray back tap.
 
-`STATE_MATRIX.md` does not exist (`_corrections/play-screens.md` P-10), so these states are described
-inline.
+Shared-state rows: `S-SAVING` (`Saving...` on the primary CTA), **`S-ERR-INLINE`** (correctly
+implemented — the error never replaces the form), **`S-INTERLOCK-CAP`** (this screen is that row's
+routine-ceiling case), `S-CONFIRM` (**absent** — three destructive paths, no confirmation), and
+`S-OFFLINE-WRITE` (**absent** — no outbox). See `STATE_MATRIX.md`.
 
 ## 7. Dependencies
 
@@ -466,8 +487,7 @@ offline → assert the draft survives. No automated browser E2E suite exists
 5. **Should `estimateDifficulty`'s output be visible?** The builder writes a 1–5 difficulty that shows up
    as a star badge on both picker screens, but never shows the user what it will be.
 6. `_corrections/play-screens.md` P-1 (no `total_putts` CHECK), P-2 (partial app-side interlock), P-3
-   (trigger unverified), P-6 (archived orphans), P-7 (double `<h1>`), and P-10 (missing
-   `STATE_MATRIX.md`) all touch this screen.
+   (trigger unverified), P-6 (archived orphans), and P-7 (double `<h1>`) all touch this screen.
 
 ## 13. Blueprint divergence
 

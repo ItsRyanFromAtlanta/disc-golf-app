@@ -152,9 +152,18 @@ Identical to `regimen-active` — same hook, same outbox, same calm states. See 
 
 ## 6. Flow paths
 
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
+
 **Happy path.** `READY_DEFAULT` → pick a distance preset or accept the suggestion → `handleStart`
 mints a session id → `ACTIVE_SESSION` → capture → optionally `handleNewDistance` any number of times →
 `handleEndSession` → `phase = 'summary'`.
+
+**Today's session list.** The one ordinary read-and-render region on the page, and the only place the
+generic loading/empty rows apply: `S-LOAD-PARTIAL` at `FreeformLogPage.jsx:638` (an in-body
+`<p className="loading">`, never an early return, so capture is never blocked by it) and `S-EMPTY` at
+`:640` — `No putts logged yet today.`, a bare `<p>` rather than the shared `.empty-state` block, which
+is that row's documented divergence.
 
 **New distance.** The freeform-only lifecycle move. Closes the current distance as a summary row and
 opens another within the same parent session — the reason a freeform session yields multiple summary
@@ -163,10 +172,21 @@ rows without a predetermined plan.
 **Pursuit deep link.** Arrive with `?distance=33`, and `pursuitDistance` seeds the starting distance.
 Trophy Room's badge-closing drill depends on this; changing the parameter name breaks it silently.
 
-**Crash recovery, diagnostic miss, offline, fatigue.** All identical to `regimen-active` § 6.
+**Crash recovery, diagnostic miss, offline, fatigue.** All identical to `regimen-active` § 6. Three rows
+attach: `S-RECOVERY` (the InstantLaunch buffer rehydrates this route with no network read; per that row
+the missing half is that recovery never explains *why* it paused), `S-OFFLINE-WRITE` (capture is
+outbox-backed and durable — **except** the fatigue check-in at `FreeformLogPage.jsx:402`, which that row
+marks `data-risk`: `fatigueCheckinRepository.record` has no outbox and no flush, the call site discards
+the returned `sync_state`, and the check-in is stranded on-device with no indication), and `S-SYNC`,
+which this screen **diverges** from — `CanvasContextBar` renders `Pending`, `Syncing...`, `Retrying...`,
+and `Sync failed`, only one of which is one of § 12's four labels, and `.canvas-sync-pill` sets no
+`min-width`, so the pill reflows as the status changes.
 
-**Error.** An error renders inline **above** the launcher rather than replacing the page — better than
-`regimen-active`'s pre-start full-page error, and the pattern worth standardizing on.
+**Error.** `S-ERR-INLINE` at `FreeformLogPage.jsx:491`. An error renders inline **above** the launcher
+rather than replacing the page — this screen contributes **no** `S-ERR-BLOCK` instance, unlike
+`regimen-active`'s pre-start full-page error, and it is the pattern worth standardizing on. `S-RETRY` is
+still absent: there is no affordance to re-run a failed read, only whatever the next capture action
+retries incidentally.
 
 **No abandon concept.** A freeform session has nothing to complete, so ending is always just ending.
 `SessionReport` receives `completed={null}` and `totalScore={null}` and omits both.

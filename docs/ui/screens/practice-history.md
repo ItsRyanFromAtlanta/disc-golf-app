@@ -159,7 +159,7 @@ newest-first (`history.js:181`); it would silently produce duplicate day heading
 | `ec-measure` (regimen) | text | `{total_score} pts`, or `Awaiting sync` | — | — | — | `Awaiting sync` when the `putting_regimen_runs` row has not arrived |
 | `ec-state` | badge | `Incomplete` / `Completed` | — | — | — | freeform renders a badge **only when incomplete**; regimen renders one always, `zone-badge` vs `abandoned-badge` |
 | `ec-pb` | badge | `PB` | present / absent | — | — | regimen: `regimenPBRunIds` — a completed run that beat every earlier run of the same regimen. Freeform: `distancePBSessionIds` — needs `DISTANCE_PB_MIN_ATTEMPTS` (10) attempts at a distance |
-| `ec-sync` | badge | `Saved on device` / `Needs attention` | pending / needs_attention / **nothing** | — | — | `synced` and `syncing` render `null` — see § 8 and `_corrections/play-screens.md` P-8 |
+| `ec-sync` | badge | `Saved on device` / `Needs attention` | pending / needs_attention / **nothing** | — | — | `synced` and `syncing` render `null` — see § 8 and `STATE_MATRIX.md` `S-SYNC` |
 | `ec-tags` | text | `#{n}` | present / absent | — | — | when the session or run carries a non-empty `tags` array |
 | `ins-form` | dl row | `{pct} vs {pct} ({lo}–{hi}) lifetime` | — | — | — | the lifetime figure carries a Wilson band **only when lifetime attempts < 30** |
 | `ins-clutch` | dl row | `+7 pts (pressure 71% vs regular 64%)`, or `—` | — | — | — | `—` when `pressureDifferential(...).differential` is null |
@@ -241,44 +241,73 @@ The sync surface is partial. `useHistoryRecovery` starts a `createSyncScheduler`
 reloads history whenever the scheduler reports `SYNCED` (`HistoryPage.jsx:120-122`). Of the four calm
 states in `PHASE_A_ARCHITECTURE.md` § 12, this screen can display **`Saved on Device`** (as
 `Saved on device`) and **`Needs Attention`** (as `Needs attention`) per row, and neither `Syncing` nor
-`Synced` anywhere; the badge returns `null` for those, reserving no layout space. Logged as
-`_corrections/play-screens.md` P-8.
+`Synced` anywhere; the badge returns `null` for those, reserving no layout space. `STATE_MATRIX.md`
+`S-SYNC` records this as one of five sync vocabularies in the app; `_corrections/state-matrix.md` C-2 is
+the correction.
 
 ## 6. Flow paths
 
-**Happy path.** Arrive from `View all` → `Loading...` → stat strip, filter chips, day-grouped rows, and
-insights render → tap a row → `/practice/history/{type}/{id}`.
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
 
-**First run / empty.** With no practice at all, `derived` still resolves (all the pure functions handle
-empty input), so the stat strip renders four zeros, the filter chips render, `No sessions yet.` replaces
-the row list, and all five insight rows render `—`. The screen is informative rather than blank, but it
+**Happy path.** Arrive from `View all` → `S-LOAD` (`HistoryPage.jsx:179`, the plain `Loading...`
+early-return variant, silent to assistive technology like all 24) → stat strip, filter chips,
+day-grouped rows, and insights render → tap a row → `/practice/history/{type}/{id}`.
+
+**First run / empty.** `S-EMPTY` (`HistoryPage.jsx:226`) — a bare `<p>` reading `No sessions yet.`, not
+the shared `.empty-state` block. With no practice at all, `derived` still resolves (all the pure
+functions handle empty input), so the stat strip renders four zeros, the filter chips render,
+`No sessions yet.` replaces the row list, and all five insight rows render `—`. Those `—` cells are
+`S-INSUFFICIENT`, not `S-EMPTY`: the same helper widens a percentage into a Wilson interval below
+`WILSON_MIN_N_FOR_HIDING` (`HistoryPage.jsx:32-38`). The screen is informative rather than blank, but it
 does spend four tiles and five rows saying nothing — there is no dedicated first-run treatment.
 
-**Filtered-empty.** Selecting `Regimens` with only freeform history shows `No sessions yet.` — the same
-string as a genuinely empty history, with no hint that a filter is active. A real defect for a user who
-forgot the chip is set.
+**Filtered-empty.** `S-EMPTY-FILTER`, and this screen is that row's primary example. Selecting
+`Regimens` with only freeform history shows `No sessions yet.` — the same string as a genuinely empty
+history, with no hint that a filter is active. A real defect for a user who forgot the chip is set: the
+row's finding is that it actively misinforms, telling a user with a year of sessions that they have none.
 
-**Error.** Any `fetchHistory` rejection renders `<p class="form-error">{message}</p>` **as the entire
-page** (`HistoryPage.jsx:178`) — no header, no retry, no navigation. A `restore` failure in the `deleted`
-branch routes into the same state, replacing a list the user was working in. Same defect class as
-`play-root` and `disc-detail`.
+**Error.** `S-ERR-BLOCK` (`HistoryPage.jsx:178`) with **no** `&& !data` guard — one of the thirteen
+unguarded instances that row counts. Any `fetchHistory` rejection renders
+`<p class="form-error">{message}</p>` **as the entire page** — no header, no navigation — and `S-RETRY`
+has no read instance here. A `restore` failure in the `deleted` branch routes into the same state,
+replacing a list the user was working in. Same defect class as `play-root` and `disc-detail`. The one
+retry control on the page is `Retry activity sync` (`:273`), which is `S-SYNC-ATTENTION`'s explicit
+terminal-failure clear, not a read retry — that row is the app's reference implementation and this screen
+is one of its two surfaces.
 
-**Offline.** As § 5: full-page error. Note the asymmetry — a *write* made offline survives (the outbox
-holds it and `SyncBadge` shows `Saved on device` once the list can be fetched again), but the *read* does
-not.
+**Offline.** `S-OFFLINE-READ` **fails outright**: `lib/history` is one of the eight uncached modules that
+row names, and `fetchHistory` (`history.js:40-42`) throws on any of its three queries before the Dexie
+hydration in its `try` block is reached. As § 5: full-page error. Note the asymmetry the row calls out —
+a *write* made offline survives (`S-OFFLINE-WRITE`, outbox-backed) and `SyncBadge` shows `Saved on device`
+once the list can be fetched again, but the *read* does not, so the user is least able to see their
+unsynced work exactly when they most need to.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; `user.id` is dereferenced in `loadHistory`
-(`HistoryPage.jsx:109`). No anonymous path.
+**Sync labelling.** **Diverges from `S-SYNC`.** `SyncBadge` (`HistoryPage.jsx:53-58`) is the second of
+five competing vocabularies: it emits `Saved on device` and `Needs attention`, has no `Syncing` state,
+and **returns `null` for `synced`**, so the badge and its layout space vanish — against § 12's verbatim
+requirement of stable reserved space. `.history-sync-badge` (`App.css:1141-1151`) sets no `min-width`.
 
-**Interlock.** **N/A** — no cap is enforced here. The 30-day Recently Deleted window is a visibility
-policy, not an interlock, and it governs the other branch.
+**Incomplete rows.** `S-INCOMPLETE` — `.abandoned-badge` renders `Incomplete` (`HistoryPage.jsx:76,90-92`)
+and `produceActivityReviewNotifications` badges one actionable notification per such activity. Per the
+row, `activities.needs_review` is selected by `fetchHistory` (`history.js:20`) and rendered by nothing,
+here included.
 
-**Destructive.** **N/A on this branch.** No delete, hide, or clear control renders when `deleted` is
-false. Hiding is initiated from `practice-history-detail` behind a `window.confirm`; restoring is on
-`practice-history-deleted`.
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`); `user.id` is dereferenced in
+`loadHistory` (`HistoryPage.jsx:109`). No anonymous path.
 
-`STATE_MATRIX.md` does not exist (`_corrections/play-screens.md` P-10), so these states are described
-inline.
+**Interlock.** **N/A** — no cap is enforced here, so `S-INTERLOCK-CAP` has no instance. The 30-day
+Recently Deleted window is a visibility policy, not an interlock, and it governs the other branch.
+
+**Destructive.** **N/A on this branch** — no `S-CONFIRM` instance. No delete, hide, or clear control
+renders when `deleted` is false. Hiding is initiated from `practice-history-detail` behind a
+`window.confirm`; restoring is on `practice-history-deleted`. `S-GHOST` likewise belongs to the other
+branch: `.history-row-ghost` is applied only when `deleted` is true (`HistoryPage.jsx:236`).
+
+Shared-state rows: `S-LOAD`, `S-EMPTY`, **`S-EMPTY-FILTER`** — this screen is that row's primary
+example, `HistoryPage.jsx:225` showing `No sessions yet.` even when sessions exist behind an active
+filter — plus `S-INSUFFICIENT` (via `pctWithBand`), `S-ERR-BLOCK`, `S-RETRY` (absent for reads),
+`S-OFFLINE-READ`, `S-SYNC`, and `S-INCOMPLETE`. See `STATE_MATRIX.md`.
 
 ## 7. Dependencies
 
@@ -331,7 +360,7 @@ Beyond the § 12 baseline:
 - **Gap — `ec-sync` reserves no layout space and omits two of four states.**
   `PHASE_A_ARCHITECTURE.md:195-196` requires stable layout space and all four calm states; `SyncBadge`
   returns `null` for `synced` and never renders `Syncing`. Rows reflow as sync completes.
-  `_corrections/play-screens.md` P-8.
+  `STATE_MATRIX.md` `S-SYNC`; `_corrections/state-matrix.md` C-2.
 - **Gap — `row-link` contains five to seven sibling `<span>`s with no internal structure.** The link's
   accessible name is the concatenation of all of them, e.g. "Freeform 18-25 ft 12/16 PB #2", read as one
   run-on string. No `aria-label` summarises it.
@@ -423,7 +452,8 @@ suite exists (`PHASE_A_ARCHITECTURE.md` § 9).
 - **Verify:** `npm run lint`, plus a manual check that a row's height and width are stable across a
   pending → synced transition.
 - **Commit:** `fix: render every calm sync state in history rows`
-- **Blocked by:** nothing; see `_corrections/play-screens.md` P-8.
+- **Blocked by:** `_corrections/state-matrix.md` C-2, which must first settle which of two conflicting
+  `PHASE_A_ARCHITECTURE.md` lines defines the label set.
 
 #### T-practice-history-2 — Distinguish a filtered-empty list from an empty history
 
@@ -470,8 +500,9 @@ suite exists (`PHASE_A_ARCHITECTURE.md` § 9).
 4. **The `deleted` branch computes five insights and a stat strip it never renders.** `derived`
    (`HistoryPage.jsx:124-167`) runs unconditionally. Harmless at current volume, wasteful in principle,
    and a source of confusion when reading the component.
-5. `_corrections/play-screens.md` P-7 (double `<h1>`), P-8 (calm states), P-9 (metric eligibility), P-10
-   (missing `STATE_MATRIX.md`), and P-11 (`—` vs `Insufficient data`) all touch this screen.
+5. `_corrections/play-screens.md` P-7 (double `<h1>`), P-9 (metric eligibility), and P-11 (`—` vs
+   `Insufficient data`) touch this screen, as does `_corrections/state-matrix.md` C-2 (the five sync
+   vocabularies).
 
 ## 13. Blueprint divergence
 

@@ -178,8 +178,14 @@ an online one. Tracked in § 12.
 
 ## 6. Flow paths
 
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
+
 **Happy path.** Arrive → `Loading...` → groups render → read a routine's scoring knobs → tap `Start` →
-`/practice/regimens/:id/run` under the ACTIVE shell.
+`/practice/regimens/:id/run` under the ACTIVE shell. The spinner is `S-LOAD` (`RegimenSelectPage.jsx:54`)
+but **diverges** from the row's dominant shape: it is an in-body conditional keyed on an explicit
+`loading` flag, not an early return, so the header and back link stay on screen while it shows. Like all
+24 instances it carries no `aria-live`, `role="status"`, or `aria-busy`.
 
 **First run / empty.** A new account sees Classic drills and Scored regimens (both seeded system rows
 from `20260717003000_phase_d4_classic_drills.sql` and `20260717010000_phase_d4_clutch_simulator.sql`) and
@@ -189,10 +195,14 @@ gets no signal that custom routines exist. Contrast `play-root`, which shows
 `No custom routines yet. Build one →`.
 
 If `regimenRepository.list` resolves to `[]` (possible only if RLS returns nothing and the cache is
-empty), the page renders the header, the back link, and **nothing else** — no empty state.
+empty), the page renders the header, the back link, and **nothing else** — no empty state. This screen is
+one of the fourteen page components that has **no** `S-EMPTY` branch at all; the row's grid marks it ❌,
+and this document confirms it against `RegimenSelectPage.jsx:18`.
 
-**Error.** A list rejection renders `st-error` inline above an empty group region; the header and back
-link survive, so the user can leave. This is better behavior than `play-root`'s full-page replacement.
+**Error.** `S-ERR-INLINE` (`RegimenSelectPage.jsx:55`). A list rejection renders `st-error` inline above
+an empty group region; the header and back link survive, so the user can leave. No `S-ERR-BLOCK` instance
+exists on this screen, which is better behavior than `play-root`'s full-page replacement. `S-RETRY` is
+absent as it is everywhere: leaving and re-entering the route is the only way to re-issue the read.
 
 A second error path is not surfaced at all: because archived routines are listed, a user can `Start` an
 archived routine — including the empty orphan `createCustomRegimen` leaves behind when a set insert fails
@@ -200,21 +210,26 @@ archived routine — including the empty orphan `createCustomRegimen` leaves beh
 (`drillEngine.js:17` — "A drill needs at least one station."), so the failure lands on
 `regimen-active` rather than here.
 
-**Offline.** As § 5. The list survives from cache; the `Last time` badge does not.
+**Offline.** As § 5. The list survives from cache — `S-OFFLINE-READ` is satisfied here through
+`regimenRepository`'s Dexie fallback, one of the few PLAY routes for which it is — while the `Last time`
+badge, which has no cache, does not. `S-STALE` is the gap: the cached list is presented as though it were
+live, with none of § 12's four calm labels, so this screen is one of the fifteen that row names.
 
-**Auth / guard.** `ProtectedRoute` gates the shell; `user.id` is dereferenced unconditionally
-(`RegimenSelectPage.jsx:22,37`). `useOnboardingGate` runs first. `useCrashRecoveryRedirect` can redirect
-past this screen on a PWA relaunch.
+**Auth / guard.** `ProtectedRoute` gates the shell (`S-AUTH-REQUIRED`); `user.id` is dereferenced
+unconditionally (`RegimenSelectPage.jsx:22,37`). `useOnboardingGate` runs first (`S-ONBOARD`).
+`useCrashRecoveryRedirect` can redirect past this screen on a PWA relaunch (`S-RECOVERY`).
 
-**Interlock.** **N/A** — no cap is enforced or displayed here. Notably the 100-putt ceiling is
-*invisible* on this screen: a routine's planned putt total is never shown, even though `card-rule`
-displays it for JYLY.
+**Interlock.** **N/A** — no cap is enforced or displayed here, so `S-INTERLOCK-CAP` has no instance.
+Notably the 100-putt ceiling is *invisible* on this screen: a routine's planned putt total is never
+shown, even though `card-rule` displays it for JYLY.
 
-**Destructive.** `Sign out` only, unguarded. There is no archive, delete, or edit action on this
-screen — routine deletion is a soft archive with no UI anywhere in the app.
+**Destructive.** `Sign out` only, unguarded — no `S-CONFIRM` instance. There is no archive, delete, or
+edit action on this screen; routine deletion is a soft archive with no UI anywhere in the app.
 
-`STATE_MATRIX.md` does not exist (`_corrections/play-screens.md` P-10), so these states are described
-inline rather than referenced by id.
+Shared-state rows: `S-LOAD`, **`S-ERR-INLINE`** — this screen is one of the few that gets it right, the
+error sitting above a list that still renders — `S-EMPTY` (**absent**: no empty state exists here at
+all), and `S-OFFLINE-READ` (satisfied through `regimenRepository`'s Dexie fallback). See
+`STATE_MATRIX.md`.
 
 ## 7. Dependencies
 
@@ -382,7 +397,7 @@ suite exists (`PHASE_A_ARCHITECTURE.md` § 9).
    (`MASTER_PROJECT_BLUEPRINT.md:296`). The set rows are already fetched and cached by
    `regimenRepository.list` and then discarded. Adding the total is a display change, not a query change.
 4. `_corrections/play-screens.md` P-5 (folding claim), P-6 (archived filter), P-7 (double `<h1>`), and
-   P-10 (missing `STATE_MATRIX.md`) all touch this screen.
+   all touch this screen.
 
 ## 13. Blueprint divergence
 
