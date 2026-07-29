@@ -172,7 +172,7 @@ Every layout key is present even when its hole array is empty.
 The read is **not user-scoped**. `CourseDetailPage.jsx` never calls `useAuth` — the only page in this
 batch that does not — and `fetchCourse` has no `created_by` predicate. Access is governed entirely by the
 select-all-authenticated RLS policy on `courses`/`layouts`/`holes`
-(`supabase/migrations/20260714150000_phase_c_round_logging_rls.sql:36-40`, `:64-68`, and the holes block
+(`supabase/migrations/20260714150000_phase_c_round_logging_rls.sql:36-40`, `:63-67`, and the holes block
 following). Any authenticated user can open any course by id.
 
 The single-flight effect (`CourseDetailPage.jsx:11-25`) is correctly written: it resets `course` and
@@ -258,7 +258,7 @@ as `T-course-detail-2`.
 
 **Destructive.** **N/A** — the screen deletes nothing. As with `courses-root`, the notable fact is the
 absence of the inverse: the J1 RLS migration ships no delete policy for `courses`, `layouts`, or `holes`
-(`20260714150000_phase_c_round_logging_rls.sql`, comment at :50), so nothing displayed on this page can
+(`20260714150000_phase_c_round_logging_rls.sql`, comment at :29), so nothing displayed on this page can
 be removed by anyone, including its creator.
 
 ## 7. Dependencies
@@ -279,7 +279,7 @@ be removed by anyone, including its creator.
   `holes_layout_hole_tee_uniq (layout_id, hole_number, tee_type)`. `tee_type`, `hazards`, and
   `strategy_notes` exist on the table and are **never displayed** by this screen or written by any.
 - RLS: select-all-authenticated on all three; update restricted to the parent course's creator for
-  `layouts` and `holes` (`20260714150000_phase_c_round_logging_rls.sql:73-95` and the holes block); no
+  `layouts` and `holes` (`20260714150000_phase_c_round_logging_rls.sql:75-95` and the holes block); no
   delete policy on any of them.
 
 ### Library
@@ -494,7 +494,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
 - **Done when:** a course's creator can set `distance_feet`, `tee_type`, `hazards`, and `strategy_notes`
   per hole, add and remove holes, and add a second layout — fulfilling `courses-new`'s "enrich its hole
   details later" promise; a non-creator sees the page read-only, matching the creator-only update policy
-  at `20260714150000_phase_c_round_logging_rls.sql:73-95`.
+  at `20260714150000_phase_c_round_logging_rls.sql:75-95`.
 - **Verify:** `npm test` for the write path plus a negative RLS test asserting a non-creator's update is
   rejected.
 - **Commit:** `feat: edit course layout holes`
@@ -523,8 +523,10 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
 4. **Who may edit a shared course?** RLS grants update to the parent course's `created_by` only. On a
    community catalog that means the first person to add a course owns its hole data forever, and everyone
    else sees `Distance —` with no way to improve it. The `disc_molds` precedent this policy mirrors is
-   insert-open/update-closed with no moderation model (`disc_locker_and_layouts_schema.sql:150-152`);
-   courses inherited the shape without the question being asked. Blocks `T-course-detail-7`.
+   insert-open/update-closed with no moderation model — `disc_locker_and_layouts_schema.sql:147-149`
+   says so in as many words: "no update/delete policy exists, so edits are closed (update-closed) until
+   a moderation model exists." Courses inherited that shape without the question being asked.
+   Blocks `T-course-detail-7`.
 5. **Should a course page show rounds played there?** The data is available — `rounds.course_id` is
    indexed and `useRoundList` already hydrates `round.course` — and it is the obvious content for a page
    that is currently a static reference sheet. `SCREEN_SPECS.md:69-72` (standing divergence #5) says
@@ -532,8 +534,8 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
 
 Filed corrections touching this screen:
 [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState` and
-the shared scroll key), CS-2 (this screen produces the second query-parameter contract), CS-3
-(`STATE_MATRIX.md` absent), CS-5 (`TEST_MAP.md` rows), CS-7 (activity pill).
+the shared scroll key), CS-2 (this screen produces the second query-parameter contract), CS-3 (`STATE_MATRIX.md`,
+since resolved), CS-5 (`TEST_MAP.md` rows), CS-7 (activity pill).
 
 ## 13. Blueprint divergence
 

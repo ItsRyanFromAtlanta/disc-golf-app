@@ -35,7 +35,17 @@ player answers "what is this disc, and how has it actually performed for me."
 | Out | Shell back control | Header, shell-owned | Standard shell behavior |
 | Out | Tab re-tap on DISCS | `TabBar` → `resolveSectionRoot('discs')` | Returns to `/bag` |
 
-`preserveNestedState` is `false`, so scroll position is not restored on return.
+**Scroll behavior — corrected 2026-07-29.** An earlier revision of this document claimed
+`preserveNestedState: false` means scroll position is not restored. That is wrong in both directions.
+
+`preserveNestedState` is **dead metadata**: it is declared on all 30 app routes and asserted in
+`routeMetadata.test.js`, but no runtime code reads it. `AppShell` restores scroll from `scrollKey`
+alone (`AppShell.jsx:52-61`).
+
+So scroll *is* restored here — and because every disc shares the single `scrollKey` `discs-detail`,
+scroll position **leaks between different discs**: open a disc, scroll down, go back, open a different
+disc, and it opens mid-page. The same applies to every parameterized route. See
+`_corrections/courses-screens.md` CS-1.
 
 ## 3. Layout
 

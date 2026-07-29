@@ -97,7 +97,7 @@ No-courses variant (replaces the entire form):
 
 There is no weather field, no target-score field, no player list, and no starting-hole choice. All four
 exist as schema columns or roadmap items — `rounds.weather_summary` and `rounds.target_score`
-(`supabase_schema.sql:108-109`) are never written by any screen, and weather and group scorecards are
+(`supabase_schema.sql:109-110`) are never written by any screen, and weather and group scorecards are
 named as later E2 items (`DEVELOPMENT_PLAN.md` § E2).
 
 ### 3b. Region outline (normative)
@@ -307,7 +307,7 @@ app (`rounds-root` § 12 question 4), so an accidental `Start round` on the wron
 - `rounds` — writes `id`, `user_id`, `course_id`, `layout_id`, `bag_id`, `bag_version_id`, `status`,
   `played_at`. `normalizeRoundFields` (`roundLog.js:24-40`) whitelists the writable columns, so
   `weather_summary`, `target_score`, `total_score`, `external_source`, and `external_ref` are permitted
-  by the layer and simply never sent by this screen. `layout_id` from
+  by the layer and simply never sent by this screen (`supabase_schema.sql:103-114`). `layout_id` from
   `disc_locker_and_layouts_schema.sql:104`; `bag_id` from `bags_schema.sql:53`; `bag_version_id` from
   `supabase/migrations/20260715183500_phase_b_disc_timelines_bag_versions.sql:77-78`.
 - `activities` — a `disc_golf_round` row is created with the round's own id. The composite FK
@@ -598,7 +598,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
 
 Filed corrections touching this screen:
 [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState`),
-CS-2 (this screen consumes the second query-parameter contract), CS-3 (`STATE_MATRIX.md` absent), CS-4
+CS-2 (this screen consumes the second query-parameter contract), CS-3 (`STATE_MATRIX.md`, since resolved), CS-4
 (§ J1's stated reuse), CS-5 (`TEST_MAP.md` omits `discLocker`), CS-6 (the PLAY hero mislinks an active
 round created here), CS-7 (activity pill), CS-9 (ADR 0001 scope vs inventory status).
 

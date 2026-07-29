@@ -492,7 +492,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
 
 Filed corrections touching this screen:
 [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1
-(`preserveNestedState`), CS-3 (`STATE_MATRIX.md` absent), CS-4 (§ J1's stated reuse — the "secondary
+(`preserveNestedState`), CS-3 (`STATE_MATRIX.md`, since resolved), CS-4 (§ J1's stated reuse — the "secondary
 tasks in sheets" ergonomics claim is not met here), CS-7 (activity pill).
 
 ## 13. Blueprint divergence

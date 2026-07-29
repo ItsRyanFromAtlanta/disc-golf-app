@@ -242,13 +242,13 @@ and counts toward the weekly report. See § 12 question 4.
 ### Schema
 
 - `rounds` — reads `id`, `course_id`, `played_at`, `status`, `total_score`, plus the hydrated `course`
-  relation. Base table at `supabase_schema.sql:103-115`; `layout_id`/`external_source`/`external_ref`
+  relation. Base table at `supabase_schema.sql:103-114`; `layout_id`/`external_source`/`external_ref`
   added by `disc_locker_and_layouts_schema.sql:104-107`; `bag_id` by `bags_schema.sql:53`;
   `bag_version_id` by `supabase/migrations/20260715183500_phase_b_disc_timelines_bag_versions.sql:77-78`.
   `rounds_user_id_idx` (`20260714150000_phase_c_round_logging_rls.sql:25-26`) backs the owner predicate;
   RLS is `for all using (auth.uid() = user_id)`.
 - `round_holes` — read per round through `loadRound`, for `score` and `hole_id` only. Owner-scoped
-  through the parent round (`supabase_schema.sql:135-143`, replaced by
+  through the parent round (`supabase_schema.sql:125-145`, replaced by
   `20260714150000_phase_c_round_logging_rls.sql:175-190`).
 - `courses`, `layouts`, `holes` — read as relations by `fetchRound`/`hydrateRounds`.
 - `rounds(id, user_id)` references `activities(id, user_id)` — the composite FK added by
@@ -502,7 +502,7 @@ E2 (`DEVELOPMENT_PLAN.md` § E2) owns these. Ordered by dependency.
 
 Filed corrections touching this screen:
 [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState`),
-CS-3 (`STATE_MATRIX.md` absent), CS-5 (`TEST_MAP.md` rows), CS-7 (activity pill).
+CS-3 (`STATE_MATRIX.md`, since resolved), CS-5 (`TEST_MAP.md` rows), CS-7 (activity pill).
 
 ## 13. Blueprint divergence
 

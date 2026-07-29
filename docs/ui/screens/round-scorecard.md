@@ -231,7 +231,7 @@ immediately, then merges the saved row back on success (`:135`). On failure the 
 notice appears — correct, because the outbox entry is genuinely durable.
 
 One durability hazard worth naming: the outbox payload is keyed on the row's `id`, but `round_holes`
-carries `unique (round_id, hole_id)` (`supabase_schema.sql:142`) while the upsert conflict target is
+carries `unique (round_id, hole_id)` (`supabase_schema.sql:133`) while the upsert conflict target is
 `id` alone (`roundLog.js:153`). Two devices scoring the same hole offline mint two different row ids for
 one `(round_id, hole_id)` pair; the second replay violates the unique constraint rather than upserting,
 the entry stays queued, and `flushRoundOutbox`'s bare `catch {}` (`:351-353`) leaves it there
@@ -294,7 +294,7 @@ the row-level rejection).
 - there is no `<form>` and no submit, so browser constraint validation never runs;
 - `persist` passes `event.target.value` through untouched (`:205`);
 - `localHole` (`roundRepository.js:32`) only does `Number(input.score)`;
-- `round_holes.score` is a plain nullable `int` with no `CHECK` (`supabase_schema.sql:138`).
+- `round_holes.score` is a plain nullable `int` with no `CHECK` (`supabase_schema.sql:129`).
 
 So `99`, `0`, and `-3` all save and all flow into `roundTotal` and `relativeToPar`. Contrast
 `SCREEN_SPECS.md` standing divergence #6, which sets the house standard for interlocks as "app-side
@@ -317,7 +317,7 @@ met here.
 - `rounds` — read only here (`course`, `layout`, `holes`, `round_holes` as hydrated by `fetchRound`).
   Never written by this screen; `total_score` and `status` are `round-summary`'s.
 - `round_holes` — the write target: `id`, `round_id`, `hole_id`, `score`, `disc_id`, `notes`
-  (`supabase_schema.sql:135-143`). `unique (round_id, hole_id)` at `:142` against an `onConflict: 'id'`
+  (`supabase_schema.sql:125-134`). `unique (round_id, hole_id)` at `:133` against an `onConflict: 'id'`
   upsert — see § 5 Writes. Owner-scoped through the parent round
   (`20260714150000_phase_c_round_logging_rls.sql:175-190`). The J1 groundwork made these rows
   sparse-nullable on purpose (`DEVELOPMENT_PLAN.md` § J1), which is what lets a partial card exist.
@@ -661,7 +661,7 @@ closes** — they change the capture surface the ADR is deciding about.
 
 Filed corrections touching this screen:
 [`_corrections/courses-screens.md`](../_corrections/courses-screens.md) CS-1 (`preserveNestedState` and
-the shared scroll key), CS-3 (`STATE_MATRIX.md` absent), CS-4 (§ J1's `DiscCard`/sheets reuse claim),
+the shared scroll key), CS-3 (`STATE_MATRIX.md`, since resolved), CS-4 (§ J1's `DiscCard`/sheets reuse claim),
 CS-5 (`TEST_MAP.md` rows), CS-6 (the PLAY hero mislinks the round this screen is capturing), CS-7
 (activity pill), CS-8 (`.round-turn-prompt` has no CSS).
 

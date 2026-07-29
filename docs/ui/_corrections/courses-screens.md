@@ -70,23 +70,50 @@ available course/default layout when the requested id is not in the fetched list
 
 ---
 
-## CS-3 — `STATE_MATRIX.md` is referenced by three documents and does not exist
+## CS-3 — `STATE_MATRIX.md` was missing when these seven were written — **since resolved**
+
+> **Status: resolved during this branch.** Kept as a record of why the seven COURSES documents describe
+> shared states inline, and as the follow-up task to convert them.
 
 **Where:** `docs/ui/TEMPLATE.md:130`, `docs/ui/README.md:29`, `docs/ui/TASK_FORMAT.md:93`
 
 **Claims:** `TEMPLATE.md` § 7 instructs authors to "Reference `STATE_MATRIX.md` rows by id instead of
 re-describing shared state behavior." `README.md:29` links it. `TASK_FORMAT.md:93`'s worked example
-cites a row id, `STATE_MATRIX S-EMPTY` — and the example is for `course-detail`, one of this batch.
+cites a row id, `STATE_MATRIX S-EMPTY` — and that example is for `course-detail`, one of this batch.
 
-**Reality:** `ls docs/ui/` returns `COMPONENT_LIBRARY.md`, `COPY_AND_TERMINOLOGY.md`, `LIB_API_INDEX.md`,
-`NAVIGATION_MAP.md`, `README.md`, `SCREEN_INVENTORY.md`, `TASK_FORMAT.md`, `TEMPLATE.md`, `TEST_MAP.md`.
-There is no `STATE_MATRIX.md` anywhere in the repository.
+**Reality at the time of authoring:** `ls docs/ui/` returned `COMPONENT_LIBRARY.md`,
+`COPY_AND_TERMINOLOGY.md`, `LIB_API_INDEX.md`, `NAVIGATION_MAP.md`, `README.md`, `SCREEN_INVENTORY.md`,
+`TASK_FORMAT.md`, `TEMPLATE.md`, `TEST_MAP.md`. No `STATE_MATRIX.md` existed anywhere in the repository,
+so the three references were dangling and there were no row ids to cite.
 
-**Consequence for this batch:** the seven COURSES documents describe loading, empty, error, and offline
-states inline rather than by row id. When `STATE_MATRIX.md` lands, those inline descriptions should be
-replaced with row references — they are duplication by necessity, not by choice.
+**Resolution:** `docs/ui/STATE_MATRIX.md` has since been authored on this same branch by a concurrent
+session, with its own corrections log at `_corrections/state-matrix.md`. The ids the COURSES documents
+would use now exist: `S-LOAD`, `S-LOAD-PARTIAL`, `S-SAVING`, `S-EMPTY`, `S-ERR-BLOCK`, `S-ERR-INLINE`,
+`S-RETRY`, `S-OFFLINE-READ`, `S-STALE`, `S-OFFLINE-WRITE`, `S-SYNC`, `S-SYNC-ATTENTION`,
+`S-INTERLOCK-CAP`, `S-INTERLOCK-ACTIVE`, `S-CONFIRM`, and others.
 
-**Proposed edit:** write `STATE_MATRIX.md`, or remove the three references until it exists.
+**Outstanding follow-up:** the seven COURSES documents were written before those ids existed and
+therefore describe loading, empty, error, offline, and sync states **inline** in their § 5 Offline and
+§ 6 Flow paths sections. Per `STATE_MATRIX.md` § "How to reference this from a screen document" rule 1,
+that is duplication, and duplication drifts. Each of the seven should be converted to cite the row id
+and record only its divergence. The mapping is mechanical — a representative sample:
+
+| Screen | Inline description | Row |
+|---|---|---|
+| `courses-root` | full-page `form-error` when `fetchCourses` rejects | diverges from `S-ERR-INLINE`; is `S-ERR-BLOCK` with no `S-RETRY` |
+| `courses-root`, `course-detail`, `rounds-root`, `round-start` | `.empty-state` block + CTA | `S-EMPTY` |
+| `rounds-root` | `Showing saved rounds from this device.` | `S-STALE` / `S-OFFLINE-READ`, styled as an error |
+| `round-scorecard` | `Saved on this device; it will retry when you reconnect.` | `S-OFFLINE-WRITE`; no standing `S-SYNC` state |
+| `round-scorecard` | `Saving…` / `Autosaves` | `S-SAVING`, with `Autosaves` not a state at all |
+| `round-summary` | `Round completed on this device; it will sync when you reconnect.` | `S-OFFLINE-WRITE` |
+| `round-summary` | `Finish round` with no confirmation | missing `S-CONFIRM` |
+| `round-start` | submit disabled with no reason | `S-INTERLOCK-ACTIVE`, unannounced |
+
+This is a `docs` task, not a rewrite: the observations in the seven documents are accurate, they are
+simply stated in prose where a row id would do.
+
+**Proposed edit:** none to `TEMPLATE.md`, `README.md`, or `TASK_FORMAT.md` — the file they reference now
+exists and their instructions are correct as written. The work is in the seven screen documents.
 
 ---
 

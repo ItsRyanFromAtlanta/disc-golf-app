@@ -220,7 +220,7 @@ an interlock.
 
 **Destructive.** **N/A** — nothing on this screen deletes, retires, or discards. Worth stating why: the
 J1 RLS migration deliberately ships **no delete policy** for `courses`
-(`20260714150000_phase_c_round_logging_rls.sql:31-53` — "there is deliberately no delete policy in J1"),
+(`20260714150000_phase_c_round_logging_rls.sql:29` — "there is deliberately no delete policy in J1"),
 so a course created by mistake cannot be removed from this directory by any user, including its creator.
 See § 12.
 
@@ -450,7 +450,7 @@ E2 ("audit and harden the existing course/layout and offline round routes rather
    affordance. Decide: community with provenance shown, or personal with a separate discovery surface.
 2. **A mistakenly created course cannot be deleted by anyone.** The J1 RLS migration ships no delete
    policy for `courses`, `layouts`, or `holes`
-   (`20260714150000_phase_c_round_logging_rls.sql`, comment at :50). Combined with question 1, one user's
+   (`20260714150000_phase_c_round_logging_rls.sql`, comment at :29). Combined with question 1, one user's
    typo is permanently visible to everyone. Needs either a creator-delete policy with a
    no-rounds-reference guard, or an explicit "courses are append-only" statement in `AGENTS.md`.
 3. **`err-inline`'s `error` term is dead code.** `CoursesPage.jsx:38` renders `{error || roundError}` but
@@ -468,7 +468,7 @@ E2 ("audit and harden the existing course/layout and offline round routes rather
    same behavior.
 
 Filed corrections touching this screen: [`_corrections/courses-screens.md`](../_corrections/courses-screens.md)
-CS-1 (`preserveNestedState`), CS-3 (`STATE_MATRIX.md` absent), CS-5 (`TEST_MAP.md` rows), CS-7 (activity
+CS-1 (`preserveNestedState`), CS-3 (`STATE_MATRIX.md`, since resolved), CS-5 (`TEST_MAP.md` rows), CS-7 (activity
 pill).
 
 ## 13. Blueprint divergence
