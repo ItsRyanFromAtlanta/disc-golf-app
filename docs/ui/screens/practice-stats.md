@@ -224,7 +224,7 @@ disagree; `_corrections/play-screens.md` P-9.
 This screen is where the project's statistical rules are most visible, and they are worth stating
 precisely because every other analytics surface should follow them:
 
-1. **`wilsonInterval(makes, attempts)` returns `null` when `attempts <= 0`** (`insights/wilson.js:5`).
+1. **`wilsonInterval(makes, attempts)` returns `null` when `attempts <= 0`** (`insights/wilson.js:6`).
    Callers must handle it. On this screen: `confidenceMap` never produces a zero-attempt band
    (`confidenceMap.js:31` skips them), `missTendency` passes `null` through explicitly
    (`missTendency.js:35`), and `ExperimentMarkerPanel.jsx:61` renders `—` for a null interval. Nothing

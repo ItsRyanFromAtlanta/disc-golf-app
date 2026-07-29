@@ -205,7 +205,7 @@ reaches this screen.
   percentage at `attempts >= WILSON_MIN_N_FOR_HIDING` (30), and the percentage **plus its 95% Wilson
   interval** below 30. The interval is shown precisely when the number is weakest — the opposite of
   hiding uncertainty.
-- `wilsonInterval` returns `null` when `attempts <= 0` (`insights/wilson.js:5`). `pctWithBand`'s
+- `wilsonInterval` returns `null` when `attempts <= 0` (`insights/wilson.js:6`). `pctWithBand`'s
   zero-attempt guard is what stops this screen from dereferencing that null.
 
 The insight rows themselves render `—` for a null statistic rather than `Insufficient data`; see

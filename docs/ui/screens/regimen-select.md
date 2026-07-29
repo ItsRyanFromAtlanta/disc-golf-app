@@ -333,7 +333,7 @@ suite exists (`PHASE_A_ARCHITECTURE.md` § 9).
 - **Touches:** `src/lib/regimens.js`, `src/pages/RegimenSelectPage.jsx`
 - **Done when:** A routine with `archived = true` does not appear in any group on `/practice/regimens`,
   matching `play-root`'s behavior (`PracticeMenuPage.jsx:127`) and the schema comment at
-  `layer1_foundation_schema.sql:90` ("The app filters archived out of pickers").
+  `layer1_foundation_schema.sql:91` ("The app filters archived out of pickers").
 - **Verify:** `npm test` with a `regimenRepository` case asserting archived rows are dropped, plus a
   manual check that a soft-archived routine disappears from both PLAY surfaces.
 - **Commit:** `fix: hide archived routines from the regimen picker`

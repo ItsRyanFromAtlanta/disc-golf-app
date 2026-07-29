@@ -177,7 +177,7 @@ canonical for launching a routine.
 `layer1_foundation_schema.sql:88-92`.
 
 **Reality:** archiving is the project's soft delete for routines — "The app filters archived out of
-pickers" (`layer1_foundation_schema.sql:90`). `PracticeMenuPage` honours it
+pickers" (`layer1_foundation_schema.sql:91`). `PracticeMenuPage` honours it
 (`.filter((r) => r.user_id === user.id && !r.archived)`). `RegimenSelectPage` does not: it groups
 everything `regimenRepository.list()` returns, and `fetchRegimensWithSets()`
 (`src/lib/regimens.js:3-19`) applies no `archived` predicate. `fetchCustomRegimens()`

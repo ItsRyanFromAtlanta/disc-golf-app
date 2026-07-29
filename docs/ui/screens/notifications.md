@@ -244,7 +244,7 @@ formatting, not an interlock.
 
 **Destructive.** **N/A** — nothing here deletes. `row-resolve` sets `resolved_at`, which removes the row
 from the list and the badge permanently: `dedupeNotifications` only matches unresolved rows
-(`notifications.js:32-38`) and the server's partial unique index is likewise scoped to
+(`notifications.js:32-45`) and the server's partial unique index is likewise scoped to
 `resolved_at is null`, so re-resolving is impossible and a resolved notification can be superseded by a
 freshly produced one with the same dedupe key. There is no undo and no archive view.
 

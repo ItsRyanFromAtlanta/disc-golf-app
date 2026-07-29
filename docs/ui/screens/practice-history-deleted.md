@@ -159,7 +159,7 @@ computing statistics over deleted practice — exactly the data `PHASE_A_ARCHITE
 metrics.
 
 **Statistical discipline.** `wilsonInterval` returns `null` at `attempts <= 0`
-(`insights/wilson.js:5`), and the one place this branch could hit that — `pctWithBand` — is not rendered
+(`insights/wilson.js:6`), and the one place this branch could hit that — `pctWithBand` — is not rendered
 here (it belongs to the Insights panel). The Wilson threshold `WILSON_MIN_N_FOR_HIDING` is imported but
 unused on this branch. The only statistic that reaches the screen is the `PB` badge, and its sample scope
 is wrong; see § 12.
