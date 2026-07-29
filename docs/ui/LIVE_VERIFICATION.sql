@@ -8,6 +8,64 @@
 -- Run these in the Supabase dashboard SQL editor. Each block is read-only
 -- except Q3, which is explicitly wrapped in a rollback-only transaction.
 -- Record the answers in docs/ui/CORRECTIONS_LEDGER.md and close the entries.
+--
+--
+-- ============================================================
+-- RUNBOOK — run in this order, not the order they appear below
+-- ============================================================
+--
+-- The blocks are numbered by topic. This is the order to actually run them,
+-- chosen so each step can short-circuit the next and the one destructive-
+-- looking probe goes last.
+--
+--   1st  Q5  Which migrations are applied
+--   2nd  Q2  profiles column grants
+--   3rd  Q1  Trigger existence
+--   4th  Q4  delete_own_account
+--   5th  Q3  Multi-row insert probe        <- only if Q1 found the putt-cap trigger
+--
+-- WHY THIS ORDER
+--
+-- Q5 first because it is one cheap query that can pre-answer two others. If
+--   20260727120000 is absent, Q4 is already answered. If the Layer 1 file
+--   never landed, Q1's result is predictable.
+--   CAVEAT: this repo has applied raw .sql from the dashboard at times, and
+--   those do not appear in supabase_migrations.schema_migrations. A missing
+--   row is weak evidence of absence; Q1 and Q4 test the objects directly and
+--   are authoritative where they disagree.
+--
+-- Q2 second because it is the highest-consequence unknown and depends on
+--   nothing. If those grants are missing, both Settings controls fail, and
+--   SettingsPage.jsx:39 renders page-replacing on any error — so the whole
+--   screen blanks, including the data export and account deletion panels.
+--   That converts a quiet grant omission into a broken App Review surface.
+--   Run it before deciding anything about a submission.
+--
+-- Q1 third because it settles what the documentation could not: the file-level
+--   adjudication (CORRECTIONS_LEDGER C-9) proved the schema FILES define
+--   enforce_bag_capacity, not that it was deployed. An empty result promotes
+--   DEFECT_REGISTER D-19 from a UX defect to a data-integrity one. It also
+--   gates Q3, because the same query reports the putting_regimen_sets trigger.
+--
+-- Q4 fourth because it is a yes/no on an App Review blocker, and Q5 may
+--   already have answered it. Cheap either way; run it to be certain, since
+--   IOS_READINESS and CURRENT_WORK have disagreed about this before.
+--
+-- Q3 last, and only if Q1 returned a putting_regimen_sets trigger. With no
+--   trigger there is nothing to probe and the 100-putt ceiling is app-side
+--   only — already the answer. Q3 also needs a real user id substituted and
+--   is the only block that writes anything, even though it rolls back. Do not
+--   run it first out of curiosity.
+--
+-- STOP CONDITIONS
+--
+--   Q2 returns false for either column  -> stop and fix the grant before any
+--                                          further App Review work.
+--   Q1 returns no bag_discs trigger     -> stop and re-rank D-19 before
+--                                          anyone acts on capacity behavior.
+--
+-- Both are cases where continuing down the list would mean planning on top of
+-- a wrong assumption.
 
 
 -- ============================================================
