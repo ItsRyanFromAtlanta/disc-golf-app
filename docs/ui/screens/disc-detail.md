@@ -203,16 +203,28 @@ loading state indefinitely (see § 6, Error path). No calm-state indicator from
 `EditableSection` → save → `upsertDisc` returns the updated row → view mode re-renders from it.
 
 **First run / empty.** A disc with no photos, no odometer events, no tags, and no bags renders every
-section with its own empty affordance: `bag-empty` copy, `Assigned: none`, and `Insufficient data`
-readouts in the contextual panel. The page itself is never empty — a disc always has identity fields.
+section with its own empty affordance: `bag-empty` copy (`S-EMPTY`, `DiscDetailPage.jsx:344` —
+`You don't have any bags yet.`, a bare `<p>` rather than `.empty-state`), `Assigned: none`, and
+`Insufficient data` readouts in the contextual panel. Those readouts are `S-INSUFFICIENT`, not
+`S-EMPTY`: `DiscProfileContext.jsx:5,9` is one of the row's named instances, and the row rates that
+state the strongest in the codebase. The page itself is never empty — a disc always has identity fields.
 
-**Error.** `loadAll()` rejection before the disc resolves renders `<p class="form-error">` **as the
-entire page** — no header, no retry control, no navigation. Any error after load renders inline and
-non-blocking. The pre-load case is a divergence from § 12's "a network failure never replaces active
-capture with a full-screen error"; this is not active capture, so the contract does not strictly bind,
-but the absence of a retry control is a real gap. See § 10.
+**Error.** `S-ERR-BLOCK` — `loadAll()` rejection before the disc resolves renders
+`<p class="form-error">` **as the entire page** — no header, no retry control (`S-RETRY`), no
+navigation. `DiscDetailPage.jsx:99` is the row's **canonical instance**, and it is one of the six
+guarded by `&& !data`, so a resolved disc wins over a later error. Any error after load renders inline
+and non-blocking (`S-ERR-INLINE`, `:115`). The pre-load case is a divergence from § 12's "a network
+failure never replaces active capture with a full-screen error"; this is not active capture, so the
+contract does not strictly bind, but the absence of a retry control is a real gap — `S-RETRY` is
+`contract-violation` app-wide and `T-disc-detail-1` is the row's named per-screen instance. See § 10.
 
-**Offline.** As § 5. Queued writes survive; primary reads do not.
+**Offline.** `S-OFFLINE-READ` — this screen is on the failing side: both `lib/discLocker` and
+`discProfileRepository` are among the eight modules with no cache, so primary reads throw straight into
+`S-ERR-BLOCK`. Queued writes survive (`S-OFFLINE-WRITE` via `discOdometerRepository` and
+`discPhotoRepository`, both outbox-backed, both the row's `none`-gap shape). **Diverges from `S-SYNC`:**
+`DiscOdometerManager.jsx:58` reuses the row's **fourth** vocabulary — `Saved on this device. It will
+sync when connectivity returns.` — a sentence rather than one of § 12's four labels, with no reserved
+layout space. As § 5.
 
 **Auth / guard.** `ProtectedRoute` gates the whole shell. `user.id` is dereferenced unconditionally in
 `loadAll()`, so this screen assumes an authenticated session and has no anonymous rendering path.

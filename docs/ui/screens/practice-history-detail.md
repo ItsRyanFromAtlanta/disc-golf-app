@@ -245,17 +245,27 @@ derivation at `HistoryDetailPage.jsx:150-157`.
 
 ## 6. Flow paths
 
-**Happy path.** Arrive from a History row → `Loading...` → all four requests resolve → the report renders
-→ add a tag → `Save notes & tags` → the button reads `Saved` and the audit event is queued.
+Shared state behavior is defined in `STATE_MATRIX.md`; this section cites row ids rather than restating
+them, per `TEMPLATE.md` § 7.
 
-**First run / empty.** A minimal activity — no putt events, no distance logs, no notes, no tags, no
+**Happy path.** Arrive from a History row → `S-LOAD` (`HistoryDetailPage.jsx:121`, keyed on
+`!entry || !activity` rather than an explicit flag, which is the majority shape that row describes) → all
+four requests resolve → the report renders → add a tag → `Save notes & tags` → `S-SAVING`, then the
+button reads `Saved` and the audit event is queued.
+
+**First run / empty.** `S-EMPTY` is **not applicable** — this is a detail view of a single record, and
+the row's grid marks it ➖. A minimal activity — no putt events, no distance logs, no notes, no tags, no
 context — still renders: the header, the date line, the status cluster, a `0 / 0 putts made` hero with a
 `0%` bar, an **empty `Breakdown` list with its heading** (`SessionReport.jsx:141-154` renders the heading
 unconditionally), the notes editor, and the footer. The putter table, drop-off table, and session-context
-block all omit themselves. The empty `Breakdown` heading over nothing is the one rough edge.
+block all omit themselves. The empty `Breakdown` heading over nothing is the one rough edge. Where a
+panel *does* have data but too little of it, the honest `S-INSUFFICIENT` treatment appears instead —
+`SessionReport.jsx:132` renders `no baseline yet` rather than a fabricated comparison.
 
-**Error.** Four distinct failures collapse into one presentation — `<p class="form-error">{message}</p>`
-**as the entire page** (`HistoryDetailPage.jsx:120`), with no retry:
+**Error.** `S-ERR-BLOCK` (`HistoryDetailPage.jsx:120`), unguarded — one of the thirteen instances with no
+`&& !data` fallback — and `S-RETRY` has no read instance, so there is no exit but the tab bar. Four
+distinct failures collapse into that one presentation, `<p class="form-error">{message}</p>` **as the
+entire page**:
 
 1. the entry query fails or the id does not exist (`.single()` rejects);
 2. the putt-events query fails;
