@@ -11,6 +11,48 @@
 --
 --
 -- ============================================================
+-- WHICH PROJECT — read this before running anything
+-- ============================================================
+--
+-- ** UNRESOLVED as of 2026-07-29. Settle this before recording any answer. **
+--
+-- The organization holds two disc golf projects. Picking the wrong one yields
+-- answers that look entirely credible and describe the wrong database.
+--
+--   disc-golf-app   icqzbvtjisxwycvioiup   us-east-1   created 2026-07-03
+--     Measured 2026-07-29: full app schema; 40+ migrations ending at
+--     20260717033521 phase_d4_clutch_simulator; bag_discs_capacity_check and
+--     regimen_sets_putt_cap_check both present and enabled.
+--     This is the only project whose contents match what the repository
+--     describes.
+--
+--   disc-golf-ios   ezzwoivuxhmfemplkobd   us-east-1   created 2026-07-17
+--     Measured 2026-07-29: **0 public tables, 0 public functions, 0 auth.users,
+--     no supabase_migrations schema.** Only the stock auth, vault, and
+--     extensions schemas exist. It has never been migrated or signed into.
+--
+-- THE CONFLICT: the owner stated on 2026-07-29 that disc-golf-ios is the
+-- correct project and disc-golf-app is obsolete. The measurements above are
+-- incompatible with that — a deployed client cannot read from a database with
+-- no tables, and no user could authenticate against zero users. Most likely
+-- disc-golf-ios was provisioned for the iOS/Capacitor path and never migrated
+-- into, but that is inference, not fact, and it is not recorded as fact here.
+--
+-- HOW TO SETTLE IT: read VITE_SUPABASE_URL in the Vercel project's environment
+-- settings. The ref in that hostname is the deployed database, and it is
+-- authoritative over both this comment and anyone's recollection.
+--
+-- Nothing in the repository names either ref. Every VITE_SUPABASE_URL in the
+-- tree is the CI placeholder `example.supabase.co`, so the real ref lives only
+-- in environment variables. That is correct for secret hygiene, and it is also
+-- why this block exists: there is nowhere in the codebase to read it from, and
+-- a verification run against the wrong ref is silent rather than loud.
+--
+-- Until this is settled, treat every answer below as provisional and label it
+-- with the ref it came from.
+--
+--
+-- ============================================================
 -- RUNBOOK — run in this order, not the order they appear below
 -- ============================================================
 --
