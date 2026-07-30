@@ -173,7 +173,7 @@ duplicate `hole_number` values when `tee_type` is NULL, because Postgres treats 
 unique index. Pre-existing — but the quick-course form never sets `tee_type`, so **every** quick course
 lived in the NULL branch and was unprotected.
 
-Fixed by `20260730120000_phase_e_hole_number_nulls_not_distinct.sql`: the index is recreated with
+Fixed by `20260730025443_phase_e_hole_number_nulls_not_distinct.sql`: the index is recreated with
 `nulls not distinct`, which makes two NULL tee types compare equal for uniqueness. Applied to
 `icqzbvtjisxwycvioiup` on 2026-07-30 and confirmed live (`indnullsnotdistinct = true`).
 
