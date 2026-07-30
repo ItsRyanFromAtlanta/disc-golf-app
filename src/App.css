@@ -4883,6 +4883,46 @@
   flex-direction: column;
   gap: 6px;
   margin: 12px 0;
+/* Course prep (`/courses/:courseId/prep`). Built from the existing course and
+   round primitives — `.course-section`, `.putt-log-list`, `.chip-row` — so the
+   only new rules are the hole card, which carries more prose than the compact
+   `.course-hole-row` on the course detail screen can hold. */
+.prep-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.prep-brief p {
+  margin: 0;
+}
+
+.prep-brief-headline {
+  font-family: var(--font-display);
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+}
+
+.prep-hole-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.prep-hole {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   padding: 12px 14px;
   border: var(--border-width) solid var(--color-border-default);
   border-radius: 8px;
@@ -4908,4 +4948,44 @@
 
 .round-bag p {
   margin: 0;
+.prep-hole p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.prep-hole-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prep-hole-head strong {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.prep-hole-head span {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Hazards read as a warning; strategy notes are the course's own prose. */
+.prep-hole-hazards {
+  color: var(--color-negative);
+}
+
+.prep-hole-strategy {
+  color: var(--color-text-secondary);
+}
+
+.prep-hole-history {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.prep-hole-discs {
+  color: var(--color-secondary-accent);
 }
