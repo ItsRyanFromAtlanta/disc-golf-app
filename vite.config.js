@@ -17,6 +17,42 @@ export default defineConfig({
     // .gitignore is not enough; vitest walks the filesystem, not the index.
     exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**', '**/.claude/worktrees/**'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        advancedChunks: {
+          groups: [
+            // Pin the framework runtime into its own chunk.
+            //
+            // This does not make a cold start download fewer bytes — these
+            // are needed to render anything, and Vite emits a modulepreload
+            // for the chunk, so it is fetched in parallel with the entry
+            // rather than after it. What it changes is what a *deploy* costs.
+            //
+            // The service worker precaches every built asset and revalidates
+            // by hashed filename, so any chunk whose contents move gets
+            // re-downloaded on the next visit. Left in the entry chunk, these
+            // ~240 kB of never-changing vendor code carried a new hash every
+            // time a shell component changed — meaning a one-line fix cost a
+            // phone on cell signal the whole framework again. Split out, the
+            // vendor chunk's hash only moves when the dependency actually
+            // does, and a typical deploy re-downloads app code alone.
+            //
+            // Grouping is safe here because nothing in this set imports app
+            // code, so no chunk cycle can form.
+            {
+              name: 'vendor-react',
+              test: /\/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//,
+            },
+            {
+              name: 'vendor-query',
+              test: /\/node_modules\/@tanstack\//,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
