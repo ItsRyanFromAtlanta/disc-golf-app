@@ -420,6 +420,35 @@ every one of them.**
 
 ## Standing decisions that constrain new work
 
+- **The "Disc Up" iOS bundle is PARKED (2026-07-30) — do not implement it against this repo.**
+  Recorded by a parallel session on `claude/handoff-file-review-fqt4oc` and ported here 2026-07-30;
+  that branch is otherwise superseded and should not be merged (its `CURRENT_WORK.md` still says 497
+  tests, no E2E suite and four lint warnings — all stale). A handoff document arrived describing Disc
+  Up, a greenfield native SwiftUI/SwiftData iOS app for a repo named `disc-golf-iOS`. It is parked on
+  three counts: that GitHub repo does not exist; the eleven documents it instructs an agent to commit
+  were never attached; and its own text forbids implementation until three PROVISIONAL decisions are
+  confirmed. Several of its locked decisions **reverse shipped architecture here** — player data never
+  leaving the device (this app syncs through Supabase with auth and RLS), Supabase reduced to a
+  read-only course catalog with an empty `public` schema, and "routine, never regimen" (this app's
+  schema is `putting_regimens`/`putting_regimen_runs`/`putting_regimen_sets`). It also assumes a
+  from-scratch SwiftUI client where `docs/mobile/IOS_READINESS.md` calls for Capacitor.
+  **Open question for the owner: is Disc Up a separate product or a rebuild of this one?**
+
+- **This very likely resolves the Supabase project-identity conflict — but the owner must confirm.**
+  `docs/ui/LIVE_VERIFICATION.sql` records the owner stating on 2026-07-29 that `disc-golf-ios`
+  (`ezzwoivuxhmfemplkobd`) is the correct project and `disc-golf-app` (`icqzbvtjisxwycvioiup`)
+  obsolete. That was measured as incompatible with reality, and re-measured 2026-07-30: `disc-golf-ios`
+  still holds **0 public tables and 0 auth users**, while `disc-golf-app` holds the full schema, 51
+  applied migrations and 28 users. Two sessions hit this independently and neither could explain it.
+  Together they can: **`disc-golf-ios` is Disc Up's backend** — a greenfield project provisioned
+  2026-07-17 for a different, native product and never migrated into. It is empty because nothing has
+  been built there yet, not because it is a replacement for this app's database. So the statement was
+  almost certainly about the Disc Up effort, not about this repository.
+  **Everything in this repo — all four applied migrations, three pending ones and three pending seed
+  files — targets `icqzbvtjisxwycvioiup`, and on this reading that is correct.** Settle it for good by
+  reading `VITE_SUPABASE_URL` in the Vercel project's environment settings: the ref in that hostname is
+  the deployed database and is authoritative over any recollection, including this note.
+
 - **Catalog ingestion is SCRAPPED (2026-07-13) — do NOT rebuild a scraper.** The first live crawl
   proved the pipeline worked end to end, but MVP's live pages no longer expose parseable flight
   numbers (moved to prose, no `data-flight`), so 0 batches staged. The entire ingestion surface was
