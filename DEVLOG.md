@@ -1,5 +1,76 @@
 # Dev Log
 
+## 2026-07-30 — E2 audit closed: findings 6, 7, 8, 9 fixed
+
+**What:** The last four actionable findings from `docs/development/E2_ROUND_COURSE_AUDIT.md`. Eight of
+nine are now fixed; finding 5 (unbounded course directory fetch) is the only one left open, deferred by
+design with a revisit trigger. 584 tests (was 571), lint clean, build green, CI green on `db5f522`.
+
+**Finding 9 was the real work, and it was systemic.** `isPermanentError` keys off `error.status` for
+anything outside four Postgres codes — but a `PostgrestError` carries `code`/`message`/`details`/`hint`
+and *never* a status; the status lives on the response envelope. Consequence: every RLS denial
+(`42501`), every RPC validation error (`22023`), and every `28000` classified as **transient** and
+retried forever, on all three outboxes. That is finding 2 — a permanently failing write indistinguishable
+from a successful one — reappearing on a layer we had just declared fixed.
+
+Fixed with one shared `attachResponseStatus(error, status)`, placed next to the classifier it serves so
+the two cannot drift, and applied at every send site that feeds a queue. `roundLog`'s `throwIfError` now
+takes the whole result, which covered `createRound`/`updateRound`/`upsertRoundHole` in a single change;
+`supabaseSync`'s `syncRows` covered the activity and history-recovery queues, since both share that one
+executor; `courseRpcError` had been doing it by hand and now delegates.
+
+`DEPLOY_LAG_CODES` is the part not to lose. `PGRST202`, `PGRST205`, `42883` and `42P01` are deliberately
+left statusless so they stay transient: PostgREST answers a not-yet-migrated function or table with a
+4xx, and attaching it would poison a write that is about to start working. `main` auto-deploys and a
+migration cannot ride in the same atomic step as its client, so that window is routine. Widening the
+permanent-code set instead would have been the wrong shape — `28000` is genuinely ambiguous, since a
+refreshed JWT makes the identical payload succeed on retry.
+
+Small deliberate choice, with a test pinning it: the helper **mutates** rather than copies. supabase-js
+mints a fresh error per response and hands it to one caller, so there is nothing to race — and copying an
+`Error` silently drops `stack` and `message`, which are own non-enumerable properties that spread and
+`Object.assign` skip. Immutability nobody needed, paid for with the stack, is the worse trade.
+
+**Finding 8 was live on the path every user takes.** `holes_layout_hole_tee_uniq` covers
+`(layout_id, hole_number, tee_type)`, but Postgres treats NULLs as distinct, and the quick-course form
+never sets `tee_type` — so *every* quick course sat in the unprotected branch, where a double-submit or a
+replayed queued course could produce two hole 1s, reaching the scorecard and every score derived from it.
+Recreated with `nulls not distinct` (PG 17.6 live).
+
+Proved behaviourally rather than by reading the index definition: a `DO` block created a course, a layout
+and a NULL-tee hole 1, caught the `unique_violation` on a second one, and — the half that matters —
+confirmed a genuinely *different* tee on the same hole number is **still accepted**. Without that contrast
+the fix could have been silently breaking multi-tee courses and the first assertion would still have
+passed. A closing `RAISE` rolled it back; catalog verified byte-identical afterwards.
+
+**Finding 6** moved hole ordering into the data layer. `round_holes` can only order by its own columns and
+the one identifying a hole is a UUID, so rows arrived in an order unrelated to the course.
+`RoundScorecardPage` happened to re-sort, which put the guarantee in one consumer and left any second one
+inheriting nonsense. Unresolvable holes sort **last**, not first, where a nullish `hole_number` would
+otherwise put them ahead of real hole 1. The new tests use hole ids chosen so that sorting them as
+strings yields the *reverse* of play order, and 3 of the 4 were confirmed to fail against the old code
+before the fix landed — a test that could never have failed proves nothing.
+
+**Finding 7** removed the identity map in `idList` and renamed the parameter to `values`, which is what
+every caller actually passes and what made the map look necessary in the first place.
+
+**Two things found and deliberately not fixed**, both recorded rather than folded in:
+
+- `supabase_schema.sql` is **stale**. It describes `holes` with a `course_id` column and a course-scoped
+  unique index; live, there is no `course_id` and the index is layout-scoped. The proof harness above
+  failed its first run because of it. That file is what future migrations get written against, so the
+  drift matters — and burying its repair inside an index change would hide it.
+- The migration-ledger version drift now has a worked example. `apply_migration` stamps its own
+  apply-time version, so the three earlier Phase E files disagree with the ledger. This one was
+  **renamed to match** (`20260730025443`), so `db push` skips it correctly — one fewer disagreement
+  rather than a fourth.
+
+**What this does not establish.** Every defect in this audit was in the write and sync path, and the
+live database still holds 28 users and 0 courses, 0 layouts, 0 rounds. None of this code has ever run
+against real data. The tests and the three transactional proofs show the code does what it claims; they
+cannot show the feature is worth using. The next valuable action is a phone, a course, and a round
+actually played — not a tenth defect.
+
 ## 2026-07-29 — the three Phase E migrations are applied, and the two-day block was misdiagnosed
 
 **What:** Applied `phase_e_account_deletion`, `phase_e_preserve_moderation_history`, and
