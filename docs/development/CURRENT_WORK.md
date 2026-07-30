@@ -6,15 +6,22 @@ This file is the restart/handoff checkpoint. A fresh session should be able to r
 `AGENTS.md`, and one relevant spec without replaying previous conversations. Per-item implementation
 and verification history lives in `DEVLOG.md` (newest first) — do not duplicate it here.
 
-## Session and branch of record (2026-07-28)
+## Session and branch of record (2026-07-30)
 
 Work had fragmented across parallel Codex/Claude sessions, each on its own branch. It is now
 consolidated to a single line of development.
 
-- **Branch of record:** merged to `main` on 2026-07-28 as `eb9fd2b`. `main` is authoritative again;
-  open new work from it. Current session work continues on
-  `claude/prioritize-scheduled-work-7lohb6`, which is `main` plus the E2E baseline, the
-  degrade-on-missing-RPC fix, and the E2 audit checkpoint.
+- **Branch of record: `claude/resume-in-motion-changes-abo5o6`.** All work continues here. It is
+  `main` (`eb9fd2b`) plus the full contents of the former `claude/prioritize-scheduled-work-7lohb6`
+  — the E2E baseline, the degrade-on-missing-RPC fix and the E2 audit checkpoint — plus the ledger
+  repair and schema-drift reconciliation.
+- **PR #5 was closed on 2026-07-30, not merged.** Its branch is a strict subset of the branch of
+  record, so nothing is lost and `026de85` stays reachable. Closing it rather than retargeting keeps
+  exactly one open line of work, which is the whole point of the consolidation.
+- **The single-task-list rule.** `## Consolidated task list` below is the only place remaining work is
+  tracked. If a task is not there, it is not queued. Anything discovered mid-flight gets added there
+  rather than left in a commit message or a DEVLOG entry, because that is precisely how the previous
+  fragmentation happened.
 - **All 14 `codex/*` branches are fully merged into `main`** (verified: zero commits unique to any of
   them) and are safe to delete. They are retained only until the owner prunes them.
 - **`claude/continue-hoqtyv` is superseded and will NOT be merged.** Its single unique commit
@@ -75,22 +82,49 @@ of `layout_id`; the hole uniqueness rule is now the index `holes_layout_hole_tee
 make the drift visible instead of silent; they do not replace reading the live database when a shape
 actually matters.
 
-## Staged next actions
+## Consolidated task list
 
-Ordered. The first three close currently-open work. E2 no longer waits on 1 — see the interlock note
-below.
+**This is the only queue.** Everything previously tracked across the staged-actions table, the open
+follow-ups, `FEATURE_BACKLOG.md` "NEXT UP" rows and `PHASE_A_ARCHITECTURE.md` § 9 partial rows is
+folded in here. Statuses move in place; completed rows are struck through and keep their evidence.
 
-| # | Action | Owner | Blocks |
-|---|---|---|---|
-| 1 | ~~Apply the three Phase E migrations~~ — **APPLIED AND VERIFIED 2026-07-29** on `icqzbvtjisxwycvioiup`. See "Migrations applied" below | — | — |
-| 2 | ~~Review and merge PR #4~~ — **MERGED 2026-07-28** as `eb9fd2b` | — | — |
-| 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
-| 4 | ~~Delete the empty `catalog-import-raw` Storage bucket~~ — **MOOT 2026-07-29.** It does not exist; `storage.buckets` holds only `disc-private-photos`. Open since 2026-07-14 against a bucket that was already gone | — | — |
-| 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
-| 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
-| 7 | E2 round/course reconciliation — **audit closed 2026-07-30. Eight of nine findings fixed** (1, 2, 3, 4, 6, 7, 8, 9). Only finding 5 remains open, deferred by design with a revisit trigger recorded. See `docs/development/E2_ROUND_COURSE_AUDIT.md`. The hardening phase of E2 is done; the **feature** half (weather, activity-only rounds, group-scorecard groundwork, bag snapshot verification, course preparation) has not started | agent | — |
-| 8 | ~~Extend E2E with live-capture fixtures~~ — **DONE 2026-07-28**, suite at 32 specs. Remaining § 9 gaps are app defects and unreachable branches, not missing fixtures | agent | — |
-| 9 | ~~Reconnect double-send in `syncScheduler.js`~~ — **FIXED 2026-07-28**, 11 unit tests plus a dedicated `online`-event E2E spec. The round outbox's silent `catch` (E2 audit finding 2) is still open and is the same class | agent | — |
+### Agent-executable
+
+| # | Task | Status |
+|---|---|---|
+| A1 | E2E § 9 gap: onboarding wizard + Quick Play launch | open |
+| A2 | E2E § 9 gap: gesture alternatives | open |
+| A3 | `capture.spec.js` "single-active auto-close" flake — poll budget under parallel load | open |
+| A4 | E2 feature: round weather | open |
+| A5 | E2 feature: activity-only rounds | open |
+| A6 | E2 feature: group-scorecard groundwork | open |
+| A7 | E2 feature: bag snapshot verification | open |
+| A8 | E2 feature: course preparation | open |
+| A9 | Production bundle code splitting (~740 KB min / ~213 KB gzip) | open |
+| A10 | Make-% trend chart — salvage `TrendChart` + `insights/timeSeries` from `775543c`, re-derived | open |
+| A11 | Distance heat profile (practice volume vs weakness by distance) | open |
+
+### Closed by inspection, not by work
+
+| # | Task | Disposition |
+|---|---|---|
+| B1 | E2E § 9 "recalculation" row | **Not applicable.** Notes/tags are the only editable fields on a finalized activity and no metric reads them, so there is nothing to recalculate. The row stays Partial until an editable field feeds a metric |
+| B2 | "Four pre-existing lint warnings" baseline | **Stale.** The project lints with `oxlint` and it reports clean. The four warnings were an ESLint-era artifact; the claim is retired rather than carried forward |
+| B3 | E2 audit finding 5 — unbounded course directory fetch | **Deferred by design**, revisit trigger recorded in the audit doc: first real multi-user catalog, or measured load past ~300ms |
+
+### Owner-only — environment or admin gated, not undecided
+
+| # | Task | Why it cannot be done from a session |
+|---|---|---|
+| C1 | Configure protected `main` + required review/checks | GitHub admin UI. `main` auto-deploys, so this is the live risk |
+| C2 | Prune the 14 merged `codex/*` branches and the superseded `claude/*` ones | Git proxy refuses deletes — re-attempted 2026-07-30, `send-pack: unexpected disconnect`. No GitHub tool exposes branch deletion |
+| C3 | Enable `auth_leaked_password_protection` | Supabase dashboard auth setting; a one-toggle improvement flagged by advisors |
+| C4 | Real-device PWA field test — install, walk a course, log a round | Needs a phone and a course. **Highest-value item on this page**, see below |
+| C5 | Install the OpenAI Developer Docs MCP locally | Desktop sandbox could not launch the installer |
+
+**C4 outranks every agent row above it.** The course/round surface holds 0 courses, 0 layouts and
+0 rounds against 28 real users. Eight audit findings were fixed in code that has never run against
+real data. Another fixed defect does not tell us why the surface is empty; one walked round does.
 
 **The 1-before-2 interlock was dissolved on 2026-07-28.** It existed because PR #4 ships the
 account-deletion UI and `main` auto-deploys, so merging first put a button in production that threw a
@@ -244,8 +278,9 @@ every one of them.**
   error that looks like a regression and is not. CI sets them inline (`.github/workflows/ci.yml`);
   locally use `VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=ci-test-placeholder`.
   Green on the branch of record as of 2026-07-28: 497 tests across 74 files, build clean.
-- Lint carries four pre-existing warnings: three hook-dependency findings and one Fast Refresh export
-  finding. Address as touched or in a bounded cleanup review.
+- **The "four pre-existing lint warnings" claim is retired** (2026-07-30). The project lints with
+  `oxlint` and it reports clean; the four warnings were an ESLint-era artifact carried forward by
+  copying. Lint being clean is now the baseline — a warning is a regression.
 - **Browser E2E now exists** (2026-07-28). `npm run test:e2e` runs 32 Playwright specs across a phone
   project and a 320px project, authenticated via a seeded session with the Supabase backend
   intercepted in-page; CI runs them as a separate `e2e` job. This closes the "no authenticated screen
@@ -271,18 +306,22 @@ same file, which is exactly how a checkpoint stops being trusted: the account-de
 applied and verified (see "Migrations applied 2026-07-29"), and the `catalog-import-raw` bucket does
 not exist, so there is nothing to delete.
 
-- Enable protected-`main` required review/checks now that CI runs green remotely. `main` auto-deploys.
+**Actionable follow-ups now live in `## Consolidated task list` above** rather than here, so there is
+one queue instead of two. What remains below is the standing caveat that has no task attached, because
+it cannot be closed from a session at all:
+
 - **The account-deletion cascade is still only structurally evidenced.** The RLS negative tests
   exercised the refusal paths, which raise before touching data. That a second user's rows survive and
   that private Storage objects are removed by prefix is argued from the function body and the FK/RLS
   configuration, not observed. Proving it behaviourally needs two disposable accounts with real rows,
   which the live project (28 real users) is the wrong place for.
-- Browser E2E is built but partial. Six § 9 flows remain uncovered — pause/resume, single-active
-  auto-close, round-close confirmation, completed edit/audit, soft-delete/restore, exactly-once
-  reconnect. All six need an in-progress or completed activity seeded through the InstantLaunch +
-  Dexie layers rather than table-level rows, which is the next increment on the existing harness.
-- Install the OpenAI Developer Docs MCP locally (`CODEX_WORKFLOW.md` § Installed capabilities). The
-  desktop sandbox could not launch the installer.
 
-Update this file at each major commit/push: move the resume point, add or clear follow-ups, and record
-new standing decisions. Keep it short — history belongs in `DEVLOG.md`.
+**The "six uncovered § 9 flows" bullet that stood here was wrong** and was removed on 2026-07-30. It
+listed pause/resume, single-active auto-close, round-close confirmation, soft-delete/restore and
+exactly-once reconnect as uncovered; § 9 records all five as **Covered**, closed across 2026-07-28/29.
+Only three rows are still Partial — onboarding/Quick Play, recalculation and gesture alternatives —
+and they are tracked as A1, B1 and A2. Read § 9's table as the source of truth for coverage; this file
+had been paraphrasing a superseded copy of it.
+
+Update this file at each major commit/push: move the resume point, update task statuses in place, and
+record new standing decisions. Keep it short — history belongs in `DEVLOG.md`.
