@@ -48,10 +48,14 @@ consolidated to a single line of development.
   the Phase E migration filenames now match the applied ledger (so `db push` cannot regress the
   moderation-history fix), and the `supabase_schema.sql` drift is annotated rather than left silent.
   Both are detailed below.
-- **Next:** the **feature** half of E2 — weather, activity-only rounds, group-scorecard groundwork,
-  bag snapshot verification, and course preparation, as separately committed green checkpoints. See
-  `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E. Note the caveat directly below
-  before picking this up.
+- **E2 is complete as of 2026-07-30** — both halves. The hardening pass closed eight of nine audit
+  findings; the feature half (weather, activity-only rounds, group-scorecard groundwork, bag snapshot
+  verification, course preparation) shipped the same day. Every agent-executable row in the
+  consolidated task list is closed.
+- **Next: nothing in this file, and that is the point.** The queue is empty of agent work. What
+  remains is owner-gated — three unapplied migrations, branch protection, branch pruning — and one
+  thing that outranks all of it: **C4, a real round on a real phone.** Read the caveat below before
+  opening a new work item. Do not start E3 or invent new hardening to fill the gap.
 
 ### Read this before starting more E2 hardening
 
@@ -96,10 +100,39 @@ folded in here. Statuses move in place; completed rows are struck through and ke
 | A2 | E2E § 9 gap: gesture alternatives | ~~done~~ 2026-07-30 — `e2e/gesture-alternatives.spec.js`, § 9 row **Covered**. Found and fixed **two shipped app defects**, see below |
 | A3 | `capture.spec.js` "single-active auto-close" flake | ~~done~~ 2026-07-30 — **neither a poll budget nor a drain race.** See the diagnosis below; the budget was never close |
 | A4 | E2 feature: round weather | ~~done~~ 2026-07-30 — structured `weather_condition` + `wind_mph` matching D2's practice vocabulary. **Migration `20260730205654` written, NOT applied** |
-| A5 | E2 feature: activity-only rounds | in progress |
-| A6 | E2 feature: group-scorecard groundwork | open — not started; deferred behind A5/A7 because it touches the same round tables |
-| A7 | E2 feature: bag snapshot verification | in progress |
-| A8 | E2 feature: course preparation | in progress |
+| A5 | E2 feature: activity-only rounds | ~~done~~ 2026-07-30 — `rounds.scoring_mode` as a **recorded** column, not inferred. **Migration `20260730212900` written, NOT applied** |
+| A6 | E2 feature: group-scorecard groundwork | ~~done~~ 2026-07-30 — companion cards are creator-owned markers, no `player_user_id`. **Migration `20260730234500` written, NOT applied**; its RLS is written but **unproven** |
+| A7 | E2 feature: bag snapshot verification | ~~done~~ 2026-07-30 — seven statuses; `unknown` is never reported as `snapshot_missing`. No migration needed |
+| A8 | E2 feature: course preparation | ~~done~~ 2026-07-30 — `/courses/:courseId/prep`. **No disc recommendations**, deliberately; see below. No migration needed |
+
+**The whole E2 feature half is now complete** (A4–A8), alongside the hardening half closed on
+2026-07-30. Three decisions in it are load-bearing and should not be quietly reversed:
+
+- **A8 refused to build disc recommendations**, which is a third of a stated core pillar. Nothing in
+  the schema records how far *this* player throws anything — putting tables stop at putting range and
+  `disc_odometer_events` counts throws, not distance. A flight-number→distance suggestion would be an
+  invented curve presented as advice: the opaque composite the roadmap rejects, and wrong for every arm
+  that does not match it. The disc content is a **record** ("Thrown here: Wraith ×2, +0.5") out of
+  `round_holes.disc_id`, silent until a hole has actually been played. Building the real thing needs a
+  per-player distance model, which needs data nothing currently collects.
+- **A5 made the scoring mode a recorded column rather than an inference.** A card on the first tee, a
+  card abandoned after one hole, and a deliberately unscored round all have zero scored holes; only
+  intent at creation separates them. It also means finalization must not recompute a total from an
+  empty card — the total is *stated*, and `roundScoreSummary()` returns its source beside it.
+- **A6 made a companion's card a creator-owned marker, with no `player_user_id`.** A companion-owned
+  row would collide with `activities_one_current_per_user_idx` (the single-active invariant) whenever
+  that companion is keeping their own card, require a cross-account write or an invitation mechanism,
+  strand half a round on soft delete, and fail outright for the majority of playing partners who have
+  no account. Linking a seat to a real account is a *claim*, and a future `round_player_claims` must be
+  owned by the **claimant** so RLS enforces consent rather than trusting the writer.
+
+**Two defects fixed on the way, both pre-existing:** `relativeToPar([], holes)` returned `0`, which
+formats as `"E"` — an unscored round announced itself as **even par**, guarded separately by three
+screens and now by the data layer (A5). And the E2 audit gained findings **F2** (offline round creation
+records the newest *locally known* bag version, which can be weeks stale and is indistinguishable from
+a first-tee snapshot) and **F3** (round-start snapshots are written with `reason = 'grouped_save'`, a
+provenance lie needing an RPC contract change) — both deliberately left open rather than folded into a
+read-only feature.
 | A9 | Production bundle code splitting | ~~done~~ 2026-07-30 — cold-boot JS **1,014.60 → 677.98 kB raw, 290.32 → 200.31 kB gzip (−31%)**, >500 kB warning gone. Note the backlog's "~740 kB" figure was stale; it had grown to 1,014 kB |
 | A10 | Make-% trend chart — re-derived from `775543c` | ~~done~~ 2026-07-30 — `insights/trend.js` + `TrendChart`. Claims a direction only when the two window halves' 95% Wilson intervals do not overlap and each holds ≥20 attempts; otherwise "no clear change" |
 | A11 | Distance heat profile | ~~done~~ 2026-07-30 — `insights/distanceProfile.js`. The *gap* is the product: practice share vs strength, named as `blind-spot` / `grinding` / `over-drilled`. No composite priority score |
@@ -163,6 +196,15 @@ applies SQL to the live project. Apply in filename order.
 | File | What it does | Client behaviour before it lands |
 |---|---|---|
 | `20260730205654_phase_e_round_weather.sql` | Adds `weather_condition` (5-value CHECK) + `wind_mph` to `rounds`, matching D2's practice-weather vocabulary exactly. `weather_summary` is kept unchanged as the free-text note beside them | Degrades. Round creation deliberately does not send weather, and `PGRST204`/`42703` were added to `DEPLOY_LAG_CODES` so a write against a not-yet-migrated column stays transient instead of poisoning the round outbox |
+| `20260730212900_phase_e_activity_only_rounds.sql` | Adds `rounds.scoring_mode` | Degrades. `roundScoringModeFields()` sends no column for the default mode, so an ordinary round's payload is byte-identical to before and is unaffected by the deploy window. Only an activity-only round waits, on `PGRST204` |
+| `20260730234500_phase_e_round_players.sql` | Adds `round_players` — creator-owned companion seats, with RLS, least-privilege grants, a seat cap, and a composite FK to `rounds (id, user_id)` so attaching a companion to another user's round is structurally unrepresentable rather than merely denied | Degrades. `isMissingRelationError` (`PGRST205`/`42P01`) makes the read report `available: false` and the panel says the feature is not deployed; the same codes stay transient so an early write waits rather than poisoning the outbox |
+
+**`20260730234500`'s RLS is written but entirely unproven.** `verify_round_players_rls.sql` sits at the
+repository root — deliberately *outside* `supabase/migrations/` so `db push` cannot execute it — and
+holds 15 cases with positive controls: cross-user select/insert/update/delete, the composite-FK
+structural case, `anon` grants, the seat cap, natural-key uniqueness against a different-round
+contrast, blank name, negative total, and cascades. **None has been run.** Run it after applying, in a
+rollback-only transaction, the way findings 3 and 8 were proved.
 
 **Why `weather_summary` was not enough**, since it looks like it should have been: D2 already stores
 structured `weather_condition` + `wind_mph` on both practice parents and `gamification/metrics.js`

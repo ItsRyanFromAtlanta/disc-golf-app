@@ -1,5 +1,77 @@
 # Dev Log
 
+## 2026-07-30 — E2 feature half, E2E gaps, bundle split: the consolidated queue cleared
+
+**What:** Every agent-executable row in `CURRENT_WORK.md`'s consolidated task list, run as six
+isolated worktree agents and integrated here. The E2 feature half (round weather, activity-only
+rounds, group-scorecard groundwork, bag snapshot verification, course preparation), both remaining
+§ 9 E2E coverage gaps, the auto-close flake, the bundle split, the make-% trend salvage and the
+distance heat profile. 645 → **829 unit tests across 93 files**, 34 → **74 Playwright specs**, lint and
+build clean throughout.
+
+**Why in this shape:** work had been fragmenting across parallel sessions and branches for days — the
+consolidation earlier the same day existed to stop that. Fanning out to isolated worktrees and
+integrating through one branch keeps the parallelism without recreating the fragmentation: one queue,
+one line of record, every merge verified before the next.
+
+**Key decisions, all of which are refusals to build something:**
+
+`A8` did not build disc recommendations, a third of a stated core pillar. No per-player distance model
+exists in this schema — putting tables stop at putting range, `disc_odometer_events` counts throws and
+not distance — so a flight-number→distance suggestion would be an invented curve presented as advice.
+The disc content is a record of what was actually thrown on that hole, silent until it has been played.
+
+`A5` made the scoring mode a recorded column rather than an inference, because a card on the first tee,
+an abandoned card and a deliberately unscored round are indistinguishable by hole count. Only intent
+separates them, so intent is stored.
+
+`A6` made companion cards creator-owned markers with no `player_user_id`. Companion-owned rows would
+collide with the single-active invariant whenever that companion keeps their own card, need a
+cross-account write, strand half a round on soft delete, and fail for the majority of playing partners
+who have no account. Linking a seat to an account is a claim, and a claim must be owned by the claimant
+so RLS enforces consent rather than trusting the writer.
+
+`A10` under-claims by construction: it reports a direction only when the two window halves' 95% Wilson
+intervals do not overlap and each holds ≥20 attempts. Non-overlapping intervals is a stricter bar than
+a two-proportion test.
+
+**Three diagnoses that were recorded wrong first, and are corrected here:**
+
+The auto-close E2E flake was neither a poll budget nor a race in the drain path — this file and
+`CURRENT_WORK.md` both said budget. It was the shell's notification producer enqueuing a row into the
+shared Dexie outbox store that the test helper waited to see empty. Drain time measures 25–1400 ms
+against a 7 s budget over 100 runs.
+
+The suite's "6–15 failures under parallel load" was never the suite. `playwright.config.js` serves on a
+fixed port with `reuseExistingServer`, and six agent checkouts shared this box, so a run tested another
+worktree's build or lost its server mid-run — every failure `ERR_CONNECTION_REFUSED`. Per-checkout
+ports give 74/74 repeatedly. The config was deliberately left alone; CI is a single checkout.
+
+The bundle backlog figure was stale: ~740 kB had grown to 1,014 kB before the split took it to 678 kB
+raw / 200 kB gzip.
+
+**Three defects that had shipped, found while testing rather than by looking for them:** `GestureZone`'s
+Undo button did nothing under a thumb (`setPointerCapture` retargets the pointerup, so the click landed
+on the zone, not the button — it worked by keyboard, so a keyboard-only assertion would have marked the
+row covered); `PanicZone` was a bare `<div>` with pointer handlers, so no keyboard or switch user could
+log a putt at all; and `relativeToPar([], holes)` returned `0`, formatted `"E"`, so an unscored round
+announced itself as even par.
+
+**One defect this session caused.** Merging two feature branches auto-merged their `App.css` additions
+with no conflict and produced 844 open braces against 842 closes — two unterminated blocks, interleaved
+rules, four declarations dropped from `.round-bag`. Nothing in the toolchain reads CSS, so it reached
+the branch of record and was caught by inspection. Repaired from both parents, and `src/App.css.test.js`
+now guards brace balance, unterminated blocks and spliced rules — verified by running it against the
+actual corrupt revision, where all three assertions fail, rather than a synthetic one.
+
+**Not verified — the caveat that matters more than anything above.** Three migrations are written and
+**unapplied** (`20260730205654`, `20260730212900`, `20260730234500`), by the owner's decision that
+migrations are applied from the dashboard. `round_players`' RLS is written but entirely unproven: 15
+cases sit in `verify_round_players_rls.sql` and none has been executed. And the live database still
+holds 28 users against 0 courses, 0 layouts and 0 rounds — so five features were added to a surface
+nobody has ever used, on top of eight audit findings fixed in code that has never run against real
+data. A phone, a course and one walked round would tell us more than any of it.
+
 ## 2026-07-30 — migration ledger repair and the `supabase_schema.sql` drift
 
 **What:** Closed the two repo-hygiene items the E2 hardening work left open behind it. The three
