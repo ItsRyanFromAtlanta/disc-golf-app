@@ -182,6 +182,15 @@ export default function RoundStartPage() {
             </p>
           )}
 
+          {/* The last moment before a round where prep is still useful, and the
+              one screen that already knows exactly which layout is about to be
+              played. */}
+          {selectedLayout && (
+            <Link to={`/courses/${selectedCourseId}/prep?layoutId=${selectedLayout.id}`} className="link-button">
+              View prep sheet
+            </Link>
+          )}
+
           <button type="submit" className="btn-primary" disabled={saving || loadingCourse || !selectedLayout}>
             {saving ? 'Starting…' : 'Start round'}
           </button>

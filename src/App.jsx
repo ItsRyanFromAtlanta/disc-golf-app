@@ -57,6 +57,7 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const CoursesPage = lazy(() => import('./pages/CoursesPage'))
 const CourseFormPage = lazy(() => import('./pages/CourseFormPage'))
 const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'))
+const CoursePrepPage = lazy(() => import('./pages/CoursePrepPage'))
 const RoundsPage = lazy(() => import('./pages/RoundsPage'))
 const RoundStartPage = lazy(() => import('./pages/RoundStartPage'))
 const RoundScorecardPage = lazy(() => import('./pages/RoundScorecardPage'))
@@ -130,6 +131,7 @@ function App() {
           <Route index element={<CoursesPage />} />
           <Route path="new" element={<CourseFormPage />} />
           <Route path=":courseId" element={<CourseDetailPage />} />
+          <Route path=":courseId/prep" element={<CoursePrepPage />} />
         </Route>
         <Route path="/rounds">
           <Route index element={<RoundsPage />} />

@@ -76,6 +76,16 @@ per-screen re-justification needed:
    Edge Function is deferred (PDGA has no official public API; scraping is ToS-gray).
 8. **Bag tags / QR Beam / P2P:** parked with the Social module wherever they appear inside an
    in-scope screen (Screen 12's Trophy Room ships without them).
+9. **Course prep has no blueprint screen.** The 21-screen set covers course *social* (Screen 14,
+   parked) and UDisc ingestion (Screen 13) but never the pre-round preparation `AGENTS.md` names as a
+   core pillar. `/courses/:courseId/prep` (E2, 2026-07-30) is therefore net-new rather than a
+   blueprint build, and it is a **prep sheet, not a caddie**: the layout brief and hole cards are the
+   course record read back, and the scoring/disc content is the player's own completed rounds on that
+   exact layout. It makes no disc recommendation. Nothing in this schema records how far a given
+   player throws a given disc, so a flight-number→distance suggestion would be an invented composite
+   score — rejected by `PRODUCT_ROADMAP.md` and out of scope until the live caddie's server-side AI
+   policy is approved separately. Pure logic lives in `src/lib/insights/coursePrep.js`; averages stay
+   withheld below `COURSE_PREP_MIN_ROUNDS = 3`, matching `roundConditions.js`.
 
 ---
 

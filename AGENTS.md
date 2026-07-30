@@ -91,6 +91,7 @@ J1 ships the first sibling tree under the COURSES section:
 /courses                 → course directory + recent rounds
 /courses/new             → quick-course builder
 /courses/:courseId       → layout and hole detail
+/courses/:courseId/prep  → per-layout pre-round prep sheet (?layoutId= selects the layout)
 /rounds                  → round history
 /rounds/new              → course/layout/bag selection
 /rounds/:roundId         → offline-first scorecard
@@ -274,6 +275,20 @@ editable on both `/rounds/:roundId` and `/rounds/:roundId/summary`, including af
 withholds any average until two conditions each have three complete rounds; below that it reports a
 count with its coverage, never a claim. `PGRST204`/`42703` joined `DEPLOY_LAG_CODES` for this: a
 client that writes a column before its migration lands must wait for it, not poison the round.
+
+Phase E2 also adds course preparation at `/courses/:courseId/prep`, **on the existing schema — no
+migration**. It is a prep sheet, not a caddie. `lib/insights/coursePrep.js` holds all of it as pure
+functions: `layoutBrief` reads the shape of a layout out of `holes` and reports its own coverage
+(distances are usually missing on a quick course, and a total that silently covers half the holes is
+worse than no total); `holePrep` adds the player's own completed rounds **on that exact layout**, the
+same single-layout rule `roundConditions.js` follows; `priorityHoles` ranks what has actually cost
+strokes; `lockerCoverage` prints hole-distance bands beside `disc_molds.category` counts as two
+facts, not a verdict. Counts, best scores and totals print at any sample size because they are facts;
+averages are withheld below `COURSE_PREP_MIN_ROUNDS = 3`. The disc half is a **record, not a
+recommendation** — "thrown here" from `round_holes.disc_id`, never "throw this". Nothing in the schema
+records how far a player throws anything, so a flight-number→distance model would be exactly the
+opaque composite the roadmap rejects; a real recommendation waits for the separately-approved
+server-side caddie. Zero courses and zero rounds are the primary design case, not an afterthought.
 
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the

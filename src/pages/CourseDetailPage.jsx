@@ -70,6 +70,13 @@ export default function CourseDetailPage() {
                 </Link>
               </div>
 
+              {/* Prep is per layout, not per course: the holes, distances and
+                  scoring history all belong to the layout, so the link carries
+                  the one it sits under rather than making the prep sheet guess. */}
+              <Link to={`/courses/${course.id}/prep?layoutId=${layout.id}`} className="link-button">
+                Prep sheet
+              </Link>
+
               <ol className="course-hole-list">
                 {layout.holes.map((hole) => (
                   <li key={hole.id} className="course-hole-row">
