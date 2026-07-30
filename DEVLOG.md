@@ -1,5 +1,44 @@
 # Dev Log
 
+## 2026-07-30 — review the Disc Up iOS bundle; reconcile stale staged actions against live state
+
+**What:** Reviewed an inbound "Disc Up" handoff document and parked it. While checking its claims
+against reality, verified the actual state of the two staged actions `CURRENT_WORK.md` still listed
+as open and found both already done — and found three applied migrations with no repo counterpart.
+No application code changed.
+
+**Why:** The handoff instructed an agent to commit eleven documents to a repo called `disc-golf-iOS`
+and then build against them. Acting on it directly would have written a native SwiftUI architecture
+into a React PWA repo. Checking the premises first was cheaper than unwinding that.
+
+**Key decisions:** Disc Up is **parked, not rejected** — recorded as a standing decision so a future
+session does not re-litigate it or start implementing. It is blocked on three independent things: the
+`disc-golf-iOS` GitHub repo does not exist, the eleven referenced documents were never attached, and
+the bundle's own gate (three PROVISIONAL decisions) is unmet. Its Supabase backend *does* exist as a
+separate project (`ezzwoivuxhmfemplkobd`), so the bundle is not fiction — but several locked
+decisions reverse shipped architecture here (local-only player data vs. the Supabase sync path,
+empty `public` schema vs. this app's, "routine never regimen" vs. the `putting_regimens` schema), so
+it reads as a separate product rather than a feature to fold in. That question is left to the owner
+rather than answered unilaterally.
+
+**Verification:** `list_migrations` against the live project shows `phase_e_account_deletion` applied
+2026-07-29 as `20260729213112`, so the long-standing "written but NOT applied" follow-up is closed on
+evidence rather than assumption — and E2 is unblocked. `origin/main` is at `eb9fd2b`, the PR #4 merge,
+so the "merge PR #4" action was likewise already complete. Both had been carried as open since
+2026-07-28. Supabase MCP read calls now succeed, retiring the 2026-07-28 note that every such call
+was refused by the sandbox.
+
+**Not verified — and newly found:** the live database reports 51 applied migrations against 35 files
+in `supabase/migrations/`. Most of that gap is the pre-Phase-A schema kept in root-level
+`*_schema.sql` files and is expected. Three are not: `phase_e_preserve_moderation_history`,
+`phase_e_atomic_course_creation`, and `phase_e_hole_number_nulls_not_distinct`, all applied
+2026-07-29/30 with no repo file at all. Production cannot currently be rebuilt from the repo. This is
+now staged action 1 and should land before E2, which touches the same course/round surface those two
+later migrations modify. Their DDL was deliberately **not** reconstructed from introspection here —
+that would lose the original comments and rollback notes, and guessing at applied DDL is how the
+append-only policy gets quietly broken a second time. The four account-deletion smoke checks also
+remain unrun; the RPC is live but unexercised.
+
 ## 2026-07-28 — consolidate parallel sessions onto a single branch of record
 
 **What:** Audited all 16 remote branches, folded the only live unmerged work onto

@@ -1,19 +1,20 @@
 # Current Work
 
-Last updated: 2026-07-28
+Last updated: 2026-07-30
 
 This file is the restart/handoff checkpoint. A fresh session should be able to resume from this file,
 `AGENTS.md`, and one relevant spec without replaying previous conversations. Per-item implementation
 and verification history lives in `DEVLOG.md` (newest first) — do not duplicate it here.
 
-## Session and branch of record (2026-07-28)
+## Session and branch of record (2026-07-30)
 
 Work had fragmented across parallel Codex/Claude sessions, each on its own branch. It is now
 consolidated to a single line of development.
 
-- **Branch of record:** `claude/consolidate-chats-stage-actions-rj0lwl`, which contains `origin/main`
-  plus the seven unmerged iOS/PWA and documentation-reconciliation commits. Open new work from this
-  branch, not from a per-session branch, until it merges to `main`.
+- **Branch of record is `main` again.** `claude/consolidate-chats-stage-actions-rj0lwl` merged as
+  PR #4 (`eb9fd2b`) and is closed out. Open new work from `main`, not from that branch and not from
+  a per-session branch. The consolidation branch and `claude/handoff-file-review-fqt4oc` can both be
+  pruned with actions 3 and 4 below.
 - **All 14 `codex/*` branches are fully merged into `main`** (verified: zero commits unique to any of
   them) and are safe to delete. They are retained only until the owner prunes them.
 - **`claude/continue-hoqtyv` is superseded and will NOT be merged.** Its single unique commit
@@ -29,9 +30,9 @@ consolidated to a single line of development.
 ## Resume point
 
 - **Active phase:** Phase E. Phases A, B, C, and D are complete; E1 shipped 2026-07-17.
-- **Blocking E2:** apply migration `20260727120000_phase_e_account_deletion.sql` (see Open
-  follow-ups). In-app account deletion is a shipped-but-broken surface until it lands, and it is an
-  App Review blocker rather than a Phase E feature.
+- **E2 is no longer blocked.** Account deletion was applied to the database on 2026-07-29 as
+  `20260729213112_phase_e_account_deletion` — verified against the live migration list, not inferred.
+  The four smoke checks in Open follow-ups remain **unrun**.
 - **Next:** **E2 — shipped J1 round/course reconciliation.** Audit and harden the existing course/
   layout and offline round routes rather than rebuilding them, then add weather, activity-only rounds,
   group-scorecard groundwork, bag snapshot verification, and course preparation as separately
@@ -39,35 +40,52 @@ consolidated to a single line of development.
 
 ## Staged next actions
 
-Ordered. The first three close currently-open work; E2 does not start until 1 is applied.
+Ordered. The 2026-07-28 actions 1 and 2 (apply the account-deletion migration, merge PR #4) are both
+**done** and have been removed from this table. E2 is unblocked.
 
 | # | Action | Owner | Blocks |
 |---|---|---|---|
-| 1 | Apply `20260727120000_phase_e_account_deletion.sql`, then run the four smoke checks below | **owner** — see note | account deletion; App Review |
-| 2 | Review and merge PR #4 — **after action 1, not before** | owner review | everything downstream |
+| 1 | **Reconcile the three applied migrations that have no repo file** — see Open follow-ups | agent + owner | migration policy; reproducible rebuild |
+| 2 | Run the four account-deletion smoke checks | owner | App Review confidence |
 | 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
 | 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
-| 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
+| 5 | Prune the merged `codex/*` and `claude/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | Resolve the E2E contradiction: build a Playwright baseline or amend the Phase A contract | agent | honest Phase A status |
 | 7 | Begin E2 round/course reconciliation | agent | — |
 
-**Order matters between 1 and 2.** PR #4 carries the account-deletion UI and `main` auto-deploys, so
-merging before the migration lands ships a button that errors on click. CI on #4 is green (`verify` +
-Vercel preview) as of 2026-07-28; the hold is the migration, not the checks.
+**Action 5 is owner-only for environment reasons, not judgement reasons.** It was approved on
+2026-07-28 and attempted; the git proxy returns HTTP 403 on `git push origin --delete`, and the
+GitHub tool set exposes no delete-branch capability. Prune from the GitHub branches UI. All 14
+`codex/*` branches were re-verified as having zero commits outside `main` immediately before the
+attempt, so deleting them loses nothing. `claude/continue-hoqtyv` is kept for now as a visible
+pointer until the `TrendChart` salvage in `FEATURE_BACKLOG.md` is done.
 
-**Two of these are owner-only for environment reasons, not judgement reasons.** Both were approved on
-2026-07-28 and attempted; both were refused by the sandbox, so a future agent session should not
-assume they are merely undecided:
-
-- **Action 1** — every Supabase MCP call returns `MCP tool call requires approval` and never reaches
-  the project. Apply via the Supabase dashboard SQL editor or `supabase db push`.
-- **Action 5** — the git proxy returns HTTP 403 on `git push origin --delete`, and the GitHub tool
-  set exposes no delete-branch capability. Prune from the GitHub branches UI. All 14 were re-verified
-  as having zero commits outside `main` immediately before the attempt, so deleting them loses
-  nothing. `claude/continue-hoqtyv` is kept for now as a visible pointer until the `TrendChart`
-  salvage in `FEATURE_BACKLOG.md` is done.
+**Supabase MCP access recovered on 2026-07-30.** The 2026-07-28 note that "every Supabase MCP call
+returns `MCP tool call requires approval`" no longer holds — read calls (`list_projects`,
+`list_migrations`) now succeed. Do not carry that limitation forward; re-test before assuming a
+Supabase call is blocked.
 
 ## Standing decisions that constrain new work
+
+- **The "Disc Up" iOS bundle is PARKED (2026-07-30) — do not implement it against this repo.** A
+  handoff document arrived describing Disc Up, a greenfield native SwiftUI/SwiftData iOS app for a
+  repo named `disc-golf-iOS`. It is parked on three counts: the GitHub repo does not exist
+  (`list_repos` returns only `disc-golf-app` and `disc-catcher`); the eleven documents it instructs
+  an agent to commit were never attached; and its own text forbids implementation until three
+  PROVISIONAL decisions are confirmed. **Its Supabase backend is real** — project `disc-golf-ios`
+  (`ezzwoivuxhmfemplkobd`, created 2026-07-17, ACTIVE_HEALTHY), separate from this app's
+  `icqzbvtjisxwycvioiup`.
+
+  Several of its locked decisions directly reverse shipped architecture here, so it is **not** a
+  feature to fold in: player data never leaving the device (this app syncs through Supabase with auth
+  and RLS), Supabase reduced to a read-only course catalog with an empty `public` schema (this app's
+  `public` holds putts, sessions, discs, bags, rounds), and "routine, never regimen" (this app's
+  schema is `putting_regimens` / `putting_regimen_runs` / `putting_regimen_sets` plus
+  `src/lib/regimenScoring.js`). It also assumes a from-scratch SwiftUI client, where
+  `docs/mobile/IOS_READINESS.md` calls for Capacitor and only after Phase A field flows stabilize.
+
+  **Open question for the owner:** is Disc Up a separate product or a rebuild of this one? Nothing
+  downstream should treat the bundle as accepted design until that is answered.
 
 - **Catalog ingestion is SCRAPPED (2026-07-13) — do NOT rebuild a scraper.** The first live crawl
   proved the pipeline worked end to end, but MVP's live pages no longer expose parseable flight
@@ -101,11 +119,31 @@ assume they are merely undecided:
 
 ## Open follow-ups
 
-- **`20260727120000_phase_e_account_deletion.sql` is written but NOT applied.** It creates the
-  `public.delete_own_account()` security-definer RPC. Until it is applied, the Settings delete button
-  fails with an undefined-function error. Apply it, then smoke-test in a rollback-only transaction:
-  a second user's rows survive, community `created_by` is nulled rather than deleted, private Storage
-  objects under the user's prefix are gone, and `anon` cannot execute the function.
+- **Database is ahead of the repo by three migrations (found 2026-07-30).** The live project
+  (`icqzbvtjisxwycvioiup`) reports 51 applied migrations; `supabase/migrations/` holds 35 files. Most
+  of the gap is the pre-Phase-A schema that lives in root-level `*_schema.sql` files, which is
+  expected. These three are not — they were applied to production and have **no repo counterpart at
+  all**:
+
+  | Applied version | Name |
+  |---|---|
+  | `20260729213141` | `phase_e_preserve_moderation_history` |
+  | `20260729213216` | `phase_e_atomic_course_creation` |
+  | `20260730025443` | `phase_e_hole_number_nulls_not_distinct` |
+
+  This breaks the append-only migration policy below and means a rebuild from `supabase/migrations/`
+  would not reproduce production. Reconcile before E2 touches course/round schema — E2 is exactly the
+  area `atomic_course_creation` and `hole_number_nulls_not_distinct` sit in, so working around them
+  blind risks a conflicting migration. Recover the DDL from the dashboard migration history rather
+  than reconstructing it from introspection, since introspection loses comments and rollback notes.
+
+  Related: `20260727120000_phase_e_account_deletion.sql` is in the repo but was applied under the
+  stamp `20260729213112`, so filename and applied version do not match. Note it when reconciling.
+
+- **The four account-deletion smoke checks are still unrun.** The RPC is applied and live. Verify in
+  a rollback-only transaction: a second user's rows survive, community `created_by` is nulled rather
+  than deleted, private Storage objects under the user's prefix are gone, and `anon` cannot execute
+  `public.delete_own_account()`.
 
 - Delete the empty `catalog-import-raw` Storage bucket from the Supabase dashboard. Direct DELETE on
   storage tables is blocked and the CLI manages objects rather than buckets, so this needs the
