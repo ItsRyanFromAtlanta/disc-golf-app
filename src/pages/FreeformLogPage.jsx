@@ -31,7 +31,7 @@ import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePick
 import SessionReport from '../components/sessionReport/SessionReport'
 import FatigueCheckin from '../components/puttingCanvas/FatigueCheckin'
 import { fatigueCheckinTrigger } from '../lib/fatigueCheckin'
-import { fatigueCheckinRepository } from '../lib/repository/fatigueCheckinRepository'
+import { fatigueCheckinRepository, useFatigueCheckinSync } from '../lib/repository/fatigueCheckinRepository'
 
 const DEFAULT_VOLUME = 10
 const BASELINE_WINDOW_DAYS = 30
@@ -95,6 +95,11 @@ export default function FreeformLogPage() {
   const [externalFactors, setExternalFactors] = useState([])
   const [perceivedEffort, setPerceivedEffort] = useState(null)
   const [fatiguePrompt, setFatiguePrompt] = useState(null)
+  // Sync state of the check-in just answered — see RegimenRunPage's identical
+  // comment; both call sites used to discard this and show nothing.
+  const [fatigueSyncState, setFatigueSyncState] = useState(null)
+
+  useFatigueCheckinSync()
 
   // Session Summary (Screen 9) — freeform previously had no post-session
   // report at all; completedDistances mirrors RegimenRunPage's completedSets
@@ -298,6 +303,7 @@ export default function FreeformLogPage() {
     setExternalFactors([])
     setPerceivedEffort(null)
     setFatiguePrompt(null)
+    setFatigueSyncState(null)
     setFreeformSessionId(sessionId)
   }
 
@@ -435,12 +441,13 @@ export default function FreeformLogPage() {
     const prompt = fatiguePrompt
     setFatiguePrompt(null)
     if (!prompt) return
-    await fatigueCheckinRepository.record({
+    const saved = await fatigueCheckinRepository.record({
       id: crypto.randomUUID(), user_id: user.id, putt_session_id: freeformSessionId, regimen_run_id: null,
       stage_index: prompt.stageIndex, trigger_reason: prompt.reason, fatigue_rating: rating,
       skipped: rating == null, recorded_at: new Date().toISOString(),
       idempotency_key: `fatigue:${freeformSessionId}:${prompt.stageIndex}`,
     })
+    setFatigueSyncState(saved.sync_state)
   }
 
   function handleEndSession() {
@@ -690,6 +697,12 @@ export default function FreeformLogPage() {
         />
       )}
       {fatiguePrompt && <FatigueCheckin reason={fatiguePrompt.reason} onRespond={handleFatigueResponse} />}
+      {fatigueSyncState === 'pending' && (
+        <p className="fatigue-checkin" role="status">
+          <span className="history-sync-badge history-sync-pending">Saved on device</span>{' '}
+          Your fatigue check-in is queued and will sync when you reconnect.
+        </p>
+      )}
 
       {pendingMiss && (
         <DiagnosticZonePicker

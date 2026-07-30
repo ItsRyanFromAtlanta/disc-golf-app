@@ -36,7 +36,7 @@ import DiagnosticZonePicker from '../components/puttingCanvas/DiagnosticZonePick
 import SessionReport from '../components/sessionReport/SessionReport'
 import FatigueCheckin from '../components/puttingCanvas/FatigueCheckin'
 import { fatigueCheckinTrigger } from '../lib/fatigueCheckin'
-import { fatigueCheckinRepository } from '../lib/repository/fatigueCheckinRepository'
+import { fatigueCheckinRepository, useFatigueCheckinSync } from '../lib/repository/fatigueCheckinRepository'
 import { fetchGhostPacingProfile } from '../lib/repository/ghostPacingRepository'
 import GhostPaceCard from '../components/puttingCanvas/GhostPaceCard'
 import ClutchTimerPanel from '../components/puttingCanvas/ClutchTimerPanel'
@@ -119,7 +119,13 @@ export default function RegimenRunPage() {
   const [externalFactors, setExternalFactors] = useState([])
   const [perceivedEffort, setPerceivedEffort] = useState(null)
   const [fatiguePrompt, setFatiguePrompt] = useState(null)
+  // Sync state of the check-in just answered. The repository used to return it
+  // and this page used to throw it away, so a stranded answer looked identical
+  // to a saved one.
+  const [fatigueSyncState, setFatigueSyncState] = useState(null)
   const [availableGhostProfile, setAvailableGhostProfile] = useState(null)
+
+  useFatigueCheckinSync()
 
   // Session Summary (Screen 9) — populated once the run reaches 'summary'.
   const [reportPutterRows, setReportPutterRows] = useState([])
@@ -347,6 +353,7 @@ export default function RegimenRunPage() {
     setExternalFactors([])
     setPerceivedEffort(null)
     setFatiguePrompt(null)
+    setFatigueSyncState(null)
     const clutchSetIndex = isClutch
       ? Math.max(0, sets.findIndex((set) => stageDistanceFt(set) === clutchDistanceFt))
       : 0
@@ -526,12 +533,13 @@ export default function RegimenRunPage() {
     const prompt = fatiguePrompt
     setFatiguePrompt(null)
     if (!prompt) return
-    await fatigueCheckinRepository.record({
+    const saved = await fatigueCheckinRepository.record({
       id: crypto.randomUUID(), user_id: user.id, putt_session_id: null, regimen_run_id: regimenRunId,
       stage_index: prompt.stageIndex, trigger_reason: prompt.reason, fatigue_rating: rating,
       skipped: rating == null, recorded_at: new Date().toISOString(),
       idempotency_key: `fatigue:${regimenRunId}:${prompt.stageIndex}`,
     })
+    setFatigueSyncState(saved.sync_state)
   }
 
   function toggleFactor(factor) {
@@ -806,6 +814,12 @@ export default function RegimenRunPage() {
         />
       )}
       {fatiguePrompt && <FatigueCheckin reason={fatiguePrompt.reason} onRespond={handleFatigueResponse} />}
+      {fatigueSyncState === 'pending' && (
+        <p className="fatigue-checkin" role="status">
+          <span className="history-sync-badge history-sync-pending">Saved on device</span>{' '}
+          Your fatigue check-in is queued and will sync when you reconnect.
+        </p>
+      )}
 
       {pendingMiss && (
         <DiagnosticZonePicker
