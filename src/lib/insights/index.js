@@ -10,6 +10,13 @@ export {
   DISTANCE_BAND_WIDTH_FT,
   LOCK_IN_LOWER_BOUND,
 } from './confidenceMap'
+export {
+  distanceProfile,
+  DISTANCE_PROFILE_MIN_BAND_ATTEMPTS,
+  DISTANCE_PROFILE_MIN_QUALIFIED_BANDS,
+  OVER_INVESTED_RATIO,
+  UNDER_INVESTED_RATIO,
+} from './distanceProfile'
 export { regimenPBRunIds, distancePBSessionIds, DISTANCE_PB_MIN_ATTEMPTS } from './pbs'
 export { distanceDropOff, DROP_OFF_WARN_THRESHOLD_PCT } from './dropOff'
 export { putterBreakdown } from './putterBreakdown'

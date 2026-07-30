@@ -278,7 +278,11 @@ clear-cache.
   90-day point is not a dozen putts pretending to be a trend; and the ★ markers read
   `practice_experiment_markers` rather than a `discs.role` change timestamp, because D4 checkpoint 3
   made that append-only table the recorded equipment boundary for metrics. The chart also states a
-  direction verdict, gated on the window's two halves having non-overlapping Wilson intervals;
+  direction verdict, gated on the window's two halves having non-overlapping Wilson intervals. The
+  **distance heat profile** shipped alongside it (`lib/insights/distanceProfile.js` +
+  `components/DistanceHeatProfile.jsx`): practice share and interval-derived strength as two separate
+  axes per distance band, with the named mismatch between them — blind spot, not converting,
+  over-drilled — as the takeaway, plus untouched bands inside the practised range as coverage gaps;
   sync ledger (pending writes, last-sync time, `[ SYNC NOW ]`); behavioral toggles (units, default
   stack size, haptics); CSV export module (client-side, zipped); 2-step `[ CLEAR CACHE ]` confirmation
   modal (clears the Dexie/InstantLaunch buffer only, never server data; blocked while writes pending).

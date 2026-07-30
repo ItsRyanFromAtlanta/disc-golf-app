@@ -5,6 +5,7 @@ import { fetchPracticeInsights, allPuttSamples, distanceSamples } from '../lib/h
 import {
   confidenceMap,
   decayWeightedForm,
+  distanceProfile,
   experimentComparison,
   makePercentTrend,
   missTendency,
@@ -18,6 +19,7 @@ import MissTendencyGrid from '../components/MissTendencyGrid'
 import PutterComparison from '../components/PutterComparison'
 import ExperimentMarkerPanel from '../components/ExperimentMarkerPanel'
 import TrendChart from '../components/TrendChart'
+import DistanceHeatProfile from '../components/DistanceHeatProfile'
 
 const ZONE_LABELS = {
   'lock-in': 'Lock-in',
@@ -65,6 +67,7 @@ export default function ConfidenceMapPage() {
     [data, trend],
   )
   const form = useMemo(() => (data ? decayWeightedForm(allPuttSamples(data), now) : null), [data, now])
+  const heatProfile = useMemo(() => (data ? distanceProfile(distanceSamples(data)) : null), [data])
   const misses = useMemo(() => (data ? missTendency(data.puttEvents) : null), [data])
   const putters = useMemo(() => (data ? putterComparison(data.puttEvents, data.discs) : null), [data])
   const experiments = useMemo(() => (data ? experimentComparison(data.experimentMarkers, data.puttEvents, data.discs) : null), [data])
@@ -130,6 +133,7 @@ export default function ConfidenceMapPage() {
           ))}
         </ul>
       )}
+      <DistanceHeatProfile profile={heatProfile} />
       <MissTendencyGrid report={misses} />
       <PutterComparison report={putters} />
       <ExperimentMarkerPanel

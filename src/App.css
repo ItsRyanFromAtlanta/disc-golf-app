@@ -1577,6 +1577,40 @@
 .trend-detail-list li { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px; border: var(--border-width) solid var(--color-border-default); border-radius: 6px; }
 .trend-detail-list small { grid-column: 1 / -1; color: var(--color-text-secondary); }
 
+/* Distance heat profile. Two tracks per band, because the readable signal is
+   the disagreement between them — a wide practice bar sitting over a narrow
+   make bar is the whole point of the view. */
+.distance-profile { margin-top: 30px; }
+.distance-profile-takeaway { display: grid; gap: 4px; margin: 12px 0 16px; padding: 12px 14px; border: var(--border-width) solid var(--color-border-default); border-left-width: 4px; border-radius: 8px; background: var(--color-bg-surface); }
+.distance-profile-takeaway strong { font-family: var(--font-display); font-size: 18px; line-height: 1.2; }
+.distance-profile-takeaway span { color: var(--color-text-secondary); font-size: 13px; line-height: 1.45; }
+.takeaway-alert { border-left-color: var(--color-negative); background: var(--color-negative-soft); }
+.takeaway-good { border-left-color: var(--color-secondary-accent); background: var(--color-secondary-accent-soft); }
+.takeaway-flat { border-left-color: var(--color-text-secondary); }
+.distance-profile-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.distance-profile-band { padding: 12px 14px; border: var(--border-width) solid var(--color-border-default); border-left: 4px solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-surface); }
+.distance-profile-band.gap-blind-spot, .distance-profile-band.gap-grinding { border-left-color: var(--color-negative); }
+.distance-profile-band.gap-over-drilled { border-left-color: var(--color-highlight); }
+.distance-profile-band.gap-aligned { border-left-color: var(--color-secondary-accent); }
+.distance-profile-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: 600; }
+.distance-profile-gap { padding: 2px 10px; border-radius: 999px; background: var(--color-bg-surface-alt); font-size: 12px; font-weight: 700; }
+.gap-blind-spot .distance-profile-gap, .gap-grinding .distance-profile-gap { background: var(--color-negative-soft); color: var(--color-negative); }
+/* Text stays primary on the orange tint for the same contrast reason recorded
+   above the confidence-map zone badges. */
+.gap-over-drilled .distance-profile-gap { background: var(--color-highlight-soft); color: var(--color-text-primary); }
+.gap-aligned .distance-profile-gap { background: var(--color-secondary-accent-soft); color: var(--color-secondary-accent); }
+.distance-profile-row { display: grid; grid-template-columns: 56px 1fr 42px; align-items: center; gap: 8px; margin-top: 10px; }
+.distance-profile-axis, .distance-profile-value { color: var(--color-text-secondary); font-size: 12px; }
+.distance-profile-value { text-align: right; }
+.distance-profile-track { position: relative; height: 10px; background: var(--color-bg-surface-alt); border-radius: 999px; }
+.distance-profile-volume { position: absolute; top: 0; bottom: 0; left: 0; min-width: 2px; border-radius: 999px; background: var(--color-highlight); }
+.distance-profile-interval { position: absolute; top: 0; bottom: 0; border-radius: 999px; background: var(--color-secondary-accent-soft); }
+.distance-profile-point { position: absolute; top: -3px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--color-text-primary); }
+.distance-profile-tick { position: absolute; top: -4px; bottom: -4px; width: 1px; margin-left: -0.5px; background: var(--color-text-secondary); opacity: 0.55; }
+.distance-profile-footer { margin: 10px 0 0; color: var(--color-text-secondary); font-size: 13px; }
+.distance-profile-coverage { margin: 14px 0 0; padding: 12px; border: var(--border-width) dashed var(--color-border-default); border-radius: 8px; color: var(--color-text-secondary); font-size: 13px; line-height: 1.45; }
+.distance-profile-legend { margin: 12px 0 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
+
 .miss-tendency { margin-top: 30px; }
 .miss-capture-coverage { padding: 12px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-surface); }
 .miss-band-list { display: grid; gap: 16px; }

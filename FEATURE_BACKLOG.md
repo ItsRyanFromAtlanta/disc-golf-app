@@ -42,7 +42,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Decay-weighted current form | SHIPPED | Contextual recent-vs-lifetime metric; no opaque composite score |
 | Cadence fingerprint | SHIPPED | Integrate into ME/weekly reports when supported by samples |
 | Confidence intervals on make % | SHIPPED | Wilson band until n ≥ 30 per distance/split |
-| Distance heat profile | NEXT UP | Practice volume vs weakness by distance; the gap = blind spot |
+| Distance heat profile | SHIPPED | 2026-07-30 at `/practice/stats` as `insights/distanceProfile` + `DistanceHeatProfile`. The mismatch is the product, not the volume: each band is classified on two separately-displayed axes — share of practice against an even split, and strength read off the Wilson interval against the confidence map's existing lock-in bound — and the named gap is where they disagree (`blind-spot` weak+neglected, `grinding` weak+over-practised, `over-drilled` owned+over-practised). Deliberately not one priority score. Untouched bands inside the practised range surface separately as coverage gaps; a band under 10 attempts stays `untested`, and no mismatch is claimed below 2 qualified bands |
 | Putter tracking (link sessions to discs table) | SHIPPED | D4 checkpoint 2 compares exact physical discs, exposes attribution coverage/Wilson uncertainty, and adjusts only across shared distance bands with sufficient evidence |
 | Experiment markers | SHIPPED | D4 checkpoint 3: append-only new-putter boundaries, 10-attempt before/after floor, and Wilson intervals; grip experiments deferred by product decision |
 | Distance-weighted practice load (intensity) | BACKLOG | Athlete/periodization framing; correlate pre-tournament load with results once round data exists |
