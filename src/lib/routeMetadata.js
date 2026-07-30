@@ -20,6 +20,19 @@ const APP_ROUTES = [
     scrollKey: 'courses-form',
   },
   {
+    id: 'course-prep',
+    match: /^\/courses\/[^/]+\/prep$/,
+    section: 'courses',
+    shell: SHELL_TYPES.STANDARD,
+    title: 'Course Prep',
+    showActivityPill: true,
+    // The layout picker lives in the query string, so returning to the sheet
+    // from a round should land where the player left it rather than resetting
+    // to the default layout.
+    preserveNestedState: true,
+    scrollKey: 'courses-prep',
+  },
+  {
     id: 'course-detail',
     match: /^\/courses\/[^/]+$/,
     section: 'courses',

@@ -56,6 +56,14 @@ describe('route metadata contract', () => {
       preserveNestedState: true,
     })
     expect(resolveRouteMetadata('/courses/course-1')).toMatchObject({ id: 'course-detail', section: 'courses' })
+    // The prep sheet is a nested course route, so it must not be swallowed by
+    // the course-detail pattern above it.
+    expect(resolveRouteMetadata('/courses/course-1/prep')).toMatchObject({
+      id: 'course-prep',
+      section: 'courses',
+      title: 'Course Prep',
+      preserveNestedState: true,
+    })
     expect(resolveRouteMetadata('/rounds/new')).toMatchObject({ id: 'round-start', preserveNestedState: true })
     expect(resolveRouteMetadata('/rounds/round-1')).toMatchObject({ id: 'round-scorecard', preserveNestedState: true })
     expect(resolveRouteMetadata('/rounds/round-1/summary')).toMatchObject({ id: 'round-summary', preserveNestedState: false })
