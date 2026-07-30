@@ -16,6 +16,15 @@ export { putterBreakdown } from './putterBreakdown'
 export { missTendency, MISS_TENDENCY_MIN_PATTERN_MISSES } from './missTendency'
 export { putterComparison, PUTTER_COMPARISON_MIN_SHARED_ATTEMPTS } from './putterComparison'
 export { experimentComparison, EXPERIMENT_MIN_SIDE_ATTEMPTS } from './experimentComparison'
+export {
+  makePercentTrend,
+  trendMilestones,
+  trendWindow,
+  TREND_WINDOWS,
+  DEFAULT_TREND_WINDOW_DAYS,
+  TREND_MIN_BUCKET_ATTEMPTS,
+  TREND_MIN_HALF_ATTEMPTS,
+} from './trend'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
 export {

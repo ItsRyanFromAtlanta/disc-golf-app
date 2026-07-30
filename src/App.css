@@ -1549,6 +1549,34 @@
   color: var(--color-text-secondary);
 }
 
+/* Make-% trend. The verdict block is styled louder than the chart on purpose:
+   the readable claim is the product, the line is the evidence for it. */
+.trend-chart { margin-bottom: 30px; }
+.trend-chart h2 { margin-bottom: 0; }
+.trend-verdict { display: grid; gap: 4px; margin: 0 0 14px; padding: 12px 14px; border: var(--border-width) solid var(--color-border-default); border-left-width: 4px; border-radius: 8px; background: var(--color-bg-surface); }
+.trend-verdict strong { font-family: var(--font-display); font-size: 18px; }
+.trend-verdict span { color: var(--color-text-secondary); font-size: 13px; line-height: 1.45; }
+.trend-verdict-up { border-left-color: var(--color-secondary-accent); background: var(--color-secondary-accent-soft); }
+.trend-verdict-down { border-left-color: var(--color-negative); background: var(--color-negative-soft); }
+.trend-verdict-flat { border-left-color: var(--color-text-secondary); }
+.trend-svg { width: 100%; height: auto; overflow: visible; }
+.trend-gridline { stroke: var(--color-border-default); stroke-width: 1; }
+.trend-axis-label { fill: var(--color-text-secondary); font-size: 9px; }
+.trend-line { stroke: var(--color-secondary-accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.trend-whisker { stroke: var(--color-text-secondary); stroke-width: 1.5; opacity: 0.55; }
+.trend-dot { fill: var(--color-secondary-accent); stroke: var(--color-bg-surface); stroke-width: 1.5; }
+/* Hollow = provisional. Shape, not colour alone, carries the distinction. */
+.trend-dot-sparse { fill: var(--color-bg-primary); stroke: var(--color-secondary-accent); stroke-width: 2; }
+.trend-milestone-line { stroke: var(--color-highlight); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.trend-milestone-star { fill: var(--color-highlight); font-size: 10px; }
+.trend-empty, .trend-footer, .trend-legend { color: var(--color-text-secondary); font-size: 13px; }
+.trend-footer { margin: 8px 0 4px; }
+.trend-legend { margin: 0; font-size: 12px; line-height: 1.45; }
+.trend-detail summary { min-height: 44px; padding: 10px 0; cursor: pointer; font-weight: 700; }
+.trend-detail-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.trend-detail-list li { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 8px; border: var(--border-width) solid var(--color-border-default); border-radius: 6px; }
+.trend-detail-list small { grid-column: 1 / -1; color: var(--color-text-secondary); }
+
 .miss-tendency { margin-top: 30px; }
 .miss-capture-coverage { padding: 12px; border: var(--border-width) solid var(--color-border-default); border-radius: 8px; background: var(--color-bg-surface); }
 .miss-band-list { display: grid; gap: 16px; }

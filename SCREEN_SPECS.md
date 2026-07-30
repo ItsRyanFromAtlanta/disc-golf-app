@@ -271,9 +271,14 @@ clear-cache.
   under the STATS tab), `src/lib/insights/` (`decayWeightedForm`, `confidenceMap`, `cadenceFingerprint`,
   `fatigueCurve`, `pressureDifferential`, `wilsonInterval`), `src/lib/history.js`
   (`allPuttSamples`/`distanceSamples`), InstantLaunch outbox state + `retrySync`.
-- **NET-NEW:** time-series windowing function (`lib/insights/`, unit-tested) with 7/30/90-day range
-  chips; **equipment-milestone ★ injections** — vertical markers on the trend chart at the exact
-  timestamp a disc's `role` changed to PRIMARY_PUTTER (reads the same role column Screen 6 writes);
+- **NET-NEW:** ~~time-series windowing function (`lib/insights/`, unit-tested) with 7/30/90-day range
+  chips; **equipment-milestone ★ injections**~~ — **SHIPPED 2026-07-30** as `lib/insights/trend.js` +
+  `components/TrendChart.jsx` inside `/practice/stats`, with two deliberate divergences from this
+  spec: bucket width scales with the range (1/5/15 days) instead of always being a calendar day, so a
+  90-day point is not a dozen putts pretending to be a trend; and the ★ markers read
+  `practice_experiment_markers` rather than a `discs.role` change timestamp, because D4 checkpoint 3
+  made that append-only table the recorded equipment boundary for metrics. The chart also states a
+  direction verdict, gated on the window's two halves having non-overlapping Wilson intervals;
   sync ledger (pending writes, last-sync time, `[ SYNC NOW ]`); behavioral toggles (units, default
   stack size, haptics); CSV export module (client-side, zipped); 2-step `[ CLEAR CACHE ]` confirmation
   modal (clears the Dexie/InstantLaunch buffer only, never server data; blocked while writes pending).

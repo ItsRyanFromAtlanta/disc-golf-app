@@ -1,11 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { fetchPracticeInsights, distanceSamples } from '../lib/history'
-import { confidenceMap, experimentComparison, missTendency, putterComparison, WILSON_MIN_N_FOR_HIDING, LOCK_IN_LOWER_BOUND } from '../lib/insights'
+import { fetchPracticeInsights, allPuttSamples, distanceSamples } from '../lib/history'
+import {
+  confidenceMap,
+  decayWeightedForm,
+  experimentComparison,
+  makePercentTrend,
+  missTendency,
+  putterComparison,
+  trendMilestones,
+  DEFAULT_TREND_WINDOW_DAYS,
+  WILSON_MIN_N_FOR_HIDING,
+  LOCK_IN_LOWER_BOUND,
+} from '../lib/insights'
 import MissTendencyGrid from '../components/MissTendencyGrid'
 import PutterComparison from '../components/PutterComparison'
 import ExperimentMarkerPanel from '../components/ExperimentMarkerPanel'
+import TrendChart from '../components/TrendChart'
 
 const ZONE_LABELS = {
   'lock-in': 'Lock-in',
@@ -20,13 +32,39 @@ function pct(value) {
 export default function ConfidenceMapPage() {
   const { user } = useAuth()
   const [data, setData] = useState(null)
+  // The trend window's "now". Frozen at load so switching the range chip cannot
+  // slide the window under the reader and silently change what the verdict was
+  // computed from.
+  const [loadedAt, setLoadedAt] = useState(null)
   const [error, setError] = useState(null)
+  const [trendWindowDays, setTrendWindowDays] = useState(DEFAULT_TREND_WINDOW_DAYS)
+
+  const load = useCallback(
+    () =>
+      fetchPracticeInsights(user.id)
+        .then((insights) => {
+          setData(insights)
+          setLoadedAt(Date.now())
+        })
+        .catch((err) => setError(err.message)),
+    [user.id],
+  )
 
   useEffect(() => {
-    fetchPracticeInsights(user.id).then(setData).catch((err) => setError(err.message))
-  }, [user.id])
+    load()
+  }, [load])
 
+  const now = loadedAt
   const bands = useMemo(() => (data ? confidenceMap(distanceSamples(data)) : null), [data])
+  const trend = useMemo(
+    () => (data ? makePercentTrend(allPuttSamples(data), { now, windowDays: trendWindowDays }) : null),
+    [data, now, trendWindowDays],
+  )
+  const milestones = useMemo(
+    () => (trend ? trendMilestones(data.experimentMarkers, data.discs, trend) : []),
+    [data, trend],
+  )
+  const form = useMemo(() => (data ? decayWeightedForm(allPuttSamples(data), now) : null), [data, now])
   const misses = useMemo(() => (data ? missTendency(data.puttEvents) : null), [data])
   const putters = useMemo(() => (data ? putterComparison(data.puttEvents, data.discs) : null), [data])
   const experiments = useMemo(() => (data ? experimentComparison(data.experimentMarkers, data.puttEvents, data.discs) : null), [data])
@@ -42,6 +80,13 @@ export default function ConfidenceMapPage() {
           Practice menu
         </Link>
       </header>
+
+      <TrendChart
+        trend={trend}
+        milestones={milestones}
+        form={form}
+        onWindowChange={setTrendWindowDays}
+      />
 
       <h2>Distance confidence</h2>
       <p className="confidence-map-intro">
@@ -91,7 +136,7 @@ export default function ConfidenceMapPage() {
         userId={user.id}
         discs={data.discs}
         experiments={experiments.experiments}
-        onCreated={() => fetchPracticeInsights(user.id).then(setData).catch((err) => setError(err.message))}
+        onCreated={load}
       />
     </section>
   )

@@ -38,7 +38,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Volume ledger | SHIPPED | Putts this week / month / lifetime |
 | Fatigue curve | SHIPPED | D2 adds pattern-gated adaptive stage check-ins and a user-disableable round-turn prompt |
 | Pressure differential | SHIPPED | Contextual metric; no standalone Stats tab |
-| Make-% trend chart over time | BACKLOG | Salvage candidate from the superseded `claude/continue-hoqtyv` branch (`TrendChart.jsx` + `insights/timeSeries.js`, reachable at commit `775543c`). The only surface on that branch with no successor in `main`. Re-derive against the current repository and `insights/` conventions rather than merging the 2026-07-14 code as-is; pairs with decay-weighted current form |
+| Make-% trend chart over time | SHIPPED | 2026-07-30 at `/practice/stats` as `insights/trend` + `TrendChart`. Re-derived from `775543c`, not merged: the 2026-07-14 version bucketed by UTC day at every range and plotted bare point estimates, so a 90-day view drew ~90 confident-looking dots of a dozen putts each. Buckets now widen with the window (1/5/15 days), every point carries a Wilson interval, thin points render hollow, and the direction verdict is only claimed when the window's two halves have non-overlapping 95% intervals with ≥20 attempts each. Milestone ★ markers moved from `disc_role_history` to the append-only `practice_experiment_markers` that superseded it |
 | Decay-weighted current form | SHIPPED | Contextual recent-vs-lifetime metric; no opaque composite score |
 | Cadence fingerprint | SHIPPED | Integrate into ME/weekly reports when supported by samples |
 | Confidence intervals on make % | SHIPPED | Wilson band until n ≥ 30 per distance/split |
