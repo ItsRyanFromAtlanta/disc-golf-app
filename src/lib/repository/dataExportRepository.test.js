@@ -102,4 +102,53 @@ describe('dataExportRepository', () => {
     await expect(createDataExportRepository({ client }).collectUserExport('user-1'))
       .rejects.toThrow('Could not export goals: network unavailable')
   })
+
+  // `round_players` is the first `optionalUntilDeployed` source: its migration
+  // is unapplied, so without the tolerance below every export on every account
+  // would abort on a table PostgREST has never heard of.
+  function clientFailing(table, error) {
+    const client = createClient({})
+    client.from = vi.fn((requested) => {
+      const builder = {
+        select: () => builder, order: () => builder, eq: () => builder, in: () => builder,
+        range: () => builder,
+        then: (resolve) => Promise.resolve(requested === table
+          ? { data: null, error }
+          : { data: [], error: null }).then(resolve),
+      }
+      return builder
+    })
+    return client
+  }
+
+  it.each(['PGRST205', '42P01'])(
+    'skips an optional table that is not deployed yet (%s) and records why in the dataset',
+    async (code) => {
+      const client = clientFailing('round_players', { code, message: 'Could not find the table' })
+
+      const datasets = await createDataExportRepository({ client }).collectUserExport('user-1')
+
+      expect(datasets.round_players.rows).toEqual([])
+      expect(datasets.round_players.note).toMatch(/not present on the database/)
+      // Everything else still exported, so the tolerance is scoped rather than
+      // a blanket swallow.
+      expect(datasets.rounds.rows).toEqual([])
+    },
+  )
+
+  it('still aborts the whole export when an optional table fails for any other reason', async () => {
+    const denied = clientFailing('round_players', { code: '42501', message: 'permission denied' })
+    await expect(createDataExportRepository({ client: denied }).collectUserExport('user-1'))
+      .rejects.toThrow('Could not export round_players: permission denied')
+
+    const offline = clientFailing('round_players', { message: 'network unavailable' })
+    await expect(createDataExportRepository({ client: offline }).collectUserExport('user-1'))
+      .rejects.toThrow('Could not export round_players: network unavailable')
+  })
+
+  it('leaves a non-optional table intolerant of the same missing-table code', async () => {
+    const client = clientFailing('goals', { code: 'PGRST205', message: 'Could not find the table' })
+    await expect(createDataExportRepository({ client }).collectUserExport('user-1'))
+      .rejects.toThrow('Could not export goals: Could not find the table')
+  })
 })

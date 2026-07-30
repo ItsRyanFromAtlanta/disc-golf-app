@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { attachResponseStatus, isPermanentError } from './errorClassification'
+import { attachResponseStatus, isMissingRelationError, isPermanentError } from './errorClassification'
 
 describe('isPermanentError', () => {
   it('treats known constraint-violation Postgres codes as permanent', () => {
@@ -98,5 +98,43 @@ describe('attachResponseStatus', () => {
     expect(error.message).toBe('boom')
     expect(error.stack).toBeTruthy()
     expect(error).toBeInstanceOf(Error)
+  })
+})
+
+describe('isMissingRelationError', () => {
+  // The two codes that mean "this table is not deployed yet", and only those.
+  // A read path uses this to degrade honestly; every other failure has to keep
+  // looking like a failure, or a permission error becomes a claim that a
+  // shipped feature does not exist.
+  it('recognises both spellings of a missing table', () => {
+    expect(isMissingRelationError({ code: 'PGRST205' })).toBe(true)
+    expect(isMissingRelationError({ code: '42P01' })).toBe(true)
+  })
+
+  it('does not treat a missing column or function as a missing table', () => {
+    expect(isMissingRelationError({ code: 'PGRST204' })).toBe(false)
+    expect(isMissingRelationError({ code: '42703' })).toBe(false)
+    expect(isMissingRelationError({ code: 'PGRST202' })).toBe(false)
+    expect(isMissingRelationError({ code: '42883' })).toBe(false)
+  })
+
+  it('does not treat a permission denial, a validation error or a network failure as one', () => {
+    expect(isMissingRelationError({ code: '42501' })).toBe(false)
+    expect(isMissingRelationError({ code: '22023' })).toBe(false)
+    expect(isMissingRelationError(new TypeError('Failed to fetch'))).toBe(false)
+  })
+
+  it('handles an absent error and a numeric code', () => {
+    expect(isMissingRelationError(null)).toBe(false)
+    expect(isMissingRelationError(undefined)).toBe(false)
+    expect(isMissingRelationError({})).toBe(false)
+    expect(isMissingRelationError({ code: 42501 })).toBe(false)
+  })
+
+  // Both stay transient, which is what lets a write queued in the deploy window
+  // wait for its migration instead of poisoning the round.
+  it('agrees with the classifier: a missing table is never permanent', () => {
+    expect(isPermanentError({ code: 'PGRST205' })).toBe(false)
+    expect(isPermanentError({ code: '42P01' })).toBe(false)
   })
 })

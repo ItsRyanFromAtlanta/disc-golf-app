@@ -4883,6 +4883,33 @@
   flex-direction: column;
   gap: 6px;
   margin: 12px 0;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-bag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.round-bag-name {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.round-bag-name small {
+  color: var(--color-text-secondary);
+}
+
+.round-bag p {
+  margin: 0;
+}
+
 /* Course prep (`/courses/:courseId/prep`). Built from the existing course and
    round primitives — `.course-section`, `.putt-log-list`, `.chip-row` — so the
    only new rules are the hole card, which carries more prose than the compact
@@ -4929,25 +4956,6 @@
   background: var(--color-bg-surface);
 }
 
-.round-bag-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.round-bag-name {
-  color: var(--color-text-primary);
-  font-size: 14px;
-}
-
-.round-bag-name small {
-  color: var(--color-text-secondary);
-}
-
-.round-bag p {
-  margin: 0;
 .prep-hole p {
   margin: 0;
   font-size: 13px;
@@ -4988,4 +4996,80 @@
 
 .prep-hole-discs {
   color: var(--color-secondary-accent);
+}
+
+/* Group-scorecard groundwork (E2 A6). Same card surface as the bag and
+   conditions panels, because it answers the same kind of question about the
+   round — who was there — and is equally not an alert. The list is deliberately
+   plain: no medals, no highlight on the lowest total, nothing that reads as a
+   result. Ranking a private card is one sort call away from a leaderboard, and
+   that feature is parked. */
+.round-players {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-players p {
+  margin: 0;
+}
+
+.round-players-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.round-players-heading {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.round-players-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.round-players-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.round-players-entry strong {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.round-players-entry small {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.round-players-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.round-players-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }

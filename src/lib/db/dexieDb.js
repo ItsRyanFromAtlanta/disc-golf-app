@@ -275,6 +275,20 @@ export class AppDatabase extends Dexie {
     this.version(15).stores({
       courses: 'id, created_by, name',
     })
+
+    // Phase E2 group-scorecard groundwork: the companions recorded on a round.
+    //
+    // Its own store rather than a nested array on the cached round, which is
+    // the opposite of the choice v15 made for courses one comment above — and
+    // deliberately so. A cached course is read-only reference data replaced
+    // wholesale on every fetch; a roster is edited seat by seat, offline, and
+    // each seat is an independently queued write. `[round_id+position]` is the
+    // natural key the remote table uses (`unique (round_id, position)`), so the
+    // mirror converges on the same key the server does instead of on a
+    // client-generated id that a replay can change — E2 audit finding 1.
+    this.version(16).stores({
+      roundPlayers: 'id, round_id, user_id, [round_id+position]',
+    })
   }
 }
 

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import RoundBagPanel from '../components/RoundBagPanel'
+import RoundPlayersPanel from '../components/RoundPlayersPanel'
 import RoundWeatherPanel from '../components/RoundWeatherPanel'
 import { useAuth } from '../hooks/useAuth'
 import { useRoundWeather } from '../hooks/useRoundWeather'
 import { useRoundBagVerification } from '../lib/repository/roundBagRepository'
+import { useRoundPlayers } from '../lib/repository/roundPlayerRepository'
 import {
   finalizeRoundActivity,
   flushRoundOutbox,
@@ -41,6 +43,7 @@ export default function RoundSummaryPage() {
   const [notice, setNotice] = useState(null)
   const weather = useRoundWeather(round, setRound, user.id)
   const bagVerification = useRoundBagVerification(round, user.id)
+  const roster = useRoundPlayers(roundId, user.id)
 
   useEffect(() => {
     let active = true
@@ -235,6 +238,19 @@ export default function RoundSummaryPage() {
       {/* Read-only, and on the summary rather than the scorecard: which bag was
           carried is a question asked after the round, not during it. */}
       <RoundBagPanel verification={bagVerification} bagName={round.bag?.name ?? null} />
+
+      {/* Who else was on the card — a private record in this account, never a
+          shared scorecard. It sits beside the bag for the same reason: it is a
+          question asked after the round rather than during it. */}
+      <RoundPlayersPanel
+        round={round}
+        players={roster.players}
+        available={roster.available}
+        onSave={roster.save}
+        onRemove={roster.remove}
+        saving={roster.saving}
+        message={roster.message}
+      />
 
       {/* No hole list on an activity-only round. Rendering eighteen rows of
           "—" would imply a card waiting to be filled in, which is precisely

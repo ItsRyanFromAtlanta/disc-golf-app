@@ -24,30 +24,31 @@ import {
 } from '../roundLog'
 import { captureBagVersion, loadBagVersions } from './bagHistoryRepository'
 import { latestBagVersion } from '../bagHistory'
+import { replayRoundPlayerEntry, roundPlayerApi } from './roundPlayerRepository'
+import {
+  ROUND_HOLE_TABLE,
+  ROUND_PLAYER_TABLE,
+  ROUND_TABLE,
+  roundCreateKey,
+} from './roundOutboxKeys'
 
-const ROUND_TABLE = 'rounds'
-const ROUND_HOLE_TABLE = 'round_holes'
-const ROUND_OUTBOX_TABLES = [ROUND_TABLE, ROUND_HOLE_TABLE]
+// The roster joins the same queue rather than getting a fourth one. Its rows
+// depend on the same round create, drain in the same pass, and are reported by
+// the same sync banners — a companion that never reached the server is exactly
+// as invisible to the player as a score that never did, which is what audit
+// finding 2 was about.
+const ROUND_OUTBOX_TABLES = [ROUND_TABLE, ROUND_HOLE_TABLE, ROUND_PLAYER_TABLE]
 const roundActivitySync = createActivitySyncAdapter()
 
-// The round parent has to exist remotely before its scorecard children or any
-// later update can land, so queued children carry the create's idempotency key
-// as their `dependencyKey` (§ 8). Without it a replay while the create is still
-// queued hits a foreign-key violation, which classifies as permanent and would
-// poison a child that was never actually broken.
-//
-// Deliberately namespaced away from `round:${id}:create`, which is already the
-// *activity lifecycle* mutation key for the same round (see `lifecycleMutation`).
-// Reusing that string would make the history-recovery queue — which resolves
-// dependencies against every queued row, not just its own — treat a pending
-// round row as the lifecycle row it is waiting on.
-export function roundCreateKey(roundId) {
-  return `round-outbox:${roundId}:create`
-}
+export { roundCreateKey }
 
 export function roundIdForOutboxEntry(entry) {
   if (entry?.table === ROUND_TABLE) return entry.op === 'update' ? entry.payload?.roundId : entry.payload?.id
   if (entry?.table === ROUND_HOLE_TABLE) return entry.payload?.round_id
+  // A queued delete carries the seat, not the row, so it is keyed on
+  // `roundId` rather than `round_id` — both spellings resolve to the round the
+  // banner has to name.
+  if (entry?.table === ROUND_PLAYER_TABLE) return entry.payload?.round_id ?? entry.payload?.roundId ?? null
   return null
 }
 
@@ -384,6 +385,10 @@ async function replayRoundEntry(entry, { userId, database, api, activitySync, en
   if (entry.table === ROUND_HOLE_TABLE && entry.op === 'upsert') {
     const result = await api.upsertRoundHole(entry.payload)
     await cacheRoundHole(result, { replacesId: entry.payload.id, database })
+    return
+  }
+  if (entry.table === ROUND_PLAYER_TABLE) {
+    await replayRoundPlayerEntry(entry, { database, api })
   }
 }
 
@@ -394,7 +399,7 @@ async function replayRoundEntry(entry, { userId, database, api, activitySync, en
 // it unchanged.
 export function createRoundSyncAdapter({
   database = db,
-  api = { createRound, updateRound, upsertRoundHole },
+  api = { createRound, updateRound, upsertRoundHole, ...roundPlayerApi },
   activitySync = roundActivitySync,
   ensureActivity = ensureRoundActivity,
 } = {}) {

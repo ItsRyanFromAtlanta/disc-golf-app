@@ -65,6 +65,12 @@ export function createExportFiles({ userId, datasets, generatedAt = new Date().t
       scope: dataset.scope,
       row_count: dataset.rows.length,
       columns,
+      // Present only when there is something to say, so every manifest written
+      // before this existed stays byte-identical. Today the only note is the
+      // deploy-lag one: an empty file because the table is not on this
+      // deployment yet has to be distinguishable from an empty file because
+      // the user has no rows, or the export would quietly under-report.
+      ...(dataset.note ? { note: dataset.note } : {}),
     })
   })
 

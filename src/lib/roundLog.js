@@ -220,6 +220,60 @@ export async function upsertRoundHole(input = {}) {
   return throwIfError({ data, error, status })
 }
 
+// ---------------------------------------------------------------------------
+// Round players — the companions recorded on a round's card.
+//
+// These are markers owned by the round's creator, never rows owned by the
+// companion; `src/lib/roundPlayers.js` and the migration header carry the
+// argument. Nothing here reads or writes another account's data, and there is
+// no path from these functions to one.
+// ---------------------------------------------------------------------------
+
+export async function fetchRoundPlayers(roundId) {
+  if (!roundId) return []
+  const { data, error, status } = await supabase
+    .from('round_players')
+    .select('*')
+    .eq('round_id', roundId)
+    .order('position')
+  return throwIfError({ data, error, status })
+}
+
+// Resolved on `(round_id, position)` — the seat — for exactly the reason
+// `upsertRoundHole` resolves on `(round_id, hole_id)`: a replay whose locally
+// generated id had changed would otherwise take the INSERT branch, violate the
+// natural key, and sit in the outbox failing forever (E2 audit finding 1).
+//
+// `id` is deliberately not sent. PostgREST's merge-duplicates updates every
+// column supplied, so including it would rewrite the primary key on the
+// conflict path — and the Dexie mirror is keyed by that id. The column carries
+// `default gen_random_uuid()` so the insert branch still has one.
+export async function upsertRoundPlayer(input = {}) {
+  const { id: _localId, ...payload } = input
+  if (!payload.round_id || !payload.user_id) throw new Error('A round player requires roundId and userId')
+  const { data, error, status } = await supabase
+    .from('round_players')
+    .upsert(payload, { onConflict: 'round_id,position' })
+    .select()
+    .single()
+  return throwIfError({ data, error, status })
+}
+
+// Deleted by seat rather than by id, for the same convergence reason: a queued
+// delete replayed after the server assigned its own id would silently match
+// nothing and report success, leaving a companion the player believes they
+// removed.
+export async function deleteRoundPlayer({ roundId, position } = {}) {
+  if (!roundId || position == null) throw new Error('Removing a round player requires roundId and position')
+  const { error, status } = await supabase
+    .from('round_players')
+    .delete()
+    .eq('round_id', roundId)
+    .eq('position', position)
+  throwIfError({ data: null, error, status })
+  return { round_id: roundId, position }
+}
+
 export async function fetchCourses() {
   const { data, error } = await supabase.from('courses').select('*').order('name')
   // Keep the root directory lightweight. Course detail loads layouts/holes.

@@ -9,7 +9,7 @@ afterEach(async () => {
   for (const database of databasesToDelete.splice(0)) await database.delete()
 })
 
-describe('AppDatabase v15 upgrade', () => {
+describe('AppDatabase v16 upgrade', () => {
   it('preserves v1 cache/outbox rows while adding lifecycle, audit, notification, and round stores', async () => {
     const name = `DexieUpgradeTest-${crypto.randomUUID()}`
     const legacy = new Dexie(name)
@@ -32,7 +32,7 @@ describe('AppDatabase v15 upgrade', () => {
     databasesToDelete.push(upgraded)
     await upgraded.open()
 
-    expect(upgraded.verno).toBe(15)
+    expect(upgraded.verno).toBe(16)
     expect(upgraded.practiceFatigueCheckins).toBeDefined()
     expect(await upgraded.discs.get('disc-1')).toMatchObject({ status: 'in_locker' })
     expect(await upgraded.outbox.toArray()).toEqual([
@@ -46,6 +46,7 @@ describe('AppDatabase v15 upgrade', () => {
         'notifications',
         'rounds',
         'roundHoles',
+        'roundPlayers',
         'catalogManufacturers',
         'catalogMolds',
         'catalogPlastics',

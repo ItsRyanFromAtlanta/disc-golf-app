@@ -288,6 +288,104 @@ describe('roundRepository round outbox', () => {
     expect(roundIdForOutboxEntry({ table: 'rounds', op: 'create', payload: { id: ROUND_ID } })).toBe(ROUND_ID)
     expect(roundIdForOutboxEntry({ table: 'rounds', op: 'update', payload: { roundId: ROUND_ID } })).toBe(ROUND_ID)
     expect(roundIdForOutboxEntry({ table: 'round_holes', op: 'upsert', payload: { round_id: ROUND_ID } })).toBe(ROUND_ID)
+    // A roster upsert carries the round in snake_case; a roster delete carries
+    // the seat and spells it `roundId`. Both have to resolve, or a queued
+    // companion becomes an unsynced round the banner cannot name.
+    expect(roundIdForOutboxEntry({ table: 'round_players', op: 'upsert', payload: { round_id: ROUND_ID } })).toBe(ROUND_ID)
+    expect(roundIdForOutboxEntry({ table: 'round_players', op: 'delete', payload: { roundId: ROUND_ID } })).toBe(ROUND_ID)
     expect(roundIdForOutboxEntry({ table: 'activity_lifecycle', payload: {} })).toBeNull()
+  })
+
+  // The roster joins the round's existing queue rather than getting a fourth
+  // one, so it inherits the § 8 retry/poison record and the sync banners for
+  // free. These assert the wiring, not the roster logic — that lives in
+  // `roundPlayerRepository.test.js`.
+  describe('round players in the round outbox', () => {
+    async function queuePlayer(op = 'upsert', payload = null) {
+      const body = payload ?? {
+        round_id: ROUND_ID,
+        user_id: USER_ID,
+        position: 1,
+        display_name: 'Dave',
+        total_score: null,
+      }
+      return database.outbox.add({
+        table: 'round_players',
+        op,
+        payload: body,
+        createdAt: NOW + 2,
+        idempotencyKey: null,
+        dependencyKey: roundCreateKey(ROUND_ID),
+        attemptCount: 0,
+        lastErrorClass: null,
+        nextRetryAt: null,
+        poison: false,
+      })
+    }
+
+    it('drains a queued roster upsert and mirrors the authoritative row', async () => {
+      api.upsertRoundPlayer = vi.fn(async (payload) => ({ ...payload, id: 'server-player-1' }))
+      await queuePlayer()
+
+      await expect(adapter().flush(USER_ID, NOW)).resolves.toMatchObject({ hasPending: false, error: null })
+
+      expect(await database.outbox.count()).toBe(0)
+      expect((await database.roundPlayers.toArray())[0]).toMatchObject({
+        id: 'server-player-1',
+        position: 1,
+        display_name: 'Dave',
+      })
+    })
+
+    it('drains a queued roster delete', async () => {
+      await database.roundPlayers.put({ id: 'p1', round_id: ROUND_ID, user_id: USER_ID, position: 1, display_name: 'Dave' })
+      api.deleteRoundPlayer = vi.fn(async () => ({}))
+      await queuePlayer('delete', { roundId: ROUND_ID, position: 1 })
+
+      await adapter().flush(USER_ID, NOW)
+
+      expect(await database.roundPlayers.count()).toBe(0)
+      expect(await database.outbox.count()).toBe(0)
+    })
+
+    // The roster is a child of the round create, so it must not be sent before
+    // the parent exists — a 23503 there classifies as permanent and would
+    // poison a companion that was never broken.
+    it('holds a roster write behind a still-queued round create', async () => {
+      api.createRound.mockRejectedValue(NETWORK_ERROR)
+      api.upsertRoundPlayer = vi.fn()
+      await queueCreate()
+      await queuePlayer()
+
+      await adapter().flush(USER_ID, NOW)
+
+      expect(api.upsertRoundPlayer).not.toHaveBeenCalled()
+      expect(await database.outbox.count()).toBe(2)
+    })
+
+    it('poisons a roster write that fails permanently, and names its round', async () => {
+      api.upsertRoundPlayer = vi.fn().mockRejectedValue(UNIQUE_VIOLATION)
+      await queuePlayer()
+
+      const result = await adapter().flush(USER_ID, NOW)
+
+      expect(result).toMatchObject({ error: { permanent: true } })
+      const poisoned = await adapter().listPoisoned()
+      expect(poisoned.map(roundIdForOutboxEntry)).toEqual([ROUND_ID])
+    })
+
+    // `PGRST205` is the deploy window: the migration has not landed. The
+    // companion has to wait for it rather than be discarded.
+    it('keeps a roster write queued when the table is not deployed yet', async () => {
+      const MISSING_TABLE = Object.assign(new Error('Could not find the table'), { code: 'PGRST205' })
+      api.upsertRoundPlayer = vi.fn().mockRejectedValue(MISSING_TABLE)
+      await queuePlayer()
+
+      const result = await adapter().flush(USER_ID, NOW)
+
+      expect(result).toMatchObject({ hasPending: true, error: { permanent: false } })
+      const rows = await database.outbox.toArray()
+      expect(rows[0]).toMatchObject({ poison: false, lastErrorClass: 'transient' })
+    })
   })
 })

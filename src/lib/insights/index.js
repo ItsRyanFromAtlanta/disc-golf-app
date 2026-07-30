@@ -39,6 +39,7 @@ export {
   CONDITION_SPLIT_MIN_CONDITIONS,
 } from './roundConditions'
 export { roundVolumeLedger, roundStreak } from './roundVolume'
+export { groupScorecard, describeGroupScorecard } from './groupScorecard'
 export { bagSnapshotLedger } from './bagSnapshotCoverage'
 export {
   holeDistanceBand,

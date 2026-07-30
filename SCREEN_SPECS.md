@@ -266,6 +266,18 @@ divergence carefully before building.
   no way to attach a snapshot to a round that lacks one: that is a correction, and corrections here
   owe previous/new values.
 
+- **Who else played, on rounds (E2, 2026-07-30):** `/rounds/:id/summary` carries a third panel
+  (`src/components/RoundPlayersPanel.jsx`) recording the other players on the card. It is **not** a
+  group scorecard screen and must not become one by accretion: every row is a private marker in this
+  account, there is no invitation, link, share or notification, and the person named cannot see,
+  confirm or contest the entry. The list is rendered in seat order with the owner first and carries
+  no medal, highlight, rank or gap — `insights/groupScorecard.js` has tests asserting it exposes
+  none of those, because ranking a private card is one sort call from the leaderboard parked under
+  Screens 14/15. Companion totals are labelled *Entered by you*, never printed like a scorecard.
+  Blueprint Screens 14 (Course Practice Hubs) and 15 (League Bracket Manager) remain PARKED and are
+  not unblocked by this: what they need is the account-linking claim, which is deliberately not
+  built.
+
 ## Screen 9: Session Summary & Progress Report
 
 **Blueprint ref:** `SessionSummaryView`, Section 3 Screen 9. Build as specified — hero scoreboard,

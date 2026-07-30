@@ -39,6 +39,24 @@ const DEPLOY_LAG_CODES = new Set([
   '42703', // undefined_column — the Postgres-side spelling of PGRST204
 ])
 
+// The two deploy-lag codes that specifically mean "this TABLE is not deployed
+// yet", as opposed to a column or a function.
+//
+// Exported as a predicate rather than exporting the set, so the rule stays in
+// one place: a read path that wants to degrade — render "not available on this
+// deployment" instead of an error — asks this, and a write path that wants to
+// keep waiting gets the same answer from `isPermanentError` returning false for
+// the same codes. Callers must not re-spell the codes; the E2 audit's finding 9
+// is what happens when a classification rule exists in more than one copy.
+const MISSING_RELATION_CODES = new Set([
+  'PGRST205', // table not found in the schema cache
+  '42P01', // undefined_table
+])
+
+export function isMissingRelationError(error) {
+  return Boolean(error?.code && MISSING_RELATION_CODES.has(String(error.code)))
+}
+
 // Attaches the HTTP status from a supabase-js response envelope onto the error
 // it carried.
 //

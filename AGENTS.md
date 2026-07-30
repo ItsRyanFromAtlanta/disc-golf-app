@@ -29,6 +29,8 @@ against the live database when it matters. Key tables:
 - `courses` / `layouts` / `holes` — shared community course data (not user-owned); a course has one
   or more layouts and a hole belongs to a **layout**, not directly to a course
 - `rounds` / `round_holes` — user-owned round data
+- `round_players` — owner-scoped private markers for who else was on a round's card (a name, a seat,
+  an optional stated total). Never another account's data; see the E2 group-scorecard note below
 - `live_sessions` — active caddie chat state (JSONB log) during a round
 - `caddie_recommendations` — logged AI suggestions per hole, tagged with model used
 - `disc_state_events` — immutable owner-scoped physical-disc status/role/wear/condition/bag timeline
@@ -326,6 +328,36 @@ that lacks one and no plausible snapshot is substituted, per the raw-events-are-
 coverage fraction so it recovers on its own once reads succeed. The motivating case is real and is
 recorded as F2 in `docs/development/E2_ROUND_COURSE_AUDIT.md`: `useCreateRound`'s offline fallback
 records the newest *locally known* version, which can be weeks old.
+
+Phase E2 adds **group-scorecard groundwork**, and the word is exact: it builds the ownership model a
+later group feature cannot be retrofitted with, and stops. `round_players`
+(`20260730234500_phase_e_round_players.sql`, **written, NOT applied**) records who else was on the
+card — a seat, a free-text name, an optional stated total — and **a companion's card is a marker
+owned by the round's creator, not a row owned by the companion**. The alternative breaks four things
+at once: the single-active invariant (`activities_one_current_per_user_idx` is unique per user, and
+the person beside you is usually keeping their own card), the `auth.uid() = user_id` RLS shape
+(writing their row means someone who is not them can write their data), soft deletion (hiding my
+round would leave their half behind), and the ordinary case where they have no account. So a
+companion row is a private observation in one account, the same kind of fact as
+`rounds.weather_summary` — which makes the plain owner policy both sufficient and complete, keeps
+`activities` untouched (a group round is still one activity), and satisfies the privacy rule by
+construction rather than by policy: a third party's name is readable by exactly one account, joined
+to no shared table, and aggregated nowhere. There is deliberately **no `player_user_id`**: linking a
+seat to a real account is a *claim*, and the future `round_player_claims` must be owned by the
+**claimant** so RLS can enforce the consent instead of trusting the writer. `(round_id, position)` is
+the natural key a write upserts on, for the reason audit finding 1 taught — a replay whose local id
+changed must converge, not poison — and the seat cap is enforced in the CHECK *and* in
+`ROUND_PLAYER_LIMIT`, never one layer only. `insights/groupScorecard.js` builds the card in seat
+order and **never ranks, never crowns a winner, and never averages a companion's total into
+anything**; one sort call is the whole distance to a leaderboard, which is parked. Per-hole companion
+scores are deliberately not built: the decided shape is a **separate `round_player_holes` table**,
+never a nullable `round_holes.round_player_id`, because six consumers read `round_holes` and the
+first one that forgets the filter folds someone else's 6 into the owner's stroke average. Read and
+write both degrade in the deploy window: `isMissingRelationError` (`PGRST205` / `42P01`) resolves
+`available: false` so the panel says the feature is not deployed rather than queueing writes forever,
+and those codes stay transient so a companion added early waits for the migration. `round_players` is
+the first `optionalUntilDeployed` source in E1's export — skipped with a manifest note only for those
+two codes, aborting the export for anything else.
 
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the

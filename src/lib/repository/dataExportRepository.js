@@ -1,4 +1,5 @@
 import { supabase as defaultSupabase } from '../supabaseClient'
+import { isMissingRelationError } from '../instantLaunch/errorClassification'
 
 export const EXPORT_PAGE_SIZE = 500
 
@@ -32,6 +33,20 @@ const OWNER_SOURCES = [
   { table: 'practice_fatigue_checkins' },
   { table: 'practice_experiment_markers' },
   { table: 'rounds' },
+  // Included because it holds data nobody else can give the user back — the
+  // private names of the people they played with. Own-your-data means all of
+  // it, and a table that exists only in the database is the kind of thing an
+  // export quietly forgets.
+  //
+  // `optionalUntilDeployed` because its migration
+  // (`20260730234500_phase_e_round_players.sql`) is unapplied, and E1's export
+  // is deliberately all-or-nothing: without this flag every export on every
+  // account would abort on a table that does not exist yet. The tolerance is
+  // exactly two codes — `PGRST205` / `42P01`, "table not in the schema cache" —
+  // and nothing else. A permission error, a network failure or a renamed table
+  // still aborts the whole export, because those are the cases where silently
+  // exporting an empty dataset would be a lie.
+  { table: 'round_players', optionalUntilDeployed: true },
   { table: 'notification_preferences', orderColumn: 'category', minimumColumns: ['user_id', 'category'] },
   { table: 'goals' },
   { table: 'goal_events' },
@@ -69,7 +84,15 @@ async function fetchPages(client, table, { configure = (query) => query, orderCo
     let query = client.from(table).select('*').order(orderColumn, { ascending: true })
     query = configure(query).range(start, start + pageSize - 1)
     const { data, error } = await query
-    if (error) throw new Error(`Could not export ${table}: ${error.message}`)
+    if (error) {
+      // The PostgREST code is carried onto the thrown error rather than folded
+      // into the message. `optionalUntilDeployed` needs to classify the
+      // failure, and classifying by substring-matching an error message is how
+      // a classifier goes wrong the first time somebody rewords it.
+      const failure = new Error(`Could not export ${table}: ${error.message}`)
+      failure.code = error.code
+      throw failure
+    }
     rows.push(...(data ?? []))
     if ((data?.length ?? 0) < pageSize) break
   }
@@ -86,9 +109,13 @@ async function fetchByIds(client, table, column, ids) {
   return mergeRows(...groups)
 }
 
-function dataset(rows, scope, minimumColumns = ['id']) {
-  return { rows, scope, minimumColumns }
+function dataset(rows, scope, minimumColumns = ['id'], note = null) {
+  return { rows, scope, minimumColumns, ...(note ? { note } : {}) }
 }
+
+const NOT_DEPLOYED_NOTE =
+  'This table is not present on the database this export ran against, so it was skipped. ' +
+  'Nothing was omitted from your account — the feature is not deployed yet.'
 
 export function createDataExportRepository({ client = defaultSupabase } = {}) {
   async function collectUserExport(userId) {
@@ -96,15 +123,25 @@ export function createDataExportRepository({ client = defaultSupabase } = {}) {
 
     const datasets = {}
     const ownerGroups = await Promise.all(OWNER_SOURCES.map(async (source) => {
-      const rows = await fetchPages(client, source.table, {
-        orderColumn: source.orderColumn,
-        configure: (query) => query.eq(source.ownerColumn ?? 'user_id', userId),
-      })
-      return [source, rows]
+      try {
+        const rows = await fetchPages(client, source.table, {
+          orderColumn: source.orderColumn,
+          configure: (query) => query.eq(source.ownerColumn ?? 'user_id', userId),
+        })
+        return [source, rows, null]
+      } catch (error) {
+        // Only "the table is not in the schema cache", and only for a source
+        // that declared itself tolerant. Everything else — permissions, the
+        // network, a genuinely renamed table — rethrows and aborts the export,
+        // which is E1's whole contract: a partial export presented as a
+        // complete one is worse than no export.
+        if (source.optionalUntilDeployed && isMissingRelationError(error)) return [source, [], NOT_DEPLOYED_NOTE]
+        throw error
+      }
     }))
-    ownerGroups.forEach(([source, rows]) => {
+    ownerGroups.forEach(([source, rows, note]) => {
       const minimumColumns = source.minimumColumns ?? (source.ownerColumn === 'id' ? ['id'] : ['id', 'user_id'])
-      datasets[source.table] = dataset(rows, 'owner', minimumColumns)
+      datasets[source.table] = dataset(rows, 'owner', minimumColumns, note)
     })
 
     const derivedGroups = await Promise.all(RLS_DERIVED_SOURCES.map(async (source) => [

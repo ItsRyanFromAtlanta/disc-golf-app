@@ -338,6 +338,34 @@ migration to widen both. Left open deliberately: A7's verification does not depe
 it reads the version timeline, not the labels — and changing an RPC's accepted vocabulary as a side
 effect of a read-only feature is the kind of thing this project keeps as its own task.
 
+### F4. `src/App.css` was silently corrupted by the branch-of-record merge — FIXED (2026-07-30, A6)
+
+**Severity: medium, and invisible to every gate.** Found while adding the group-scorecard panel's
+styles, not by looking for it.
+
+The merge commit `dfde49c` ("Merge branch of record: A5/A7 alongside course preparation") auto-merged
+A7's `.round-bag` rules and A8's `.prep-*` rules, which had been appended to the same region of
+`src/App.css` on two branches. Git resolved it without a conflict and produced nonsense: brace counts
+went from 831/831 and 829/829 on the two parents to **844/842** on the merge. Two rule blocks were
+left unclosed, the two additions were interleaved line by line, and `.round-bag` lost four
+declarations outright (`padding`, `border`, `border-radius`, `background`) — so the bag panel had no
+card surface at all.
+
+Nothing catches this. CSS is not linted, Vite does not parse it for validity, and no unit or
+Playwright assertion reads a computed style. The only reason it surfaced is that the next person to
+touch the file had to read it.
+
+Fixed by rebuilding the region from the two parents rather than by patching braces: `git show
+41d61f0:src/App.css` and `git show 908b8a7:src/App.css` each contributed their own block whole, so
+both features got the rules their authors wrote, in order, instead of a plausible-looking
+reconstruction. Verified by brace balance (844/844) and by a scan for a rule block opening inside
+another outside a `@media`.
+
+**Worth carrying forward:** a stylesheet that only ever grows by appending to the end is a merge
+conflict waiting to be resolved wrongly, and this is the second time this file has been the seam
+between two parallel features. Whoever is next to add a large block should consider splitting
+`App.css` by feature area — that is its own task, not a side effect of one.
+
 ## What this audit did not find
 
 Worth stating plainly, because eight fixed findings can read as a hardened surface. Every defect above
