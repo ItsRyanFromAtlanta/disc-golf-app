@@ -18,6 +18,9 @@ const ACTIVE_ROUND_ID = '00000000-0000-4000-8000-0000000000d1'
 
 const CURRENT_STATES = ['active', 'paused']
 
+// Mirrors `ACTIVITY_OUTBOX_TABLE` in src/lib/repository/activityOutbox.js.
+const LIFECYCLE_OUTBOX_TABLE = 'activity_lifecycle'
+
 /**
  * Drives the freeform launcher into a live capture session. This is the only
  * way to reach `planActivityStart` from a browser: the start command is issued
@@ -35,15 +38,38 @@ async function localActivities(supabase) {
 }
 
 /**
+ * The Dexie `outbox` store is shared by every queue in the app, each tagged
+ * with the table it drains through. Lifecycle operations are the only ones a
+ * capture spec is waiting on, so they are read by name rather than by counting
+ * the whole store — see `waitForCaptureSync`.
+ */
+async function lifecycleOutboxRows(supabase) {
+  const rows = await supabase.readLocalRows('outbox')
+  return rows.filter((row) => row.table === LIFECYCLE_OUTBOX_TABLE)
+}
+
+/**
  * Waits for the start command to settle. The capture screen renders as soon as
  * the FSM flips, while mirroring and the outbox flush run behind it — so
  * without this a spec reads the mirror mid-flight. The create RPC only leaves
  * the device once the whole start decision has been made (the flush awaits the
- * mirror), and an empty outbox means nothing is still in flight.
+ * mirror), and an empty lifecycle queue means nothing is still in flight.
+ *
+ * This used to wait on the whole `outbox` store, which made it intermittently
+ * fail under parallel load for a reason that had nothing to do with capture.
+ * `AppShell` runs the notification producers once per mount, gated on a
+ * `notification_preferences` read; `produceActivityReviewNotifications` then
+ * queries Dexie for `incomplete` activities and enqueues a `notifications` row
+ * for each. The auto-close under test *creates* an incomplete activity, so
+ * whether that producer sees it is a straight race between one network read and
+ * how fast the start button gets pressed — and the slower the machine, the more
+ * often the producer wins. The row it queues drains through `notification_upsert`,
+ * which this suite does not stub, so it never leaves: a real, unrelated queue
+ * entry that a whole-store count reads as "capture has not synced yet".
  */
 async function waitForCaptureSync(supabase) {
   await expect.poll(() => supabase.writesTo('rpc:activity_create_draft').length).toBe(1)
-  await expect.poll(async () => (await supabase.readLocalRows('outbox')).length).toBe(0)
+  await expect.poll(async () => (await lifecycleOutboxRows(supabase)).length).toBe(0)
 }
 
 async function stateEventsFor(supabase, activityId) {
@@ -300,7 +326,7 @@ test.describe('offline outbox and reconnect', () => {
     // the reconnect below would merely be the first successful attempt.
     await expect
       .poll(async () => {
-        const rows = await supabase.readLocalRows('outbox')
+        const rows = await lifecycleOutboxRows(supabase)
         return { ops: rows.map((row) => row.op), attempted: (rows[0]?.attemptCount ?? 0) > 0 }
       })
       .toEqual({ ops: ['create_draft', 'transition'], attempted: true })
@@ -311,7 +337,7 @@ test.describe('offline outbox and reconnect', () => {
     // Both queues drain on reconnect: the lifecycle outbox in Dexie first,
     // then the InstantLaunch capture queue that was held behind it.
     await expect
-      .poll(async () => (await supabase.readLocalRows('outbox')).length, { timeout: 25_000 })
+      .poll(async () => (await lifecycleOutboxRows(supabase)).length, { timeout: 25_000 })
       .toBe(0)
     await expect
       .poll(async () => {
@@ -388,7 +414,7 @@ test.describe('offline outbox and reconnect', () => {
 
     await expect
       .poll(async () => {
-        const rows = await supabase.readLocalRows('outbox')
+        const rows = await lifecycleOutboxRows(supabase)
         return { ops: rows.map((row) => row.op), attempted: (rows[0]?.attemptCount ?? 0) > 0 }
       })
       .toEqual({ ops: ['create_draft', 'transition'], attempted: true })
@@ -401,7 +427,7 @@ test.describe('offline outbox and reconnect', () => {
     await context.setOffline(false)
 
     await expect
-      .poll(async () => (await supabase.readLocalRows('outbox')).length, { timeout: 25_000 })
+      .poll(async () => (await lifecycleOutboxRows(supabase)).length, { timeout: 25_000 })
       .toBe(0)
     await expect
       .poll(async () => {

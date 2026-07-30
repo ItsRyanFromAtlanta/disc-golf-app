@@ -1,7 +1,8 @@
 # Browser E2E
 
-Playwright suite covering the shared shell, route guards, PWA shell, narrow-viewport reflow, and the
-activity lifecycle — including live capture sessions driven through the capture screen itself.
+Playwright suite covering the shared shell, route guards, first-run onboarding and Quick Play, PWA
+shell, narrow-viewport reflow, gesture alternatives, and the activity lifecycle — including live
+capture sessions driven through the capture screen itself.
 
 ```bash
 npm run test:e2e            # headless, both viewport projects
@@ -19,6 +20,17 @@ E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run test:e2e
 ```
 
 CI leaves that unset and installs the matching Chromium instead.
+
+**More than one checkout on one machine:** the config serves the build on a fixed port (4173) with
+`reuseExistingServer` on outside CI, which is right for iterating in one checkout and wrong the
+moment there are two. A second run does not get its own server — it either silently reuses whatever
+is already on 4173, which is *another checkout's build*, or has its own server killed and replaced
+mid-run. That surfaces as `net::ERR_CONNECTION_REFUSED` on a varying subset of specs and reads
+exactly like flaky parallelism. Give each checkout its own port:
+
+```bash
+E2E_PORT=4271 npm run test:e2e
+```
 
 ## How it reaches an authenticated session
 
@@ -77,6 +89,15 @@ Four things that path needs:
 - **`supabase.readLocalRows(store)`** reads a Dexie store (`activities`, `activityStateEvents`,
   `auditEvents`, `outbox`). Most of the lifecycle contract — a state event's reason, an audit row's
   previous values, whether the outbox drained — is never rendered.
+- **`outbox` is one store shared by every queue**, each row tagged with the `table` it drains
+  through (`activity_lifecycle`, `activity_history`, `notifications`, rounds, courses). Never assert
+  that "the outbox" is empty: filter to the queue you mean. Counting the whole store is what made
+  the auto-close spec flaky — `AppShell` runs the notification producers once per mount behind a
+  `notification_preferences` read, `produceActivityReviewNotifications` enqueues a `notifications`
+  row for every `incomplete` activity it finds, and the auto-close under test creates one. Whether
+  the producer sees it is a straight race with how fast the start button is pressed, and the row it
+  queues drains through `notification_upsert`, which nothing here stubs — so it never leaves, and a
+  whole-store count reads a real unrelated queue entry as "capture has not synced yet".
 - **`supabase.readCaptureOutbox()`** reads InstantLaunch's separate localStorage queue. Lifecycle
   operations drain first; capture facts are held behind them by the A6 parent foreign key.
 - **Waiting on the right signal.** The capture screen renders as soon as the FSM flips, while

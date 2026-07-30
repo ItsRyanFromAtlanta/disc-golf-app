@@ -46,6 +46,20 @@ export function useGesturePointer(zoneRef, callbacks, config = GESTURE_CONFIG) {
     }
 
     function handlePointerDown(e) {
+      // A press that starts on a control *inside* the zone belongs to that
+      // control, not to the swipe surface. Without this the zone's
+      // `setPointerCapture` retargets the pointerup to itself, so the browser
+      // dispatches the resulting `click` to the zone rather than to the button
+      // — which silently killed GestureZone's own Undo button, the explicit
+      // alternative that exists precisely because swipe-left is undiscoverable
+      // (PHASE_A_ARCHITECTURE.md § 9, "Keyboard / gesture alternatives"). It
+      // was still reachable by keyboard, since Enter synthesises a click with
+      // no pointer events; every thumb in the field got nothing.
+      //
+      // Bailing before `active` is set also stops a long press on that button
+      // from emitting rapid-fire makes.
+      if (e.target instanceof Element && e.target.closest('button, a, input, select, textarea')) return
+
       active = true
       samples = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }]
       startLongPressWatch()
