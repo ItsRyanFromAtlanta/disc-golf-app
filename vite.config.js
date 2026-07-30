@@ -8,7 +8,14 @@ export default defineConfig({
     // Vitest's default include matches **/*.spec.js, which would sweep up the
     // Playwright suite and fail at import — those specs need a browser and a
     // running server, not jsdom. `npm run test:e2e` owns e2e/.
-    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
+    //
+    // `.claude/worktrees/**` holds linked git worktrees created by isolated
+    // subagent runs. Each is a full checkout of this repository, so without
+    // this the suite re-runs every test once per live worktree — inflating the
+    // count several-fold and reporting failures from another agent's
+    // half-finished tree as if they were failures here. Ignoring them in
+    // .gitignore is not enough; vitest walks the filesystem, not the index.
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**', '**/.claude/worktrees/**'],
   },
   plugins: [
     react(),
