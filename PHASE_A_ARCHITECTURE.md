@@ -125,7 +125,7 @@ Target: use Playwright for browser E2E. Required flows, with current coverage:
 
 | Flow | Status |
 |---|---|
-| Onboarding / Quick Play | **Partial** — the zero-bag onboarding gate redirect is covered; the wizard itself and Quick Play launch are not |
+| Onboarding / Quick Play | **Covered** — the zero-bag gate redirect, plus all three wizard steps driven through their own controls and asserted on what they *provision* (Practice Stack bag with `is_default`, the primary putter and its bag membership, the units preference), the Skip-setup branch that must still create the bag the gate reads, and Quick Play's zero-configuration Level-1 launch, its device-local default across a reload, and its no-routine empty state |
 | Pause / navigation / resume | **Covered** — a live capture session pauses with reason `navigation_away` when its screen is left and resumes from the header pill; a seeded paused activity resumes to the correct capture route (freeform vs. a specific regimen) |
 | Single-active auto-close | **Covered** — starting a live practice while another is current closes the previous one as `incomplete` with reason `replaced_by_activity`, keeps exactly one current activity, syncs the close ahead of the start, and surfaces the replaced session in History. The § 1 toast landed 2026-07-29 and is covered too: it is announced through `role="status"` / `aria-live="polite"`, is dismissible on demand, and clears itself on a timer without interaction. Undo is deliberately not part of it — see the note below |
 | Round-close confirmation | **Covered** — starting a practice while a round is live prompts before anything moves; declining leaves the round running and starts nothing; confirming closes the round as `incomplete` with a `round_replacement_confirmed` state event and starts the practice. The confirmed branch had no browser path at all until 2026-07-29 |
@@ -135,7 +135,7 @@ Target: use Playwright for browser E2E. Required flows, with current coverage:
 | Tab scroll / root | **Covered** — tapping the active tab scrolls to top without navigating |
 | Notification sheet / Back | **Covered** — modal open/close, plus nested-route Back to section root |
 | 320px reflow | **Covered** — five routes asserted free of horizontal overflow |
-| Keyboard / gesture alternatives | **Partial** — tab bar is keyboard-operable; gesture alternatives are not covered |
+| Keyboard / gesture alternatives | **Covered** — the tab bar, plus every gesture surface in the app. The inventory is exactly three: `GestureZone` (swipe up/down/left, press-and-hold), `PanicZone` (tap, press-and-hold), and sheet backdrops. `e2e/gesture-alternatives.spec.js` logs every putt through a control and never performs a gesture, reading the context-bar tally back to prove the alternative did the gesture's work; the mode picker itself is driven by keyboard, since a picker needing a pointer would strand a keyboard user inside a gesture mode. Backdrop dismissal is a plain tap and both instances already have explicit buttons, asserted in `shell.spec.js` and `capture.spec.js`. Two real defects were found and fixed getting here — see below |
 
 Activity-lifecycle fixtures landed 2026-07-28 and closed the soft-delete/restore and resume rows.
 Terminal activities seed through the `activities` table (`fetchHistory` selects them and hydrates the
@@ -150,6 +150,28 @@ concurrency defect and has since been fixed, moving exactly-once reconnect to Co
 three remaining gaps were app gaps rather than harness gaps and have since been built: the
 round-replacement confirmation UI (2026-07-29) and the auto-close toast (2026-07-29). Recalculation
 still has nothing to assert until a finalized edit can change something a metric reads.
+
+**Gesture alternatives cost two app fixes (2026-07-30), both of which had shipped broken.** Writing
+the coverage found them; neither was a harness problem.
+
+- `GestureZone`'s explicit Undo button — the alternative that exists because swipe-left is
+  undiscoverable — did nothing at all under a thumb. `useGesturePointer` calls `setPointerCapture` on
+  the zone at pointerdown, which retargets the pointerup to the zone, so the browser dispatched the
+  resulting `click` to the zone rather than to the button nested inside it. It still worked by
+  keyboard, because Enter synthesises a click with no pointer events — so a keyboard-only check would
+  have declared the row covered while every field tap fell through. The hook now ignores a press that
+  starts on an interactive child, which also stops a long press on that button emitting rapid-fire
+  makes.
+- `PanicZone` was a bare `<div>` with pointer handlers: nothing in the mode was focusable, so a
+  keyboard or switch user could not log a single putt, and "hold = missed" had no non-gesture
+  equivalent anywhere on screen. The surface is now a real button (make is driven off `click`, so
+  keyboard activation travels the same path, with the click after a completed hold suppressed) and the
+  hold has an explicit "Missed" twin. Thumb behaviour is unchanged.
+
+The remaining gesture — `GestureZone`'s press-and-hold rapid-fire — has no dedicated button, and the
+row is marked Covered on the basis that its alternative is repeated activation of Tap mode's `Made`,
+which the suite exercises. That is a genuine alternative for logging the makes, not a speed-equivalent
+one; if rapid-fire ever becomes load-bearing rather than a convenience it needs its own affordance.
 
 The auto-close toast is raised from the repository's own answer, not from a second observer: `start`
 returns the replaced activity together with the state event that closed it, `mirrorInstantLaunchActivity`
