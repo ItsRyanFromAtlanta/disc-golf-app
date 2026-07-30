@@ -1,5 +1,48 @@
 # Dev Log
 
+## 2026-07-30 — migration ledger repair and the `supabase_schema.sql` drift
+
+**What:** Closed the two repo-hygiene items the E2 hardening work left open behind it. The three
+Phase E migration files are renamed to the versions the remote ledger actually holds
+(`20260729213112`, `20260729213141`, `20260729213216`), and the stale course/round definitions in
+`supabase_schema.sql` are annotated in place. No runtime behaviour changed — the only `src/` edits are
+two comments pointing at renamed files.
+
+**Why:** The filename/ledger disagreement was a live regression risk, not bookkeeping. `supabase db
+push` matches on version, so all three read as unapplied; re-running the first alone restores the form
+of `delete_own_account()` that hard-deletes catalog moderation reviews, silently undoing the migration
+written the next day to preserve them. The window for that was any future push. The schema drift is
+slower but the same shape: `AGENTS.md` sent readers to `supabase_schema.sql` as "full schema" while it
+described `holes` hanging off `course_id`, a column dropped long ago — and an audit finding had
+already been written against `supabase_schema.sql:133` on that basis.
+
+**Key decisions:** Renamed the files rather than running `supabase migration repair`, matching what the
+fourth migration already did. Repair needs database credentials and fixes only the one machine that
+runs it; renaming leaves the repo self-consistent for anyone who clones it. Before each rename the
+file's content was matched against the statement stored in `supabase_migrations.schema_migrations` for
+its target version, so the pairing is confirmed rather than inferred from the names — the two
+`delete_own_account` variants differ only in whether they `delete from` or `update`
+`catalog_submission_reviews`, which is exactly the kind of thing a name-based guess gets wrong.
+
+`supabase_schema.sql` was **not** regenerated, despite the earlier note calling that the task. The
+append-only schema policy forbids wholesale replacement, and rewriting the Layer 1 file would have
+destroyed the historical starting point while still not producing a file describing the live database,
+since the live shape is spread across the per-track `*_schema.sql` files and `supabase/migrations/`.
+Annotation makes the drift visible where a reader will actually hit it: a header banner listing every
+confirmed divergence, plus `SUPERSEDED` blocks on `holes` and `rounds`. `AGENTS.md` now says no single
+file describes the live schema, which is the honest version.
+
+**Verification:** 584 tests across 80 files pass, lint clean, production build succeeds, and the
+Playwright suite passes 34/34. Divergences were read from `information_schema.columns` and `pg_indexes`
+on the live project rather than inferred from migration history — that is how `rounds.layout_name`
+turned up as stale too, which the original drift note had not caught.
+
+**Not verified:** no `supabase db push` was actually run, so the repair is argued from how push matches
+versions rather than observed end to end. Nothing here was exercised against a real device. One E2E
+flake was observed and recorded in `CURRENT_WORK.md` rather than fixed: `capture.spec.js` ›
+"single-active auto-close" timed out draining the outbox under parallel load, then passed in isolation
+and on a clean re-run.
+
 ## 2026-07-30 — E2 audit closed: findings 6, 7, 8, 9 fixed
 
 **What:** The last four actionable findings from `docs/development/E2_ROUND_COURSE_AUDIT.md`. Eight of

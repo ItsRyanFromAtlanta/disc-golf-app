@@ -37,9 +37,14 @@ consolidated to a single line of development.
   eight fixed, one (finding 5, unbounded course directory fetch) deferred by design with a revisit
   trigger. A fourth Phase E migration —
   `20260730025443_phase_e_hole_number_nulls_not_distinct.sql` — is applied and verified live.
+- **Two repo-hygiene items that were open against the hardening work are closed as of 2026-07-30:**
+  the Phase E migration filenames now match the applied ledger (so `db push` cannot regress the
+  moderation-history fix), and the `supabase_schema.sql` drift is annotated rather than left silent.
+  Both are detailed below.
 - **Next:** the **feature** half of E2 — weather, activity-only rounds, group-scorecard groundwork,
   bag snapshot verification, and course preparation, as separately committed green checkpoints. See
-  `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E.
+  `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E. Note the caveat directly below
+  before picking this up.
 
 ### Read this before starting more E2 hardening
 
@@ -52,11 +57,23 @@ The next most valuable action is almost certainly **not** finding a tenth defect
 PWA on a phone, walking a real course, and finding out why the surface is empty. That answer changes
 what is worth building next; more hardening does not.
 
-**Also found 2026-07-30, not fixed:** `supabase_schema.sql` is stale. It describes
-`holes (course_id, hole_number, tee_type)`; live, `holes` has no `course_id` and the unique index is on
-`(layout_id, hole_number, tee_type)`. Regenerating that file is its own task — it is the reference every
-future migration is written against, so the drift matters, but folding it into an unrelated change would
-bury it.
+**The `supabase_schema.sql` drift found on 2026-07-30 is now reconciled** (2026-07-30, later session).
+It was not regenerated — the append-only schema policy forbids a wholesale replacement, and rewriting
+the Layer 1 file would have destroyed the historical starting point without giving anyone a file they
+could trust anyway. Instead the stale definitions are annotated where they sit: a header banner listing
+every known divergence, and `SUPERSEDED` notes on the `holes` and `rounds` blocks pointing at the files
+that own their current shape. `AGENTS.md` no longer calls it "full schema".
+
+Divergences confirmed against live (`information_schema.columns` + `pg_indexes`, not inferred from
+migration history): `layouts` is absent from the file entirely; `holes.course_id` is dropped in favour
+of `layout_id`; the hole uniqueness rule is now the index `holes_layout_hole_tee_uniq` on
+`(layout_id, hole_number, tee_type)` `nulls not distinct`; `rounds.layout_name` is dropped in favour of
+`layout_id`; and `courses`/`rounds` carry `external_source`/`external_ref` plus `rounds.bag_id` /
+`bag_version_id`.
+
+**Still true and worth keeping in view:** no file describes the live schema end to end. The annotations
+make the drift visible instead of silent; they do not replace reading the live database when a shape
+actually matters.
 
 ## Staged next actions
 
@@ -145,21 +162,34 @@ a privacy purge must run with elevated privilege and derives its subject from `a
 The sixth is `auth_leaked_password_protection` disabled — pre-existing, unrelated, and a genuine
 one-toggle improvement worth taking.
 
-**Version-number caveat.** `apply_migration` assigned its own timestamps (`20260729213112`,
-`20260729213141`, `20260729213216`) rather than the filenames (`20260727120000`, `20260728120000`,
-`20260729120000`). The remote ledger and the repo therefore disagree, so a later `supabase db push`
-would consider these three unapplied and re-run them. Re-running all three in filename order does
-converge on the correct state — but re-running only the *first* would regress the moderation-history
-fix, since `20260727120000` defines the version that deletes reviews. Repair with
-`supabase migration repair --status applied <version>` before the next push, or accept that the pair
-must always travel together.
+**Version-number caveat — REPAIRED 2026-07-30.** `apply_migration` assigned its own timestamps
+(`20260729213112`, `20260729213141`, `20260729213216`) rather than the filenames (`20260727120000`,
+`20260728120000`, `20260729120000`), so the remote ledger and the repo disagreed and a later
+`supabase db push` would have considered all three unapplied and re-run them. That was not merely
+noisy: re-running the *first* alone restores the form of `delete_own_account()` that **deletes**
+moderation reviews, silently regressing the fix the second migration exists to make.
 
-**The fourth migration does not have this problem.** `20260730025443_phase_e_hole_number_nulls_not_distinct.sql`
-(finding 8, applied 2026-07-30) was **renamed to match the version `apply_migration` assigned**, so the
-repo and the ledger agree on it and `db push` will correctly skip it. That is the shape the repair should
-take for the other three: rename the file to the applied version, or repair the ledger to the filename —
-either, but consistently. Doing it for the newest one immediately meant not adding a fourth
-disagreement to a list of three.
+Repaired by renaming the three files to the versions the ledger actually holds — the same shape
+already used for the fourth migration, chosen over `supabase migration repair` because it needs no
+database credentials and leaves the repo self-consistent for anyone who clones it:
+
+| Was | Now |
+|---|---|
+| `20260727120000_phase_e_account_deletion.sql` | `20260729213112_phase_e_account_deletion.sql` |
+| `20260728120000_phase_e_preserve_moderation_history.sql` | `20260729213141_phase_e_preserve_moderation_history.sql` |
+| `20260729120000_phase_e_atomic_course_creation.sql` | `20260729213216_phase_e_atomic_course_creation.sql` |
+
+Before renaming, each file's content was matched to the statement stored in
+`supabase_migrations.schema_migrations` for the version it was being renamed to — confirming the
+pairing rather than assuming it from the names: `…213112` is the form that deletes reviews, `…213141`
+the form that nulls them, `…213216` the course RPC, `…025443` the `nulls not distinct` index. Relative
+order is preserved and all four now sort after the Phase D migrations. In-repo references to the old
+versions were updated in `src/lib/roundLog.js`, `src/context/AuthContext.jsx`, both migration headers,
+`.claude/README.md` and the audit doc; historical `DEVLOG.md` entries were left alone as the record of
+what was true at the time.
+
+**All four Phase E migrations now agree with the ledger, so `supabase db push` will correctly skip
+every one of them.**
 
 **Action 5 is owner-only for environment reasons, not judgement reasons:**
 
@@ -225,21 +255,28 @@ disagreement to a list of three.
   than independently observed.
 - **Running E2E in a sandbox:** the pre-provisioned Chromium may not match the build Playwright
   expects. Use `E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run test:e2e`; leave it unset in CI.
+- **`capture.spec.js` › "single-active auto-close" is intermittently flaky under parallel load**
+  (observed once on 2026-07-30, in a sandbox). It fails in `waitForCaptureSync` waiting for the
+  outbox to drain to 0 — a 7s poll timeout, not a wrong assertion — and passes both in isolation and
+  on a full re-run of the suite. Treat a single failure of this spec as a flake to re-run, not a
+  regression; if it starts failing repeatably, the poll budget is the thing that got too tight, not
+  the auto-close behaviour.
 - Production bundle is ~740 KB minified / ~213 KB gzip; code splitting is a tracked backlog item
   before public/mobile beta.
 
 ## Open follow-ups
 
-- **`20260727120000_phase_e_account_deletion.sql` is written but NOT applied.** It creates the
-  `public.delete_own_account()` security-definer RPC. Until it is applied, the Settings delete button
-  fails with an undefined-function error. Apply it, then smoke-test in a rollback-only transaction:
-  a second user's rows survive, community `created_by` is nulled rather than deleted, private Storage
-  objects under the user's prefix are gone, and `anon` cannot execute the function.
+These two are **closed** and were removed on 2026-07-30 — they had been contradicting the top of this
+same file, which is exactly how a checkpoint stops being trusted: the account-deletion migration is
+applied and verified (see "Migrations applied 2026-07-29"), and the `catalog-import-raw` bucket does
+not exist, so there is nothing to delete.
 
-- Delete the empty `catalog-import-raw` Storage bucket from the Supabase dashboard. Direct DELETE on
-  storage tables is blocked and the CLI manages objects rather than buckets, so this needs the
-  dashboard. Open since 2026-07-14.
 - Enable protected-`main` required review/checks now that CI runs green remotely. `main` auto-deploys.
+- **The account-deletion cascade is still only structurally evidenced.** The RLS negative tests
+  exercised the refusal paths, which raise before touching data. That a second user's rows survive and
+  that private Storage objects are removed by prefix is argued from the function body and the FK/RLS
+  configuration, not observed. Proving it behaviourally needs two disposable accounts with real rows,
+  which the live project (28 real users) is the wrong place for.
 - Browser E2E is built but partial. Six § 9 flows remain uncovered — pause/resume, single-active
   auto-close, round-close confirmation, completed edit/audit, soft-delete/restore, exactly-once
   reconnect. All six need an in-progress or completed activity seeded through the InstantLaunch +
