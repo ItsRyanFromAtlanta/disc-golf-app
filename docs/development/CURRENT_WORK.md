@@ -188,6 +188,50 @@ nothing is wrong with it. See `e2e/README.md`.
 | C5 | Install the OpenAI Developer Docs MCP locally | Desktop sandbox could not launch the installer |
 | C6 | **Apply the pending Phase E migrations** — see the list below | Owner decision 2026-07-30: migrations are applied by the owner via the Supabase dashboard, not from a session |
 
+### Pending seed data — written, validated, NOT applied (2026-07-30)
+
+Three root `.sql` files, in this order. They are **seeds, not migrations** — no schema changes — but the
+same rule applies: the owner runs them.
+
+| File | Contents |
+|---|---|
+| `roswell_courses_seed.sql` | East Roswell Park + Wills Park: 2 courses, 3 layouts, 54 holes |
+| `disc_molds_seed_2026_07.sql` | 326 molds across 16 manufacturers; 247 with flight numbers, 79 identity-only |
+| `disc_molds_corrections_2026_07.sql` | **Modifies 9 existing rows.** Read before running — see below |
+
+**All three were validated against a throwaway Postgres 16 cluster** built with the live table shapes
+and indexes, run twice each to prove idempotency. Nothing was applied to the live project. The mold
+seed was additionally run against a table pre-loaded with the current 19 rows, confirming
+`ON CONFLICT DO NOTHING` leaves them untouched — which is exactly why the corrections are a separate
+file.
+
+**Per-hole par and distance are NULL for all 54 holes, deliberately.** They are not published anywhere
+reachable. East Roswell Park plays to par 56 over 18 holes, so 16 holes are par 3 and two are par 4 —
+but *which* two is not published, and writing par 3 everywhere would sum to 54 and be quietly wrong.
+Course-level totals are recorded in the file's comments instead. This is the sparse-data case A5 and
+A8 were built for: `relativeToPar` returns null rather than a number, and the prep sheet reports its own
+coverage.
+
+**`Wills Park` is recorded as Alpharetta, not Roswell.** It is commonly associated with Roswell and
+appears in Roswell-area guides, but the address (11925 Wills Road) and the municipal owner are both
+Alpharetta. If a different Wills Park was meant, that row is the one to check.
+
+**The 9 corrections matter more than the 326 new rows.** Cross-checking the existing catalog found that
+roughly half the molds seeded in July are wrong, and the Streamline set looks like a systematic
+row-shift rather than three typos — the DB's `Trace` numbers (7/5/-2/1) are the *Drift's* numbers. Four
+were independently re-verified (Trace 11/5/-1/2, Wave 11/5/-2/2, Pilot 2/5/0/1, Insanity 9/5/-2/1.5);
+five more are corroborated but not re-verified; four remain unresolved and are left commented out
+rather than overwritten with a second guess. Every UPDATE matches on the current wrong values, so it
+is idempotent and will not revert a hand-fix.
+
+**Provenance is honest about its limits.** No manufacturer or course page was fetched — this
+environment's proxy refuses those hosts. Everything was compiled and then cross-checked against
+web-search summaries, which quote published figures in retailer product titles. 270 of 326 molds were
+checked that way. `scraped_at` is NULL on every row because nothing was scraped, matching the existing
+curated-bootstrap convention. Molds researched at low confidence keep their identity and get NULL
+numbers: a wrong flight number is invisible, looks authoritative, and poisons every comparison built on
+it. Gateway, Kastaplast and Prodigy landed largely or wholly in that bucket.
+
 ### Pending migrations — written, reviewed, NOT applied
 
 Standing decision (2026-07-30): **sessions write migration files; the owner applies them.** No agent
