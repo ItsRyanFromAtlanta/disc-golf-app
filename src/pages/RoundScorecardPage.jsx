@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import RoundWeatherPanel from '../components/RoundWeatherPanel'
 import { useAuth } from '../hooks/useAuth'
+import { useRoundWeather } from '../hooks/useRoundWeather'
 import { SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
 import { useDiscList } from '../lib/repository/discRepository'
 import { flushRoundOutbox, loadRound, saveRoundHole, useRoundSync } from '../lib/repository/roundRepository'
@@ -68,6 +70,7 @@ export default function RoundScorecardPage() {
   const [savingHoleId, setSavingHoleId] = useState(null)
   const [roundTurnPromptEnabled, setRoundTurnPromptEnabled] = useState(true)
   const [roundTurnDismissed, setRoundTurnDismissed] = useState(false)
+  const weather = useRoundWeather(round, setRound, user.id)
 
   useEffect(() => {
     let active = true
@@ -188,6 +191,16 @@ export default function RoundScorecardPage() {
           </button>
         </p>
       )}
+      {/* Mid-round, in the same slot the practice canvas puts its weather
+          drawer: conditions change between the front and back nine, and the
+          player is standing on the course when they do. */}
+      <RoundWeatherPanel
+        weather={weather.weather}
+        onSave={weather.save}
+        saving={weather.saving}
+        message={weather.message}
+      />
+
       {roundTurnPromptEnabled && frontNineComplete && !roundTurnDismissed && (
         <aside className="round-turn-prompt" aria-label="Round turn check-in">
           <strong>At the turn</strong>

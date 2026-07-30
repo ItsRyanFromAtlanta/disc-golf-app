@@ -1,0 +1,71 @@
+-- Phase E2: round weather context.
+--
+-- Why: D2 shipped editable weather on both practice parents
+-- (`putt_sessions` / `putting_regimen_runs`, added in `layer1_foundation_schema.sql`)
+-- as two structured columns — a constrained `weather_condition` plus an integer
+-- `wind_mph`. Rounds had only the free-text `weather_summary` column that has
+-- been on `rounds` since `supabase_schema.sql`. That column is genuinely useful
+-- and is NOT being replaced, but it cannot carry the same concept:
+--
+--   * Nothing can group or filter on it without parsing prose, and the project
+--     rule is that facts are recorded, never inferred from a summary. The
+--     gamification metrics that already read `weather_condition` / `wind_mph`
+--     off practice parents (`src/lib/gamification/metrics.js` — `windy_sessions`,
+--     `rain_sessions`) would each need a text parser to extend to rounds.
+--   * A round and a practice session played in the same weather would be stored
+--     two different ways, which is exactly the second parallel weather concept
+--     E2 is supposed to avoid.
+--
+-- So this is the additive-column path AGENTS.md prescribes for absorbing a
+-- concept that already exists elsewhere: the SAME two columns, the SAME
+-- vocabulary, the SAME constraints. `weather_summary` keeps its original job as
+-- the optional free-text note beside them.
+--
+-- Ideal format (stated before the DDL, per the schema convention):
+--   weather_condition text, null allowed, CHECK against the identical five-value
+--     vocabulary D2 constrains the practice parents to. Not an enum type: the
+--     practice columns are text + CHECK, and introducing a Postgres enum for the
+--     round copy alone would make the two halves of one concept structurally
+--     different and make adding a sixth value a type migration.
+--   wind_mph integer, null allowed, CHECK (wind_mph >= 0). Integer, not numeric —
+--     mph is read off a phone to whole numbers, and it matches D2. No upper
+--     bound, again matching D2; inventing one here and not there would mean a
+--     wind speed that a practice session accepts and a round rejects.
+--
+-- No index. Rounds are owner-scoped and read per user or per round; a filtered
+-- read by condition does not exist yet and would be satisfied by the existing
+-- user_id access path at any plausible round count.
+--
+-- Auto-capture seam (deliberately NOT built here): fetching conditions from a
+-- weather API is FEATURE_BACKLOG's "Conditions auto-capture (weather)" and stays
+-- backlog — there is no API key and the network policy is restrictive. When it
+-- lands it should add a `weather_source text` column in its own append-only
+-- migration (e.g. 'manual' | 'auto' | 'imported') rather than widening these
+-- two: provenance is a separate fact from the observation, a fetched value must
+-- still be user-correctable, and adding the column later needs no backfill
+-- because every row written before it is manual by construction. The client-side
+-- seam is `roundWeatherFields()` in `src/lib/roundWeather.js`, which already
+-- normalizes a provider-shaped observation into exactly these columns.
+--
+-- RLS: none added. `rounds` already carries "Users manage own rounds"
+-- (`for all using (auth.uid() = user_id) with check (auth.uid() = user_id)`),
+-- and a column added to an existing table inherits its table's policies. There
+-- is no new grantable object here, so there is nothing new to revoke either.
+--
+-- Rollback:
+--   alter table public.rounds
+--     drop constraint if exists rounds_weather_condition_check,
+--     drop constraint if exists rounds_wind_mph_check,
+--     drop column if exists weather_condition,
+--     drop column if exists wind_mph;
+-- Dropping the columns discards any recorded conditions; `weather_summary` and
+-- every scoring fact are untouched by both the apply and the rollback. A client
+-- that has already shipped will send these columns, so roll the client back
+-- first or its round updates will fail with PGRST204 (which the client treats as
+-- a transient deploy-lag error and retries, so nothing is lost — see
+-- `DEPLOY_LAG_CODES` in `src/lib/instantLaunch/errorClassification.js`).
+
+alter table public.rounds
+  add column if not exists weather_condition text
+    check (weather_condition in ('clear','headwind','tailwind','crosswind','rain')),
+  add column if not exists wind_mph integer check (wind_mph >= 0);

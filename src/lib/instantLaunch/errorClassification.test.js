@@ -63,6 +63,19 @@ describe('attachResponseStatus', () => {
     }
   })
 
+  // Same window, additive-column shape — and the one this project hits most,
+  // because absorbing a concept as new columns is the schema convention. A
+  // client that writes `rounds.weather_condition` before its migration lands
+  // gets 400/PGRST204 on every attempt; poisoning would throw the round away
+  // over a deploy ordering that fixes itself minutes later.
+  it('does not attach a status to a column the migration has not added yet', () => {
+    for (const code of ['PGRST204', '42703']) {
+      const error = { code, message: "Could not find the 'weather_condition' column of 'rounds'" }
+      expect(attachResponseStatus(error, 400).status).toBeUndefined()
+      expect(isPermanentError(error)).toBe(false)
+    }
+  })
+
   it('does not overwrite a status a send site already attached', () => {
     expect(attachResponseStatus({ code: '42501', status: 403 }, 500).status).toBe(403)
   })

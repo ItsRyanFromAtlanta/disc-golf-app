@@ -4639,3 +4639,75 @@
   margin: 8px 0 12px;
   color: var(--color-text-secondary);
 }
+
+/* Round conditions — the round-side mirror of the practice weather drawer, so
+   it borrows the canvas toolbar's surface treatment rather than inventing a
+   second visual language for the same control. */
+.round-weather {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-weather-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.round-weather-reading {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.round-weather-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.round-weather-wind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.round-weather-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.round-conditions {
+  margin: 16px 0;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-conditions h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.round-conditions-ledger {
+  margin: 0 0 4px;
+  color: var(--color-text-primary);
+}
+
+.round-conditions-split {
+  margin-top: 12px;
+}
+
+.round-card-conditions {
+  color: var(--color-text-secondary);
+}

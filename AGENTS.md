@@ -262,6 +262,19 @@ attribution on `courses`/`course_aliases`/`disc_molds` to null so shared rows su
 Storage objects no foreign key reaches, then deletes the `auth.users` row that every owner-scoped table
 cascades from. The client purges device storage only after the server confirms.
 
+Phase E2 adds round weather as one concept with practice weather, not a second one. `rounds` gains
+`weather_condition` and `wind_mph` (migration `20260730205654_phase_e_round_weather.sql`) carrying the
+identical vocabulary and CHECK constraints D2 put on `putt_sessions`/`putting_regimen_runs`; the
+pre-existing free-text `rounds.weather_summary` is kept as the optional note beside them, not
+overloaded to carry structure. Every write goes through `roundWeatherFields()` in
+`src/lib/roundWeather.js`, which is also the seam a future auto-capture provider plugs into — a
+fetched observation is the same fact as a typed one and must stay equally correctable. Conditions are
+editable on both `/rounds/:roundId` and `/rounds/:roundId/summary`, including after finalization.
+`lib/insights/roundConditions.js` compares scoring by condition **within a single layout only** and
+withholds any average until two conditions each have three complete rounds; below that it reports a
+count with its coverage, never a claim. `PGRST204`/`42703` joined `DEPLOY_LAG_CODES` for this: a
+client that writes a column before its migration lands must wait for it, not poison the round.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
