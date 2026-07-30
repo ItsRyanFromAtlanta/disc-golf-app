@@ -55,3 +55,7 @@ android/app/build/
 
 .vercel
 .env*
+
+# Subagent worktrees. Transient scratch checkouts created by isolated agent runs
+# and removed when they finish — never repository content.
+.claude/worktrees/
