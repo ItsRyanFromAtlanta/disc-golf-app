@@ -94,7 +94,7 @@ compensation. A failure after the first leaves an orphan course with no layout; 
 layout with no holes. Both are immediately visible to every other authenticated user in the COURSES
 directory, and neither is repairable from the client.
 
-Fixed by `20260729120000_phase_e_atomic_course_creation.sql`: one `security invoker` RPC performing
+Fixed by `20260729213216_phase_e_atomic_course_creation.sql`: one `security invoker` RPC performing
 all three inserts in a single transaction. Compensating deletes were rejected as the lesser
 alternative — they fail for exactly the reason the original write failed.
 

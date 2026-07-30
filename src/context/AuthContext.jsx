@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
     // Privacy purge. The RPC takes no arguments and derives its subject from
     // the JWT, so a caller cannot target another account. It permanently
     // removes the auth identity, every owner-scoped row that cascades from it,
-    // and the user's private photo objects. See the 20260727120000 migration.
+    // and the user's private photo objects. See the 20260729213112 migration.
     deleteAccount: () => supabase.rpc('delete_own_account'),
 
     // Screen 2 — passwordless email OTP. shouldCreateUser covers both sign-in

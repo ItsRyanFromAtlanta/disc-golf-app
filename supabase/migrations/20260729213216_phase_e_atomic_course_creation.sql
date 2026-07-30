@@ -1,7 +1,7 @@
 -- Phase E / E2 finding 3 — atomic quick-course creation.
 --
--- ORDERING: this migration is independent of `20260727120000_phase_e_account_deletion.sql` and
--- `20260728120000_phase_e_preserve_moderation_history.sql`; it touches no object either of those
+-- ORDERING: this migration is independent of `20260729213112_phase_e_account_deletion.sql` and
+-- `20260729213141_phase_e_preserve_moderation_history.sql`; it touches no object either of those
 -- defines. It depends only on the `courses` / `layouts` / `holes` shapes established by
 -- `disc_locker_and_layouts_schema.sql` + `migrate_disc_locker_and_layouts.sql` (holes hang off
 -- `layout_id`, not `course_id`) and on the J1 RLS contract in

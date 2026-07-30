@@ -13,7 +13,7 @@ MCP error -32003: MCP tool call requires approval
 
 The approval gate fails closed, so two consecutive agent sessions were fully blocked. The
 concrete cost: an agent could not determine whether migration
-`20260727120000_phase_e_account_deletion.sql` had been applied, which blocked a PR merge.
+`20260729213112_phase_e_account_deletion.sql` had been applied, which blocked a PR merge.
 
 `permissions.allow` pre-approves the read-only subset so a session can *observe* project
 state without a human in the loop.

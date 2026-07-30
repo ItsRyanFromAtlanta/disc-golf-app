@@ -1,12 +1,12 @@
 -- Phase E: preserve catalog moderation history through an account deletion.
 --
--- ORDERING: this migration must be applied AFTER `20260727120000_phase_e_account_deletion.sql`,
--- which creates `public.delete_own_account()`. Neither migration is applied yet, so the owner
--- applies them in sequence: 20260727120000 first, then this one. Applying this file against a
--- database that has never seen 20260727120000 still works (the function is created rather than
--- replaced), but the pair is designed and reviewed as an ordered sequence.
+-- ORDERING: this migration must be applied AFTER `20260729213112_phase_e_account_deletion.sql`,
+-- which creates `public.delete_own_account()`. Both were applied in that sequence on 2026-07-29.
+-- Applying this file against a database that has never seen 20260729213112 still works (the
+-- function is created rather than replaced), but the pair is designed and reviewed as an ordered
+-- sequence, and re-running only the earlier one restores the deleting form of the function.
 --
--- Why: `20260727120000` traded away audit history to satisfy a NOT NULL constraint. It carefully
+-- Why: `20260729213112` traded away audit history to satisfy a NOT NULL constraint. It carefully
 -- preserves community attribution — `courses.created_by`, `course_aliases.created_by` and
 -- `disc_molds.created_by` are released to null so shared rows outlive the contributor — but
 -- `public.catalog_submission_reviews.reviewer_id` was NOT NULL with no cascade, so its step 2 had
@@ -48,7 +48,7 @@
 --
 -- Rollback: restoring NOT NULL is only possible once no null `reviewer_id` rows exist, because the
 -- constraint is validated against existing data. If no account has been deleted since this applied,
--- re-run the body of `20260727120000` (which restores the deleting form of the function) and then
+-- re-run the body of `20260729213112` (which restores the deleting form of the function) and then
 --   `alter table public.catalog_submission_reviews alter column reviewer_id set not null;`
 -- If accounts HAVE been deleted, the nulled rows are the preserved history and there is no
 -- non-destructive rollback: setting NOT NULL again would require deleting exactly the audit rows

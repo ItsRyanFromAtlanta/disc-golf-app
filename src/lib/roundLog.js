@@ -269,7 +269,7 @@ export const COURSE_CREATE_UNAVAILABLE_MESSAGE =
 //
 // `create_course_with_layout` does all three inserts in one function body, which
 // is one transaction: an exception anywhere inside rolls back every row the call
-// wrote. See `supabase/migrations/20260729120000_phase_e_atomic_course_creation.sql`.
+// wrote. See `supabase/migrations/20260729213216_phase_e_atomic_course_creation.sql`.
 //
 // The ids are generated here rather than server-side so the call is a safe
 // replay: re-sending the same `p_course_id` returns that course instead of
