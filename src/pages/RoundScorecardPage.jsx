@@ -7,6 +7,7 @@ import { SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
 import { useDiscList } from '../lib/repository/discRepository'
 import { flushRoundOutbox, loadRound, saveRoundHole, useRoundSync } from '../lib/repository/roundRepository'
 import { formatRelativeToPar, relativeToPar, roundTotal } from '../lib/rounds'
+import { isActivityOnlyRound } from '../lib/roundScoring'
 import { fetchProfile, upsertProfileFields } from '../lib/profile'
 
 function sortedHoles(round) {
@@ -156,6 +157,34 @@ export default function RoundScorecardPage() {
 
   if (loading) return <p className="loading">Loading scorecard...</p>
   if (error || !round) return <p className="form-error">{error || 'Round not found'}</p>
+
+  // An activity-only round has no scorecard, so this route has nothing to
+  // render. It is reachable anyway — a bookmark, a rounds-list row, a shared
+  // link — so it explains itself and points at the summary rather than showing
+  // a card of empty inputs that would silently start writing `round_holes` the
+  // player never asked for. Switching a round between modes is deliberately not
+  // offered here: that is a correction, and corrections in this project owe an
+  // audit trail with previous and new values, which the round layer does not
+  // have yet.
+  if (isActivityOnlyRound(round)) {
+    return (
+      <section className="scorecard-page">
+        <header className="practice-header">
+          <div>
+            <h1>{round.course?.name ?? 'Round'}</h1>
+            <p className="log-time">Logged without a scorecard</p>
+          </div>
+          <Link to={`/rounds/${round.id}/summary`} className="start-button">
+            Summary
+          </Link>
+        </header>
+        <p className="form-info">
+          This round was logged as an activity, so there are no per-hole scores to enter. Conditions and
+          an optional total live on the summary.
+        </p>
+      </section>
+    )
+  }
 
   // A round that never reaches the server still renders perfectly from the
   // local mirror, so nothing else on this screen would ever reveal the failure.

@@ -42,6 +42,11 @@ function normalizeRoundFields(fields = {}) {
     'weather_summary',
     'weather_condition',
     'wind_mph',
+    // Written only when it is `activity_only` — `roundScoringModeFields()` in
+    // `src/lib/roundScoring.js` returns nothing for the default, so an ordinary
+    // scorecard round sends the same payload it always did and is unaffected by
+    // whether the column's migration has landed.
+    'scoring_mode',
     'target_score',
     'total_score',
     'status',

@@ -38,6 +38,7 @@ export {
   CONDITION_SPLIT_MIN_ROUNDS,
   CONDITION_SPLIT_MIN_CONDITIONS,
 } from './roundConditions'
+export { roundVolumeLedger, roundStreak } from './roundVolume'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
 export {

@@ -4773,3 +4773,86 @@
 .round-card-conditions {
   color: var(--color-text-secondary);
 }
+
+/* Activity-only rounds (E2 A5). The mode choice is the first thing on the
+   start form because it changes what the rest of the form means, so it is
+   given a real fieldset with the same surface treatment as the conditions
+   panel rather than being disguised as another select. */
+.round-mode-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-mode-field legend {
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.round-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  /* Field-use rule: a mis-tap here silently changes what the whole round is,
+     so the row is a full-width target rather than the radio dot alone. */
+  min-height: 44px;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+
+.round-mode-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.round-mode-option small {
+  color: var(--color-text-secondary);
+}
+
+.round-activity-only {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-activity-only-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* Volume and streak, counting every round including the unscored ones. */
+.round-volume-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.round-volume-strip strong {
+  color: var(--color-text-primary);
+}
+
+.round-summary-stat small {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}

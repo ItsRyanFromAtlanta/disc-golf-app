@@ -1,0 +1,91 @@
+-- Phase E2: activity-only rounds.
+--
+-- WRITTEN, NOT APPLIED. No live database has this column.
+--
+-- Why: a round today can only be logged by filling in a scorecard. A player who
+-- went out and played but does not want to enter eighteen numbers has nowhere
+-- to put the round, so it does not exist — not in history, not in a streak, not
+-- in volume. An "activity-only" round is that round: a real `disc_golf_round`
+-- activity with no per-hole scoring.
+--
+-- Why a recorded column and not an inference. `rounds(id, user_id)` already
+-- references `activities(id, user_id)`, so a round *is* an activity and this is
+-- not a new `activities.type` — it is the same kind of event captured in less
+-- detail. The alternative is to infer the mode from the absence of
+-- `round_holes`, and absence is ambiguous three ways: a card on the first tee,
+-- a card abandoned after one hole, and a round deliberately logged without
+-- scoring all have zero scored holes. What separates them is the player's
+-- intent at creation, which cannot be recovered afterwards, so it is written
+-- down like every other fact here.
+--
+-- Ideal format (stated before the DDL, per the schema convention):
+--   scoring_mode text NOT NULL DEFAULT 'hole_by_hole',
+--     CHECK (scoring_mode in ('hole_by_hole','activity_only')).
+--   Text + CHECK, not a Postgres enum — matching `rounds.status`,
+--   `weather_condition`, `bag_versions.reason` and every other constrained
+--   vocabulary in this schema. A third mode later is then a CHECK swap rather
+--   than a type migration.
+--   NOT NULL with a default rather than nullable: every round that exists was
+--   created through the scorecard path, so the default is not a placeholder for
+--   "unknown", it is the historically true value. Postgres 11+ adds a defaulted
+--   NOT NULL column without rewriting the table, so this is cheap on any size
+--   `rounds` reaches.
+--   No index. `rounds` is owner-scoped and read per user or per round; there is
+--   no query that filters the whole table by mode, and at any plausible round
+--   count the existing `user_id` access path serves one.
+--
+-- What is deliberately NOT changed:
+--
+--   * `course_id` stays NOT NULL. An activity-only round is one without a
+--     scorecard, not one without a place — the course is what makes it a round
+--     rather than a diary entry, and every read path from `hydrateRounds` down
+--     assumes it. "A round somewhere not in the catalog" is a different feature
+--     needing a nullable FK plus a free-text place name; it is recorded in
+--     FEATURE_BACKLOG.md rather than smuggled in here.
+--   * `layout_id` needs nothing: it has been nullable since
+--     `disc_locker_and_layouts_schema.sql` and `fetchRound` already branches on
+--     it. An activity-only round may skip the layout, because without per-hole
+--     scoring the tee set changes nothing — and if one IS chosen, its par total
+--     is what lets an optional stated total become a relative-to-par.
+--   * `total_score` needs nothing either, and this is the subtle half. The
+--     column has always existed and has always been *derived* — written at
+--     finalization from the sum of the card. On an activity-only round the same
+--     column holds a *stated* number that no per-hole fact backs. Same column,
+--     two provenances; `roundScoreSummary()` in `src/lib/roundScoring.js`
+--     returns the source alongside the number so no screen prints one as the
+--     other. A separate `stated_total_score` column was rejected: it would
+--     leave every existing consumer reading the wrong one of two columns, and
+--     provenance is derivable from `scoring_mode` without duplicating the fact.
+--   * No `round_holes` constraint. Nothing forbids an activity-only round from
+--     having hole rows, because a player who switches a round to activity-only
+--     after entering three scores must not have those three facts deleted — the
+--     project rule is that corrections preserve previous values. The UI simply
+--     stops asking; the rows, if any, stay and stay excluded from stroke
+--     averages by `roundScoreSummary`.
+--
+-- Deploy window: `roundScoringModeFields()` omits the column entirely for
+-- `hole_by_hole`, so an ordinary round is byte-identical to today's write and
+-- is unaffected by whether this migration has landed. Only an activity-only
+-- round sends `scoring_mode`, and if the column is absent PostgREST answers
+-- `PGRST204`, which `DEPLOY_LAG_CODES` keeps transient on purpose — the queued
+-- round waits for the migration instead of poisoning the outbox.
+--
+-- RLS: none added. `rounds` already carries "Users manage own rounds"
+-- (`for all using (auth.uid() = user_id) with check (auth.uid() = user_id)`)
+-- and a column inherits its table's policies. No new grantable object, so
+-- nothing new to revoke.
+--
+-- Rollback:
+--   alter table public.rounds
+--     drop constraint if exists rounds_scoring_mode_check,
+--     drop column if exists scoring_mode;
+-- Dropping the column loses the distinction between a scored round and one
+-- logged without a scorecard; the rounds themselves, their holes, totals and
+-- weather are untouched by both the apply and the rollback. Roll the client
+-- back first or its activity-only round writes fail with PGRST204 — which the
+-- client treats as transient deploy lag and retries, so nothing is lost, but
+-- those rounds stay queued until one side or the other moves.
+
+alter table public.rounds
+  add column if not exists scoring_mode text not null default 'hole_by_hole'
+    check (scoring_mode in ('hole_by_hole', 'activity_only'));

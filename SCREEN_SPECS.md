@@ -357,6 +357,13 @@ tables.
   `external_source='udisc'` rows only.
 - **Divergence:** writes the **existing shared schema** (`rounds`, not a bespoke `UDiscRoundLog`
   table) — this is the whole reason Track 1.5 groundwork was built ahead of time.
+- **Interaction with activity-only rounds (E2, 2026-07-30):** `rounds.scoring_mode` now distinguishes
+  a round with a scorecard from one logged without. An import carrying per-hole scores writes
+  `hole_by_hole`, which is the column default, so the importer needs no change to be correct. A
+  provider row that carries only a total is the case to decide deliberately: it is `activity_only`
+  with a **stated** `total_score`, and it must not be written as a `hole_by_hole` round with an empty
+  card — that is the exact ambiguity `scoring_mode` exists to remove. Import provenance stays on
+  `external_source`/`external_ref`; scoring mode is a separate fact from where the round came from.
 - **Dependency:** **verify Track 1.5 landed** — `external_source`/`external_ref` on `rounds`/`courses`
   and the `course_aliases` table were planned to ride with the 1B migration; confirm at Layer 1 start,
   fold in if missing.

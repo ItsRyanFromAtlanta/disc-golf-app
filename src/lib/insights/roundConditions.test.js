@@ -160,6 +160,42 @@ describe('conditionSplits', () => {
     expect(conditionSplits()).toEqual([])
   })
 
+  it('excludes activity-only rounds even when they carry a stated total', () => {
+    // A stated total is a real number, and it is not comparable to a derived
+    // one: nothing establishes it covers the same holes as the cards it would
+    // be averaged beside. Three rain cards plus three activity-only rain
+    // entries must still read as three rain rounds, not six.
+    const activityOnly = (id) => ({
+      ...round(id, { condition: 'rain' }),
+      scoring_mode: 'activity_only',
+      round_holes: [],
+      total_score: 16,
+    })
+    const splits = conditionSplits([
+      ...repeat(3, 'clear', { condition: 'clear', over: 0 }),
+      ...repeat(3, 'rain', { condition: 'rain', over: 2 }),
+      activityOnly('ao-1'),
+      activityOnly('ao-2'),
+      activityOnly('ao-3'),
+    ])
+    expect(splits).toHaveLength(1)
+    const rain = splits[0].conditions.find((entry) => entry.condition === 'rain')
+    expect(rain.rounds).toBe(3)
+    expect(rain.averageRelativeToPar).toBe(6)
+  })
+
+  it('still counts an activity-only round in the ledger', () => {
+    // The mirror rule: anything counting ROUNDS counts them, anything
+    // averaging STROKES does not. A round played in the rain was played in the
+    // rain whether or not anyone wrote down the strokes.
+    const ledger = conditionLedger([
+      { ...round('a', { condition: 'rain' }), scoring_mode: 'activity_only', round_holes: [] },
+      round('b', { condition: 'rain' }),
+    ])
+    expect(ledger.conditions).toEqual([{ condition: 'rain', rounds: 2 }])
+    expect(ledger.recorded).toBe(2)
+  })
+
   it('honours a caller-supplied floor', () => {
     const splits = conditionSplits(
       [...repeat(2, 'clear', { condition: 'clear', over: 1 }), ...repeat(2, 'rain', { condition: 'rain', over: 2 })],

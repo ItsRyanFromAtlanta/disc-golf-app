@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { conditionLedger, conditionSplits } from '../lib/insights'
-import { formatRelativeToPar, relativeToPar } from '../lib/rounds'
+import { conditionLedger, conditionSplits, roundStreak, roundVolumeLedger } from '../lib/insights'
+import { formatRelativeToPar } from '../lib/rounds'
+import { isActivityOnlyRound, roundScoreSummary } from '../lib/roundScoring'
 import { conditionLabel, describeRoundWeather, readRoundWeather } from '../lib/roundWeather'
 import { loadRound, useRoundList, useRoundSync } from '../lib/repository/roundRepository'
 
@@ -61,6 +62,12 @@ export default function RoundsPage() {
   )
   const ledger = useMemo(() => conditionLedger(detailedRounds), [detailedRounds])
   const splits = useMemo(() => conditionSplits(detailedRounds), [detailedRounds])
+  // Volume and streak count every round including the ones without a scorecard
+  // — that is the entire argument for logging one. The scoring coverage beside
+  // them is what keeps that honest: it says how much of this history any stroke
+  // average is actually speaking for.
+  const volume = useMemo(() => roundVolumeLedger(detailedRounds), [detailedRounds])
+  const streak = useMemo(() => roundStreak(detailedRounds, new Date()), [detailedRounds])
 
   if (roundsQuery.isLoading) return <p className="loading">Loading rounds...</p>
   if (roundsQuery.error && !roundsQuery.data) return <p className="form-error">{roundsQuery.error.message}</p>
@@ -86,6 +93,22 @@ export default function RoundsPage() {
             Retry round sync
           </button>
         </p>
+      )}
+
+      {volume.rounds > 0 && (
+        <section className="round-volume-strip" aria-label="Round volume">
+          <span>
+            <strong>{volume.rounds}</strong> {volume.rounds === 1 ? 'round' : 'rounds'}
+          </span>
+          <span>
+            <strong>{streak}</strong> day streak
+          </span>
+          {volume.activityOnly > 0 && (
+            <span>
+              <strong>{volume.activityOnly}</strong> without a scorecard
+            </span>
+          )}
+        </section>
       )}
 
       {/* A ledger, not a verdict. Counts are facts about what was logged; the
@@ -137,14 +160,20 @@ export default function RoundsPage() {
         <ul className="course-list round-list">
           {rounds.map((round) => {
             const detail = details[round.id]
-            const hasScore = Boolean(detail?.round_holes?.some((row) => row.score !== null && row.score !== ''))
-            const relative = detail && hasScore
-              ? formatRelativeToPar(relativeToPar(detail.round_holes, detail.holes))
-              : '—'
+            // The bare list row carries `scoring_mode` and `total_score`; only
+            // the hydrated detail carries the holes a relative-to-par needs. So
+            // the summary reads the detail when one has loaded and the row
+            // otherwise, which for an activity-only round is already enough.
+            const score = roundScoreSummary(detail ?? round)
+            const activityOnly = isActivityOnlyRound(round)
+            const relative = score.relativeToPar == null ? '—' : formatRelativeToPar(score.relativeToPar)
             const conditions = describeRoundWeather(readRoundWeather(round))
             return (
               <li key={round.id}>
-                <Link to={`/rounds/${round.id}`} className="course-card">
+                <Link
+                  to={activityOnly ? `/rounds/${round.id}/summary` : `/rounds/${round.id}`}
+                  className="course-card"
+                >
                   <span>
                     <strong>{round.course?.name ?? detail?.course?.name ?? 'Round'}</strong>
                     <small>
@@ -154,13 +183,17 @@ export default function RoundsPage() {
                         recorded" line on every row would be noise on the
                         screen a player scans for scores. */}
                     {conditions && <small className="round-card-conditions">🌬️ {conditions}</small>}
+                    {/* An em-dash where a score should be means "not
+                        recorded". This badge is what says the blank was on
+                        purpose. */}
+                    {activityOnly && <span className="history-sync-badge">No scorecard</span>}
                     {roundSync.unsyncedRoundIds.includes(round.id) && (
                       <span className="history-sync-badge history-sync-attention">Needs attention</span>
                     )}
                   </span>
                   <span className="course-card-score">
                     <strong>{relative}</strong>
-                    <small>{round.total_score ?? detail?.total_score ?? 'Score —'}</small>
+                    <small>{score.total ?? 'Score —'}</small>
                   </span>
                 </Link>
               </li>

@@ -1,3 +1,4 @@
+import { isActivityOnlyRound } from '../roundScoring'
 import { relativeToPar } from '../rounds'
 import { ROUND_WEATHER_CONDITIONS, readRoundWeather } from '../roundWeather'
 
@@ -64,6 +65,15 @@ export function conditionLedger(rounds = []) {
 // to only average complete ones.
 function comparableRelativeToPar(round) {
   if (round?.status !== 'completed') return null
+  // An activity-only round is excluded here explicitly, not left to fall out of
+  // the hole check below. It would in fact fall out — it has no scored holes —
+  // but "correct by accident" is how the next person deletes the accident. A
+  // stated total is a real number and it is genuinely NOT comparable to a
+  // derived one: nothing establishes it covers the same holes, and averaging it
+  // beside cards would silently mix two kinds of fact. It still counts in
+  // `conditionLedger` below, because a round played in the rain was played in
+  // the rain whether or not anybody wrote down the strokes.
+  if (isActivityOnlyRound(round)) return null
   const holes = round.holes ?? []
   if (holes.length === 0) return null
 

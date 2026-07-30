@@ -279,6 +279,52 @@ unbounded `select('*').order('name')` is correct at a catalog of zero and degrad
 trigger — first real multi-user catalog, or measured load past ~300ms — is recorded above rather than
 guessed at now.
 
+## Found while building the E2 features, after the audit closed
+
+These are not audit findings — the audit covered the write and sync path and closed on 2026-07-30.
+They were turned up by the feature work that followed and are recorded here because this is where a
+reader looking at the round/course surface will go next.
+
+### F1. `relativeToPar` over an empty card claims even par — FIXED (2026-07-30, A5)
+
+**Severity: low, but it printed a wrong number.** `relativeToPar([], holes)` returns `0`, and
+`formatRelativeToPar(0)` is `'E'`. So any consumer that did not guard first would show a round with
+nothing entered as *even par* rather than as unscored. Three screens each guarded separately with
+their own `hasScore` flag — the same "the guarantee lives in the consumer, not the data layer" shape
+as finding 6, and the fourth consumer would have inherited the defect.
+
+Fixed by `roundScoreSummary()` in `src/lib/roundScoring.js`, which returns `null` for both total and
+relative-to-par when nothing was recorded, and now owns the rule for all three screens. Held by
+`roundScoring.test.js` and by a browser assertion in `e2e/activity-only-round.spec.js` — an
+activity-only round is the case where an ungrounded "E" would have been most visible, since it has no
+scores by definition.
+
+### F2. A round's bag snapshot can be recorded from a stale version, indistinguishably — SURFACED (A7)
+
+**Severity: medium.** Not fixed, because it is not a bug to be fixed — it is a limit to be reported.
+
+`useCreateRound` captures a fresh `bag_version` at round start, and on failure falls back to
+`latestBagVersion(await loadBagVersions(bag_id))?.id ?? null`. Offline — the exact condition a round
+starts in — that fallback records the newest version the device happens to know about, which may be
+weeks old and may not reflect what is in the bag. Nothing on the round distinguishes that from a
+snapshot taken at the first tee.
+
+`verifyRoundBag()` in `src/lib/roundBagVerification.js` reports it rather than repairing it: because
+`bag_versions` is created on every grouped save, the version list *is* a complete edit timeline, so
+"was this snapshot still current when the round started?" is answerable — a save between the
+snapshot and the round means it was not. See A7 in the commit log for the full status vocabulary.
+
+### F3. Round-start snapshots are recorded with `reason = 'grouped_save'` — OPEN
+
+**Severity: cosmetic, but it is a provenance lie.** `captureBagVersion` defaults `reason` to
+`'grouped_save'` and `roundRepository` does not override it, so a snapshot taken because a round
+started claims to have been taken because the bag was saved. The `bag_versions.reason` CHECK already
+allows four values (`initial_snapshot`, `grouped_save`, `restore`, `system_backfill`) but
+`capture_bag_version` rejects anything but two, so recording an honest `'round_start'` needs a
+migration to widen both. Left open deliberately: A7's verification does not depend on the reason —
+it reads the version timeline, not the labels — and changing an RPC's accepted vocabulary as a side
+effect of a read-only feature is the kind of thing this project keeps as its own task.
+
 ## What this audit did not find
 
 Worth stating plainly, because eight fixed findings can read as a hardened surface. Every defect above

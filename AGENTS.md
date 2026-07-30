@@ -275,6 +275,24 @@ withholds any average until two conditions each have three complete rounds; belo
 count with its coverage, never a claim. `PGRST204`/`42703` joined `DEPLOY_LAG_CODES` for this: a
 client that writes a column before its migration lands must wait for it, not poison the round.
 
+Phase E2 adds **activity-only rounds**: a round logged as having happened without a scorecard.
+`rounds.scoring_mode` (`20260730212900_phase_e_activity_only_rounds.sql`, `hole_by_hole` |
+`activity_only`, NOT NULL defaulting to the former) records the player's intent at creation rather
+than inferring it from the absence of `round_holes` — a card on the first tee, an abandoned card and a
+deliberately unscored round all have zero scored holes, and only the third is this. The round is still
+a `disc_golf_round` activity on the same `rounds(id, user_id) → activities(id, user_id)` bridge; it is
+not an eighth activity type. `course_id` stays NOT NULL (a round has a place) and `layout_id` becomes
+optional (without per-hole scoring the tee set changes nothing, though naming one is what lets an
+optional stated total become a relative-to-par). `total_score` is the same column carrying a *stated*
+number instead of a derived one, and `roundScoreSummary()` in `src/lib/roundScoring.js` returns the
+source alongside every number so no screen prints one as the other — it also returns `null` rather
+than the `relativeToPar([], holes)` zero that used to render an unscored round as even par. The rule
+across metrics is: **anything counting rounds counts these; anything averaging strokes excludes them**
+— `insights/roundVolume.js` counts them for volume and streak, `insights/roundConditions.js` excludes
+them from per-layout scoring splits explicitly and still counts them in its ledger. Switching a round
+between modes is deliberately not offered: that is a correction, and corrections here owe an audit
+trail with previous/new values that the round layer does not have yet.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
