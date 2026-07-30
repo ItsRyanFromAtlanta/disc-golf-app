@@ -19,10 +19,15 @@ Built multi-tenant from day one (Supabase auth + RLS) to avoid a rebuild later.
 - **Dev tool:** Codex desktop/CLI
 
 ## Data model
-See `supabase_schema.sql` for full schema. Key tables:
+No single file describes the live schema. `supabase_schema.sql` is the Layer 1 *initial* schema and
+carries annotated SUPERSEDED blocks where later work re-parented tables (most importantly `holes`);
+the per-track root `*_schema.sql` files and `supabase/migrations/` own everything after it. Read the
+banner at the top of `supabase_schema.sql` before writing a migration against it, and confirm shapes
+against the live database when it matters. Key tables:
 - `profiles` — user profile, extends auth.users
 - `discs` — user's bag
-- `courses` / `holes` — shared community course data (not user-owned)
+- `courses` / `layouts` / `holes` — shared community course data (not user-owned); a course has one
+  or more layouts and a hole belongs to a **layout**, not directly to a course
 - `rounds` / `round_holes` — user-owned round data
 - `live_sessions` — active caddie chat state (JSONB log) during a round
 - `caddie_recommendations` — logged AI suggestions per hole, tagged with model used

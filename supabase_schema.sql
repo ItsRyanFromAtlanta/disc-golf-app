@@ -1,5 +1,36 @@
 -- Disc Golf Manager & Caddie App — Initial Schema
 -- Run this in the Supabase SQL Editor (Project > SQL Editor > New Query)
+--
+-- ============================================================
+-- READ THIS BEFORE TREATING THIS FILE AS CURRENT (reconciled 2026-07-30)
+-- ============================================================
+-- This is the Layer 1 *initial* schema, kept as the historical starting point.
+-- It is NOT a description of the live database. Later schema files and
+-- migrations re-parented and extended several tables, and this file was never
+-- updated to match — the drift was found during the E2 course/round audit,
+-- after a finding was written against a `holes` shape that no longer exists.
+--
+-- Per the append-only schema policy the stale definitions below are annotated
+-- in place rather than rewritten. Each affected block carries a SUPERSEDED note
+-- pointing at the file that actually owns its current shape. The known
+-- divergences from live, all in the course/round tree:
+--
+--   * `layouts` does not appear in this file at all. A course has one or more
+--     layouts, and holes hang off a layout. See
+--     `disc_locker_and_layouts_schema.sql`.
+--   * `holes.course_id` is DROPPED live; holes carry `layout_id` instead.
+--     Dropped by `migrate_disc_locker_and_layouts.sql`.
+--   * The `holes` uniqueness rule is now the index
+--     `holes_layout_hole_tee_uniq` on `(layout_id, hole_number, tee_type)`
+--     WITH `nulls not distinct`. See
+--     `supabase/migrations/20260730025443_phase_e_hole_number_nulls_not_distinct.sql`.
+--   * `rounds.layout_name` is DROPPED live; rounds carry `layout_id`.
+--   * `courses` and `rounds` both gained `external_source` / `external_ref`,
+--     and `rounds` gained `bag_id` / `bag_version_id`.
+--
+-- Verified against the live database (`icqzbvtjisxwycvioiup`) on 2026-07-30 by
+-- reading `information_schema.columns` and `pg_indexes` rather than inferring
+-- from the migration history.
 
 -- ============================================================
 -- PROFILES (extends Supabase auth.users)
@@ -76,6 +107,16 @@ alter table profiles
 
 -- ============================================================
 -- HOLES (belongs to a course + layout)
+--
+-- SUPERSEDED — do not write new code or migrations against this block.
+-- Live, a hole belongs to a LAYOUT, not a course: `course_id` was dropped by
+-- `migrate_disc_locker_and_layouts.sql` and replaced by `layout_id uuid not
+-- null references layouts(id) on delete cascade`. The `unique (course_id,
+-- hole_number, tee_type)` constraint below is likewise gone, replaced by the
+-- index `holes_layout_hole_tee_uniq` on `(layout_id, hole_number, tee_type)`
+-- with `nulls not distinct` — without that clause a layout with no explicit
+-- tee types, which is every quick course, could hold duplicate hole numbers
+-- (E2 audit finding 8).
 -- ============================================================
 create table holes (
   id uuid primary key default gen_random_uuid(),
@@ -99,6 +140,12 @@ create policy "Authenticated users can add holes"
 
 -- ============================================================
 -- ROUNDS (a played round, user-owned)
+--
+-- SUPERSEDED in part — `layout_name` was dropped by
+-- `migrate_disc_locker_and_layouts.sql`; a round now references a layout
+-- directly via `layout_id uuid references layouts(id)`. Live rounds also carry
+-- `external_source` / `external_ref` (idempotent imports) and `bag_id` /
+-- `bag_version_id` (the exact bag snapshot selected at start).
 -- ============================================================
 create table rounds (
   id uuid primary key default gen_random_uuid(),
