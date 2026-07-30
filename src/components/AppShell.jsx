@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { Suspense, useLayoutEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
+import ScreenFallback from './ScreenFallback'
 import TabBar from './TabBar'
 import GlobalHeader from './GlobalHeader'
 import ScreenScrollRegion from './ScreenScrollRegion'
@@ -85,7 +86,13 @@ export default function AppShell() {
         <div className={`app-shell ${isActiveShell ? 'app-shell-active' : 'app-shell-standard'}`}>
           {isActiveShell ? (
             <div className="active-activity-shell">
-              <Outlet />
+              {/* Inside the shell chrome, never around it: the boundary has to
+                  sit where a screen's own loading state sits, so a chunk that
+                  is still downloading swaps the same box a pending query
+                  would. Hoisting it above this div would blank the frame. */}
+              <Suspense fallback={<ScreenFallback />}>
+                <Outlet />
+              </Suspense>
             </div>
           ) : (
             <div className="app-shell-standard-content" aria-hidden={sheet ? true : undefined}>
@@ -115,7 +122,14 @@ export default function AppShell() {
                 }
               />
               <ScreenScrollRegion ref={scrollRegionRef} onScroll={handleScroll}>
-                <Outlet />
+                {/* Inside the scroll region, below the header and above the
+                    tab bar, so both stay mounted while a route chunk loads.
+                    Scroll restoration is unaffected: the only routes that
+                    have a saved scrollTop are ones already visited, whose
+                    chunk is resolved and therefore renders synchronously. */}
+                <Suspense fallback={<ScreenFallback />}>
+                  <Outlet />
+                </Suspense>
               </ScreenScrollRegion>
               <TabBar
                 isAtTop={isAtTop}

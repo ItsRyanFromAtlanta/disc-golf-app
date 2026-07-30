@@ -1,41 +1,66 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import AppShell from './components/AppShell'
 import ProtectedRoute from './components/ProtectedRoute'
 import PwaUpdatePrompt from './components/PwaUpdatePrompt'
+import ScreenFallback from './components/ScreenFallback'
+import './App.css'
+
+// Boot path — deliberately NOT lazy.
+//
+// These three are what a cold start actually renders. Splitting them would
+// buy nothing and cost a request waterfall: the browser cannot discover a
+// lazy chunk until the entry chunk has downloaded, parsed, and run, so a
+// lazy landing screen turns one round trip into two before the first pixel.
+// On course, on a bad cell connection, that second round trip is the whole
+// problem we are trying to fix.
+//
+//   SplashPage       — the signed-out landing at `/`
+//   AuthPage         — the only way out of the signed-out landing
+//   PracticeMenuPage — where `/` redirects a signed-in user, i.e. the screen
+//                      the overwhelming majority of cold starts end on
+//
+// AppShell, ProtectedRoute and PwaUpdatePrompt are static above for the same
+// reason: they are the frame every authenticated route renders inside.
 import SplashPage from './pages/SplashPage'
 import AuthPage from './pages/AuthPage'
-import OnboardingPage from './pages/OnboardingPage'
 import PracticeMenuPage from './pages/PracticeMenuPage'
-import FreeformLogPage from './pages/FreeformLogPage'
-import RegimenSelectPage from './pages/RegimenSelectPage'
-import RegimenRunPage from './pages/RegimenRunPage'
-import RoutineBuilderPage from './pages/RoutineBuilderPage'
-import HistoryPage from './pages/HistoryPage'
-import HistoryDetailPage from './pages/HistoryDetailPage'
-import ConfidenceMapPage from './pages/ConfidenceMapPage'
-import ProfilePage from './pages/ProfilePage'
-import CareerHubPage from './pages/CareerHubPage'
-import SettingsPage from './pages/SettingsPage'
-import GoalsPage from './pages/GoalsPage'
-import WeeklyReportsPage from './pages/WeeklyReportsPage'
-import TrophyRoomPage from './pages/TrophyRoomPage'
-import BagPage from './pages/BagPage'
-import BagLockerPage from './pages/BagLockerPage'
-import BagManagePage from './pages/BagManagePage'
-import DiscFormPage from './pages/DiscFormPage'
-import DiscDetailPage from './pages/DiscDetailPage'
-import DiscComparePage from './pages/DiscComparePage'
-import LostFoundPage from './pages/LostFoundPage'
-import NotificationsPage from './pages/NotificationsPage'
-import CoursesPage from './pages/CoursesPage'
-import CourseFormPage from './pages/CourseFormPage'
-import CourseDetailPage from './pages/CourseDetailPage'
-import RoundsPage from './pages/RoundsPage'
-import RoundStartPage from './pages/RoundStartPage'
-import RoundScorecardPage from './pages/RoundScorecardPage'
-import RoundSummaryPage from './pages/RoundSummaryPage'
-import './App.css'
+
+// Everything below is reached by an explicit navigation, so its chunk is
+// fetched while the user is already looking at a rendered screen. The service
+// worker precaches every built asset (see vite.config.js), so an installed app
+// still has all of these available offline — the split changes when they are
+// downloaded, never whether they are.
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
+const FreeformLogPage = lazy(() => import('./pages/FreeformLogPage'))
+const RegimenSelectPage = lazy(() => import('./pages/RegimenSelectPage'))
+const RegimenRunPage = lazy(() => import('./pages/RegimenRunPage'))
+const RoutineBuilderPage = lazy(() => import('./pages/RoutineBuilderPage'))
+const HistoryPage = lazy(() => import('./pages/HistoryPage'))
+const HistoryDetailPage = lazy(() => import('./pages/HistoryDetailPage'))
+const ConfidenceMapPage = lazy(() => import('./pages/ConfidenceMapPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const CareerHubPage = lazy(() => import('./pages/CareerHubPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const GoalsPage = lazy(() => import('./pages/GoalsPage'))
+const WeeklyReportsPage = lazy(() => import('./pages/WeeklyReportsPage'))
+const TrophyRoomPage = lazy(() => import('./pages/TrophyRoomPage'))
+const BagPage = lazy(() => import('./pages/BagPage'))
+const BagLockerPage = lazy(() => import('./pages/BagLockerPage'))
+const BagManagePage = lazy(() => import('./pages/BagManagePage'))
+const DiscFormPage = lazy(() => import('./pages/DiscFormPage'))
+const DiscDetailPage = lazy(() => import('./pages/DiscDetailPage'))
+const DiscComparePage = lazy(() => import('./pages/DiscComparePage'))
+const LostFoundPage = lazy(() => import('./pages/LostFoundPage'))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+const CoursesPage = lazy(() => import('./pages/CoursesPage'))
+const CourseFormPage = lazy(() => import('./pages/CourseFormPage'))
+const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'))
+const RoundsPage = lazy(() => import('./pages/RoundsPage'))
+const RoundStartPage = lazy(() => import('./pages/RoundStartPage'))
+const RoundScorecardPage = lazy(() => import('./pages/RoundScorecardPage'))
+const RoundSummaryPage = lazy(() => import('./pages/RoundSummaryPage'))
 
 function App() {
   const { user, loading } = useAuth()
@@ -51,19 +76,26 @@ function App() {
       <Route path="/login" element={<AuthPage />} />
       {/* Onboarding needs a session (guest or real) but not the tab-barred
           shell — useOnboardingGate (in AppShell) is what routes a
-          never-onboarded user here in the first place. */}
+          never-onboarded user here in the first place. Its Suspense boundary
+          is local rather than around <Routes>, because a boundary that high
+          would unmount the shell — header and tab bar included — every time a
+          lazy route resolved. */}
       <Route
         path="/onboarding"
         element={
           <ProtectedRoute>
-            <OnboardingPage />
+            <Suspense fallback={<ScreenFallback />}>
+              <OnboardingPage />
+            </Suspense>
           </ProtectedRoute>
         }
       />
 
       {/* Every authenticated route lives under one shell: auth guard + the
           persistent bottom tab bar (Practice / Bag / Profile today; Rounds
-          and Caddie slot in here as sibling top-level routes later). */}
+          and Caddie slot in here as sibling top-level routes later). The
+          shell owns the Suspense boundary for everything nested here; see
+          AppShell.jsx. */}
       <Route element={<AppShell />}>
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/practice">
