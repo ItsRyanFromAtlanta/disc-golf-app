@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import RoundBagPanel from '../components/RoundBagPanel'
 import RoundWeatherPanel from '../components/RoundWeatherPanel'
 import { useAuth } from '../hooks/useAuth'
 import { useRoundWeather } from '../hooks/useRoundWeather'
+import { useRoundBagVerification } from '../lib/repository/roundBagRepository'
 import {
   finalizeRoundActivity,
   flushRoundOutbox,
@@ -38,6 +40,7 @@ export default function RoundSummaryPage() {
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
   const weather = useRoundWeather(round, setRound, user.id)
+  const bagVerification = useRoundBagVerification(round, user.id)
 
   useEffect(() => {
     let active = true
@@ -228,6 +231,10 @@ export default function RoundSummaryPage() {
         saving={weather.saving}
         message={weather.message}
       />
+
+      {/* Read-only, and on the summary rather than the scorecard: which bag was
+          carried is a question asked after the round, not during it. */}
+      <RoundBagPanel verification={bagVerification} bagName={round.bag?.name ?? null} />
 
       {/* No hole list on an activity-only round. Rendering eighteen rows of
           "—" would imply a card waiting to be filled in, which is precisely

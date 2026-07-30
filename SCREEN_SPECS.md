@@ -248,6 +248,14 @@ divergence carefully before building.
   three CHECK constraints (`putt_sessions`, `putting_regimen_runs`, `rounds`) and one constant, not a
   local edit here.
 
+- **Bag context on rounds (E2, 2026-07-30):** `/rounds/:id/summary` now carries a read-only bag panel
+  (`src/components/RoundBagPanel.jsx`) reporting whether the round's `bag_version_id` snapshot can be
+  confirmed against the bag's version timeline. Two tones only — confirmed, and everything else
+  stated with its reason — because most reasons a snapshot cannot be confirmed are ordinary and none
+  are the player's mistake; the error treatment is reserved so it keeps meaning something. It offers
+  no way to attach a snapshot to a round that lacks one: that is a correction, and corrections here
+  owe previous/new values.
+
 ## Screen 9: Session Summary & Progress Report
 
 **Blueprint ref:** `SessionSummaryView`, Section 3 Screen 9. Build as specified — hero scoreboard,

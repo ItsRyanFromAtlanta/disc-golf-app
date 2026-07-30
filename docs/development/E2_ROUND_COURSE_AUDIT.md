@@ -299,7 +299,7 @@ relative-to-par when nothing was recorded, and now owns the rule for all three s
 activity-only round is the case where an ungrounded "E" would have been most visible, since it has no
 scores by definition.
 
-### F2. A round's bag snapshot can be recorded from a stale version, indistinguishably — SURFACED (A7)
+### F2. A round's bag snapshot can be recorded from a stale version, indistinguishably — SURFACED (2026-07-30, A7)
 
 **Severity: medium.** Not fixed, because it is not a bug to be fixed — it is a limit to be reported.
 
@@ -313,6 +313,19 @@ snapshot taken at the first tee.
 `bag_versions` is created on every grouped save, the version list *is* a complete edit timeline, so
 "was this snapshot still current when the round started?" is answerable — a save between the
 snapshot and the round means it was not. See A7 in the commit log for the full status vocabulary.
+
+Two things worth carrying forward from building it. The round's *end* comes from the activity parent
+(`activities.updated_at` on a terminal activity, read under the round's own id) rather than a new
+`rounds.finished_at` — a read-only verification feature should not need a migration, and the bridge
+already carried the fact. And `roundStartedAt` prefers `rounds.created_at` over `played_at`
+deliberately: `created_at` and `bag_versions.created_at` are both server defaults, so comparing them
+compares one clock, whereas `played_at` is written on the device at submit and a phone a few minutes
+out of step would manufacture edits that never happened.
+
+**Note for whoever builds bag-versus-scoring analysis.** Verification is what tells you whether such
+an analysis is worth building at all. `bagSnapshotLedger` reports how much of a history has a
+snapshot that holds up; a claim like "you score better with the tournament bag" built over a history
+that is mostly `not_snapshotted` is measuring the handful of rounds that happen to be verifiable.
 
 ### F3. Round-start snapshots are recorded with `reason = 'grouped_save'` — OPEN
 

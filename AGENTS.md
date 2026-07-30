@@ -293,6 +293,25 @@ them from per-layout scoring splits explicitly and still counts them in its ledg
 between modes is deliberately not offered: that is a correction, and corrections here owe an audit
 trail with previous/new values that the round layer does not have yet.
 
+Phase E2 adds **bag snapshot verification**, and it adds **no schema**: `rounds.bag_id` /
+`rounds.bag_version_id` and the immutable `bag_versions` / `bag_version_discs` snapshots already
+exist, and what was missing was any way to know whether the recorded pointer means what it appears
+to. `verifyRoundBag()` in `src/lib/roundBagVerification.js` answers that from the version timeline —
+because a new `bag_versions` row is written on *every* grouped save, the version list for a bag is a
+complete edit history, so "was this snapshot still current at the first tee?" and "was the bag saved
+again during play?" are real questions with real answers. The round window comes from the activity
+bridge rather than a new column: a round's activity is stored under the round's own id, and
+`updated_at` on a terminal activity is its finalization time (`roundEndedAt()` in
+`repository/roundBagRepository.js`). Seven statuses, and the distinctions are the feature: `unknown`
+(history unreadable) is never reported as `snapshot_missing` (history read, version absent), and
+neither is reported as `not_snapshotted` (no version recorded at all) — a bad connection must not
+look like bad record-keeping. **Nothing is ever repaired**: no version id is written onto a round
+that lacks one and no plausible snapshot is substituted, per the raw-events-are-authoritative rule.
+`insights/bagSnapshotCoverage.js` aggregates the statuses and keeps `unknown` rounds out of the
+coverage fraction so it recovers on its own once reads succeed. The motivating case is real and is
+recorded as F2 in `docs/development/E2_ROUND_COURSE_AUDIT.md`: `useCreateRound`'s offline fallback
+records the newest *locally known* version, which can be weeks old.
+
 ## Gamification (planned, Layer 5)
 XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and

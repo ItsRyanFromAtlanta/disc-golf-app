@@ -4873,3 +4873,39 @@
   color: var(--color-text-secondary);
   font-size: 12px;
 }
+
+/* Bag snapshot verification (E2 A7). Same surface as the conditions panel —
+   both answer "what were the circumstances of this round?" and neither is an
+   alert. An unverifiable snapshot is stated, not styled as a failure: most of
+   the reasons are ordinary and none of them are the player's mistake. */
+.round-bag {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: var(--border-width) solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.round-bag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.round-bag-name {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.round-bag-name small {
+  color: var(--color-text-secondary);
+}
+
+.round-bag p {
+  margin: 0;
+}

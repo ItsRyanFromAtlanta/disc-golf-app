@@ -39,6 +39,7 @@ export {
   CONDITION_SPLIT_MIN_CONDITIONS,
 } from './roundConditions'
 export { roundVolumeLedger, roundStreak } from './roundVolume'
+export { bagSnapshotLedger } from './bagSnapshotCoverage'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
 export {
