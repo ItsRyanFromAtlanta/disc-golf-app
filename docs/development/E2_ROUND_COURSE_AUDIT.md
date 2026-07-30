@@ -1,6 +1,8 @@
 # E2 audit — shipped J1 course/round surface
 
-Date: 2026-07-28
+Opened 2026-07-28. **Closed 2026-07-30:** eight of nine findings fixed, one deferred by design. See
+the disposition table at the end, and "What this audit did not find" below it — which is the part worth
+reading if you are deciding what to do next.
 
 `DEVELOPMENT_PLAN.md` § E2 opens with "audit and harden the existing course/layout and offline round
 routes rather than rebuilding them." This is that audit. Findings are ordered by severity, each with
@@ -16,7 +18,7 @@ The defects below are not subtle; they are what an untested layer accumulates.
 
 ---
 
-## 1. Round-hole upsert resolved on the wrong key — FIXED (this checkpoint)
+## 1. Round-hole upsert resolved on the wrong key — FIXED (2026-07-28)
 
 **Severity: high.** Silent, permanent, and offline-only, which is the worst combination.
 
