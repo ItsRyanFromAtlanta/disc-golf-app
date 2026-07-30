@@ -278,8 +278,24 @@ feature branch; `main` auto-deploys). State + verify the recommended model at th
   `RoundScorecardPage`, `RoundSummaryPage`.
 - **Shell/nav:** add a **COURSES** tab to `src/components/AppShell.jsx` (between DISCS and ME → PLAY /
   DISCS / COURSES / ME; Tabler outline icon); register routes in `src/App.jsx` like the `/bag` tree.
-- **Reuse:** `fetchBags` for bag pick; `useDiscList`/`DiscCard` for per-hole disc; field-screen ergonomics
+- **Reuse:** `fetchBags` for bag pick; `useDiscList`/~~`DiscCard`~~ for per-hole disc; field-screen ergonomics
   (primary controls in viewport, secondary in sheets; TTFP not network-gated).
+  **Reconciled 2026-07-29** (was `docs/ui/_corrections/component-library.md` item 3 and
+  `courses-screens.md` CS-4). J1 is SHIPPED, so this bullet is a historical plan, not a claim about the
+  current tree — but as written an agent will look for a `DiscCard` and a sheet layer that are not
+  there. What actually landed:
+
+  | Planned | Shipped |
+  |---|---|
+  | `fetchBags` for bag pick | ✅ `RoundStartPage.jsx:4,29` |
+  | `useDiscList` for per-hole disc | ✅ `RoundScorecardPage.jsx:4,51` |
+  | `DiscCard` for per-hole disc | ❌ `RoundScorecardPage.jsx:213-223` is a plain `<select>` of `discLabel(disc)` strings. `DiscCard` is imported by exactly one file repo-wide, `BagLockerPage.jsx:10`. |
+  | Secondary tasks in sheets | ❌ None of the seven J1 pages opens a sheet. Course, layout, bag, disc, and notes are all inline form controls. |
+  | TTFP not network-gated | ❌ for five of seven. `courses-root`, `courses-new`, `course-detail`, and `round-start` read `roundLog.js`, which is Supabase-only with no Dexie mirror, and each renders a bare `Loading…` or a full-page error until the network answers. Only `round-scorecard` and `round-summary` are offline-capable, via `loadRound`'s Dexie fallback. |
+
+  The last two are a plan-versus-ship gap, **not** a contract violation: `PHASE_A_ARCHITECTURE.md` § 12's
+  "secondary tasks open in bottom sheets" clause binds the ACTIVE capture shell, and all seven J1 pages
+  are `standard` shell. Per-screen detail is in the seven COURSES documents under `docs/ui/screens/`.
 - **Verify:** create quick course → start round → enter scores → finalize; total + relative-to-par correct
   and match unit tests; reload mid-round persists (Dexie); second user can't read the round (RLS).
   **Completed:** live policy migration applied, rollback-only authenticated RLS smoke passed, full local

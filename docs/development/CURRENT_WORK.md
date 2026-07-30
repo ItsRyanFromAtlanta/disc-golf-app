@@ -57,6 +57,31 @@ consolidated to a single line of development.
   thing that outranks all of it: **C4, a real round on a real phone.** Read the caveat below before
   opening a new work item. Do not start E3 or invent new hardening to fill the gap.
 
+### Screen documentation exists — read it before touching any screen
+
+Merged 2026-07-30 from `claude/ui-documents-status-3fphcw`, a parallel session whose 26 commits had
+been stranded and which the 2026-07-28 consolidation missed entirely. `docs/ui/` documents **all 33
+routes** from code. Start at `docs/ui/README.md`.
+
+- `docs/ui/SCREEN_INVENTORY.md` is the canonical route/status table; screen status lives there and
+  nowhere else.
+- `docs/ui/DEFECT_REGISTER.md` holds **24 registered code defects**, each opened and read against
+  source before being registered. Check it before "discovering" a bug — several are already diagnosed
+  with evidence and a proposed smallest fix. **Statuses are being re-verified against this branch**
+  (see the task list): the register was compiled at `8ee0ac9` on 2026-07-29, before the E2 hardening
+  pass, account deletion, the Playwright suite and the gesture fixes landed, so an unknown number of
+  its entries are already closed.
+- `docs/ui/EXECUTION_PLAN.md` is the sequencing artifact for that work; read it with
+  `PRODUCT_ROADMAP.md` when choosing what to do next.
+- `docs/ui/LIVE_VERIFICATION.sql` records the **unresolved Supabase project-identity conflict** — see
+  the task list, where it is the highest-priority open item.
+- The pass's quarantined corrections were applied to the root documents and `docs/ui/_corrections/` is
+  cleared. Dispositions are in `docs/ui/CORRECTIONS_LEDGER.md`.
+- `AGENTS.md` § Not yet decided is closed: ADRs 0001–0003 are accepted, in `docs/decisions/`. ADR 0002
+  defines "group-scorecard groundwork" as ensuring nothing in the round schema or repository layer
+  permanently assumes a single scorer — no widened RLS, no shared-round UI. A6 was built to that
+  definition before this branch was merged, and independently arrived at the same conclusion.
+
 ### Read this before starting more E2 hardening
 
 The live database holds **28 users and 0 courses, 0 layouts, 0 rounds, 0 catalog reviews**. Six real

@@ -111,7 +111,17 @@ compatible while PLAY routes are introduced; statistics live with their subject 
 career-wide summary. The earlier PLAY/BAGS/STATS/PRO blueprint navigation is historical, not current.
 
 ### Practice menu design
-- Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron. Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition.
+- Card-list menu: each mode is a card with an icon (Tabler outline icons), title, one-line description, and chevron.
+  **Corrected 2026-07-29** (was `docs/ui/_corrections/component-library.md` item 2): this rule was
+  written as "Cards are a reusable `ModeCard`-style component so adding a mode is a one-line addition."
+  That is not true of the shipped page. `src/components/ModeCard.jsx` exists and produces exactly this
+  markup but has **zero importers**; `PracticeMenuPage.jsx:239-244` hand-writes the same class names
+  inline (`.mode-card`, `.mode-card-body`, `.mode-card-title`, `.mode-card-description`,
+  `.mode-card-chevron`), drops the Tabler icon, and substitutes a literal `›` for `IconChevronRight`.
+  `PracticeMenuPage` is the only consumer of the `.mode-card` class family. **Until the two are
+  reconciled, read this bullet as a CSS convention, not a component contract** — adding a mode is a
+  markup addition. Deciding between migrating `PracticeMenuPage` to `ModeCard` and deleting the unused
+  component is registered work in `docs/ui/DEFECT_REGISTER.md`, not settled here.
 - Header uses the shared activity pill and notification bell; contextual analytics links live with
   their subject rather than in a standalone Stats destination.
 - Below the cards: a "Recent activity" strip showing the last 2-3 entries pulled from `putt_sessions` and `putting_regimen_runs`.
@@ -147,7 +157,18 @@ Field-use interaction rules: minimum 80pt tap targets on primary actions; one-th
 ## Data rules for putt capture
 - Batch-ribbon entry writes summary tables ONLY. `putt_events` rows come exclusively from real-time gesture/tap mode. Never synthesize per-putt events from batch totals.
 - Gesture thresholds (travel px, velocity ms, cone degrees, debounce ms) are named tunable constants, normalized for devicePixelRatio.
-- Hard interlocks (adopted 2026-07-05, from `MASTER_PROJECT_BLUEPRINT.md`): a routine's total planned putts is capped at 100 (builder disables adding stages past the cap; DB CHECK backs it up) and a bag's disc count is capped at 35 (Add-to-bag disables at capacity; DB CHECK backs it up). Both enforced app-side AND at the DB layer — never just one.
+- Hard interlocks (adopted 2026-07-05, from `MASTER_PROJECT_BLUEPRINT.md`): a routine's total planned putts is capped at 100 and a bag's disc count is capped at 35. Both enforced app-side AND at the DB layer — never just one.
+  **Corrected 2026-07-29** (was `docs/ui/_corrections/capture-screens.md` C-9 and `play-screens.md` P-1;
+  ~~"DB CHECK backs it up"~~): neither is a `CHECK` constraint and neither can be — both count *sibling*
+  rows, which row-level `CHECK` cannot see. Both are `before` row triggers that take a parent row lock
+  and raise `errcode = 'check_violation'` (hence the `23514` test at `src/lib/regimens.js:44`):
+  `enforce_routine_putt_cap()` / `regimen_sets_putt_cap_check` on `putting_regimen_sets`, which
+  **exempts system regimens** (`user_id is null`), and `enforce_bag_capacity()` /
+  `bag_discs_capacity_check` on `bag_discs` (both `layer1_foundation_schema.sql:230-290`). Do not add a
+  `CHECK` to "back them up" — it would be a second, weaker, unenforceable guard. The app-side half is
+  also weaker than this bullet implies: the 100-putt cap gates `Add next stage` but not `Save`, and the
+  35-disc cap is pre-empted only on `/bag/manage`. See `SCREEN_SPECS.md` standing divergence #6 and
+  `docs/ui/DEFECT_REGISTER.md`.
 
 ## Offline architecture (staged adoption, in progress)
 The InstantLaunch localStorage subsystem (FSM + idempotent outbox, `src/lib/instantLaunch/`) is the
@@ -359,11 +380,20 @@ and those codes stay transient so a companion added early waits for the migratio
 the first `optionalUntilDeployed` source in E1's export — skipped with a manifest note only for those
 two codes, aborting the export for anything else.
 
-## Gamification (planned, Layer 5)
-XP/leveling/badges land as pure, unit-tested functions in `lib/gamification/` (mirrors the
+## Gamification (shipped, Layer 5)
+XP/leveling/badges **are** pure, unit-tested functions in `lib/gamification/` (mirrors the
 `lib/insights/` discipline) — XP payout constants, `calculateXpForLevel` (`1000 × 1.15^(level-1)`), and
 a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full spec:
 `MASTER_PROJECT_BLUEPRINT.md` § `GAMIFICATION_AND_XP_LEDGER.md`.
+
+**Status qualifier corrected 2026-07-29** (was `docs/ui/_corrections/lib-api-index.md` item 2): this
+heading read `(planned, Layer 5)` and the body was future-tense. The module ships with exactly the API
+described — nine files (`xp.js`, `constants.js`, `badgeCatalog.js` with 25 badges, `metrics.js`,
+`evaluateBadges.js`, `playerStats.js`, `celebration.js`, `trophyRoom.js`, `badgeEvaluatorService.js`),
+covered by `src/lib/gamification/gamification.test.js`, with the Trophy Room route live
+(`src/lib/routeMetadata.js:293`). Only the status word was stale; the API facts were correct all along.
+Two constants in this module — `XP_PER_IMPORTED_PUTT` and `IMPORT_XP_CAP` — are deliberately dead
+pending Screen 13's parser and must not be removed as unused (`SCREEN_SPECS.md` Screen 13).
 
 ## Documentation conventions (maintain throughout dev)
 - `MASTER_PROJECT_BLUEPRINT.md` — **design authority** for the 21-screen product vision: full wireframes, ergonomic rules, logic-governance specs (competition engine, UDisc parser, XP ledger), and the reference `DATABASE_SCHEMA.md`/`TASKS.md` (written for a greenfield Expo stack — this repo absorbs its screens/rules/schema concepts into the shipped Vite+Supabase stack, it does not execute that TASKS.md literally). Added 2026-07-05.
@@ -372,6 +402,11 @@ a `BadgeEvaluatorService` run post-scoring/post-inventory/post-ingestion. Full s
 - `CODEX_WORKFLOW.md` — current OpenAI model policy, token-efficient workflow, commands, and plugin/MCP setup.
 - `SCREEN_SPECS.md` — the **integration layer** over the blueprint: per-screen status (in-scope/parked), REUSE vs NET-NEW file mapping, and explicit divergences from the blueprint's literal spec (stack, schema, OTP digit count, PDGA scraping, Screen 8 input model, etc.), with reasoning. Read this before building any of the 21 screens.
 - `AGENTS.md` (this file) — living architecture doc; update whenever routes, schema, or conventions change
+- `docs/ui/README.md` — index of the screen-level documentation set (33 screens); start here for anything screen-specific, and read its working rules before adding to `docs/ui/`.
+- `docs/ui/SCREEN_INVENTORY.md` — the **canonical route/status table**: every route, its component, shell, and documentation status. Screen status lives here and nowhere else.
+- `docs/ui/DEFECT_REGISTER.md` — code defects found by the screen documentation pass. These are tracked work, not applied edits; check it before "fixing" something a screen document describes as broken.
+- `docs/ui/EXECUTION_PLAN.md` — the sequencing artifact for that registered work; read it with `PRODUCT_ROADMAP.md` when choosing what to build next.
+- `docs/decisions/` — ADRs for durable cross-cutting choices; see its README for when one is warranted.
 - `DEVELOPMENT_PLAN.md` — the tracks/layers execution plan with per-feature dev needs and sequencing; consult before starting any new feature
 - `DEVLOG.md` — one entry per meaningful unit of work: what, why, key decisions, gotchas. Newest first. Update at the end of every Codex work session.
 - `FEATURE_BACKLOG.md` — all ideated features with status (SHIPPED / IN PROGRESS / NEXT UP / BACKLOG / LATER / REJECTED). Move items as status changes; never delete rejected items — the reasoning is part of the record.
@@ -413,9 +448,28 @@ parked only until their documented revisit triggers are satisfied.
   before assuming) rather than a placeholder with nothing to render against.
 
 ## Not yet decided / open questions
-- Exact UI/UX flow for live round mode (chat interface vs structured prompts)
-- Whether group/league features are a v1 or v2 concern
-- Native GPS/camera integration timeline (Capacitor addition)
+
+**All three long-standing entries closed 2026-07-29.** Each now has an **accepted** ADR; the bullets are
+replaced by pointers rather than deleted, so the questions stay traceable. Reopening any of them means
+flipping that ADR's `Status`, not editing this list.
+
+- ~~Exact UI/UX flow for live round mode (chat interface vs structured prompts)~~ → **decided**,
+  `docs/decisions/0001-live-round-interaction-model.md`. The structured per-hole scorecard is the sole
+  primary capture surface; conversational assistance is admitted only as a secondary bottom sheet, and
+  only after E2. Ratifies what J1 already shipped, so it changes no code.
+- ~~Whether group/league features are a v1 or v2 concern~~ → **decided**,
+  `docs/decisions/0002-group-and-league-scope.md`. Schema-shaped groundwork in v1 only. This also
+  supplies the definition E2 was missing: "group-scorecard groundwork" means ensuring nothing in the
+  round schema or repository layer permanently assumes a single scorer — it authorizes **no** widened
+  RLS, **no** shared-round UI, and **no** Social surface. Screens 14/15 stay parked.
+- ~~Native GPS/camera integration timeline (Capacitor addition)~~ → **decided**,
+  `docs/decisions/0003-native-capability-timeline.md`. Stay PWA-first; there is no date. Four normative
+  triggers reopen the question: a required capability with no adequate web API; a decision to distribute
+  through the App Store; the Track 4 sensor-mode platform decision landing; or field testing showing
+  PWA-specific failures unfixable in the web layer.
+
+Add a new bullet here whenever a genuinely open cross-cutting question appears, and retire it the same
+way — into an ADR under `docs/decisions/`.
 
 ## graphify
 

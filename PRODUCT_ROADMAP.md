@@ -25,8 +25,18 @@ greenfield Expo schema literally.
   incomplete and preserves it for correction/audit.
 - DISCS owns Collection, Bags, Universe, and Lost & Found. `disc_molds` is the global catalog and
   `discs` remains the physical-owned-disc entity; no parallel Universe/Warehouse identity tree.
-- ME opens on a takeaway-first analytics summary and links to Profile, Settings, Weekly Reports,
-  History, Trophy Room, and detailed contextual analytics.
+- ME opens on a takeaway-first analytics summary and links to Trophy Room, Profile, Settings, Goals,
+  and Weekly Reports.
+  **Corrected 2026-07-29** (was `docs/ui/_corrections/me-screens.md` C-1). The first clause is right and
+  is what `docs/ui/SCREEN_INVENTORY.md` cites for `me-root`. The link list was not:
+  `CareerHubPage.jsx:29-35` renders exactly five links — `Trophies` (`/profile/trophies`),
+  `Edit profile` (`/profile/details`), `Settings` (`/profile/settings`), `Goals` (`/profile/goals`),
+  `Reports` (`/profile/reports`) — and no others. ~~History~~ and ~~detailed contextual analytics~~ are
+  **not linked from ME**; `grep -rn "'/practice/history'\|'/practice/stats'" src/pages/CareerHubPage.jsx`
+  returns nothing. `Goals` ships but was not named. The bullet has been rewritten to the shipped five so
+  the roadmap and the code stop disagreeing. **Whether the two missing links should be added is still
+  the owner's call** — it is registered as `T-me-root-4` in `docs/ui/screens/me-root.md`, not decided
+  here; adding them would make the original wording true again.
 
 ## Cross-cutting rules
 

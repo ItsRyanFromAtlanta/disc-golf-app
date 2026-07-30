@@ -81,6 +81,27 @@ The existing capture split remains authoritative: real-time input writes ordered
 entry writes summaries only. Metrics must declare whether summaries are adequate. Never synthesize
 per-putt sequence, timing, streak, miss-zone, or putter attribution from batch totals.
 
+**Conformance note added 2026-07-29 — the registry is currently descriptive, not executing** (was
+`docs/ui/_corrections/play-screens.md` P-9). This section makes the registry the version-controlled
+authority for metric semantics. Today nothing runs it. Two functions answer "may this activity
+contribute evidence," and they disagree:
+
+| | `metricEligibleHistory` (`src/lib/history.js:74-85`) | `isMetricEligibleActivity` (`src/lib/metrics/registry.js:100-107`) |
+|---|---|---|
+| `state === 'completed'` | required | `completed` **or** `incomplete` |
+| `hidden_at` | must be null | must be null |
+| `has_meaningful_fact` | **not checked** | required |
+| Production callers | `fetchPracticeInsights` (`history.js:102`) | **none** |
+
+`grep -rn "filterMetricEligibleActivities\|isMetricEligibleActivity" src/` matches only
+`src/lib/metrics/registry.test.js`. Every `METRIC_DEFINITIONS` entry lists exclusions
+`['draft','active','paused','hidden','no_meaningful_fact']` — note `incomplete` is deliberately *not*
+excluded — yet the shipped statistics path on `practice-stats` drops incomplete activities entirely.
+So the executing rule is **stricter on state and looser on meaningfulness** than the declared one.
+Closing the gap (having `metricEligibleHistory` delegate to `filterMetricEligibleActivities`) is
+registered as `T-practice-stats-2`; until then, treat § 5 as the target and `history.js` as the
+behavior.
+
 ## 6. Shared application shell
 
 `AppShell` owns `GlobalHeader`, `ScreenScrollRegion`, `SheetHost`, `ToastHost`, and `TabBar`.
@@ -238,7 +259,17 @@ header pill remains the global shortcut rather than a second competing resume ca
 - Old incomplete activities may be corrected but never reactivated as the current live activity.
 - Practice finalization never blocks on putter, weather, fatigue, effort, notes, or tags. Round review
   leads with required missing and low-confidence inferred fields, then optional details.
-- Finalization succeeds locally while offline and reports `Saved on this device · Sync pending`.
+- Finalization succeeds locally while offline and shows the § 12 `Saved on Device` state.
+  **Corrected 2026-07-29** (was `docs/ui/_corrections/state-matrix.md` C-2): this line previously
+  specified a fifth label, ~~`Saved on this device · Sync pending`~~, which is not one of the four calm
+  states § 12 enumerates — it is longer than `Saved on Device` and merges two of the four into one
+  string. § 12's four-label vocabulary wins; this line must not introduce a new one. The ambiguity has
+  already produced **six** distinct sync vocabularies in the shipped app (`SessionReport.jsx:67-71`,
+  `HistoryPage.jsx:53-58`, `CanvasContextBar.jsx:12-27`, `LostFoundPage.jsx:109`,
+  `RoundScorecardPage.jsx:137`, `RoundSummaryPage.jsx:76`), and the underlying enums agree with neither
+  the contract nor each other — `SYNC_STATUS` has five members (`instantLaunch/syncScheduler.js:12-18`)
+  while `activityRepository` emits three (`:201,285,448`). Mapping both enums onto § 12's four labels in
+  one place is registered work; see `docs/ui/STATE_MATRIX.md` row `S-SYNC`.
 
 ### Hide, restore, and reports
 
@@ -255,6 +286,16 @@ header pill remains the global shortcut rather than a second competing resume ca
   a fixed safe-area tab bar. Shell-level tokens provide clearance; pages do not calculate it.
 - `ActiveActivityShell` is non-scrolling for primary field controls. Putter, weather, fatigue, notes,
   filters, finalization, and other secondary tasks open in bottom sheets.
+  **Known non-conformance, recorded 2026-07-29 — the ruling is still open** (was
+  `docs/ui/_corrections/capture-screens.md` C-6). `FreeformLogPage.jsx:480-660` declares
+  `shell: ACTIVE` but composes a page header (`Freeform Log` plus a `Practice menu` link) above the
+  canvas and an **unbounded `Today's session` log list below it**, in the same view as the capture
+  surface. With enough distances logged the capture zone can be pushed off-screen — precisely what this
+  rule exists to prevent. `RegimenRunPage` has no equivalent tail. This is a design decision, not a
+  documentation error: either this bullet gains an explicit exception for a capture screen's own
+  session log, or the log list moves into a toolbar sheet. **Do not read the rule as satisfied in the
+  meantime.** Open question 1 in `docs/ui/screens/freeform-active.md`, with `T-freeform-active-2`
+  staged behind it.
 - One sheet is active at a time. Focus enters the sheet and returns to its trigger; the background is
   inert. Unsaved text survives accidental dismissal. Do not add multiple detents without a use case.
 - Primary field actions remain at least 80pt; secondary controls remain at least 44×44pt. Every required
@@ -277,9 +318,40 @@ Introduce these boundaries as touched rather than reorganizing the whole source 
 declares section, title/back behavior, shell type, activity-pill visibility, state preservation, and
 scroll key. Pages must not manually duplicate shell decisions.
 
+**Known systemic non-conformance with the sentence above, recorded 2026-07-29** (was
+`docs/ui/_corrections/play-screens.md` P-7). `GlobalHeader.jsx:13` renders the route title as
+`<h1 className="global-header-title">`, and **twenty-two page components additionally render their own
+`<h1>`** inside a `.practice-header`, usually with their own back link. In most cases the two headings
+carry *different* text — the shell says `Play` while the page says `Putt Hub`; `Select Routine` versus
+`Putting Regimens`; `Create Routine` versus `Build Routine` — so a screen-reader user hears both. The
+duplicated back control is the lesser issue and is sometimes deliberate (`disc-detail` uses an in-page
+`Locker` link precisely because shell Back goes to the section root, not the referrer). **The second
+`<h1>` is the part that violates this rule.** The fix is one systemic change — demote the in-page
+heading, or make `routeMetadata` titles authoritative and delete it — not a per-screen edit. Registered
+as `T-play-root-2`.
+
 Canonical destinations are `/play`, `/discs`, `/me`, `/notifications`, their nested feature routes,
 and one `/play/activity/:activityId` lifecycle/history destination. Specialized active capture routes
 may remain internally until practice engines are safely unified.
+
+**Clarification added 2026-07-29 — these are section names, not URL paths** (was
+`docs/ui/_corrections/screen-specs-and-agents.md` C-5). The shipped app serves `/practice`, `/bag`, and
+`/profile`, which reads as a flat contradiction of the paragraph above but is not one.
+`src/lib/routeMetadata.js` carries a `section` field (`play`, `discs`, `courses`, `me`) and
+`resolveSectionRoot()` maps each section to its real URL: **the section vocabulary is canonical, the
+URLs are legacy and deliberately preserved.** Renaming the URLs would break saved links and recovery
+bookmarks for no benefit — no code change is implied by this paragraph. Two further notes:
+
+- This list **omits `courses`**, which has been a shipped section and tab since 2026-07-14. Read it as
+  four sections, not three.
+- `/notifications` exists as a route but has **no in-app entry point** (was
+  `docs/ui/_corrections/play-screens.md` P-4). The global header bell does not navigate: it opens a
+  sheet (`GlobalHeader.jsx:22-30` → `AppShell.jsx:95-110`). Nothing in `src/` links or navigates to
+  `/notifications`, and `notificationDestination()` (`src/lib/notifications.js:24-30`) routes to
+  `/practice/history/*` and `/profile`, never there. The route is contractually required by this
+  paragraph and is reachable today only by typed URL, bookmark, or external deep link. Either wire an
+  entry point (a "See all" affordance in the sheet) or restate the sheet as the primary surface;
+  registered as `T-notifications-1`.
 
 ## 14. Repository and transaction contract
 
@@ -323,8 +395,49 @@ Required: shared shells and route metadata; PLAY/DISCS/ME navigation; scroll/saf
 local lifecycle engine and repository; Dexie atomicity; InstantLaunch bridge; reviewed server schema,
 RPCs, RLS and negative tests; freeform/regimen integration; unified history/correction/hide/restore;
 active pill/resume card; actionable sync/activity notifications; browser E2E and real-device gates.
-Two of these closed without being met: automated browser E2E was never built (§ 9), and the
-real-device gate is user-reported rather than directly observed. Both remain open work.
+~~Two~~ **Four** of these closed without being met. The first two were already recorded; the second two
+were added 2026-07-29 from `docs/ui/_corrections/state-matrix.md` C-1 and C-3, because this section
+previously read as though only two Required items were outstanding. All four remain open work.
+
+1. **Automated browser E2E was never built** (§ 9).
+2. **The real-device gate is user-reported**, not directly observed.
+3. **Toast-dependent lifecycle feedback cannot fire.** `AppShell.jsx:123` renders
+   `<ToastHost toast={null} />` — a literal `null`, not state. There is no `useState`, context, queue,
+   or setter feeding it anywhere in the repository, and `ToastHost.jsx:2` returns `null` for a falsy
+   toast. `AppShell` genuinely *owns* the host as § 6 claims, but the host is inert, so two § 11
+   behaviors are unimplementable as written: "Deliberate navigation away from active capture pauses
+   immediately and shows a local toast" (`:159-160`) — `useActivityNavigationLifecycle.js:41-52`
+   performs the pause and shows the user nothing, swallowing failures at `:50` — and "Starting a new
+   activity auto-closes an existing practice as `incomplete` and shows a toast" (§ 1). Pages have
+   substituted local inline paragraphs (`RoundScorecardPage.jsx:137,163`, `LostFoundPage.jsx:109,132`,
+   `DiscOdometerManager.jsx:58`), which are not transient, not announced from a shell-level live
+   region, and scroll away with the page.
+4. **The round-replacement confirmation is fully built and unreachable.** § 11 requires that starting
+   while a round is active/paused be confirmed with Continue Round / Save Round as Incomplete and
+   Start / Cancel (`:163-164`), and § 9 lists "round-close confirmation" among the required E2E flows.
+   The logic exists and is unit-tested — `activityLifecycle/reducer.js:148-173` returns
+   `round_confirmation_required`, and `activityRepository.js:330-396` returns
+   `warnings: ['round_replacement_confirmation_required']` absent the `confirmRoundReplacement` flag —
+   but **nothing consumes it**: the three identifiers have zero hits across `src/pages/`,
+   `src/components/`, and `src/hooks/`, and the strings `Continue Round` and
+   `Save Round as Incomplete` do not exist in `src/`. `instantLaunch/activityBridge.js:111-127`
+   correctly propagates `outcome: 'confirmation_required'`, and its only caller,
+   `useInstantLaunchSession.js:92-102`, reads the result solely for `result.activity?.id` and discards
+   `outcome`. Consequence: starting a practice while a round is live shows no dialog, records no
+   lifecycle start for the new activity, and lets capture proceed against an unmirrored activity — the
+   silent divergence between the lifecycle mirror and the capture buffer that § 14's transaction
+   contract exists to prevent.
+
+   A related but distinct case on the same contract: `round-start` never reaches the confirmation at
+   all. `roundRepository.ensureRoundActivity` (`roundRepository.js:145-158`) calls
+   `activityRepository.getActive(userId)` first and invokes `start` **only when nothing is active**, so
+   `planActivityStart` is never evaluated and the round's lifecycle parent is deliberately left a
+   `draft` (`:141-144`: "J1 keeps that decision out of the round form"). Same user-visible outcome,
+   different repair: the capture screens must *consume* an outcome the repository already returns,
+   whereas `round-start` must make the call at all.
+
+Items 3 and 4 are **code** gaps, not documentation gaps; they are listed here so § 16 stops implying the
+shell and lifecycle engine shipped complete. Both are registered in `docs/ui/DEFECT_REGISTER.md`.
 
 Optional and non-blocking: rich animations; tablet-specific layouts; detailed paused-time charts;
 draft-management UI; multiple skeleton systems; rich notification grouping; user-adjustable pause
