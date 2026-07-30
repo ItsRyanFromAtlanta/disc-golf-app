@@ -32,6 +32,12 @@ export {
   TREND_MIN_BUCKET_ATTEMPTS,
   TREND_MIN_HALF_ATTEMPTS,
 } from './trend'
+export {
+  conditionLedger,
+  conditionSplits,
+  CONDITION_SPLIT_MIN_ROUNDS,
+  CONDITION_SPLIT_MIN_CONDITIONS,
+} from './roundConditions'
 export { practiceStreak, volumeLedger } from './activity'
 export { STARTER_TAGS, normalizeTag } from './tags'
 export {

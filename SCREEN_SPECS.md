@@ -241,6 +241,12 @@ divergence carefully before building.
   that most changes shipped, tested UI — confirm before Layer 4 starts.**
 - **Dependency:** weather swap drawer's data value needs `putt_events.putter_disc_id` (Layer 1).
   Stack tracker, panic toggle, and Speech pacing have zero schema dependency.
+- **Shared with rounds (E2, 2026-07-30):** this drawer's five-value vocabulary
+  (`clear`/`headwind`/`tailwind`/`crosswind`/`rain`) is no longer practice-only. `/rounds/:id` and
+  `/rounds/:id/summary` record the same condition plus `wind_mph` on `rounds`, through
+  `src/lib/roundWeather.js` and `src/components/RoundWeatherPanel.jsx`. Adding a sixth value now means
+  three CHECK constraints (`putt_sessions`, `putting_regimen_runs`, `rounds`) and one constant, not a
+  local edit here.
 
 ## Screen 9: Session Summary & Progress Report
 

@@ -35,7 +35,13 @@ function normalizeRoundFields(fields = {}) {
     'bag_id',
     'bag_version_id',
     'played_at',
+    // The three weather columns are written together as one patch by
+    // `roundWeatherFields()` (`src/lib/roundWeather.js`), never individually —
+    // `weather_summary` predates the other two by the whole of J1 and is the
+    // free-text note beside them, not a substitute for them.
     'weather_summary',
+    'weather_condition',
+    'wind_mph',
     'target_score',
     'total_score',
     'status',

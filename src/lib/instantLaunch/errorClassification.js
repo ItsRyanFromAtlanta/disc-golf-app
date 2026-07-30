@@ -26,9 +26,17 @@ export function isPermanentError(error) {
 // wait for the migration rather than give up on it.
 const DEPLOY_LAG_CODES = new Set([
   'PGRST202', // function not found in the schema cache
+  // Column not found in the schema cache. The additive-column half of the same
+  // window the other four cover, and the one this project hits most: a client
+  // that writes a column its migration has not added yet (E2 round weather is
+  // the current example) answers 400/PGRST204 on every write until the
+  // migration lands. Poisoning there would discard a round for a deploy
+  // ordering that resolves itself.
+  'PGRST204',
   'PGRST205', // table not found in the schema cache
   '42883', // undefined_function
   '42P01', // undefined_table
+  '42703', // undefined_column — the Postgres-side spelling of PGRST204
 ])
 
 // Attaches the HTTP status from a supabase-js response envelope onto the error

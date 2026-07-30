@@ -57,7 +57,7 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 | Post-session AI insight | LATER (deliberate) | Future OpenAI background analysis; needs prompt, cost, privacy, trigger, and eval design |
 | Weekly AI digest | REJECTED | Deterministic weekly reports ship first; optional AI narrative may be reconsidered later |
 | Long-horizon AI pattern detection | LATER (deliberate) | Day-of-week effects, practice-vs-tournament correlation; needs round data |
-| Conditions auto-capture (weather) | BACKLOG | Reuse planned round-weather integration |
+| Conditions auto-capture (weather) | BACKLOG | Manual/editable round weather shipped in E2 (2026-07-30); auto-capture still needs a weather provider, an API key, and a network policy that permits it. The seam is `roundWeatherFields()` in `src/lib/roundWeather.js` — a fetched observation normalizes through the same function a typed one does, so a provider adds no second write path. Provenance rides in later as an additive `weather_source` column, per the migration header |
 | XP/levels gamification (historical rejection) | SUPERSEDED | Later blueprint decision shipped XP/levels/Trophy Room; retained to preserve decision history |
 | Public-by-default social features | REJECTED | Social is opt-in, later phase |
 | Dashboard sprawl (charts for everything) | REJECTED | Few high-signal views over widget walls |
@@ -196,7 +196,8 @@ into the blueprint integration and are cross-referenced there).
 | round_hole_id on putt_events | NEXT UP | Rides with 2.2 — tournament vs practice putting in one insights system |
 | UDisc CSV round import | BACKLOG | Score-only data; idempotent via provenance; verify current CSV format at build time |
 | Course catalog UI | SHIPPED | J1 COURSES directory, quick-course form, layout/hole detail |
-| Round management UI (/rounds tree) | SHIPPED | J1 round setup, offline scorecard, history, and finalization; weather remains future work |
+| Round management UI (/rounds tree) | SHIPPED | J1 round setup, offline scorecard, history, and finalization; E2 hardened the write/sync path and added round weather |
+| Round weather context | SHIPPED | E2 (2026-07-30): editable conditions on the scorecard and summary, mirroring D2's practice weather rather than inventing a second concept. Additive `rounds.weather_condition`/`wind_mph` with D2's identical vocabulary and CHECKs; the pre-existing `weather_summary` stays the free-text note. Migration `20260730205654_phase_e_round_weather.sql` is **written but NOT applied** |
 | Data export (own-your-data CSV) | SHIPPED | E1: remote-authoritative paginated RLS reads, referenced shared rows, and deterministic formula-safe CSV ZIP + manifest in ME settings; Phase D rollout and authenticated preview export smoke passed 2026-07-17 |
 | Same-day practice↔round linkage | BACKLOG | Derivable by date; insights lib join, no schema |
 

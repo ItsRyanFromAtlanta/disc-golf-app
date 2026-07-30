@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import RoundWeatherPanel from '../components/RoundWeatherPanel'
 import { useAuth } from '../hooks/useAuth'
+import { useRoundWeather } from '../hooks/useRoundWeather'
 import {
   finalizeRoundActivity,
   flushRoundOutbox,
@@ -25,6 +27,7 @@ export default function RoundSummaryPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
+  const weather = useRoundWeather(round, setRound, user.id)
 
   useEffect(() => {
     let active = true
@@ -123,6 +126,17 @@ export default function RoundSummaryPage() {
           <strong>{round.status === 'completed' ? 'Completed' : 'In progress'}</strong>
         </div>
       </div>
+
+      {/* Still editable after the round is finished, and deliberately so: a
+          player who forgot to log the wind at the first tee has nowhere else to
+          record it, and conditions are a fact about the round rather than a
+          score that finalization should freeze. */}
+      <RoundWeatherPanel
+        weather={weather.weather}
+        onSave={weather.save}
+        saving={weather.saving}
+        message={weather.message}
+      />
 
       <ol className="course-hole-list round-summary-holes">
         {(round.holes ?? []).map((hole) => {
