@@ -138,28 +138,66 @@ degrading linearly with the catalog. The lightweight-directory comment on line 1
 layouts/holes separately, which is right — it just does not bound the directory itself. Revisit
 trigger: first real multi-user catalog, or measured load time past ~300ms.
 
-## 6. `fetchRound` orders `round_holes` by `hole_id` — OPEN
+## 6. `fetchRound` orders `round_holes` by `hole_id` — FIXED (2026-07-30)
 
 **Severity: low.** `hole_id` is a UUID, so the resulting order is arbitrary rather than hole order.
 Harmless today only because `RoundScorecardPage` re-sorts (`sortedHoles`), which means the guarantee
 lives in one consumer instead of the data layer. Any second consumer inherits a meaningless order.
-Fix: order through the joined hole's `hole_number`, or document that callers must sort.
 
-## 7. `idList` contains a no-op — OPEN
+Fixed by sorting in the data layer, in `fetchRound`, once the joined holes are resolved. Ordering
+through the embedded resource in the query was the first instinct, but PostgREST's support for ordering
+a parent by an embedded column is version-dependent, and this guarantee should not rest on that —
+`round_holes` can only order by its own columns, and none of them carries hole order.
+
+Ties on `hole_number` (two tees on one hole) break on `tee_type`, nulls first, matching how the
+layout-hole queries already order. Rows whose hole cannot be resolved sort **last**, not first, which is
+where a nullish `hole_number` would otherwise put them — an unresolvable hole is the anomaly and must
+not displace real hole 1.
+
+Coverage: `src/lib/roundLog.fetchRound.test.js`, 4 tests, in its own file because
+`roundLog.test.js`'s mock answers every list query with `[]` — right for the write-shape assertions it
+makes, useless for reading a round back. The hole ids are chosen so that sorting them as strings
+produces the *reverse* of play order; 3 of the 4 tests were confirmed to fail against the old code
+before the fix landed.
+
+## 7. `idList` contains a no-op — FIXED (2026-07-30)
 
 **Severity: cosmetic.** `rows.map((row) => row)` does nothing; the dedupe and filter are the work.
-Fix while touching the file.
+Removed, and the parameter renamed `values` — every caller already passes a mapped array of ids, so
+`rows` was describing the wrong thing and is what made the identity map look necessary.
 
-## 8. Duplicate hole numbers are possible on a quick course — OPEN
+## 8. Duplicate hole numbers are possible on a quick course — FIXED (2026-07-30)
 
 **Severity: medium.** Surfaced while fixing finding 3. `holes_layout_hole_tee_uniq` does not prevent
 duplicate `hole_number` values when `tee_type` is NULL, because Postgres treats NULLs as distinct in a
-unique index. Pre-existing, inherited from the original `unique (course_id, hole_number, tee_type)` —
-but the quick-course form never sets `tee_type`, so **every** quick course lives in the NULL branch and
-is unprotected today. There is a passing assertion recording the current behaviour so it stays
-documented rather than assumed. Fix: `nulls not distinct` on the index, or a synthetic default tee.
+unique index. Pre-existing — but the quick-course form never sets `tee_type`, so **every** quick course
+lived in the NULL branch and was unprotected.
 
-## 9. `isPermanentError` misclassifies most Postgres errors as transient — OPEN
+Fixed by `20260730120000_phase_e_hole_number_nulls_not_distinct.sql`: the index is recreated with
+`nulls not distinct`, which makes two NULL tee types compare equal for uniqueness. Applied to
+`icqzbvtjisxwycvioiup` on 2026-07-30 and confirmed live (`indnullsnotdistinct = true`).
+
+Preferred over a synthetic default tee (writing `'default'` instead of NULL), which would work but puts
+a placeholder in a user-visible column the UI then has to hide, and needs a backfill.
+
+Proved behaviourally, not by reading the index definition: a `DO` block created a course, a layout and a
+NULL-tee hole 1, then attempted a second NULL-tee hole 1 and caught the `unique_violation`
+(`duplicate_null_tee_blocked=t`). The same block confirmed a genuinely different tee on the same hole
+number is **still** accepted (`distinct_tees_still_allowed=t`) — without that contrast the fix could have
+been silently breaking multi-tee courses. A closing `RAISE` rolled the whole block back; the catalog was
+verified byte-identical afterwards (0 courses, 0 layouts, 0 holes).
+
+The assertion in `courseRepository.test.js` that recorded the old behaviour has been rewritten: it now
+explains that 23505 fires on the path most users take, and notes that it poisons via the *code* branch
+of `isPermanentError` rather than the status branch added under finding 9.
+
+**Schema drift found while doing this.** `supabase_schema.sql` describes
+`holes (course_id, hole_number, tee_type)` with a `course_id` column. Live, `holes` has **no
+`course_id`** and the index is on `(layout_id, hole_number, tee_type)`. The checked-in schema file is
+stale relative to the database; the probe above failed its first run because of it. Not fixed here —
+regenerating that file is its own task, and doing it as a side effect of an index change would bury it.
+
+## 9. `isPermanentError` misclassifies most Postgres errors as transient — FIXED (2026-07-30)
 
 **Severity: high.** Systemic, latent on all three outboxes, and the same failure mode as finding 2 on
 a layer we just declared fixed.
@@ -188,8 +226,35 @@ Two subtleties that make this worth care rather than a quick patch:
   coming, and a queued write should wait for it rather than poison. The course path deliberately leaves
   those statusless for exactly this reason.
 
-Fix: audit every send site that feeds a queue and attach the response status, then add regression tests
-covering an RLS denial and a validation error on each queue.
+**FIXED (2026-07-30).** Every send site that feeds a queue now attaches the response status, via one
+shared helper rather than a third copy of the rule:
+
+`attachResponseStatus(error, status)` in `errorClassification.js` — next to the classifier it exists to
+serve, so the two cannot drift. Applied at:
+
+- **round outbox** — `roundLog.js`'s `throwIfError` now takes the whole result and attaches
+  `result.status`, so `createRound`, `updateRound` and `upsertRoundHole` are all covered by one change.
+  Read paths keep passing `{ data, error }`; a missing status is a no-op.
+- **activity and history-recovery outboxes** — `supabaseSync.js`'s `syncRows`, which is the single
+  executor both queues share.
+- **course outbox** — `courseRpcError` was already attaching the status by hand; it now delegates, so
+  the deploy-lag exemptions live in one place.
+
+`DEPLOY_LAG_CODES` is the part worth not losing: `PGRST202`, `PGRST205`, `42883` and `42P01` are
+explicitly **not** given a status, so they stay transient. PostgREST answers a not-yet-migrated function
+or table with a 4xx, and attaching it would poison a write that is about to start working — the deploy
+window between a client landing on `main` and its migration arriving is real and routine.
+
+The helper mutates rather than copies, deliberately. supabase-js mints a fresh error per response and
+hands it to one caller, so there is nothing to race; copying an `Error` would silently drop `stack` and
+`message`, which are own non-enumerable properties that spread and `Object.assign` skip. There is a test
+asserting exactly that.
+
+Coverage: 10 tests in `errorClassification.test.js` — an RLS denial (`42501`) going from transient to
+permanent, an RPC validation error (`22023`), a 5xx staying transient, all four deploy-lag codes keeping
+no status, an already-attached status not being overwritten, and the message/stack preservation above.
+One of them asserts the *gap* on the classifier itself — that a statusless `42501`/`22023`/`28000` reads
+as transient — so the reason this helper exists stays visible rather than becoming folklore.
 
 ---
 
@@ -201,12 +266,23 @@ covering an RLS denial and a validation error on each queue.
 | 2 | Round outbox swallows errors, diverging from § 8 | High | **Fixed** |
 | 3 | Course creation is not atomic | High | **Fixed** |
 | 4 | Course creation has no offline path | Medium | **Fixed** |
-| 5 | Unbounded course directory fetch | Medium | Deferred, trigger recorded |
-| 6 | Round holes ordered by UUID | Low | With 2 or 3 |
-| 8 | Duplicate hole numbers possible when `tee_type` is NULL | Medium | Open, found 2026-07-29 |
-| 9 | `isPermanentError` misclassifies most Postgres errors as transient | High | **Partly fixed** — course send site done; activity and round paths open |
-| 7 | No-op `idList` map | Cosmetic | While touching |
+| 5 | Unbounded course directory fetch | Medium | **Deferred by design**, trigger recorded |
+| 6 | Round holes ordered by UUID | Low | **Fixed** |
+| 8 | Duplicate hole numbers possible when `tee_type` is NULL | Medium | **Fixed** |
+| 9 | `isPermanentError` misclassifies most Postgres errors as transient | High | **Fixed** |
+| 7 | No-op `idList` map | Cosmetic | **Fixed** |
 
-Findings 2 and 3 are the next checkpoint. They are independent of each other and of the E2 feature
-work (weather, activity-only rounds, group-scorecard groundwork, bag snapshot verification, course
-preparation), which should not start on top of an offline layer that fails silently.
+Eight of nine findings are closed. Finding 5 is the only one left open, and deliberately so: an
+unbounded `select('*').order('name')` is correct at a catalog of zero and degrades linearly. Its revisit
+trigger — first real multi-user catalog, or measured load past ~300ms — is recorded above rather than
+guessed at now.
+
+## What this audit did not find
+
+Worth stating plainly, because eight fixed findings can read as a hardened surface. Every defect above
+was in the write and sync path. **The read path was reviewed and the UI was not**, and more to the point:
+
+The live database holds 28 users and **0 courses, 0 layouts, 0 rounds, 0 catalog reviews**. Nothing this
+audit fixed has ever run against real data, because this surface has never been used. The tests and the
+three transactional proofs establish that the code does what it claims — they cannot establish that the
+feature is worth using. That question needs a phone, a course, and a round actually played.

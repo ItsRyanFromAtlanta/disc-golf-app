@@ -1,14 +1,20 @@
 import { supabase } from './supabaseClient'
+import { attachResponseStatus } from './instantLaunch/errorClassification'
 
 const DISC_SELECT = '*, moldInfo:disc_molds(*)'
 
+// Pass the whole supabase-js result, `status` included, wherever the throw can
+// reach an outbox. The status is what tells the queue's classifier a write has
+// failed permanently rather than transiently; without it an RLS denial retries
+// forever. Read paths can keep passing `{ data, error }` — a missing status is a
+// no-op here.
 function throwIfError(result) {
-  if (result.error) throw result.error
+  if (result.error) throw attachResponseStatus(result.error, result.status)
   return result.data
 }
 
-function idList(rows) {
-  return [...new Set(rows.map((row) => row).filter(Boolean))]
+function idList(values) {
+  return [...new Set(values.filter(Boolean))]
 }
 
 function byId(rows) {
@@ -94,6 +100,9 @@ export async function fetchRound(roundId) {
     round.layout_id
       ? supabase.from('layouts').select('*').eq('id', round.layout_id).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+    // Ordered here only for a deterministic fetch. Hole *order* is applied
+    // below, once the joined holes are in hand — `hole_id` is a UUID, so
+    // ordering by it is arbitrary, not hole order.
     supabase.from('round_holes').select('*').eq('round_id', roundId).order('hole_id'),
     round.layout_id
       ? supabase.from('holes').select('*').eq('layout_id', round.layout_id).order('hole_number').order('tee_type')
@@ -120,12 +129,39 @@ export async function fetchRound(roundId) {
     course,
     layout: layout ? { ...layout, holes: layoutHoles } : null,
     holes: [...layoutHoles, ...missingHoles],
-    round_holes: roundHoles.map((roundHole) => ({
-      ...roundHole,
-      hole: holesById.get(roundHole.hole_id) ?? null,
-      disc: discsById.get(roundHole.disc_id) ?? null,
-    })),
+    round_holes: sortByHoleNumber(
+      roundHoles.map((roundHole) => ({
+        ...roundHole,
+        hole: holesById.get(roundHole.hole_id) ?? null,
+        disc: discsById.get(roundHole.disc_id) ?? null,
+      })),
+    ),
   }
+}
+
+// Play order, guaranteed by the data layer rather than by whoever renders it.
+//
+// The query can only order `round_holes` by its own columns, and the one that
+// identifies a hole is a UUID — so the rows arrive in an order that has nothing
+// to do with the course. `RoundScorecardPage` happened to re-sort, which meant
+// the guarantee lived in a single consumer and any second one silently inherited
+// an arbitrary order. Sorting here is the same work in the place that owns it.
+//
+// Rows whose hole could not be resolved sort last rather than to the front,
+// where a nullish `hole_number` would otherwise put them: an unresolvable hole is
+// the anomaly, and it should not displace real hole 1.
+function sortByHoleNumber(rows) {
+  return [...rows].sort((left, right) => {
+    const leftNumber = left.hole?.hole_number
+    const rightNumber = right.hole?.hole_number
+    if (leftNumber == null && rightNumber == null) return 0
+    if (leftNumber == null) return 1
+    if (rightNumber == null) return -1
+    if (leftNumber !== rightNumber) return leftNumber - rightNumber
+    // Same hole number across two tee types. `tee_type` is nullable, so compare
+    // as strings with null first, matching the layout-hole queries' ordering.
+    return String(left.hole?.tee_type ?? '').localeCompare(String(right.hole?.tee_type ?? ''))
+  })
 }
 
 export async function createRound(userId, fields = {}) {
@@ -134,8 +170,8 @@ export async function createRound(userId, fields = {}) {
     id: fields.id ?? crypto.randomUUID(),
     user_id: userId,
   }
-  const { data, error } = await supabase.from('rounds').upsert(payload, { onConflict: 'id' }).select().single()
-  const created = throwIfError({ data, error })
+  const { data, error, status } = await supabase.from('rounds').upsert(payload, { onConflict: 'id' }).select().single()
+  const created = throwIfError({ data, error, status })
   return fetchRound(created.id)
 }
 
@@ -143,8 +179,8 @@ export async function updateRound(roundId, fields = {}) {
   const payload = normalizeRoundFields(fields)
   delete payload.id
   delete payload.user_id
-  const { data, error } = await supabase.from('rounds').update(payload).eq('id', roundId).select().single()
-  const updated = throwIfError({ data, error })
+  const { data, error, status } = await supabase.from('rounds').update(payload).eq('id', roundId).select().single()
+  const updated = throwIfError({ data, error, status })
   return fetchRound(updated.id)
 }
 
@@ -165,12 +201,12 @@ export async function updateRound(roundId, fields = {}) {
 // conflict path — and the local Dexie mirror is keyed by that id.
 export async function upsertRoundHole(input = {}) {
   const { id: _localId, ...payload } = normalizeHoleFields(input)
-  const { data, error } = await supabase
+  const { data, error, status } = await supabase
     .from('round_holes')
     .upsert(payload, { onConflict: 'round_id,hole_id' })
     .select()
     .single()
-  return throwIfError({ data, error })
+  return throwIfError({ data, error, status })
 }
 
 export async function fetchCourses() {
@@ -275,18 +311,20 @@ export function buildCourseCreateArgs({ name, location, holes = [] }) {
   }
 }
 
-// supabase-js returns `{ data, error, status }`, but the PostgrestError itself
-// carries only `message`/`details`/`hint`/`code` — never `status`. The outbox's
-// permanent/transient classifier keys off `status` for everything outside its
-// small set of Postgres codes, and this function's own validation raises 22023
-// (bad name / empty holes), 28000 (not signed in) and 42501 (course id owned by
-// someone else) — none of which are in that set. Dropping the status would
-// classify all three as transient and retry a rejected course on every
-// reconnect forever, which is finding 2 reappearing on a different queue.
+// Normalizes a `PostgrestError` — a plain object — into a real `Error` so the
+// error boundaries and `instanceof` checks above this layer behave, then attaches
+// the response status.
+//
+// The status is what makes the difference: this function's own validation raises
+// 22023 (bad name / empty holes), 28000 (not signed in) and 42501 (course id
+// owned by someone else), none of which are in `PERMANENT_POSTGRES_CODES`, so
+// without a status all three classify as transient and a rejected course retries
+// on every reconnect forever. `attachResponseStatus` owns that rule now, shared
+// with the round and activity send sites, so the deploy-lag exemptions live in
+// one place instead of three.
 function courseRpcError(error, status) {
-  const wrapped = error instanceof Error ? error : Object.assign(new Error(error.message), error)
-  if (typeof status === 'number' && wrapped.status == null) wrapped.status = status
-  return wrapped
+  const normalized = error instanceof Error ? error : Object.assign(new Error(error.message), error)
+  return attachResponseStatus(normalized, status)
 }
 
 // Returns the course id, not the course. The read-back is deliberately not part

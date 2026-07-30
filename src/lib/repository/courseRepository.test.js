@@ -173,9 +173,16 @@ describe('courseRepository course outbox', () => {
   })
 
   it('poisons a duplicate-hole constraint violation by Postgres code alone', async () => {
-    // Finding 8 is live: `holes_layout_hole_tee_uniq` does not prevent duplicate
-    // hole_numbers when tee_type is NULL, and every quick course is in that
-    // branch. When it does fire it is 23505 — permanent, and it must not spin.
+    // `holes_layout_hole_tee_uniq` now carries `nulls not distinct`
+    // (`20260730120000_phase_e_hole_number_nulls_not_distinct.sql`), so a quick
+    // course — which never sets `tee_type` — can no longer hold two rows for the
+    // same hole number. That means this constraint actually fires on the path
+    // most users take, which is what makes the classification below load-bearing
+    // rather than theoretical: 23505 is permanent, and it must not spin.
+    //
+    // Note this asserts the *code* path, not the status path: 23505 is one of the
+    // four codes `isPermanentError` recognises directly, so it poisons whether or
+    // not a send site attached an HTTP status.
     api.createCourseWithLayoutRpc.mockRejectedValue(DUPLICATE_HOLE)
     await queueCreate()
 

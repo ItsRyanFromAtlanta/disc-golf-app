@@ -1,6 +1,6 @@
 # Current Work
 
-Last updated: 2026-07-28
+Last updated: 2026-07-30
 
 This file is the restart/handoff checkpoint. A fresh session should be able to resume from this file,
 `AGENTS.md`, and one relevant spec without replaying previous conversations. Per-item implementation
@@ -33,10 +33,30 @@ consolidated to a single line of development.
 - **Account deletion is live** as of 2026-07-29: all three Phase E migrations are applied and
   verified. The App Review blocker is cleared. Atomic course creation is live too, so the
   quick-course flow no longer runs three unprotected sequential upserts.
-- **Next:** **E2 — shipped J1 round/course reconciliation.** Audit and harden the existing course/
-  layout and offline round routes rather than rebuilding them, then add weather, activity-only rounds,
-  group-scorecard groundwork, bag snapshot verification, and course preparation as separately
-  committed green checkpoints. See `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E.
+- **E2's hardening half is complete as of 2026-07-30.** All nine audit findings are dispositioned:
+  eight fixed, one (finding 5, unbounded course directory fetch) deferred by design with a revisit
+  trigger. A fourth Phase E migration —
+  `20260730120000_phase_e_hole_number_nulls_not_distinct.sql` — is applied and verified live.
+- **Next:** the **feature** half of E2 — weather, activity-only rounds, group-scorecard groundwork,
+  bag snapshot verification, and course preparation, as separately committed green checkpoints. See
+  `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E.
+
+### Read this before starting more E2 hardening
+
+The live database holds **28 users and 0 courses, 0 layouts, 0 rounds, 0 catalog reviews**. Six real
+defects were found and fixed in the course/round surface across 2026-07-28/29/30 and every one was
+worth fixing — but none of that code has ever run against real data, because this surface has never
+been used by anyone.
+
+The next most valuable action is almost certainly **not** finding a tenth defect. It is installing the
+PWA on a phone, walking a real course, and finding out why the surface is empty. That answer changes
+what is worth building next; more hardening does not.
+
+**Also found 2026-07-30, not fixed:** `supabase_schema.sql` is stale. It describes
+`holes (course_id, hole_number, tee_type)`; live, `holes` has no `course_id` and the unique index is on
+`(layout_id, hole_number, tee_type)`. Regenerating that file is its own task — it is the reference every
+future migration is written against, so the drift matters, but folding it into an unrelated change would
+bury it.
 
 ## Staged next actions
 
@@ -51,7 +71,7 @@ below.
 | 4 | ~~Delete the empty `catalog-import-raw` Storage bucket~~ — **MOOT 2026-07-29.** It does not exist; `storage.buckets` holds only `disc-private-photos`. Open since 2026-07-14 against a bucket that was already gone | — | — |
 | 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
 | 6 | ~~Resolve the E2E contradiction~~ — **DONE 2026-07-28.** Playwright baseline built and wired into CI | agent | — |
-| 7 | E2 round/course reconciliation — **audit done; checkpoints 1–3 landed** (findings 1, 2, 3 fixed). See `docs/development/E2_ROUND_COURSE_AUDIT.md`. Remaining: 4 (no offline course path), 5, 6, 7, 8. The offline layer is now trustworthy enough for E2 feature work to start | agent | — |
+| 7 | E2 round/course reconciliation — **audit closed 2026-07-30. Eight of nine findings fixed** (1, 2, 3, 4, 6, 7, 8, 9). Only finding 5 remains open, deferred by design with a revisit trigger recorded. See `docs/development/E2_ROUND_COURSE_AUDIT.md`. The hardening phase of E2 is done; the **feature** half (weather, activity-only rounds, group-scorecard groundwork, bag snapshot verification, course preparation) has not started | agent | — |
 | 8 | ~~Extend E2E with live-capture fixtures~~ — **DONE 2026-07-28**, suite at 32 specs. Remaining § 9 gaps are app defects and unreachable branches, not missing fixtures | agent | — |
 | 9 | ~~Reconnect double-send in `syncScheduler.js`~~ — **FIXED 2026-07-28**, 11 unit tests plus a dedicated `online`-event E2E spec. The round outbox's silent `catch` (E2 audit finding 2) is still open and is the same class | agent | — |
 

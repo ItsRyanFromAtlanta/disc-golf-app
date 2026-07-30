@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient'
-import { isPermanentError } from './errorClassification'
+import { attachResponseStatus, isPermanentError } from './errorClassification'
 
 // Generic per-row upsert-or-update executor shared by every page's write
 // adapter — each outbox row carries { id, _op: 'insert' | 'update', ...fields }.
@@ -14,11 +14,14 @@ export async function syncRows(table, rows) {
   for (const row of rows) {
     const { id, _op, ...fields } = row
     try {
-      const { error } =
+      // `status` comes off the envelope, not the error: a `PostgrestError`
+      // never carries one, and without it `isPermanentError` reads an RLS
+      // denial as transient and retries it on every reconnect, forever.
+      const { error, status } =
         _op === 'update'
           ? await supabase.from(table).update(fields).eq('id', id)
           : await supabase.from(table).upsert({ id, ...fields }, { onConflict: 'id', ignoreDuplicates: true })
-      if (error) throw error
+      if (error) throw attachResponseStatus(error, status)
       succeededIds.push(id)
     } catch (err) {
       if (isPermanentError(err)) permanentFailureIds.push(id)
