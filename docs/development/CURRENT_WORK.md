@@ -92,17 +92,49 @@ folded in here. Statuses move in place; completed rows are struck through and ke
 
 | # | Task | Status |
 |---|---|---|
-| A1 | E2E § 9 gap: onboarding wizard + Quick Play launch | open |
-| A2 | E2E § 9 gap: gesture alternatives | open |
-| A3 | `capture.spec.js` "single-active auto-close" flake — poll budget under parallel load | open |
-| A4 | E2 feature: round weather | open |
-| A5 | E2 feature: activity-only rounds | open |
-| A6 | E2 feature: group-scorecard groundwork | open |
-| A7 | E2 feature: bag snapshot verification | open |
-| A8 | E2 feature: course preparation | open |
-| A9 | Production bundle code splitting (~740 KB min / ~213 KB gzip) | open |
-| A10 | Make-% trend chart — salvage `TrendChart` + `insights/timeSeries` from `775543c`, re-derived | open |
-| A11 | Distance heat profile (practice volume vs weakness by distance) | open |
+| A1 | E2E § 9 gap: onboarding wizard + Quick Play launch | ~~done~~ 2026-07-30 — `e2e/onboarding.spec.js`, § 9 row **Covered**. Asserts what the wizard *provisions* (default bag, putter, membership, units), not what it renders — a wizard that drew three steps and wrote nothing would pass a text check and still loop the user forever |
+| A2 | E2E § 9 gap: gesture alternatives | ~~done~~ 2026-07-30 — `e2e/gesture-alternatives.spec.js`, § 9 row **Covered**. Found and fixed **two shipped app defects**, see below |
+| A3 | `capture.spec.js` "single-active auto-close" flake | ~~done~~ 2026-07-30 — **neither a poll budget nor a drain race.** See the diagnosis below; the budget was never close |
+| A4 | E2 feature: round weather | ~~done~~ 2026-07-30 — structured `weather_condition` + `wind_mph` matching D2's practice vocabulary. **Migration `20260730205654` written, NOT applied** |
+| A5 | E2 feature: activity-only rounds | in progress |
+| A6 | E2 feature: group-scorecard groundwork | open — not started; deferred behind A5/A7 because it touches the same round tables |
+| A7 | E2 feature: bag snapshot verification | in progress |
+| A8 | E2 feature: course preparation | in progress |
+| A9 | Production bundle code splitting | ~~done~~ 2026-07-30 — cold-boot JS **1,014.60 → 677.98 kB raw, 290.32 → 200.31 kB gzip (−31%)**, >500 kB warning gone. Note the backlog's "~740 kB" figure was stale; it had grown to 1,014 kB |
+| A10 | Make-% trend chart — re-derived from `775543c` | ~~done~~ 2026-07-30 — `insights/trend.js` + `TrendChart`. Claims a direction only when the two window halves' 95% Wilson intervals do not overlap and each holds ≥20 attempts; otherwise "no clear change" |
+| A11 | Distance heat profile | ~~done~~ 2026-07-30 — `insights/distanceProfile.js`. The *gap* is the product: practice share vs strength, named as `blind-spot` / `grinding` / `over-drilled`. No composite priority score |
+
+**Two shipped app defects found by A2**, both of which had been live and both invisible to a
+keyboard-only test:
+
+1. **`GestureZone`'s Undo button did nothing under a thumb.** `useGesturePointer` called
+   `setPointerCapture` on the zone at pointerdown, which retargets the pointerup, so the browser
+   dispatched the `click` to the zone rather than the nested button. It worked by keyboard — Enter
+   synthesises a click with no pointer events — so a keyboard-only assertion would have marked the
+   row Covered while every field tap fell through. This is the alternative that exists precisely
+   *because* swipe-left is undiscoverable.
+2. **`PanicZone` was a bare `<div>` with pointer handlers.** Nothing in the mode was focusable, so a
+   keyboard or switch user could not log a single putt, and "hold = missed" had no non-gesture
+   equivalent at all. Now a real button plus an explicit "Missed" twin; thumb behaviour unchanged.
+
+**A3's real cause, worth keeping because the wrong diagnosis was recorded here first.** It was a race
+between the shell's notification producer and the auto-close, surfaced as a test failure because the
+helper asserted on the wrong thing. `waitForCaptureSync` waited for the *whole* Dexie `outbox` store to
+empty, but that store is shared by every queue, each row tagged with the table it drains through.
+`AppShell` runs `produceActivityReviewNotifications` once per mount, which enqueues a `notifications`
+row for every `incomplete` activity — and the auto-close under test creates one. That row drains
+through `notification_upsert`, which the suite does not stub, so it never left. Fixed by filtering the
+wait to `activity_lifecycle`. Measured drain time is 25–1400 ms against a 7 s budget over 100 runs on
+contended CPU, so the poll budget was never the problem.
+
+**The E2E suite's "6–15 failures under parallel load" was never the suite.** `playwright.config.js`
+serves on a fixed port 4173 with `reuseExistingServer` outside CI. With several agent worktrees live on
+one box, a run either silently tests another checkout's build or has its server killed mid-run — every
+failure `net::ERR_CONNECTION_REFUSED at 127.0.0.1:4173`. With `E2E_PORT` set per checkout the same box
+passes 51/51 at default workers, repeatedly. Per-worker isolation is genuinely sound: each test gets its
+own BrowserContext, so the seeded session, Dexie/IndexedDB, service workers and the in-page interception
+are all per-context. The config was deliberately **not** changed — CI is the only checkout there and
+nothing is wrong with it. See `e2e/README.md`.
 
 ### Closed by inspection, not by work
 
@@ -121,6 +153,26 @@ folded in here. Statuses move in place; completed rows are struck through and ke
 | C3 | Enable `auth_leaked_password_protection` | Supabase dashboard auth setting; a one-toggle improvement flagged by advisors |
 | C4 | Real-device PWA field test — install, walk a course, log a round | Needs a phone and a course. **Highest-value item on this page**, see below |
 | C5 | Install the OpenAI Developer Docs MCP locally | Desktop sandbox could not launch the installer |
+| C6 | **Apply the pending Phase E migrations** — see the list below | Owner decision 2026-07-30: migrations are applied by the owner via the Supabase dashboard, not from a session |
+
+### Pending migrations — written, reviewed, NOT applied
+
+Standing decision (2026-07-30): **sessions write migration files; the owner applies them.** No agent
+applies SQL to the live project. Apply in filename order.
+
+| File | What it does | Client behaviour before it lands |
+|---|---|---|
+| `20260730205654_phase_e_round_weather.sql` | Adds `weather_condition` (5-value CHECK) + `wind_mph` to `rounds`, matching D2's practice-weather vocabulary exactly. `weather_summary` is kept unchanged as the free-text note beside them | Degrades. Round creation deliberately does not send weather, and `PGRST204`/`42703` were added to `DEPLOY_LAG_CODES` so a write against a not-yet-migrated column stays transient instead of poisoning the round outbox |
+
+**Why `weather_summary` was not enough**, since it looks like it should have been: D2 already stores
+structured `weather_condition` + `wind_mph` on both practice parents and `gamification/metrics.js`
+reads those columns. A free-text round column cannot be grouped or compared without a prose parser,
+and would record the same fact two different ways on the two surfaces.
+
+**After applying, verify** the CHECK constraints reject an out-of-vocabulary condition and that
+existing rounds are unaffected (both columns are nullable, so pre-existing rows stay valid). None of
+this has been proved against a real cluster — unlike audit findings 3 and 8, there is no transactional
+proof here, only unit tests against a fixture that is not Postgres.
 
 **C4 outranks every agent row above it.** The course/round surface holds 0 courses, 0 layouts and
 0 rounds against 28 real users. Eight audit findings were fixed in code that has never run against
