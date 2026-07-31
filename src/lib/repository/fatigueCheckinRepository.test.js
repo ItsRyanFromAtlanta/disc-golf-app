@@ -89,6 +89,43 @@ describe('fatigueCheckinRepository.record', () => {
     expect(await repository.record(checkinRow())).toMatchObject({ sync_state: 'synced' })
     expect(await outboxFor(database)).toHaveLength(0)
   })
+
+  // Adversarial pre-deployment review: `flushOutbox` had no poison concept, so
+  // a permanent error (an RLS denial, a check violation) retried forever
+  // behind a swallowed error. This asserts the fix at the point it matters
+  // most — the caller's very first attempt, before any flush has had a chance
+  // to run — reports `needs_attention` rather than `pending` and poisons the
+  // outbox entry immediately instead of leaving it to loop silently.
+  it('classifies a permanent failure on the first attempt instead of leaving it pending forever', async () => {
+    const database = freshDatabase()
+    const insert = vi.fn().mockResolvedValue({
+      error: { code: '42501', message: 'permission denied' },
+      status: 403,
+    })
+    const repository = createFatigueCheckinRepository({ database, client: fakeClient({ insert }) })
+
+    expect(await repository.record(checkinRow())).toMatchObject({ sync_state: 'needs_attention' })
+
+    const queued = await outboxFor(database)
+    expect(queued).toHaveLength(1)
+    expect(queued[0]).toMatchObject({ poison: true, lastErrorClass: 'permanent', nextRetryAt: null })
+  })
+
+  // Left unclassified rather than backed off — see the `record` function
+  // comment: the backoff clock starts on the first RETRY that fails, not on
+  // the original write, so an immediate flush right after this isn't made to
+  // wait out a window before it even gets to try.
+  it('keeps an ordinary offline failure pending and unclassified, not poisoned', async () => {
+    const database = freshDatabase()
+    const insert = vi.fn().mockResolvedValue({ error: new Error('offline') })
+    const repository = createFatigueCheckinRepository({ database, client: fakeClient({ insert }) })
+
+    await repository.record(checkinRow())
+
+    const queued = await outboxFor(database)
+    expect(queued).toHaveLength(1)
+    expect(queued[0]).toMatchObject({ poison: false, lastErrorClass: null, nextRetryAt: null, attemptCount: 0 })
+  })
 })
 
 describe('fatigueCheckinRepository.flushPending', () => {
@@ -132,6 +169,56 @@ describe('fatigueCheckinRepository.flushPending', () => {
     await repository.record(checkinRow())
     await repository.flushPending()
 
+    expect(await outboxFor(database)).toHaveLength(0)
+  })
+
+  // The core of this fix: a permanent error stops retrying rather than
+  // looping behind `flushOutbox`'s bare `catch {}` forever. The first attempt
+  // (inside `record`) is a plain network failure, so it's not classified yet —
+  // this exercises `flushPending`'s own classification, not `record`'s. Once
+  // the retry comes back with a real permanent error the entry is poisoned,
+  // and two further flush passes make no additional insert calls, proving the
+  // entry is excluded from `listReady` rather than merely failing quietly
+  // again each time.
+  it('stops retrying once a retry attempt is classified as permanent', async () => {
+    const database = freshDatabase()
+    const insert = vi.fn()
+      .mockResolvedValueOnce({ error: new Error('offline') })
+      .mockResolvedValue({ error: { code: '42501', message: 'permission denied' }, status: 403 })
+    const repository = createFatigueCheckinRepository({ database, client: fakeClient({ insert }) })
+
+    await repository.record(checkinRow())
+    expect(insert).toHaveBeenCalledTimes(1)
+
+    await repository.flushPending()
+    expect(insert).toHaveBeenCalledTimes(2)
+
+    await repository.flushPending()
+    await repository.flushPending()
+
+    expect(insert).toHaveBeenCalledTimes(2)
+    const queued = await outboxFor(database)
+    expect(queued).toHaveLength(1)
+    expect(queued[0]).toMatchObject({ poison: true, lastErrorClass: 'permanent' })
+  })
+
+  // The escape hatch `activityOutbox.js` added for the same reason: a
+  // misclassification (or a since-fixed RLS policy) must not be permanently
+  // unrecoverable without a code change.
+  it('retryPoisoned clears a poisoned entry back to retryable', async () => {
+    const database = freshDatabase()
+    const insert = vi.fn()
+      .mockResolvedValueOnce({ error: { code: '42501', message: 'permission denied' }, status: 403 })
+      .mockResolvedValueOnce({ error: null })
+    const repository = createFatigueCheckinRepository({ database, client: fakeClient({ insert }) })
+
+    await repository.record(checkinRow())
+    expect((await outboxFor(database))[0]).toMatchObject({ poison: true })
+
+    await repository.retryPoisoned()
+    expect((await outboxFor(database))[0]).toMatchObject({ poison: false, nextRetryAt: null, lastErrorClass: null })
+
+    await repository.flushPending()
     expect(await outboxFor(database)).toHaveLength(0)
   })
 })
@@ -195,6 +282,23 @@ describe('fatigueCheckinRepository.listForParent', () => {
     const rows = await repository.listForParent({ regimenRunId: 'run-1' })
 
     expect(rows).toMatchObject([{ id: 'check-1', sync_state: 'synced' }])
+  })
+
+  it('reports needs_attention for a permanently failed check-in instead of pending forever', async () => {
+    const database = freshDatabase()
+    const insert = vi.fn().mockResolvedValue({
+      error: { code: '42501', message: 'permission denied' },
+      status: 403,
+    })
+    const repository = createFatigueCheckinRepository({
+      database,
+      client: fakeClient({ insert, select: () => ({ data: [], error: null }) }),
+    })
+    await repository.record(checkinRow())
+
+    const rows = await repository.listForParent({ regimenRunId: 'run-1' })
+
+    expect(rows).toMatchObject([{ id: 'check-1', sync_state: 'needs_attention' }])
   })
 
   // A freeform session reads by putt_session_id; the parent is exclusive, so a

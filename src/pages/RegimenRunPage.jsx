@@ -894,6 +894,16 @@ export default function RegimenRunPage() {
           Your fatigue check-in is queued and will sync when you reconnect.
         </p>
       )}
+      {/* The outbox migration classifies a permanent failure (e.g. an RLS
+          denial) as poisoned instead of retrying it forever — this is that
+          state made visible, distinct from the ordinary "waiting to
+          reconnect" pending badge above. */}
+      {fatigueSyncState === 'needs_attention' && (
+        <p className="fatigue-checkin" role="status">
+          <span className="history-sync-badge history-sync-attention">Needs attention</span>{' '}
+          Your fatigue check-in could not be uploaded and is saved on this device only.
+        </p>
+      )}
 
       {pendingMiss && (
         <DiagnosticZonePicker

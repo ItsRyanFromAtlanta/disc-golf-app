@@ -62,20 +62,6 @@ export async function createCustomRegimen(userId, { regimen, sets }) {
   return created.id
 }
 
-// The Screen 4 CUSTOM tab currently filters a shared all-regimens query
-// client-side; this fetch is the dedicated equivalent (own, non-archived) for
-// callers that only want custom routines.
-export async function fetchCustomRegimens(userId) {
-  const { data, error } = await supabase
-    .from('putting_regimens')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('archived', false)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data
-}
-
 // Clone & Tweak source: a regimen plus its ordered sets, to prefill the builder.
 export async function fetchRegimenWithSets(regimenId) {
   const [{ data: regimen, error: regimenError }, { data: sets, error: setsError }] = await Promise.all([
