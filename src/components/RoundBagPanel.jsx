@@ -18,7 +18,7 @@ import { BAG_VERIFICATION_STATUSES, describeBagVerification } from '../lib/round
 
 const VERIFIED = BAG_VERIFICATION_STATUSES.VERIFIED
 
-export default function RoundBagPanel({ verification, bagName = null }) {
+export default function RoundBagPanel({ verification }) {
   // Nothing until the background read resolves. A skeleton would imply the
   // answer is imminent, and on a bad connection it is not.
   if (!verification) return null
@@ -28,10 +28,20 @@ export default function RoundBagPanel({ verification, bagName = null }) {
   const drift = verification.driftFromCurrent
   // The snapshot's own `name` is preferred over any current bag name: it is the
   // bag as it was called at the time, which is the honest label for a round
-  // played before it was renamed. `bagName` covers the statuses that resolve no
-  // snapshot, and the last fallback distinguishes "a bag was recorded, we just
-  // cannot name it" from "no bag was recorded", which are different facts.
-  const label = verification.versionName ?? bagName ?? (verification.bagId ? 'Bag recorded' : 'No bag recorded')
+  // played before it was renamed. When no snapshot resolves, the fallback
+  // distinguishes "a bag was recorded, we just cannot name it" from "no bag was
+  // recorded", which are different facts.
+  //
+  // There used to be a second fallback here, a `bagName` prop, between these
+  // two. It read `round.bag?.name` at the one call site — `RoundSummaryPage` —
+  // but `fetchRound` (`src/lib/roundLog.js`) never hydrates a `bag` relation on
+  // a round, only `bag_id`/`bag_version_id`, so that prop was always `null` and
+  // this branch could never fire. Removed rather than fixed: `versionName`
+  // already covers every status that resolves a snapshot, and inventing a
+  // "current bag name" fallback for the statuses that do not would contradict
+  // the paragraph above it — a round's bag name is what the snapshot said, not
+  // whatever the bag happens to be called today.
+  const label = verification.versionName ?? (verification.bagId ? 'Bag recorded' : 'No bag recorded')
 
   return (
     <section className="round-bag" aria-label="Bag used">

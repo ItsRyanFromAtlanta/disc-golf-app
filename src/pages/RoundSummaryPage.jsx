@@ -236,8 +236,11 @@ export default function RoundSummaryPage() {
       />
 
       {/* Read-only, and on the summary rather than the scorecard: which bag was
-          carried is a question asked after the round, not during it. */}
-      <RoundBagPanel verification={bagVerification} bagName={round.bag?.name ?? null} />
+          carried is a question asked after the round, not during it.
+          `verification.versionName` is the only name source `RoundBagPanel`
+          takes now — `fetchRound` never hydrates a `bag` relation on `round`,
+          so a `bagName={round.bag?.name}` prop here would always be `null`. */}
+      <RoundBagPanel verification={bagVerification} />
 
       {/* Who else was on the card — a private record in this account, never a
           shared scorecard. It sits beside the bag for the same reason: it is a
