@@ -48,6 +48,57 @@ export function canAddStage(stages) {
   return totalPutts(stages) + nextPutts <= MAX_PUTTS
 }
 
+// Whether the planned routine breaches the ceiling the DB will enforce anyway.
+export function isOverPuttCap(stages) {
+  return totalPutts(stages) > MAX_PUTTS
+}
+
+// Why Save is unavailable, or null when the routine can be saved.
+//
+// `canAddStage` above gates ONE button — `Add next stage`. It was the only
+// app-side half of the 100-putt interlock, and it does not cover the other way
+// to add putts: the per-stage putt stepper is a free choice of [5,10,15,20]
+// with no cap awareness, so ten stages of 10 putts (exactly at the cap, with
+// `Add next stage` correctly disabled) could be walked up to 200 putts by
+// tapping `20` on each one. `saveDisabled` was `saving || !name.trim() ||
+// stages.length === 0` and never read `putts` at all, so both Save buttons
+// stayed enabled the whole way.
+//
+// The page even rendered the breach — the totalizer turns red past the cap —
+// and then offered to save it regardless. The DB trigger
+// `enforce_routine_putt_cap` is authoritative and refuses the write, so the
+// user's actual outcome was filling in a routine, pressing Save, and getting an
+// error; `createCustomRegimen` also archives the just-created parent as
+// cleanup, so the attempt leaves an invisible orphan behind.
+//
+// Keeping the trigger authoritative is deliberate. What changes here is that
+// the client stops promising something the database will refuse.
+export const SAVE_BLOCKERS = Object.freeze({
+  NAME_REQUIRED: 'name_required',
+  NO_STAGES: 'no_stages',
+  OVER_PUTT_CAP: 'over_putt_cap',
+})
+
+export function routineSaveBlocker({ name, stages }) {
+  if (!String(name ?? '').trim()) {
+    return { code: SAVE_BLOCKERS.NAME_REQUIRED, message: 'Name this routine before saving.' }
+  }
+  if (!stages || stages.length === 0) {
+    return { code: SAVE_BLOCKERS.NO_STAGES, message: 'Add at least one stage before saving.' }
+  }
+  if (isOverPuttCap(stages)) {
+    return {
+      code: SAVE_BLOCKERS.OVER_PUTT_CAP,
+      message: `This routine plans ${totalPutts(stages)} putts, over the ${MAX_PUTTS}-putt ceiling. Remove a stage or lower a stage's putt count to save it.`,
+    }
+  }
+  return null
+}
+
+export function canSaveRoutine(state) {
+  return routineSaveBlocker(state) === null
+}
+
 // Difficulty estimate (1-5) for the CUSTOM routine card badge. Documented,
 // deterministic heuristic: band by putt-weighted average distance, then bump for
 // high total volume and for any pressure stage. Clamped 1-5.

@@ -6,6 +6,11 @@ import {
   estimateDifficulty,
   buildRegimenPayload,
   maxScorePreview,
+  isOverPuttCap,
+  routineSaveBlocker,
+  canSaveRoutine,
+  SAVE_BLOCKERS,
+  MAX_PUTTS,
   MAX_STAGES,
 } from './routineBuilder'
 import { computeSetScore, computeCompletionBonus } from './regimenScoring'
@@ -136,5 +141,64 @@ describe('maxScorePreview', () => {
     const stages = [{ distanceFt: 15, putts: 5, pressure: false }]
     const bonuses = { streak: false, clean: false, completion: false }
     expect(maxScorePreview({ stages, bonuses })).toBe(50) // 5 makes * 10 base
+  })
+})
+
+describe('routineSaveBlocker (the 100-putt interlock on Save)', () => {
+  const named = (stages) => ({ name: 'Morning C1', stages })
+
+  it('allows a routine sitting exactly at the ceiling', () => {
+    const stages = Array.from({ length: 10 }, () => ({ distanceFt: 20, putts: 10, pressure: false }))
+    expect(totalPutts(stages)).toBe(MAX_PUTTS)
+    expect(isOverPuttCap(stages)).toBe(false)
+    expect(routineSaveBlocker(named(stages))).toBeNull()
+    expect(canSaveRoutine(named(stages))).toBe(true)
+  })
+
+  // The reported path. Ten stages of 10 putts sits exactly at the cap with
+  // `Add next stage` correctly disabled — and the per-stage putt stepper then
+  // walks the same routine to 200 with nothing noticing.
+  it('blocks the routine the stage stepper can build past the ceiling', () => {
+    const atCap = Array.from({ length: 10 }, () => ({ distanceFt: 20, putts: 10, pressure: false }))
+    expect(canAddStage(atCap)).toBe(false) // the guard that already existed
+
+    const overCap = atCap.map((stage) => ({ ...stage, putts: 20 }))
+    expect(totalPutts(overCap)).toBe(200)
+    expect(canAddStage(overCap)).toBe(false)
+
+    // ...and the guard that did not exist: Save was enabled for this routine.
+    const blocker = routineSaveBlocker(named(overCap))
+    expect(blocker).not.toBeNull()
+    expect(blocker.code).toBe(SAVE_BLOCKERS.OVER_PUTT_CAP)
+    expect(canSaveRoutine(named(overCap))).toBe(false)
+  })
+
+  it('blocks a routine taken over the ceiling by stage count alone', () => {
+    const stages = Array.from({ length: 6 }, () => ({ distanceFt: 20, putts: 20, pressure: false }))
+    expect(totalPutts(stages)).toBe(120)
+    expect(routineSaveBlocker(named(stages)).code).toBe(SAVE_BLOCKERS.OVER_PUTT_CAP)
+  })
+
+  it('names the real total and the ceiling, so the message is actionable', () => {
+    const stages = Array.from({ length: 10 }, () => ({ distanceFt: 20, putts: 20, pressure: false }))
+    const { message } = routineSaveBlocker(named(stages))
+    expect(message).toContain('200')
+    expect(message).toContain(String(MAX_PUTTS))
+  })
+
+  it('still blocks an unnamed or empty routine, reporting the name first', () => {
+    const stages = [{ distanceFt: 20, putts: 10, pressure: false }]
+    expect(routineSaveBlocker({ name: '', stages }).code).toBe(SAVE_BLOCKERS.NAME_REQUIRED)
+    expect(routineSaveBlocker({ name: '   ', stages }).code).toBe(SAVE_BLOCKERS.NAME_REQUIRED)
+    expect(routineSaveBlocker({ name: undefined, stages }).code).toBe(SAVE_BLOCKERS.NAME_REQUIRED)
+    expect(routineSaveBlocker(named([])).code).toBe(SAVE_BLOCKERS.NO_STAGES)
+  })
+
+  it('puts the boundary exactly where the DB trigger puts it', () => {
+    // enforce_routine_putt_cap raises when other_reps + new.reps_required > 100,
+    // so 100 is allowed and 101 is not. The client must be neither stricter
+    // (blocking a legal routine) nor looser (promising a refused write).
+    expect(isOverPuttCap([{ distanceFt: 20, putts: MAX_PUTTS, pressure: false }])).toBe(false)
+    expect(isOverPuttCap([{ distanceFt: 20, putts: MAX_PUTTS + 1, pressure: false }])).toBe(true)
   })
 })
