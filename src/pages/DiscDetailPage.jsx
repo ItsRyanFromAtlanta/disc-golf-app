@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { fetchDisc, fetchBags, fetchDiscBagIds, addDiscToBag, removeDiscFromBag, upsertDisc } from '../lib/discLocker'
+import {
+  fetchDisc,
+  fetchBags,
+  fetchDiscBagIds,
+  fetchBagDiscs,
+  addDiscToBag,
+  removeDiscFromBag,
+  upsertDisc,
+} from '../lib/discLocker'
 import { effectiveFlightNumbers } from '../lib/discs'
 import EditableSection from '../components/EditableSection'
 import {
@@ -11,6 +19,7 @@ import {
   removeShotTagAssignment,
 } from '../lib/repository/discTaxonomyRepository'
 import { activeShotTagAssignments, assignedShotTags } from '../lib/discTaxonomy'
+import { BAG_HARD_CAPACITY, bagCapacityMessage, isBagCapacityError } from '../lib/bagCapacity'
 import DiscPhotoManager from '../components/DiscPhotoManager'
 import DiscOdometerManager from '../components/DiscOdometerManager'
 import DiscProfileContext from '../components/DiscProfileContext'
@@ -51,8 +60,20 @@ export default function DiscDetailPage() {
     setError(null)
     const isMember = memberBagIds.has(bagId)
     try {
-      if (isMember) await removeDiscFromBag(bagId, discId)
-      else await addDiscToBag(bagId, discId)
+      if (isMember) {
+        await removeDiscFromBag(bagId, discId)
+      } else {
+        // No count for this bag is already in state — the fetch above only
+        // loaded which bags *this disc* belongs to, not every bag's full
+        // membership — so ask before writing rather than let the trigger
+        // answer with a raw Postgres string.
+        const members = await fetchBagDiscs(bagId)
+        if (members.length >= BAG_HARD_CAPACITY) {
+          setError(bagCapacityMessage())
+          return
+        }
+        await addDiscToBag(bagId, discId)
+      }
       setMemberBagIds((prev) => {
         const next = new Set(prev)
         if (isMember) next.delete(bagId)
@@ -60,7 +81,7 @@ export default function DiscDetailPage() {
         return next
       })
     } catch (err) {
-      setError(err.message)
+      setError(isBagCapacityError(err) ? bagCapacityMessage() : err.message)
     }
   }
 
