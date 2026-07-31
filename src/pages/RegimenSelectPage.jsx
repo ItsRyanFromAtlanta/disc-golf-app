@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { mostRecentRegimenId } from '../lib/insights'
 import { regimenRepository } from '../lib/repository/regimenRepository'
+import { selectableRegimens } from '../lib/regimens'
 import { drillGroupLabel, drillKind, DRILL_TYPES } from '../lib/drillEngine'
 
 export default function RegimenSelectPage() {
@@ -13,8 +14,10 @@ export default function RegimenSelectPage() {
   const [error, setError] = useState(null)
   const [suggestedId, setSuggestedId] = useState(null)
 
+  const runnableRegimens = selectableRegimens(regimens)
+
   const groups = ['Classic drills', 'Scored regimens', 'Custom routines']
-    .map((label) => ({ label, regimens: regimens.filter((regimen) => drillGroupLabel(regimen) === label) }))
+    .map((label) => ({ label, regimens: runnableRegimens.filter((regimen) => drillGroupLabel(regimen) === label) }))
     .filter((group) => group.regimens.length > 0)
 
   useEffect(() => {
