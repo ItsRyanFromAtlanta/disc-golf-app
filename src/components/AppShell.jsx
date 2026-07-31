@@ -16,7 +16,7 @@ import { useNotifications } from '../hooks/useNotifications'
 import NotificationSheet from './NotificationSheet'
 import { notificationRepository } from '../lib/repository/notificationRepository'
 import { useAuth } from '../hooks/useAuth'
-import { resolveRouteMetadata, resolveSectionRoot, SHELL_TYPES } from '../lib/routeMetadata'
+import { resolveActivityResume, resolveRouteMetadata, resolveSectionRoot, SHELL_TYPES } from '../lib/routeMetadata'
 
 export default function AppShell() {
   const { pathname } = useLocation()
@@ -44,13 +44,16 @@ export default function AppShell() {
   const route = resolveRouteMetadata(pathname)
   const isActiveShell = route?.shell === SHELL_TYPES.ACTIVE
   const isRoot = route && resolveSectionRoot(route.section) === pathname
-  const activeHref =
-    activeActivity?.type === 'putting_regimen' && activeActivity.metadata?.regimenId
-      ? `/practice/regimens/${activeActivity.metadata.regimenId}/run`
-      : activeActivity?.type === 'putting_freeform'
-        ? '/practice/freeform'
-        : null
+  // Destination *and* accessible name come from the route contract, so the
+  // pill can advertise any activity type that has a capture screen — a round
+  // included — instead of the two the shell used to spell out here.
+  const activityResume = resolveActivityResume(activeActivity)
 
+  // `route.scrollKey` identifies a route *instance*, not a route: two course
+  // detail pages resolve to different keys, so this re-runs when you move
+  // between them and each record is restored to its own offset rather than
+  // inheriting the previous one's. `scrollPositionsRef` therefore holds one
+  // entry per record visited this session — a few numbers, discarded on unmount.
   useLayoutEffect(() => {
     if (isActiveShell) return
     const region = scrollRegionRef.current
@@ -101,8 +104,7 @@ export default function AppShell() {
                 showBack={Boolean(route && !isRoot)}
                 onBack={handleBack}
                 showActivityPill={route?.showActivityPill}
-                activeActivity={activeActivity}
-                activeHref={activeHref}
+                activityResume={activityResume}
                 notificationCount={badgeCount}
                 onNotifications={() =>
                   setSheet({

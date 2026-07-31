@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { LEGACY_ROUTE_ALIASES, SHELL_TYPES, resolveCanonicalPath, resolveRouteMetadata, resolveSectionRoot } from './routeMetadata'
+import { LEGACY_ROUTE_ALIASES, SHELL_TYPES, resolveActivityResume, resolveCanonicalPath, resolveRouteMetadata, resolveSectionRoot } from './routeMetadata'
+import { ACTIVITY_TYPES } from './activityLifecycle/types'
 
 describe('route metadata contract', () => {
   it('classifies every shipped active capture route as a resumable active shell without the activity pill', () => {
@@ -95,6 +96,50 @@ describe('route metadata contract', () => {
     })
   })
 
+  // A fixed key per route entry meant one course's scroll offset was restored
+  // onto the next course opened, so the key has to carry the parameter.
+  it('gives each instance of a parameterized route its own scroll key', () => {
+    const pairs = [
+      ['/courses/course-a', '/courses/course-b'],
+      ['/courses/course-a/prep', '/courses/course-b/prep'],
+      ['/bag/discs/disc-1', '/bag/discs/disc-2'],
+      ['/rounds/round-1', '/rounds/round-2'],
+      ['/rounds/round-1/summary', '/rounds/round-2/summary'],
+      ['/practice/history/regimen/run-1', '/practice/history/regimen/run-2'],
+    ]
+    for (const [left, right] of pairs) {
+      const leftKey = resolveRouteMetadata(left).scrollKey
+      const rightKey = resolveRouteMetadata(right).scrollKey
+      expect(leftKey).toBeTruthy()
+      expect(leftKey).not.toBe(rightKey)
+      // Stable for the same record, or returning to it would forget the offset.
+      expect(resolveRouteMetadata(left).scrollKey).toBe(leftKey)
+    }
+  })
+
+  it('never lets two different routes collide on one scroll key', () => {
+    // A round scorecard and that same round's summary are distinct screens.
+    expect(resolveRouteMetadata('/rounds/round-1').scrollKey).not.toBe(
+      resolveRouteMetadata('/rounds/round-1/summary').scrollKey,
+    )
+    expect(resolveRouteMetadata('/courses/course-a').scrollKey).not.toBe(
+      resolveRouteMetadata('/courses/course-a/prep').scrollKey,
+    )
+  })
+
+  it('leaves a route with exactly one instance on its declared static key', () => {
+    expect(resolveRouteMetadata('/courses').scrollKey).toBe('courses-root')
+    expect(resolveRouteMetadata('/rounds').scrollKey).toBe('rounds-root')
+    expect(resolveRouteMetadata('/courses/new').scrollKey).toBe('courses-form')
+    expect(resolveRouteMetadata('/practice/history/deleted').scrollKey).toBe('play-history-deleted')
+    expect(resolveRouteMetadata('/notifications').scrollKey).toBe('notifications')
+  })
+
+  it('keeps active capture routes without a scroll key at all', () => {
+    expect(resolveRouteMetadata('/practice/freeform').scrollKey).toBeNull()
+    expect(resolveRouteMetadata('/practice/regimens/foundation/run').scrollKey).toBeNull()
+  })
+
   it('keeps public routes outside an authenticated shell', () => {
     expect(resolveRouteMetadata('/login')).toMatchObject({ id: 'login', shell: SHELL_TYPES.NONE })
     expect(resolveRouteMetadata('/onboarding')).toMatchObject({ id: 'onboarding', shell: SHELL_TYPES.NONE })
@@ -119,5 +164,53 @@ describe('route metadata contract', () => {
 
   it('returns null for an unknown path instead of inventing shell behavior', () => {
     expect(resolveRouteMetadata('/not-a-route')).toBeNull()
+  })
+})
+
+describe('resolving where a live activity is resumed', () => {
+  // The regression this exists for: the header pill resolved a destination for
+  // the two putting types only, so a live round — the activity the seven
+  // COURSES routes carry `showActivityPill` for — advertised nothing anywhere.
+  it('sends a live round to its own scorecard, keyed by the activity id', () => {
+    expect(resolveActivityResume({ id: 'round-1', type: ACTIVITY_TYPES.DISC_GOLF_ROUND })).toEqual({
+      href: '/rounds/round-1',
+      label: 'Resume active round',
+    })
+    // Two live rounds must not resolve to one another's scorecard.
+    expect(resolveActivityResume({ id: 'round-2', type: ACTIVITY_TYPES.DISC_GOLF_ROUND }).href).toBe('/rounds/round-2')
+  })
+
+  // Both putting types keep the accessible name the shipped shell already had.
+  // The name describes what the user returns to, and a regimen run is practice
+  // as much as a freeform session is; only the round needed a different word.
+  it('still resolves both putting capture screens under their existing accessible name', () => {
+    expect(resolveActivityResume({ id: 'a-1', type: ACTIVITY_TYPES.PUTTING_FREEFORM })).toEqual({
+      href: '/practice/freeform',
+      label: 'Resume active practice',
+    })
+    expect(
+      resolveActivityResume({ id: 'a-2', type: ACTIVITY_TYPES.PUTTING_REGIMEN, metadata: { regimenId: 'r-9' } }),
+    ).toEqual({ href: '/practice/regimens/r-9/run', label: 'Resume active practice' })
+  })
+
+  it('resolves every destination it names to a route the shell actually serves', () => {
+    const activities = [
+      { id: 'a-1', type: ACTIVITY_TYPES.PUTTING_FREEFORM },
+      { id: 'a-2', type: ACTIVITY_TYPES.PUTTING_REGIMEN, metadata: { regimenId: 'r-9' } },
+      { id: 'round-1', type: ACTIVITY_TYPES.DISC_GOLF_ROUND },
+    ]
+    for (const activity of activities) {
+      expect(resolveRouteMetadata(resolveActivityResume(activity).href)).not.toBeNull()
+    }
+  })
+
+  it('advertises nothing when there is genuinely nowhere to send the user', () => {
+    expect(resolveActivityResume(null)).toBeNull()
+    expect(resolveActivityResume(undefined)).toBeNull()
+    // A regimen run whose parent regimen was never recorded has no runnable URL.
+    expect(resolveActivityResume({ id: 'a-3', type: ACTIVITY_TYPES.PUTTING_REGIMEN })).toBeNull()
+    // Declared lifecycle types with no capture screen shipped yet.
+    expect(resolveActivityResume({ id: 'a-4', type: ACTIVITY_TYPES.FIELDWORK })).toBeNull()
+    expect(resolveActivityResume({ id: 'a-5', type: 'not_a_type' })).toBeNull()
   })
 })

@@ -2,6 +2,8 @@
 // redirects, recovery logic, and tests use one description of every shipped
 // route before A2 changes any rendered navigation.
 
+import { ACTIVITY_TYPES } from './activityLifecycle/types'
+
 export const SHELL_TYPES = Object.freeze({
   NONE: 'none',
   STANDARD: 'standard',
@@ -338,6 +340,33 @@ export function resolveCanonicalPath(pathname) {
   return LEGACY_ROUTE_ALIASES[pathname] ?? pathname
 }
 
+// The substring every parameterized pattern above uses for a path segment it
+// does not pin down. Kept as one constant so the routes and this check cannot
+// drift into two spellings of the same idea.
+const ROUTE_PARAMETER_PATTERN = '[^/]+'
+
+// A route entry describes a route; a path describes an *instance* of it.
+//
+// `scrollKey` is declared as a fixed string per entry, which is correct for
+// `/courses` and wrong for `/courses/:courseId`: every course detail page
+// shared the single key `courses-detail`, so the shell saved course A's scroll
+// offset and restored it onto course B — routinely mid-page, or past the end of
+// a shorter record. Worse, because the shell's restore effect is keyed on the
+// scroll key, moving between two records did not even re-run it: the new record
+// simply inherited whatever offset the previous one was left at.
+//
+// The parameter therefore has to be part of the key. It is derived from the
+// pattern rather than declared per route, so a parameterized route added later
+// cannot forget to opt in — if the regex can match more than one path, its key
+// varies with the path. Active-shell routes declare no scroll key and keep
+// none; there is no scroll region to restore.
+function resolveScrollKey(route, canonicalPath) {
+  if (!route.scrollKey) return route.scrollKey ?? null
+  return route.match.source.includes(ROUTE_PARAMETER_PATTERN)
+    ? `${route.scrollKey}:${canonicalPath}`
+    : route.scrollKey
+}
+
 export function resolveRouteMetadata(pathname) {
   const canonicalPath = resolveCanonicalPath(pathname)
   const route = [...APP_ROUTES, ...PUBLIC_ROUTES].find(({ match }) => match.test(canonicalPath))
@@ -346,9 +375,57 @@ export function resolveRouteMetadata(pathname) {
 
   return {
     ...route,
+    scrollKey: resolveScrollKey(route, canonicalPath),
     pathname: canonicalPath,
     isLegacyAlias: canonicalPath !== pathname,
   }
+}
+
+// Where a live activity is resumed, and what to call that in an accessible
+// name.
+//
+// The shell's header pill exists to put a user back inside whatever is running.
+// It used to answer that with two hardcoded branches — regimen and freeform —
+// so every other activity type resolved to no destination and the pill rendered
+// nothing. The type that most needs it is `disc_golf_round`: all seven COURSES
+// routes declare `showActivityPill: true` and all seven can be visited with a
+// round live, which made the flag inert for exactly the case it was added for.
+//
+// A table keyed on activity type rather than a chain of conditionals, because
+// the question "where does this activity live" is one lookup per type. A
+// capture screen added later is a row here, not a new branch in the shell. The
+// remaining declared types (`putting_game`, `fieldwork`, `course_practice`,
+// `league_match`) have no capture route shipped yet, so they resolve to no
+// destination — which is honest, not the same omission: there is nowhere to
+// send a user, rather than somewhere we forgot to name.
+const ACTIVITY_RESUME_DESTINATIONS = Object.freeze({
+  [ACTIVITY_TYPES.PUTTING_FREEFORM]: {
+    label: 'Resume active practice',
+    href: () => '/practice/freeform',
+  },
+  [ACTIVITY_TYPES.PUTTING_REGIMEN]: {
+    // Same name as freeform on purpose: a regimen run and a freeform session
+    // are both putting practice, and the accessible name describes what the
+    // user is going back to, not which screen renders it. Only the round
+    // needed a different word.
+    label: 'Resume active practice',
+    href: (activity) =>
+      activity.metadata?.regimenId ? `/practice/regimens/${activity.metadata.regimenId}/run` : null,
+  },
+  [ACTIVITY_TYPES.DISC_GOLF_ROUND]: {
+    // `ensureRoundActivity` creates the lifecycle parent with the round's own
+    // id, so the activity id *is* the scorecard's route parameter. No schema
+    // change or metadata lookup is needed to route back to a live round.
+    label: 'Resume active round',
+    href: (activity) => (activity.id ? `/rounds/${activity.id}` : null),
+  },
+})
+
+export function resolveActivityResume(activity) {
+  const destination = activity?.type ? ACTIVITY_RESUME_DESTINATIONS[activity.type] : null
+  if (!destination) return null
+  const href = destination.href(activity)
+  return href ? { href, label: destination.label } : null
 }
 
 export function resolveSectionRoot(section) {
