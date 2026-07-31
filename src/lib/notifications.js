@@ -25,7 +25,13 @@ export function notificationDestination(notification) {
   const { action_type: type, action_payload: payload = {} } = notification
   if (type === 'activity_review' && payload.activityId) return `/practice/history/${payload.type ?? 'freeform'}/${payload.activityId}`
   if (type === 'sync_review') return '/practice/history'
-  if (type === 'weekly_report') return payload.href ?? '/profile'
+  // `/profile/reports`, not `/profile` (DEFECT_REGISTER D-11 gap 3). A weekly
+  // report notification landed the reader on the ME career summary, which is a
+  // different screen that does not contain the report they were told about.
+  // Wrong under every resolution of the other two gaps in D-11 — the report is
+  // never at `/profile` regardless of who generates it — so it is corrected
+  // independently of that product decision.
+  if (type === 'weekly_report') return payload.href ?? '/profile/reports'
   return null
 }
 

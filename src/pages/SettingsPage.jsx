@@ -50,7 +50,7 @@ export default function SettingsPage() {
     <section className="profile-section" aria-labelledby="notification-settings-title">
       <div className="profile-section-header"><h2 id="notification-settings-title">Optional notifications</h2></div>
       <p className="settings-note">Critical sync and data-safety alerts always remain on.</p>
-      {NOTIFICATION_PREFERENCE_CATEGORIES.map((category) => <label className="preference-toggle" htmlFor={`notification-${category.id}`} key={category.id}><span className="preference-toggle-copy"><strong>{category.label}</strong><small>{category.description}</small></span><input id={`notification-${category.id}`} type="checkbox" checked={enabledByCategory.get(category.id) ?? true} onChange={(event) => toggleCategory(category.id, event.target.checked).catch((err) => setError(err.message))} /></label>)}
+      {NOTIFICATION_PREFERENCE_CATEGORIES.map((category) => <label className="preference-toggle" htmlFor={`notification-${category.id}`} key={category.id}><span className="preference-toggle-copy"><strong>{category.label}</strong><small>{category.description}</small>{category.produced ? null : <small className="preference-toggle-inactive">Not sending yet — this preference is saved and will apply when it does.</small>}</span><input id={`notification-${category.id}`} type="checkbox" checked={enabledByCategory.get(category.id) ?? true} onChange={(event) => toggleCategory(category.id, event.target.checked).catch((err) => setError(err.message))} /></label>)}
     </section>
     <DataExportPanel />
     <DeleteAccountPanel />

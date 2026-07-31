@@ -1362,6 +1362,14 @@
   line-height: 135%;
 }
 
+/* Marks a preference whose notifications nothing currently emits. Deliberately
+   quiet rather than a warning colour: this is a statement of fact about scope,
+   not an error the user caused or can fix. */
+.preference-toggle-copy .preference-toggle-inactive {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-style: italic;
+}
+
 .preference-toggle input {
   width: 24px;
   height: 24px;
