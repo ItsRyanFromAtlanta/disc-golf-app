@@ -19,7 +19,43 @@ const LIFECYCLE_ERROR_MESSAGES = new Set([
   'round_replacement_confirmation_required',
 ])
 
-export function isPermanentActivitySyncError(error) {
+// The deploy-lag exemption, and the reason it is scoped this narrowly.
+//
+// `draft -> completed` was added to the client transition table on 2026-07-31
+// (D-03) and to the server by migration `20260731001500`. Between a client
+// landing on `main` and that migration being applied, the deployed RPC has no
+// arm for it and answers `invalid_transition` — which this module classifies as
+// permanent, so the row is poisoned. That is not a stuck row: `flush` computes
+// `hasPoison` across the whole table and reports `{ permanent: true }` forever,
+// which stops InstantLaunch capture sync and history-recovery sync too. Putts
+// stay in the local outbox indefinitely while every screen renders them fine.
+//
+// The rest of `LIFECYCLE_ERROR_MESSAGES` stays permanent, because those really
+// are unfixable by retrying. This one is fixable by waiting, and waiting is what
+// `DEPLOY_LAG_CODES` in `errorClassification.js` already does for the same
+// situation at the PostgREST layer — a client that writes ahead of its migration
+// must wait, not poison.
+//
+// Deliberately keyed on the exact transition rather than on `invalid_transition`
+// wholesale: a genuine illegal transition — a bug — must still poison loudly
+// instead of retrying forever behind a backoff.
+// Reads the same two fields `activityTransitionRpcArgs` sends as `p_command`
+// and `p_expected_state`, so this cannot drift from what the server was
+// actually asked to do. The previous state lives on the state event, not on the
+// mutation — a guard written against `mutation.expectedState` type-checks,
+// passes a hand-built test, and silently never fires in production.
+function isDeployLagTransition(row) {
+  if (!row || row.op === 'create_draft') return false
+  const { mutation, stateEvent } = row.payload ?? {}
+  return mutation?.type === 'finalize_completed' && stateEvent?.previous_state === 'draft'
+}
+
+export function isPermanentActivitySyncError(error, row = null) {
+  if (typeof error?.message === 'string'
+    && error.message === 'invalid_transition'
+    && isDeployLagTransition(row)) {
+    return false
+  }
   if (isPermanentError(error)) return true
   return typeof error?.message === 'string' && LIFECYCLE_ERROR_MESSAGES.has(error.message)
 }
@@ -76,7 +112,7 @@ export function createActivitySyncAdapter({ database = defaultDb, client = defau
           if (error) throw error
           await activityOutbox.acknowledge(row.id)
         } catch (error) {
-          const permanent = isPermanentActivitySyncError(error)
+          const permanent = isPermanentActivitySyncError(error, row)
           if (permanent) permanentFailureIds.push(row.id)
           else transientFailure = true
           await activityOutbox.recordFailure(row.id, {
