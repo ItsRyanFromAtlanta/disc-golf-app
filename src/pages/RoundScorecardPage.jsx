@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useRoundWeather } from '../hooks/useRoundWeather'
 import { SYNC_STATUS } from '../lib/instantLaunch/syncScheduler'
 import { useDiscList } from '../lib/repository/discRepository'
+import { isRoundOutboxWeatherOnly, roundOutboxEntries } from '../lib/repository/roundOutboxScope'
 import { flushRoundOutbox, loadRound, saveRoundHole, useRoundSync } from '../lib/repository/roundRepository'
 import { formatRelativeToPar, relativeToPar, roundTotal } from '../lib/rounds'
 import { isActivityOnlyRound } from '../lib/roundScoring'
@@ -48,10 +49,22 @@ function replaceRoundHole(round, holeId, patch) {
 
 // The calm sync vocabulary from PHASE_A_ARCHITECTURE.md § 12. The label holds
 // the same slot whatever the state, so it never reflows the toolbar.
-function syncLabel(status) {
+//
+// `weatherOnlyPending` narrows what "Saved on device" is allowed to claim.
+// `roundSync.syncStatus` is computed across every queued round-outbox entry
+// for this user, not this round's scores specifically — so during the
+// round-weather deploy-lag window (see `src/lib/roundWeather.js`), a queued
+// weather patch alone flips it to PENDING/ERROR_RETRYING exactly the way an
+// unsynced score would. The scores are the thing a player would actually
+// lose if the device died; when every queued entry for THIS round is a
+// weather patch, those scores already reached the server, so the label says
+// so instead of claiming the round itself is local-only.
+function syncLabel(status, { weatherOnlyPending = false } = {}) {
   if (status === SYNC_STATUS.FAILED) return 'Needs attention'
   if (status === SYNC_STATUS.SYNCING) return 'Syncing'
-  if (status === SYNC_STATUS.PENDING || status === SYNC_STATUS.ERROR_RETRYING) return 'Saved on device'
+  if (status === SYNC_STATUS.PENDING || status === SYNC_STATUS.ERROR_RETRYING) {
+    return weatherOnlyPending ? 'Synced' : 'Saved on device'
+  }
   return 'Synced'
 }
 
@@ -71,6 +84,7 @@ export default function RoundScorecardPage() {
   const [savingHoleId, setSavingHoleId] = useState(null)
   const [roundTurnPromptEnabled, setRoundTurnPromptEnabled] = useState(true)
   const [roundTurnDismissed, setRoundTurnDismissed] = useState(false)
+  const [weatherOnlyPending, setWeatherOnlyPending] = useState(false)
   const weather = useRoundWeather(round, setRound, user.id)
 
   useEffect(() => {
@@ -98,6 +112,29 @@ export default function RoundScorecardPage() {
       active = false
     }
   }, [roundId, user.id])
+
+  // Re-derived whenever the global round-sync status moves, a hole save
+  // settles, or a weather save settles — the moments a queued entry for this
+  // round could have appeared or cleared. `roundSync.syncStatus` alone cannot
+  // say whether the toolbar's "Saved on device" claim is actually true for
+  // THIS round (see `syncLabel` above), so this reads the round's own queued
+  // entries and asks `isRoundOutboxWeatherOnly` whether every one of them is a
+  // weather patch rather than a score or roster write.
+  useEffect(() => {
+    if (!round?.id) {
+      setWeatherOnlyPending(false)
+      return undefined
+    }
+    let active = true
+    roundOutboxEntries(round.id)
+      .then((entries) => {
+        if (active) setWeatherOnlyPending(isRoundOutboxWeatherOnly(entries))
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [round?.id, roundSync.syncStatus, savingHoleId, weather.saving])
 
   const currentTotal = useMemo(() => (round ? roundTotal(round.round_holes) : 0), [round])
   const hasScore = useMemo(
@@ -218,7 +255,7 @@ export default function RoundScorecardPage() {
         <span>
           <strong>{currentRelative}</strong> · {currentTotal} strokes
         </span>
-        <span>{savingHoleId ? 'Saving…' : syncLabel(roundSync.syncStatus)}</span>
+        <span>{savingHoleId ? 'Saving…' : syncLabel(roundSync.syncStatus, { weatherOnlyPending })}</span>
       </div>
 
       {notice && <p className="form-info">{notice}</p>}
