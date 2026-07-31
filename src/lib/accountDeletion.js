@@ -1,3 +1,5 @@
+import { isMissingFunctionError } from './instantLaunch/errorClassification'
+
 // User-facing error mapping for the privacy purge (Screen: Settings → Delete
 // account). Pure and separate from the component so the cases below are
 // testable without mounting React or reaching Supabase.
@@ -10,9 +12,15 @@
 // find the function public.delete_own_account without parameters in the schema
 // cache", which reads like data loss to someone who just typed DELETE.
 
-// PostgREST cannot find the function in its schema cache; Postgres does not
-// know the function at all. Both mean the migration has not landed.
-const MISSING_FUNCTION_CODES = new Set(['PGRST202', '42883'])
+// "The migration has not landed" is one rule, and it now has one spelling:
+// `isMissingFunctionError` in `instantLaunch/errorClassification.js`, alongside
+// the `DEPLOY_LAG_CODES` set it is derived from. This file used to carry its own
+// copy of `['PGRST202', '42883']` — the fourth in the codebase, and the one a
+// consolidation pass missed because it is not a queue or a repository.
+//
+// That module's header is explicit about why: "Callers must not re-spell the
+// codes; the E2 audit's finding 9 is what happens when a classification rule
+// exists in more than one copy."
 
 // 42501 is a bare permission denial; 28000 is the function's own guard for a
 // call arriving with no `auth.uid()`. Both are session problems from the
@@ -44,7 +52,7 @@ export function describeDeleteAccountError(error) {
   const code = error.code == null ? '' : String(error.code)
   const message = typeof error.message === 'string' ? error.message : ''
 
-  if (MISSING_FUNCTION_CODES.has(code)) return DELETE_ACCOUNT_MESSAGES.UNAVAILABLE
+  if (isMissingFunctionError(error)) return DELETE_ACCOUNT_MESSAGES.UNAVAILABLE
   if (SESSION_CODES.has(code)) return DELETE_ACCOUNT_MESSAGES.SESSION
 
   // supabase-js surfaces a transport failure as a TypeError with no code, so
@@ -65,5 +73,5 @@ export function describeDeleteAccountError(error) {
  * offering a button that cannot work.
  */
 export function isDeleteAccountUnavailable(error) {
-  return Boolean(error) && MISSING_FUNCTION_CODES.has(error.code == null ? '' : String(error.code))
+  return isMissingFunctionError(error)
 }
