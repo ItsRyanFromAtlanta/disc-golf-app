@@ -213,6 +213,42 @@ nothing is wrong with it. See `e2e/README.md`.
 | C5 | Install the OpenAI Developer Docs MCP locally | Desktop sandbox could not launch the installer |
 | C6 | **Apply the pending Phase E migrations** — see the list below | Owner decision 2026-07-30: migrations are applied by the owner via the Supabase dashboard, not from a session |
 
+### Defect register progress (2026-07-31)
+
+Ten of the 24 registered defects are **fixed and merged**: D-01, D-03, D-04, D-08, D-13, D-14, D-17,
+D-18, D-21, D-23. Two more (D-06 toast, D-07 account deletion) were already closed by earlier work and
+verified as such. Suite: **920 unit tests / 99 files, 74 Playwright specs**, lint and build clean.
+
+**Still open:** D-02, D-05, D-09, D-10, D-11, D-12, D-15, D-16, D-19, D-20, D-22, D-24. Of these, D-19
+and D-15 were confirmed reproducing and were mid-fix when work stopped; D-02, D-05, D-16, D-20 and
+D-22 have **never been re-verified** against this branch and may already be closed by the E2 pass — the
+verification sweep that would have settled it did not finish.
+
+**Why it stopped: the account hit its monthly spend limit**, killing four subagents mid-flight. Seven
+of their commits were completed and salvaged; the rest of their work was lost. This is an account
+limit, not a code problem — nothing here is blocked on the repository.
+
+**D-03's registered fix was wrong and would have caused a worse bug.** The register proposed starting
+the draft parent then finalizing it. `start` on a draft is the command the replacement flow hangs off:
+the RPC marks any other `active`/`paused` activity `incomplete`. Tapping Finish on an old round would
+have silently closed whatever the player had live, mid-session. The fix landed instead as a new
+`draft → completed` transition, which never enters the states the single-active index constrains and
+therefore cannot replace anything. **Treat the register's § 4 "smallest fix" suggestions as hypotheses,
+not instructions** — this one was load-bearing and wrong.
+
+### The three archived-chat handoffs are NOT for this repository (2026-07-31)
+
+Three archived sessions handed off work referencing `PRODUCT_CONTRACT.md`, `.planning/HANDOFF.json`,
+`EXECUTION-LOG.md`, `CONTRACT.md`, G2-01/G2-02, DU-VV-003, DU-PL-016, `DGTokens`/`DGMotion`/`DGRadius`,
+and `GeneratorTraversalGraph.swift`. **None of it exists here.** Verified 2026-07-31: all four named
+files are absent, and the repository contains **zero `.swift` files**. Their "119 untracked files" and
+"14 local commits ahead of origin" do not match this tree either (4 and 0 at the time of checking).
+
+Those are the **Disc Up / `disc-golf-iOS`** effort — the parked native SwiftUI product described in the
+standing decision above, whose Supabase project is the empty `disc-golf-ios`. They need that repo and
+that session; nothing in them is actionable from here, and no attempt should be made to map G2/DU work
+items onto this codebase. If Disc Up is revived, it needs its own environment with that repo attached.
+
 ### Pending seed data — written, validated, NOT applied (2026-07-30)
 
 Three root `.sql` files, in this order. They are **seeds, not migrations** — no schema changes — but the
