@@ -13,6 +13,23 @@ export const INSTANT_LAUNCH_ACTIVITY_WARNINGS = Object.freeze({
   TERMINAL_ACTIVITY: 'instant_launch_activity_is_terminal',
 })
 
+// DEFECT_REGISTER D-02. `mirrorInstantLaunchActivity` returns
+// `outcome: 'confirmation_required'` whenever the repository declined to
+// START a draft because another activity (a round) is current and the caller
+// never passed `confirmRoundReplacement`. The draft row it already minted
+// does have a real `activity.id` — so a consumer that only checks
+// `result.activity?.id` (rather than `result.outcome`) will treat this as a
+// success: it persists the draft's id as the session's mirrored activity and
+// happily syncs capture facts against it. That draft can never be started or
+// finalized (DRAFT accepts only START), so the practice quietly collects
+// putt rows a lifecycle mirror, History, and the weekly report never learn
+// about. Any caller deciding whether it is safe to treat a mirror result as
+// "the activity is live, capture may proceed" must route through this guard
+// instead of re-deriving the check inline.
+export function mirrorRequiresConfirmation(result) {
+  return result?.outcome === 'confirmation_required'
+}
+
 export function activityTypeForSessionType(sessionType) {
   return {
     freeform: ACTIVITY_TYPES.PUTTING_FREEFORM,

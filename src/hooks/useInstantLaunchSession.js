@@ -28,7 +28,11 @@ import {
 import { activityRepository } from '../lib/repository/activityRepository'
 import { createActivitySyncAdapter } from '../lib/repository/activitySync'
 import { getInstallationId } from '../lib/instantLaunch/installationId'
-import { activityIdForCrashRecoveryBuffer, mirrorInstantLaunchActivity } from '../lib/instantLaunch/activityBridge'
+import {
+  activityIdForCrashRecoveryBuffer,
+  mirrorInstantLaunchActivity,
+  mirrorRequiresConfirmation,
+} from '../lib/instantLaunch/activityBridge'
 import { useToast } from './useToast'
 
 // § 1: "Starting a new activity auto-closes an existing practice as
@@ -103,7 +107,13 @@ export function useInstantLaunchSession(writeAdapter, userId) {
       source: ACTIVITY_SOURCES.LIVE_CAPTURE,
       confirmRoundReplacement,
     })
-    if (result.activity?.id) {
+    // D-02: `result.activity` is populated even when the repository refused
+    // to start it (`outcome: 'confirmation_required'`) — the draft row it
+    // minted still has a real id. Only a genuine start (or an already-current
+    // / already-terminal activity) may be adopted as this session's mirror;
+    // otherwise the buffer would point at a draft that can never be
+    // finalized while capture keeps syncing against it.
+    if (result.activity?.id && !mirrorRequiresConfirmation(result)) {
       const current = readInstantLaunchState()
       if (
         current.crashRecoveryBuffer.hasActiveSession &&
@@ -188,11 +198,25 @@ export function useInstantLaunchSession(writeAdapter, userId) {
     // parent foreign key; retry the mirror locally before any remote fact.
     if (state.crashRecoveryBuffer.hasActiveSession) {
       try {
-        if (mirrorPromiseRef.current) await mirrorPromiseRef.current
-        const mirroredState = readInstantLaunchState()
+        let mirrorResult = mirrorPromiseRef.current ? await mirrorPromiseRef.current : null
+        let mirroredState = readInstantLaunchState()
         if (!mirroredState.crashRecoveryBuffer.activityId) {
           mirrorPromiseRef.current = mirrorActiveActivity(mirroredState)
-          await mirrorPromiseRef.current
+          mirrorResult = await mirrorPromiseRef.current
+          mirroredState = readInstantLaunchState()
+        }
+        // D-02: a caller can flip the FSM to ACTIVE_SESSION and start queuing
+        // capture rows without ever routing through `requestStartSession`
+        // (see RegimenRunPage, which calls `startSession` directly). When
+        // that happens while a round is current, the repository refuses the
+        // START and the mirror never adopts the resulting draft's id (see
+        // `mirrorActiveActivity` above) — so `activityId` stays unset here.
+        // Hold every capture row in the local outbox rather than sync it
+        // with no mirrored activity backing it: nothing is lost, and the
+        // next flush mirrors for real once the caller confirms or the
+        // blocking activity clears.
+        if (!mirroredState.crashRecoveryBuffer.activityId && mirrorRequiresConfirmation(mirrorResult)) {
+          return { hasPending: true, error: { permanent: false } }
         }
       } catch {
         return { hasPending: true, error: { permanent: false } }
