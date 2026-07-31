@@ -340,6 +340,33 @@ export function resolveCanonicalPath(pathname) {
   return LEGACY_ROUTE_ALIASES[pathname] ?? pathname
 }
 
+// The substring every parameterized pattern above uses for a path segment it
+// does not pin down. Kept as one constant so the routes and this check cannot
+// drift into two spellings of the same idea.
+const ROUTE_PARAMETER_PATTERN = '[^/]+'
+
+// A route entry describes a route; a path describes an *instance* of it.
+//
+// `scrollKey` is declared as a fixed string per entry, which is correct for
+// `/courses` and wrong for `/courses/:courseId`: every course detail page
+// shared the single key `courses-detail`, so the shell saved course A's scroll
+// offset and restored it onto course B — routinely mid-page, or past the end of
+// a shorter record. Worse, because the shell's restore effect is keyed on the
+// scroll key, moving between two records did not even re-run it: the new record
+// simply inherited whatever offset the previous one was left at.
+//
+// The parameter therefore has to be part of the key. It is derived from the
+// pattern rather than declared per route, so a parameterized route added later
+// cannot forget to opt in — if the regex can match more than one path, its key
+// varies with the path. Active-shell routes declare no scroll key and keep
+// none; there is no scroll region to restore.
+function resolveScrollKey(route, canonicalPath) {
+  if (!route.scrollKey) return route.scrollKey ?? null
+  return route.match.source.includes(ROUTE_PARAMETER_PATTERN)
+    ? `${route.scrollKey}:${canonicalPath}`
+    : route.scrollKey
+}
+
 export function resolveRouteMetadata(pathname) {
   const canonicalPath = resolveCanonicalPath(pathname)
   const route = [...APP_ROUTES, ...PUBLIC_ROUTES].find(({ match }) => match.test(canonicalPath))
@@ -348,6 +375,7 @@ export function resolveRouteMetadata(pathname) {
 
   return {
     ...route,
+    scrollKey: resolveScrollKey(route, canonicalPath),
     pathname: canonicalPath,
     isLegacyAlias: canonicalPath !== pathname,
   }

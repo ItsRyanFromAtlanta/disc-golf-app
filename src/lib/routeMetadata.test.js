@@ -96,6 +96,50 @@ describe('route metadata contract', () => {
     })
   })
 
+  // A fixed key per route entry meant one course's scroll offset was restored
+  // onto the next course opened, so the key has to carry the parameter.
+  it('gives each instance of a parameterized route its own scroll key', () => {
+    const pairs = [
+      ['/courses/course-a', '/courses/course-b'],
+      ['/courses/course-a/prep', '/courses/course-b/prep'],
+      ['/bag/discs/disc-1', '/bag/discs/disc-2'],
+      ['/rounds/round-1', '/rounds/round-2'],
+      ['/rounds/round-1/summary', '/rounds/round-2/summary'],
+      ['/practice/history/regimen/run-1', '/practice/history/regimen/run-2'],
+    ]
+    for (const [left, right] of pairs) {
+      const leftKey = resolveRouteMetadata(left).scrollKey
+      const rightKey = resolveRouteMetadata(right).scrollKey
+      expect(leftKey).toBeTruthy()
+      expect(leftKey).not.toBe(rightKey)
+      // Stable for the same record, or returning to it would forget the offset.
+      expect(resolveRouteMetadata(left).scrollKey).toBe(leftKey)
+    }
+  })
+
+  it('never lets two different routes collide on one scroll key', () => {
+    // A round scorecard and that same round's summary are distinct screens.
+    expect(resolveRouteMetadata('/rounds/round-1').scrollKey).not.toBe(
+      resolveRouteMetadata('/rounds/round-1/summary').scrollKey,
+    )
+    expect(resolveRouteMetadata('/courses/course-a').scrollKey).not.toBe(
+      resolveRouteMetadata('/courses/course-a/prep').scrollKey,
+    )
+  })
+
+  it('leaves a route with exactly one instance on its declared static key', () => {
+    expect(resolveRouteMetadata('/courses').scrollKey).toBe('courses-root')
+    expect(resolveRouteMetadata('/rounds').scrollKey).toBe('rounds-root')
+    expect(resolveRouteMetadata('/courses/new').scrollKey).toBe('courses-form')
+    expect(resolveRouteMetadata('/practice/history/deleted').scrollKey).toBe('play-history-deleted')
+    expect(resolveRouteMetadata('/notifications').scrollKey).toBe('notifications')
+  })
+
+  it('keeps active capture routes without a scroll key at all', () => {
+    expect(resolveRouteMetadata('/practice/freeform').scrollKey).toBeNull()
+    expect(resolveRouteMetadata('/practice/regimens/foundation/run').scrollKey).toBeNull()
+  })
+
   it('keeps public routes outside an authenticated shell', () => {
     expect(resolveRouteMetadata('/login')).toMatchObject({ id: 'login', shell: SHELL_TYPES.NONE })
     expect(resolveRouteMetadata('/onboarding')).toMatchObject({ id: 'onboarding', shell: SHELL_TYPES.NONE })

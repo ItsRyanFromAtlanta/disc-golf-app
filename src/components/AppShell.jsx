@@ -49,6 +49,11 @@ export default function AppShell() {
   // included — instead of the two the shell used to spell out here.
   const activityResume = resolveActivityResume(activeActivity)
 
+  // `route.scrollKey` identifies a route *instance*, not a route: two course
+  // detail pages resolve to different keys, so this re-runs when you move
+  // between them and each record is restored to its own offset rather than
+  // inheriting the previous one's. `scrollPositionsRef` therefore holds one
+  // entry per record visited this session — a few numbers, discarded on unmount.
   useLayoutEffect(() => {
     if (isActiveShell) return
     const region = scrollRegionRef.current
