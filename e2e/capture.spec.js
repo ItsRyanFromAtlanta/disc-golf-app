@@ -15,6 +15,7 @@ import { test, expect, buildPuttSession } from './fixtures/app'
 
 const PREVIOUS_PRACTICE_ID = '00000000-0000-4000-8000-0000000000a5'
 const ACTIVE_ROUND_ID = '00000000-0000-4000-8000-0000000000d1'
+const REGIMEN_ID = '00000000-0000-4000-8000-0000000000c9'
 
 const CURRENT_STATES = ['active', 'paused']
 
@@ -31,6 +32,51 @@ async function startFreeformCapture(page) {
   await page.goto('/practice/freeform')
   await page.getByRole('button', { name: 'Start' }).click()
   await expect(page.getByRole('button', { name: 'Made' })).toBeVisible()
+}
+
+/**
+ * Seeds a minimal single-set FIXED_SET regimen — the drill kind that skips
+ * `validateDrillConfig`'s JYLY/Around-the-World/Clutch rules — plus its one
+ * `putting_regimen_sets` row. `regimenRepository.getWithSets` reads both
+ * tables in full regardless of the `.eq(...)` filter it builds (the fixture
+ * route handler does not apply query params), so seeding exactly one regimen
+ * and one set is sufficient for `RegimenRunPage` to resolve `REGIMEN_ID`.
+ */
+function seedRegimen(supabase, regimenId = REGIMEN_ID) {
+  supabase.setTable('putting_regimens', [
+    {
+      id: regimenId,
+      user_id: null,
+      name: 'Warm-up Ladder',
+      difficulty: 1,
+      drill_type: null,
+      rules_config: null,
+      archived: false,
+    },
+  ])
+  supabase.setTable('putting_regimen_sets', [
+    {
+      id: `${regimenId}-set-1`,
+      regimen_id: regimenId,
+      set_order: 1,
+      distance_feet_min: 15,
+      distance_feet_max: 15,
+      reps_required: 5,
+      pressure_multiplier: 1,
+    },
+  ])
+}
+
+/**
+ * Drives the regimen launcher's Start button. This is `RegimenRunPage`'s
+ * counterpart to `startFreeformCapture` above — the only way to reach
+ * `handleStart` → `requestStartSession` from a browser, since classic drills
+ * and regimens both launch through this same page and function.
+ */
+async function startRegimenCapture(page, supabase, regimenId = REGIMEN_ID) {
+  seedRegimen(supabase, regimenId)
+  await page.goto(`/practice/regimens/${regimenId}/run`)
+  await page.getByRole('button', { name: 'Start' }).click()
 }
 
 async function localActivities(supabase) {
@@ -257,6 +303,92 @@ test.describe('round-close confirmation', () => {
 
     const roundEvents = await stateEventsFor(supabase, ACTIVE_ROUND_ID)
     expect(roundEvents.map((event) => event.reason)).toContain('round_replacement_confirmed')
+  })
+})
+
+// D-02's regimen twin. `RegimenRunPage.handleStart` used to call
+// `session.startSession(...)` directly with no round-replacement pre-check —
+// every spec above only ever drove `/practice/freeform`, so this half of the
+// contract had no browser coverage and the gap outlived the freeform fix.
+// Classic drills (JYLY, Around the World, Clutch) launch through this same
+// `handleStart`, so a FIXED_SET regimen fixture exercises the shared path.
+test.describe('round-close confirmation (regimen)', () => {
+  test('starting a regimen with a live round asks first, and declining leaves the round running and starts nothing', async ({
+    page,
+    supabase,
+  }) => {
+    supabase.stubActivityRpcs()
+    await supabase.signIn()
+    await page.goto('/practice')
+    await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
+
+    await supabase.seedLocalActivity({ id: ACTIVE_ROUND_ID, type: 'disc_golf_round', state: 'active', version: 1 })
+    await page.reload()
+
+    await startRegimenCapture(page, supabase)
+
+    // Nothing has moved yet — same guarantee `handleStart` gives freeform.
+    const dialog = page.getByRole('alertdialog', { name: 'Close your round first?' })
+    await expect(dialog).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Made' })).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Keep playing my round' }).click()
+
+    await expect(page.getByRole('alertdialog')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Made' })).toHaveCount(0)
+
+    // No draft was minted and the round is untouched — the old direct
+    // `startSession` call would have created one here with no dialog at all.
+    const activities = await localActivities(supabase)
+    expect(activities).toHaveLength(1)
+    expect(activities[0]).toMatchObject({ id: ACTIVE_ROUND_ID, state: 'active', version: 1 })
+    expect(await stateEventsFor(supabase, ACTIVE_ROUND_ID)).toEqual([])
+    expect(supabase.writesTo('rpc:activity_transition')).toEqual([])
+    expect(supabase.writesTo('putting_regimen_runs')).toEqual([])
+  })
+
+  test('confirming closes the round as incomplete and starts the regimen in the same run', async ({
+    page,
+    supabase,
+  }) => {
+    supabase.stubActivityRpcs()
+    await supabase.signIn()
+    await page.goto('/practice')
+    await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
+
+    await supabase.seedLocalActivity({ id: ACTIVE_ROUND_ID, type: 'disc_golf_round', state: 'active', version: 1 })
+    await page.reload()
+
+    await startRegimenCapture(page, supabase)
+    await page.getByRole('button', { name: 'Close round & start practice' }).click()
+
+    await expect(page.getByRole('button', { name: 'Made' })).toBeVisible()
+    await waitForCaptureSync(supabase)
+
+    const activities = await localActivities(supabase)
+    expect(activities).toHaveLength(2)
+    const round = activities.find((row) => row.id === ACTIVE_ROUND_ID)
+    const practice = activities.find((row) => row.id !== ACTIVE_ROUND_ID)
+
+    expect(round).toMatchObject({ state: 'incomplete' })
+    expect(practice).toMatchObject({ type: 'putting_regimen', state: 'active' })
+    expect(practice.metadata).toMatchObject({ regimenId: REGIMEN_ID })
+
+    const roundEvents = await stateEventsFor(supabase, ACTIVE_ROUND_ID)
+    expect(roundEvents.map((event) => event.reason)).toContain('round_replacement_confirmed')
+
+    // The id generated for the very first Start press — held across the
+    // prompt as `pendingStartId` — is the id both the mirrored activity and
+    // the queued parent write end up under. If confirming ever minted a
+    // second id instead of reusing the held one, these would diverge and the
+    // athlete would land in a run whose parent row this activity does not
+    // back.
+    // `syncRows` strips `_op` before the row leaves the device (Postgres has
+    // no such column) and re-adds `id` alongside the remaining fields — so
+    // the write body carries `id` + `regimen_id`, not the outbox row shape.
+    const [runWrite] = supabase.writesTo('putting_regimen_runs')
+    expect(runWrite.body).toMatchObject({ regimen_id: REGIMEN_ID })
+    expect(practice.id).toBe(runWrite.body.id)
   })
 })
 

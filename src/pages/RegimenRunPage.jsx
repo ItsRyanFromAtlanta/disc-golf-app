@@ -87,6 +87,11 @@ export default function RegimenRunPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [starting, setStarting] = useState(false)
+  // Holds the run id generated for a start that is waiting on the
+  // round-replacement prompt, so confirming reuses it rather than minting a
+  // second one the queued parent write would not match. See FreeformLogPage's
+  // identical comment on pendingStartId.
+  const [pendingStartId, setPendingStartId] = useState(null)
   const [currentFormPct, setCurrentFormPct] = useState(null)
   const [silenced, setSilenced] = useState(false)
   const [diagnosticMode, setDiagnosticMode] = useState(false)
@@ -335,25 +340,7 @@ export default function RegimenRunPage() {
     ? null
     : suggestBackupSwap({ weatherCondition, windMph, discs: allDiscs, activePutterDiscId })
 
-  function handleStart() {
-    const contract = validateDrillConfig(regimen, sets)
-    if (!contract.valid) {
-      setError(contract.reason)
-      return
-    }
-    setStarting(true)
-    setBatchRibbonConfirming(false)
-    setRunCompleted(true)
-    setPhase('running')
-    const newRunId = crypto.randomUUID()
-    setRegimenRunId(newRunId)
-    setRunningTotal(0)
-    setCompletedSets([])
-    setCelebrationEvents([]) // clear the previous session's banner before this one starts
-    setExternalFactors([])
-    setPerceivedEffort(null)
-    setFatiguePrompt(null)
-    setFatigueSyncState(null)
+  function startArgsFor(runId) {
     const clutchSetIndex = isClutch
       ? Math.max(0, sets.findIndex((set) => stageDistanceFt(set) === clutchDistanceFt))
       : 0
@@ -361,22 +348,72 @@ export default function RegimenRunPage() {
     const clutchProgress = isClutch
       ? { clutchStatus: 'resting', clutchDueAt: createClutchDeadline(Date.now()).dueAt }
       : {}
-    session.startSession({
+    return {
       sessionType: 'regimen',
-      parentIds: { regimenRunId: newRunId, regimenId },
+      parentIds: { regimenRunId: runId, regimenId },
       activeRegimenSnapshot: { regimen, sets },
       ghostProfile: availableGhostProfile,
       matchModeEnabled: session.profileDefaults.matchModeEnabled,
       initialStage: stageFromSet(initialSet, clutchSetIndex, regimen, clutchProgress),
       parentWriteRow: {
-        id: newRunId,
+        id: runId,
         _op: 'insert',
         user_id: user.id,
         regimen_id: regimenId,
         started_at: new Date().toISOString(),
       },
-    })
+    }
+  }
+
+  // Local page state only moves once the start is actually permitted — see
+  // FreeformLogPage's identical comment. It used to move first (phase flipped
+  // to 'running' before the session was mirrored), so a start blocked by a
+  // live round still showed the capture canvas while its parent activity
+  // stayed a draft that could never be finalized.
+  function beginLocalSession(runId) {
+    setBatchRibbonConfirming(false)
+    setRunCompleted(true)
+    setPhase('running')
+    setRegimenRunId(runId)
+    setRunningTotal(0)
+    setCompletedSets([])
+    setCelebrationEvents([]) // clear the previous session's banner before this one starts
+    setExternalFactors([])
+    setPerceivedEffort(null)
+    setFatiguePrompt(null)
+    setFatigueSyncState(null)
+  }
+
+  async function handleStart() {
+    const contract = validateDrillConfig(regimen, sets)
+    if (!contract.valid) {
+      setError(contract.reason)
+      return
+    }
+    setStarting(true)
+    const newRunId = crypto.randomUUID()
+    const result = await session.requestStartSession(startArgsFor(newRunId))
+    if (result.outcome === 'confirmation_required') {
+      // Hold the id so confirming reuses it — the queued parent write and the
+      // page's own state have to agree on which run this is.
+      setPendingStartId(newRunId)
+      setStarting(false)
+      return
+    }
+    beginLocalSession(newRunId)
     setStarting(false)
+  }
+
+  function handleConfirmRoundReplacement() {
+    const runId = pendingStartId
+    setPendingStartId(null)
+    session.confirmRoundReplacement()
+    beginLocalSession(runId)
+  }
+
+  function handleCancelRoundReplacement() {
+    setPendingStartId(null)
+    session.cancelRoundReplacement()
   }
 
   function handleGestureMake() {
@@ -697,7 +734,7 @@ export default function RegimenRunPage() {
             onSelectPutter={(discId) => session.updateProfileDefaults({ favoritePutterDiscId: discId })}
             onSelectPreset={() => {}}
             onStart={handleStart}
-            starting={starting}
+            starting={starting || Boolean(session.pendingRoundReplacement)}
             matchModeEnabled={session.profileDefaults.matchModeEnabled}
             onToggleMatchMode={() => session.updateProfileDefaults({
               matchModeEnabled: !session.profileDefaults.matchModeEnabled,
@@ -705,6 +742,43 @@ export default function RegimenRunPage() {
             })}
           />
         </>
+      )}
+
+      {session.pendingRoundReplacement && (
+        // § 1: a round is closed as incomplete rather than replaced silently,
+        // so the athlete decides. See FreeformLogPage's identical dialog.
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onPointerDown={handleCancelRoundReplacement}
+        >
+          <section
+            className="sheet-host"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="round-replacement-title"
+            aria-describedby="round-replacement-body"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <div className="sheet-host-header">
+              <h2 id="round-replacement-title">Close your round first?</h2>
+            </div>
+            <div className="sheet-host-content">
+              <p id="round-replacement-body">
+                You have a round in progress. Starting a practice session closes that round as
+                incomplete — its scores are kept and stay in your history.
+              </p>
+              <div className="profile-section-actions">
+                <button type="button" className="btn-primary" onClick={handleConfirmRoundReplacement}>
+                  Close round &amp; start practice
+                </button>
+                <button type="button" className="link-button" onClick={handleCancelRoundReplacement}>
+                  Keep playing my round
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       )}
 
       {session.fsmStatus === FSM_STATES.ACTIVE_SESSION && session.sessionState?.stage.clutchStatus === 'resting' && (
