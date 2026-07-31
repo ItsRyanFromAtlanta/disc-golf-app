@@ -49,6 +49,13 @@ const AXIOM_PUTTERS = [
  * `capture_bag_version` is stubbed because `addDiscToBag` calls it — an
  * unstubbed RPC answers 404 on purpose, which would surface as the step's error
  * message instead of advancing.
+ *
+ * `provision_practice_stack` is the one RPC deliberately left UNSTUBBED. Its
+ * migration is written and unapplied, so a 404 here is not an authoring mistake
+ * — it is exactly what the deployed project answers, and it is what sends
+ * `provisionPracticeStack` down the documented fallback whose three table
+ * writes this spec asserts below. Stubbing it would move the wizard onto the
+ * atomic path and stop these assertions covering what actually ships.
  */
 async function startWizard(page, supabase) {
   supabase.setTable('bags', [])

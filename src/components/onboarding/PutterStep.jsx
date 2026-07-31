@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createBag, upsertDisc, addDiscToBag } from '../../lib/discLocker'
 import { filterCatalogMolds, useCatalog } from '../../lib/repository/catalogRepository'
 import { updateInstantLaunchState } from '../../lib/instantLaunch/storage'
 import { applySetProfileDefaults } from '../../lib/instantLaunch/stateReducer'
@@ -14,6 +13,7 @@ import {
   pickDefaultMold,
   clampWeight,
   buildPutterDiscFields,
+  provisionPracticeStack,
 } from '../../lib/onboarding'
 import ChipGroup from '../ChipGroup'
 
@@ -24,6 +24,12 @@ export default function PutterStep({ userId, onNext }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const catalog = useCatalog()
+  // Minted once per mount, never per attempt — this is what makes a retry a
+  // *replay* of the same logical create rather than a second one, on both
+  // provisioning paths (D-04). Same reason `createRepository.useCreate` holds a
+  // mount-stable `clientId`, and the same reason `D-22`'s course duplicate
+  // happens without one.
+  const [ids] = useState(() => ({ bagId: crypto.randomUUID(), discId: crypto.randomUUID() }))
   const molds = useMemo(
     () => (catalog.data ? filterCatalogMolds(catalog.data, { manufacturer: brand, category: 'putter' }) : []),
     [brand, catalog.data],
@@ -33,30 +39,37 @@ export default function PutterStep({ userId, onNext }) {
     setSelectedMold(pickDefaultMold(molds))
   }, [molds])
 
-  async function provision() {
-    const bag = await createBag(userId, { name: PRACTICE_STACK_BAG_NAME, is_default: true })
-    if (!selectedMold) return bag
-
-    const disc = await upsertDisc(
-      userId,
-      null,
-      buildPutterDiscFields({
-        moldId: selectedMold.id,
-        manufacturer: selectedMold.manufacturer,
-        moldName: selectedMold.mold_name,
-        weightGrams: weight,
-      }),
-    )
-    await addDiscToBag(bag.id, disc.id)
-    updateInstantLaunchState(applySetProfileDefaults, { favoritePutterDiscId: disc.id })
-    return bag
+  // One call for both buttons, differing only in whether a disc is supplied.
+  // It is atomic where `provision_practice_stack` is deployed and convergent
+  // where it is not, so a second tap after a failed one replays rather than
+  // colliding with `bags_one_default_per_user` (D-04).
+  async function provision(disc) {
+    const result = await provisionPracticeStack(userId, {
+      bagId: ids.bagId,
+      bagName: PRACTICE_STACK_BAG_NAME,
+      discId: ids.discId,
+      disc,
+    })
+    if (result.discId) {
+      updateInstantLaunchState(applySetProfileDefaults, { favoritePutterDiscId: result.discId })
+    }
+    return result
   }
 
   async function handleConfirm() {
     setSaving(true)
     setError(null)
     try {
-      await provision()
+      await provision(
+        selectedMold
+          ? buildPutterDiscFields({
+              moldId: selectedMold.id,
+              manufacturer: selectedMold.manufacturer,
+              moldName: selectedMold.mold_name,
+              weightGrams: weight,
+            })
+          : null,
+      )
       onNext()
     } catch (err) {
       setError(err.message)
@@ -73,7 +86,7 @@ export default function PutterStep({ userId, onNext }) {
       // bag's existence is what tells useOnboardingGate this user has been
       // through onboarding at all, so skipping the putter can't also skip
       // that signal or the wizard would loop forever on next launch.
-      await createBag(userId, { name: PRACTICE_STACK_BAG_NAME, is_default: true })
+      await provision(null)
       onNext()
     } catch (err) {
       setError(err.message)
