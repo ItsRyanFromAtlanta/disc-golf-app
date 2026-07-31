@@ -113,15 +113,41 @@ async function cachedRoundsForUser(userId) {
   return db.rounds.where('user_id').equals(userId).toArray()
 }
 
+export async function listQueuedRoundIds(database = db) {
+  const rows = await createOutboxQueue({ database, tables: ROUND_OUTBOX_TABLES }).rows()
+  return [...new Set(rows.map(roundIdForOutboxEntry).filter(Boolean))]
+}
+
+// A round whose create is still queued is absent from the remote list by
+// definition, and it is the one the player most needs to see — they just logged
+// it. It must survive the stale sweep and be returned.
+//
+// This used to delete it. The sweep was written when a round could only be
+// unsynced while offline, in which case `fetchRounds` failed too and the catch
+// below took over — so the delete branch was unreachable for a queued round. The
+// deploy-lag classification broke that assumption: a round carrying a column its
+// migration has not added yet (`scoring_mode`, the weather columns) stays queued
+// while the network is perfectly healthy, so `fetchRounds` succeeds, the round is
+// missing from it, and the sweep evicted the local row. The round vanished from
+// `/rounds` and its summary rendered "Round not found" — with the payload safe in
+// the outbox the whole time, so the natural response was to log it again.
+//
+// `readCourseList` and `fatigueCheckinRepository.listForParent` already add
+// queued rows back for exactly this reason. This is that same convention, which
+// the round list simply never got.
 async function readRoundList(userId) {
+  const queuedIds = new Set(await listQueuedRoundIds())
   try {
     const remote = await fetchRounds(userId)
     const remoteIds = new Set(remote.map((round) => round.id))
     const cached = await cachedRoundsForUser(userId)
-    const staleIds = cached.filter((round) => !remoteIds.has(round.id)).map((round) => round.id)
+    const staleIds = cached
+      .filter((round) => !remoteIds.has(round.id) && !queuedIds.has(round.id))
+      .map((round) => round.id)
     if (remote.length > 0) await db.rounds.bulkPut(remote)
     if (staleIds.length > 0) await db.rounds.bulkDelete(staleIds)
-    return remote
+    const pendingOnly = cached.filter((round) => queuedIds.has(round.id) && !remoteIds.has(round.id))
+    return [...remote, ...pendingOnly]
   } catch (error) {
     const cached = await cachedRoundsForUser(userId)
     if (cached.length > 0) return cached
