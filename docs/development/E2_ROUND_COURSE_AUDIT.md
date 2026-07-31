@@ -299,15 +299,28 @@ relative-to-par when nothing was recorded, and now owns the rule for all three s
 activity-only round is the case where an ungrounded "E" would have been most visible, since it has no
 scores by definition.
 
-### F2. A round's bag snapshot can be recorded from a stale version, indistinguishably — SURFACED (2026-07-30, A7)
+### F2. A round's bag snapshot can be recorded from a stale version, indistinguishably — FIXED (2026-07-31, DEFECT_REGISTER D-05)
 
-**Severity: medium.** Not fixed, because it is not a bug to be fixed — it is a limit to be reported.
+**Severity: medium.** Reported as a limit at the time this section was written ("not a bug to be
+fixed"), because the fallback it describes looked like the honest response to a real failure. It turned
+out to be one specific bad response to a broader bug: `useCreateRound`'s bag-version resolution ran
+outside the `try` that lets a round go offline at all (`DEFECT_REGISTER.md` D-05), and *this* fallback —
+recording whatever version the device had cached — was what stood in when the honest response
+(`bagVersionId = null`) was never written. Fixing D-05 meant deciding what the fallback should be, and
+the stale version was the wrong answer independent of the crash.
 
-`useCreateRound` captures a fresh `bag_version` at round start, and on failure falls back to
+`useCreateRound` used to capture a fresh `bag_version` at round start, and on failure fall back to
 `latestBagVersion(await loadBagVersions(bag_id))?.id ?? null`. Offline — the exact condition a round
-starts in — that fallback records the newest version the device happens to know about, which may be
-weeks old and may not reflect what is in the bag. Nothing on the round distinguishes that from a
+starts in — that fallback recorded the newest version the device happened to know about, which could be
+weeks old and might not reflect what was in the bag. Nothing on the round distinguished that from a
 snapshot taken at the first tee.
+
+`captureRoundStartBagVersion` (`roundRepository.js`) replaces it: every failure to capture a fresh
+snapshot — offline or otherwise — now degrades to `bagVersionId = null` rather than a stale one.
+`verifyRoundBag` already had a status built for exactly this
+(`not_snapshotted`), so the honest answer was free to record; the code was just recording a different,
+wrong answer instead. See `roundRepository.createRound.test.js` for the regression coverage — including
+that a plain offline failure does not retry looking for a reason to report.
 
 `verifyRoundBag()` in `src/lib/roundBagVerification.js` reports it rather than repairing it: because
 `bag_versions` is created on every grouped save, the version list *is* a complete edit timeline, so

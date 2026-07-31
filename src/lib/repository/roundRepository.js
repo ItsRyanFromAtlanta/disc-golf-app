@@ -22,8 +22,7 @@ import {
   updateRound,
   upsertRoundHole,
 } from '../roundLog'
-import { captureBagVersion, loadBagVersions } from './bagHistoryRepository'
-import { latestBagVersion } from '../bagHistory'
+import { captureBagVersion } from './bagHistoryRepository'
 import { replayRoundPlayerEntry, roundPlayerApi } from './roundPlayerRepository'
 import {
   ROUND_HOLE_TABLE,
@@ -282,51 +281,87 @@ export function useRoundList(userId) {
   })
 }
 
-export function useCreateRound(userId) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (fields) => {
-      // A round is filed against the *shared* course and layout rows, so it
-      // cannot be queued behind a course that is itself still queued. Refused
-      // deliberately and up front, outside the try below, so no optimistic
-      // round and no outbox entry are created — see `PENDING_COURSE_ROUND_MESSAGE`
-      // in `courseRepository.js` for the reasoning.
-      await assertCourseIsSynced(fields.course_id)
+// A round-start snapshot must never crash the round create it belongs to.
+// This is the fix for DEFECT_REGISTER D-05: `captureBagVersion`'s RPC always
+// rejects offline, and the fallback that used to run in its place —
+// `latestBagVersion(await loadBagVersions(bagId))` — rethrows when the Dexie
+// cache is empty (`bagHistoryRepository.js`'s `loadBagVersions`), which on a
+// fresh install or a bag never edited on this device is unconditional. That
+// rethrow used to escape `useCreateRound`'s `mutationFn` before its `payload`
+// existed and before the `try` that attaches `error.localResult`, so
+// `RoundStartPage.jsx` had no offline branch to take: no outbox row, no local
+// round, no round at all.
+//
+// The fix is not "catch it and fall back to the stale version" — that closed
+// the crash but reopened E2 audit finding F2: a version that can be weeks old
+// is indistinguishable, on the round, from one taken at the first tee.
+// Instead every failure here degrades to `null`. `bagVersionId = null` is an
+// honest fact: `verifyRoundBag` (`roundBagVerification.js`) already reports
+// it as `not_snapshotted` rather than treating a missing snapshot as absence
+// of a fault, which is exactly what this is.
+export async function captureRoundStartBagVersion(bagId, roundId) {
+  try {
+    return await captureBagVersion(bagId, { idempotencyKey: `round-bag:${roundId}` })
+  } catch {
+    return null
+  }
+}
 
-      const roundId = fields.id ?? crypto.randomUUID()
-      let bagVersionId = fields.bag_version_id ?? null
-      if (fields.bag_id && !bagVersionId) {
-        try {
-          bagVersionId = await captureBagVersion(fields.bag_id, {
-            idempotencyKey: `round-bag:${roundId}`,
-          })
-        } catch {
-          bagVersionId = latestBagVersion(await loadBagVersions(fields.bag_id))?.id ?? null
-        }
-      }
-      const payload = {
+// The body of `useCreateRound`'s `mutationFn`, pulled out as a plain function
+// so it can be unit-tested without standing up a `QueryClientProvider` —
+// `useMutation` calls React hooks internally and cannot run outside a
+// component render, but nothing below this line touches React at all. See
+// `roundRepository.createRound.test.js`.
+export function createRoundMutationFn(userId) {
+  return async function createRoundMutation(fields) {
+    // A round is filed against the *shared* course and layout rows, so it
+    // cannot be queued behind a course that is itself still queued. Refused
+    // deliberately and up front, outside the try below, so no optimistic
+    // round and no outbox entry are created — see `PENDING_COURSE_ROUND_MESSAGE`
+    // in `courseRepository.js` for the reasoning.
+    await assertCourseIsSynced(fields.course_id)
+
+    const roundId = fields.id ?? crypto.randomUUID()
+    let payload
+    try {
+      // Bag-version resolution now lives inside this try — see
+      // `captureRoundStartBagVersion` above for why it is safe here: it
+      // cannot itself throw, but the boundary still has to hold for
+      // whatever the outbox write below does.
+      const bagVersionId =
+        fields.bag_version_id ??
+        (fields.bag_id ? await captureRoundStartBagVersion(fields.bag_id, roundId) : null)
+      payload = {
         ...fields,
         id: roundId,
         user_id: userId,
         bag_version_id: bagVersionId,
       }
-      try {
-        return await runQueuedMutation({
-          table: ROUND_TABLE,
-          op: 'create',
-          payload,
-          idempotencyKey: roundCreateKey(roundId),
-          writeLocal: () => cacheRound(payload),
-          remote: () => createRoundWithActivity(userId, payload),
-          writeRemote: (round) => cacheRound(round),
-        })
-      } catch (error) {
-        // The optimistic row and outbox entry are valid even when the remote
-        // request fails. Callers can navigate to the cached round immediately.
-        error.localResult = payload
-        throw error
-      }
-    },
+      return await runQueuedMutation({
+        table: ROUND_TABLE,
+        op: 'create',
+        payload,
+        idempotencyKey: roundCreateKey(roundId),
+        writeLocal: () => cacheRound(payload),
+        remote: () => createRoundWithActivity(userId, payload),
+        writeRemote: (round) => cacheRound(round),
+      })
+    } catch (error) {
+      // The optimistic row and outbox entry are valid even when the remote
+      // request fails. Callers can navigate to the cached round immediately.
+      // `payload` is guarded rather than assumed: nothing on this path can
+      // throw before it is built any more, but a silently-missing
+      // `localResult` is a worse failure mode than a defensive check.
+      if (payload) error.localResult = payload
+      throw error
+    }
+  }
+}
+
+export function useCreateRound(userId) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createRoundMutationFn(userId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [ROUND_TABLE, 'list', userId] }),
   })
 }
