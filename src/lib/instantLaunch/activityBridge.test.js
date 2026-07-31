@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ACTIVITY_SOURCES, ACTIVITY_STATES } from '../activityLifecycle'
+import { ACTIVITY_SOURCES, ACTIVITY_STATES, ACTIVITY_TYPES } from '../activityLifecycle'
 import { createAppDatabase } from '../db/dexieDb'
 import { createActivityRepository } from '../repository/activityRepository'
 import {
@@ -8,6 +8,7 @@ import {
   activityIdForCrashRecoveryBuffer,
   activityTypeForSessionType,
   mirrorInstantLaunchActivity,
+  mirrorRequiresConfirmation,
 } from './activityBridge'
 import { applyEnqueuePuttEvent, applySetCrashRecoveryBuffer, defaultInstantLaunchState } from './stateReducer'
 
@@ -120,5 +121,59 @@ describe('InstantLaunch activity bridge', () => {
     expect(retry.outcome).toBe('not_mirrored')
     expect(retry.activity.state).toBe(ACTIVITY_STATES.INCOMPLETE)
     expect(retry.warnings).toEqual([INSTANT_LAUNCH_ACTIVITY_WARNINGS.TERMINAL_ACTIVITY])
+  })
+
+  // DEFECT_REGISTER D-02. A caller (e.g. RegimenRunPage) that starts an
+  // InstantLaunch session without first checking `activityRepository.getActive`
+  // and asking the user reaches this exact shape: a draft with a real id, but
+  // never started. Any consumer that treats a truthy `result.activity` as
+  // "safe to mirror" — rather than reading `result.outcome` — would silently
+  // adopt that draft and sync capture rows against a parent that can never be
+  // finalized. `mirrorRequiresConfirmation` is the guard callers must use.
+  it('reports confirmation_required, and never mints a startable mirror, when a round is already current', async () => {
+    await repository.createDraft({
+      id: 'round-1',
+      userId: 'user-1',
+      type: ACTIVITY_TYPES.DISC_GOLF_ROUND,
+      mutation: {
+        expectedState: null,
+        expectedVersion: null,
+        occurredAt: TIME,
+        recordedAt: TIME,
+        source: ACTIVITY_SOURCES.LIVE_CAPTURE,
+        installationId: 'installation-1',
+        idempotencyKey: 'create-round-1',
+      },
+    })
+    await repository.start('round-1', {
+      expectedState: ACTIVITY_STATES.DRAFT,
+      expectedVersion: 0,
+      occurredAt: TIME,
+      recordedAt: TIME,
+      source: ACTIVITY_SOURCES.LIVE_CAPTURE,
+      installationId: 'installation-1',
+      idempotencyKey: 'start-round-1',
+    })
+
+    const state = activeInstantLaunchState('regimen')
+    const result = await mirror(state)
+
+    expect(result.outcome).toBe('confirmation_required')
+    expect(mirrorRequiresConfirmation(result)).toBe(true)
+    expect(result.activity).toMatchObject({ id: 'run-1', state: ACTIVITY_STATES.DRAFT })
+    // The bridge must not report the draft as mirrored into local state — a
+    // caller relying on `outcome` (rather than a truthy `activity`) sees no
+    // id to adopt.
+    expect(result.instantLaunchState.crashRecoveryBuffer.activityId).toBeFalsy()
+    expect(await repository.getActive('user-1')).toMatchObject({ id: 'round-1', state: ACTIVITY_STATES.ACTIVE })
+  })
+
+  it('mirrorRequiresConfirmation only flags the confirmation_required outcome', () => {
+    expect(mirrorRequiresConfirmation({ outcome: 'confirmation_required' })).toBe(true)
+    expect(mirrorRequiresConfirmation({ outcome: 'mirrored' })).toBe(false)
+    expect(mirrorRequiresConfirmation({ outcome: 'not_mirrored' })).toBe(false)
+    expect(mirrorRequiresConfirmation({ outcome: 'no_active_session' })).toBe(false)
+    expect(mirrorRequiresConfirmation(null)).toBe(false)
+    expect(mirrorRequiresConfirmation(undefined)).toBe(false)
   })
 })
