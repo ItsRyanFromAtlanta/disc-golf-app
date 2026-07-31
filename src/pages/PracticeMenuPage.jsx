@@ -159,12 +159,16 @@ export default function PracticeMenuPage() {
           >
             ▶️ Resume session in progress
           </Link>
-        ) : hero.kind === 'active-activity' ? (
-          <Link
-            to={hero.activityType === 'putting_regimen' && hero.regimenId ? `/practice/regimens/${hero.regimenId}/run` : '/practice/freeform'}
-            className="hero-card hero-card-resume"
-          >
-            ▶️ Resume active practice
+        ) : hero.kind === 'active-activity' && hero.resume ? (
+          // D-12: `hero.resume` is resolved by `heroCardState` from the same
+          // type-keyed table AppShell's header pill uses (D-13), instead of a
+          // ternary here with only a `putting_regimen` branch and an `else`
+          // that a live round fell into — landing on the freeform putting
+          // canvas instead of the round's own scorecard. The label comes from
+          // the same lookup so a round reads "Resume active round" rather
+          // than the practice copy that was wrong for it.
+          <Link to={hero.resume.href} className="hero-card hero-card-resume">
+            ▶️ {hero.resume.label}
             <span className="log-time">{hero.state === 'paused' ? 'Paused safely for later' : 'In progress'}</span>
           </Link>
         ) : null}

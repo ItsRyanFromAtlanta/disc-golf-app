@@ -46,6 +46,64 @@ describe('heroCardState', () => {
       activityType: 'putting_regimen',
       regimenId: 'reg-1',
       state: 'paused',
+      resume: { href: '/practice/regimens/reg-1/run', label: 'Resume active practice' },
+    })
+  })
+
+  // D-12 regression: the hero used to carry only the raw activity fields, so
+  // PracticeMenuPage had to re-derive a destination itself — and its ternary
+  // had no `disc_golf_round` branch, so an in-progress round fell through to
+  // the freeform putting canvas. `resume` is resolved once, here, from the
+  // same table `resolveActivityResume` uses for the header pill (D-13), so a
+  // round in progress resolves to its own scorecard rather than nowhere.
+  it('resolves a live round to its own scorecard, not the freeform canvas', () => {
+    expect(
+      heroCardState(defaultInstantLaunchState(), true, {
+        id: 'round-9',
+        type: 'disc_golf_round',
+        state: 'active',
+      }),
+    ).toEqual({
+      kind: 'active-activity',
+      activityId: 'round-9',
+      activityType: 'disc_golf_round',
+      regimenId: null,
+      state: 'active',
+      resume: { href: '/rounds/round-9', label: 'Resume active round' },
+    })
+  })
+
+  it('resolves a freeform activity to the freeform canvas', () => {
+    expect(
+      heroCardState(defaultInstantLaunchState(), true, {
+        id: 'ff-1',
+        type: 'putting_freeform',
+        state: 'active',
+      }),
+    ).toEqual({
+      kind: 'active-activity',
+      activityId: 'ff-1',
+      activityType: 'putting_freeform',
+      regimenId: null,
+      state: 'active',
+      resume: { href: '/practice/freeform', label: 'Resume active practice' },
+    })
+  })
+
+  it('leaves resume null for an activity type with no capture screen shipped yet', () => {
+    expect(
+      heroCardState(defaultInstantLaunchState(), true, {
+        id: 'fw-1',
+        type: 'fieldwork',
+        state: 'active',
+      }),
+    ).toEqual({
+      kind: 'active-activity',
+      activityId: 'fw-1',
+      activityType: 'fieldwork',
+      regimenId: null,
+      state: 'active',
+      resume: null,
     })
   })
 
