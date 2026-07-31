@@ -8,8 +8,10 @@ import {
   buildRegimenPayload,
   canAddStage,
   maxScorePreview,
+  routineSaveBlocker,
   totalPutts,
   MAX_PUTTS,
+  SAVE_BLOCKERS,
 } from '../lib/routineBuilder'
 import StageCard from '../components/routineBuilder/StageCard'
 
@@ -82,6 +84,15 @@ export default function RoutineBuilderPage() {
   }
 
   async function handleSave(launch) {
+    // The buttons are disabled for every one of these, but the check is repeated
+    // here rather than trusted: the 100-putt ceiling is a hard interlock, and
+    // the DB trigger refusing the write is the failure mode this exists to
+    // avoid, not a backstop to lean on.
+    const blocked = routineSaveBlocker({ name, stages })
+    if (blocked) {
+      setError(blocked.message)
+      return
+    }
     setSaving(true)
     setError(null)
     try {
@@ -97,7 +108,8 @@ export default function RoutineBuilderPage() {
   const putts = totalPutts(stages)
   const preview = maxScorePreview({ stages, bonuses })
   const addDisabled = !canAddStage(stages)
-  const saveDisabled = saving || !name.trim() || stages.length === 0
+  const saveBlocker = routineSaveBlocker({ name, stages })
+  const saveDisabled = saving || saveBlocker !== null
 
   return (
     <section className="routine-builder-page">
@@ -162,6 +174,11 @@ export default function RoutineBuilderPage() {
           </span>
           <span>≈ {preview} pts max</span>
         </div>
+        {saveBlocker?.code === SAVE_BLOCKERS.OVER_PUTT_CAP && (
+          // A disabled button with no stated reason is its own defect. The
+          // totalizer already turns red past the cap; this says what that costs.
+          <p className="form-error" role="status">{saveBlocker.message}</p>
+        )}
         <div className="routine-totalizer-actions">
           <button type="button" className="start-button" onClick={() => handleSave(true)} disabled={saveDisabled}>
             {saving ? 'Saving...' : 'Save & Launch'}

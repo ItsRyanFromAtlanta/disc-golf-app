@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { buildCareerSummary } from '../lib/careerSummary'
+import { careerRating } from '../lib/careerRating'
 import { fetchCareerData } from '../lib/repository/careerRepository'
 import SkillRadar from '../components/SkillRadar'
 
@@ -21,8 +22,7 @@ export default function CareerHubPage() {
   if (!data) return <p className="loading">Loading career summary…</p>
   const summary = buildCareerSummary(data)
   const { profile } = data
-  const ratingProgress = profile.current_rating && profile.target_rating
-    ? Math.min(100, Math.round(profile.current_rating / profile.target_rating * 100)) : null
+  const rating = careerRating(profile)
 
   return (
     <section className="career-page">
@@ -38,8 +38,8 @@ export default function CareerHubPage() {
         <div><h1 id="career-player-name">{profile.username || user.email?.split('@')[0] || 'Player'}</h1>
           <p>{profile.pdga_number ? `PDGA #${profile.pdga_number}` : 'PDGA number not linked'}{profile.division ? ` · ${profile.division}` : ''}</p></div>
         {profile.pdga_number && <span className="career-linked-badge">Linked</span>}
-        <div className="career-rating"><span>Current {profile.current_rating ?? '—'}</span><span>Target {profile.target_rating ?? '—'}</span>
-          <div className="career-progress" aria-label={ratingProgress == null ? 'Rating progress unavailable' : `Rating progress ${ratingProgress}%`}><span style={{ width: `${ratingProgress ?? 0}%` }} /></div></div>
+        <div className="career-rating"><span>Current {rating.current ?? '—'}</span><span>Target {rating.target ?? '—'}</span>
+          <div className="career-progress" aria-label={rating.progress == null ? 'Rating progress unavailable' : `Rating progress ${rating.progress}%`}><span style={{ width: `${rating.progress ?? 0}%` }} /></div></div>
       </section>
       <h2>Career telemetry</h2>
       <div className="career-stat-grid">

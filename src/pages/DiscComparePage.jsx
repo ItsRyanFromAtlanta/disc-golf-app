@@ -11,8 +11,8 @@ import {
   COMPARE_MIN,
   FLIGHT_AXES,
   NEAR_IDENTICAL_AXIS_DELTA,
-  resolveCommunityCohort,
 } from '../lib/discCompare'
+import { resolveActiveSource, selectableComparisonSources } from '../lib/discCompareSources'
 import { stabilityClass, stabilityColor } from '../lib/discFilters'
 import { FlightCurveOverlay } from '../components/putterLineup/FlightCurve'
 
@@ -111,8 +111,12 @@ export default function DiscComparePage() {
     return <InvalidCompareState message="One or more selected discs could not be found in your locker." />
   }
 
-  const community = resolveCommunityCohort([])
-  const activeSource = source === 'community' && community.status !== 'ready' ? 'official' : source
+  // No community cohort provider exists yet, so `selectableComparisonSources`
+  // omits that source and `resolveActiveSource` degrades any stale selection of
+  // it to the official catalog. Both reappear on their own once a cohort is
+  // wired in — see src/lib/discCompareSources.js.
+  const sources = selectableComparisonSources()
+  const activeSource = resolveActiveSource(source)
   const comparison = buildDiscComparison(selected, { source: activeSource })
   const activeBag = bagContexts?.find((context) => context.bag.id === selectedBagId) ?? null
   const bagSummary = activeBag ? buildBagComparison(activeBag.discs, activeBag.bag.capacity) : null
@@ -141,28 +145,22 @@ export default function DiscComparePage() {
           <span>Every result is attributed</span>
         </div>
         <div className="disc-compare-source-buttons" role="group" aria-label="Comparison source">
-          {Object.values(COMPARISON_SOURCES).map((candidate) => (
+          {sources.map((candidate) => (
             <button
               key={candidate.id}
               type="button"
-              aria-pressed={source === candidate.id}
+              aria-pressed={activeSource === candidate.id}
               onClick={() => setSource(candidate.id)}
             >
               {candidate.label}
             </button>
           ))}
         </div>
-        {source === 'community' && community.status !== 'ready' ? (
-          <p className="disc-compare-notice" role="status">
-            Community benchmark unavailable: {community.reason} Showing official catalog numbers instead.
-          </p>
-        ) : (
-          <p className="log-time">
-            {COMPARISON_SOURCES[activeSource].label}: {activeSource === 'personal'
-              ? 'your selected physical discs and their effective flight numbers.'
-              : 'manufacturer catalog flight numbers; personal overrides are intentionally excluded.'}
-          </p>
-        )}
+        <p className="log-time">
+          {COMPARISON_SOURCES[activeSource].label}: {activeSource === 'personal'
+            ? 'your selected physical discs and their effective flight numbers.'
+            : 'manufacturer catalog flight numbers; personal overrides are intentionally excluded.'}
+        </p>
       </section>
 
       {truncatedCount > 0 && (
