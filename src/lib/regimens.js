@@ -1,5 +1,17 @@
 import { supabase } from './supabaseClient'
 
+// Archiving is this project's soft-delete for routines: an archived routine
+// must not be startable, but must stay readable everywhere history, cloning,
+// or editing needs it. fetchRegimensWithSets (below) and regimenRepository's
+// cache deliberately return/keep every row, archived or not — see the note
+// above cacheList in repository/regimenRepository.js. This is the shared,
+// testable predicate that screens use to hide archived routines from
+// "runnable" surfaces (RegimenSelectPage) without touching the fetch/cache
+// layer, so the offline mirror never loses archived rows it needs to serve.
+export function selectableRegimens(regimens) {
+  return regimens.filter((regimen) => regimen.archived !== true)
+}
+
 export async function fetchRegimensWithSets() {
   const { data: regimens, error: regimenError } = await supabase
     .from('putting_regimens')
