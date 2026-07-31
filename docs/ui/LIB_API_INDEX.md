@@ -787,7 +787,7 @@ The shipped offline layer for active-session capture: a `localStorage` blob plus
 | `addDiscToBag` / `removeDiscFromBag` | `discLocker.js` | `(bagId, discId) → Promise<void>` | Membership change **plus an automatic `captureBagVersion`**. | **Supabase** | — |
 | `fetchRegimensWithSets` | `regimens.js` | `() → Promise<{ regimens, sets }>` | All regimens ordered by difficulty, with ordered sets. | **Supabase** | — |
 | `createCustomRegimen` | `regimens.js` | `(userId, { regimen, sets }) → Promise<regimenId>` | Inserts parent then sets; archives the orphan and rewrites the 100-putt error if the sets insert fails. | **Supabase** | — |
-| `fetchCustomRegimens` | `regimens.js` | `(userId) → Promise<regimen[]>` | Own, non-archived routines. | **Supabase** | — |
+| ~~`fetchCustomRegimens`~~ | — | — | **Deleted 2026-07-31.** Had no caller. `regimenRepository.list()` plus `RegimenSelectPage`'s `selectableRegimens` already produce the same own/non-archived set, and wiring this in would have regressed offline behaviour — it was a direct Supabase read with no Dexie mirror. | — | — |
 | `fetchRegimenWithSets` | `regimens.js` | `(regimenId) → Promise<{ regimen, sets }>` | Clone-and-tweak source. | **Supabase** | — |
 | `fetchRounds` | `roundLog.js` | `(userId) → Promise<round[]>` | Rounds hydrated with `course` and `layout`. | **Supabase** | — |
 | `fetchRound` | `roundLog.js` | `(roundId) → Promise<round>` | Round + course + layout + `holes` + `round_holes` each joined to `hole` and `disc`. | **Supabase** | — |
