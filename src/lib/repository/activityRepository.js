@@ -232,8 +232,18 @@ export function createActivityRepository({
       ...reduced.activity,
       updated_at: command.recordedAt,
       last_lifecycle_idempotency_key: command.idempotencyKey,
+      // `start` asserts a meaningful fact, and so does finalizing a draft:
+      // both say the activity really happened. A draft finalized under D-03 was
+      // never started, so it would otherwise reach `completed` still carrying
+      // `has_meaningful_fact: false` — a completed activity that claims nothing
+      // happened, which is the kind of contradiction consumers are entitled to
+      // assume away.
       has_meaningful_fact:
-        command.type === LIFECYCLE_COMMANDS.START ? true : reduced.activity.has_meaningful_fact,
+        command.type === LIFECYCLE_COMMANDS.START
+        || (command.type === LIFECYCLE_COMMANDS.FINALIZE_COMPLETED
+          && activity.state === ACTIVITY_STATES.DRAFT)
+          ? true
+          : reduced.activity.has_meaningful_fact,
     }
     const eventRow = toEventRow(reduced.stateEvent, { id: eventIdFactory(), userId: activity.user_id })
 

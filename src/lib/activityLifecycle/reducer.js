@@ -35,6 +35,33 @@ const VALID_SOURCES = new Set(Object.values(ACTIVITY_SOURCES))
 export const LIFECYCLE_TRANSITION_TABLE = Object.freeze({
   [ACTIVITY_STATES.DRAFT]: Object.freeze({
     [LIFECYCLE_COMMANDS.START]: ACTIVITY_STATES.ACTIVE,
+    // draft -> completed, without ever passing through active.
+    //
+    // Added 2026-07-31 to close DEFECT_REGISTER D-03. A round started while
+    // another activity is current deliberately leaves its lifecycle parent a
+    // draft (`roundRepository.ensureRoundActivity`) so the single-active
+    // invariant is not bypassed. Before this entry that state was terminal in
+    // practice: finalization refused anything but active/paused, so the parent
+    // could never reach `completed`, and `weeklyReportRepository` admits only
+    // completed activities. The round row itself read `completed`, so every
+    // screen except the weekly report showed a finished round. The work was
+    // done and permanently unreportable.
+    //
+    // Routing it through `active` first — the obvious fix, and the one the
+    // register proposed — is NOT safe. `start` on a draft is exactly the
+    // command the replacement flow hangs off: the RPC takes any other
+    // active/paused activity for that user and marks it `incomplete`
+    // (`20260712195448_phase_a_activity_lifecycle_rpc.sql`). Finalizing an old
+    // round would then silently close whatever the player currently has live.
+    // That trades a reporting bug for a data-integrity one.
+    //
+    // Going straight to `completed` cannot do that, because
+    // `activities_one_current_per_user_idx` only constrains `active`/`paused` —
+    // this transition never enters either, so it has nothing to replace and no
+    // invariant to bypass. Finalizing is always user-initiated, so it is a
+    // legitimate assertion that the activity happened; the caller carries that
+    // responsibility, as it already does for every other finalize.
+    [LIFECYCLE_COMMANDS.FINALIZE_COMPLETED]: ACTIVITY_STATES.COMPLETED,
   }),
   [ACTIVITY_STATES.ACTIVE]: Object.freeze({
     [LIFECYCLE_COMMANDS.START]: null,

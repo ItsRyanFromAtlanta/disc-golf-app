@@ -208,10 +208,22 @@ async function createRoundWithActivity(userId, payload) {
 
 export async function finalizeRoundActivity(roundId, userId) {
   const activity = await activityRepository.getById(roundId)
+  // `draft` is accepted here, and that is the whole of the D-03 fix.
+  //
+  // `ensureRoundActivity` above leaves the parent a draft when another activity
+  // was already current, so that starting a round never silently replaces a
+  // live session. The cost was that finalization refused draft parents, which
+  // made the state terminal: the round row read `completed` while its activity
+  // sat in `draft` forever, invisible to the weekly report and unrepairable
+  // from any screen.
+  //
+  // Finalizing straight from `draft` is safe precisely because it skips
+  // `active` — see the transition table's note in `activityLifecycle/reducer.js`.
+  // Whatever the player has live stays live.
   if (
     !activity ||
     activity.user_id !== userId ||
-    ![ACTIVITY_STATES.ACTIVE, ACTIVITY_STATES.PAUSED].includes(activity.state)
+    ![ACTIVITY_STATES.DRAFT, ACTIVITY_STATES.ACTIVE, ACTIVITY_STATES.PAUSED].includes(activity.state)
   ) {
     return activity
   }
