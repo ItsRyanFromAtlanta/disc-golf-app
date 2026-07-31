@@ -23,7 +23,7 @@ export default function AppShell() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const activeActivity = useActiveActivity(user?.id)
-  const { badgeCount } = useNotifications(user?.id)
+  const { badgeCount, syncFailed } = useNotifications(user?.id)
   useActivityNavigationLifecycle(user?.id, activeActivity)
   const scrollRegionRef = useRef(null)
   const scrollPositionsRef = useRef({})
@@ -106,6 +106,7 @@ export default function AppShell() {
                 showActivityPill={route?.showActivityPill}
                 activityResume={activityResume}
                 notificationCount={badgeCount}
+                notificationsUnavailable={syncFailed}
                 onNotifications={() =>
                   setSheet({
                     title: 'Notifications',
