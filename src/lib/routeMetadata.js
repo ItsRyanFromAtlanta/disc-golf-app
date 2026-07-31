@@ -2,6 +2,8 @@
 // redirects, recovery logic, and tests use one description of every shipped
 // route before A2 changes any rendered navigation.
 
+import { ACTIVITY_TYPES } from './activityLifecycle/types'
+
 export const SHELL_TYPES = Object.freeze({
   NONE: 'none',
   STANDARD: 'standard',
@@ -349,6 +351,53 @@ export function resolveRouteMetadata(pathname) {
     pathname: canonicalPath,
     isLegacyAlias: canonicalPath !== pathname,
   }
+}
+
+// Where a live activity is resumed, and what to call that in an accessible
+// name.
+//
+// The shell's header pill exists to put a user back inside whatever is running.
+// It used to answer that with two hardcoded branches — regimen and freeform —
+// so every other activity type resolved to no destination and the pill rendered
+// nothing. The type that most needs it is `disc_golf_round`: all seven COURSES
+// routes declare `showActivityPill: true` and all seven can be visited with a
+// round live, which made the flag inert for exactly the case it was added for.
+//
+// A table keyed on activity type rather than a chain of conditionals, because
+// the question "where does this activity live" is one lookup per type. A
+// capture screen added later is a row here, not a new branch in the shell. The
+// remaining declared types (`putting_game`, `fieldwork`, `course_practice`,
+// `league_match`) have no capture route shipped yet, so they resolve to no
+// destination — which is honest, not the same omission: there is nowhere to
+// send a user, rather than somewhere we forgot to name.
+const ACTIVITY_RESUME_DESTINATIONS = Object.freeze({
+  [ACTIVITY_TYPES.PUTTING_FREEFORM]: {
+    label: 'Resume active practice',
+    href: () => '/practice/freeform',
+  },
+  [ACTIVITY_TYPES.PUTTING_REGIMEN]: {
+    // Same name as freeform on purpose: a regimen run and a freeform session
+    // are both putting practice, and the accessible name describes what the
+    // user is going back to, not which screen renders it. Only the round
+    // needed a different word.
+    label: 'Resume active practice',
+    href: (activity) =>
+      activity.metadata?.regimenId ? `/practice/regimens/${activity.metadata.regimenId}/run` : null,
+  },
+  [ACTIVITY_TYPES.DISC_GOLF_ROUND]: {
+    // `ensureRoundActivity` creates the lifecycle parent with the round's own
+    // id, so the activity id *is* the scorecard's route parameter. No schema
+    // change or metadata lookup is needed to route back to a live round.
+    label: 'Resume active round',
+    href: (activity) => (activity.id ? `/rounds/${activity.id}` : null),
+  },
+})
+
+export function resolveActivityResume(activity) {
+  const destination = activity?.type ? ACTIVITY_RESUME_DESTINATIONS[activity.type] : null
+  if (!destination) return null
+  const href = destination.href(activity)
+  return href ? { href, label: destination.label } : null
 }
 
 export function resolveSectionRoot(section) {

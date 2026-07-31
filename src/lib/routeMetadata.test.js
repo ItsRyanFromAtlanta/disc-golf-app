@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { LEGACY_ROUTE_ALIASES, SHELL_TYPES, resolveCanonicalPath, resolveRouteMetadata, resolveSectionRoot } from './routeMetadata'
+import { LEGACY_ROUTE_ALIASES, SHELL_TYPES, resolveActivityResume, resolveCanonicalPath, resolveRouteMetadata, resolveSectionRoot } from './routeMetadata'
+import { ACTIVITY_TYPES } from './activityLifecycle/types'
 
 describe('route metadata contract', () => {
   it('classifies every shipped active capture route as a resumable active shell without the activity pill', () => {
@@ -119,5 +120,53 @@ describe('route metadata contract', () => {
 
   it('returns null for an unknown path instead of inventing shell behavior', () => {
     expect(resolveRouteMetadata('/not-a-route')).toBeNull()
+  })
+})
+
+describe('resolving where a live activity is resumed', () => {
+  // The regression this exists for: the header pill resolved a destination for
+  // the two putting types only, so a live round — the activity the seven
+  // COURSES routes carry `showActivityPill` for — advertised nothing anywhere.
+  it('sends a live round to its own scorecard, keyed by the activity id', () => {
+    expect(resolveActivityResume({ id: 'round-1', type: ACTIVITY_TYPES.DISC_GOLF_ROUND })).toEqual({
+      href: '/rounds/round-1',
+      label: 'Resume active round',
+    })
+    // Two live rounds must not resolve to one another's scorecard.
+    expect(resolveActivityResume({ id: 'round-2', type: ACTIVITY_TYPES.DISC_GOLF_ROUND }).href).toBe('/rounds/round-2')
+  })
+
+  // Both putting types keep the accessible name the shipped shell already had.
+  // The name describes what the user returns to, and a regimen run is practice
+  // as much as a freeform session is; only the round needed a different word.
+  it('still resolves both putting capture screens under their existing accessible name', () => {
+    expect(resolveActivityResume({ id: 'a-1', type: ACTIVITY_TYPES.PUTTING_FREEFORM })).toEqual({
+      href: '/practice/freeform',
+      label: 'Resume active practice',
+    })
+    expect(
+      resolveActivityResume({ id: 'a-2', type: ACTIVITY_TYPES.PUTTING_REGIMEN, metadata: { regimenId: 'r-9' } }),
+    ).toEqual({ href: '/practice/regimens/r-9/run', label: 'Resume active practice' })
+  })
+
+  it('resolves every destination it names to a route the shell actually serves', () => {
+    const activities = [
+      { id: 'a-1', type: ACTIVITY_TYPES.PUTTING_FREEFORM },
+      { id: 'a-2', type: ACTIVITY_TYPES.PUTTING_REGIMEN, metadata: { regimenId: 'r-9' } },
+      { id: 'round-1', type: ACTIVITY_TYPES.DISC_GOLF_ROUND },
+    ]
+    for (const activity of activities) {
+      expect(resolveRouteMetadata(resolveActivityResume(activity).href)).not.toBeNull()
+    }
+  })
+
+  it('advertises nothing when there is genuinely nowhere to send the user', () => {
+    expect(resolveActivityResume(null)).toBeNull()
+    expect(resolveActivityResume(undefined)).toBeNull()
+    // A regimen run whose parent regimen was never recorded has no runnable URL.
+    expect(resolveActivityResume({ id: 'a-3', type: ACTIVITY_TYPES.PUTTING_REGIMEN })).toBeNull()
+    // Declared lifecycle types with no capture screen shipped yet.
+    expect(resolveActivityResume({ id: 'a-4', type: ACTIVITY_TYPES.FIELDWORK })).toBeNull()
+    expect(resolveActivityResume({ id: 'a-5', type: 'not_a_type' })).toBeNull()
   })
 })
