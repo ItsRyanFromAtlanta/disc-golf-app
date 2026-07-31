@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { attachResponseStatus, isMissingRelationError, isPermanentError } from './errorClassification'
+import { attachResponseStatus, isMissingFunctionError, isMissingRelationError, isPermanentError } from './errorClassification'
 
 describe('isPermanentError', () => {
   it('treats known constraint-violation Postgres codes as permanent', () => {
@@ -136,5 +136,44 @@ describe('isMissingRelationError', () => {
   it('agrees with the classifier: a missing table is never permanent', () => {
     expect(isPermanentError({ code: 'PGRST205' })).toBe(false)
     expect(isPermanentError({ code: '42P01' })).toBe(false)
+  })
+})
+
+describe('isMissingFunctionError', () => {
+  // The two codes that mean "this function is not deployed yet", and only
+  // those. `roundLog.js` (`create_course_with_layout`) and `onboarding.js`
+  // (`provision_practice_stack`) both call this instead of keeping their own
+  // copy of the set — this is the test proving that consolidation preserved
+  // each call site's original classification.
+  it('recognises both spellings of a missing function', () => {
+    expect(isMissingFunctionError({ code: 'PGRST202' })).toBe(true)
+    expect(isMissingFunctionError({ code: '42883' })).toBe(true)
+  })
+
+  it('does not treat a missing table or column as a missing function', () => {
+    expect(isMissingFunctionError({ code: 'PGRST205' })).toBe(false)
+    expect(isMissingFunctionError({ code: '42P01' })).toBe(false)
+    expect(isMissingFunctionError({ code: 'PGRST204' })).toBe(false)
+    expect(isMissingFunctionError({ code: '42703' })).toBe(false)
+  })
+
+  it('does not treat a permission denial, a validation error or a network failure as one', () => {
+    expect(isMissingFunctionError({ code: '42501' })).toBe(false)
+    expect(isMissingFunctionError({ code: '22023' })).toBe(false)
+    expect(isMissingFunctionError(new TypeError('Failed to fetch'))).toBe(false)
+  })
+
+  it('handles an absent error and a numeric code', () => {
+    expect(isMissingFunctionError(null)).toBe(false)
+    expect(isMissingFunctionError(undefined)).toBe(false)
+    expect(isMissingFunctionError({})).toBe(false)
+    expect(isMissingFunctionError({ code: 42501 })).toBe(false)
+  })
+
+  // Both stay transient, which is what lets a queued course or provisioning
+  // call wait for its migration instead of poisoning on a deploy-ordering gap.
+  it('agrees with the classifier: a missing function is never permanent', () => {
+    expect(isPermanentError({ code: 'PGRST202' })).toBe(false)
+    expect(isPermanentError({ code: '42883' })).toBe(false)
   })
 })

@@ -57,6 +57,24 @@ export function isMissingRelationError(error) {
   return Boolean(error?.code && MISSING_RELATION_CODES.has(String(error.code)))
 }
 
+// The two deploy-lag codes that specifically mean "this FUNCTION is not
+// deployed yet", as opposed to a table or a column. `create_course_with_layout`
+// and `provision_practice_stack` are both RPCs guarded this way: the button
+// ships on `main` before the migration that defines the function lands, and
+// PostgREST/Postgres answer with one of these two codes for that exact gap.
+//
+// Exported as a predicate for the same reason as `isMissingRelationError`: so
+// the rule stays in one place instead of being re-spelled at every RPC call
+// site that needs to detect "the function itself doesn't exist yet."
+const MISSING_FUNCTION_CODES = new Set([
+  'PGRST202', // function not found in the schema cache
+  '42883', // undefined_function
+])
+
+export function isMissingFunctionError(error) {
+  return Boolean(error?.code && MISSING_FUNCTION_CODES.has(String(error.code)))
+}
+
 // Attaches the HTTP status from a supabase-js response envelope onto the error
 // it carried.
 //

@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { attachResponseStatus } from './instantLaunch/errorClassification'
+import { attachResponseStatus, isMissingFunctionError } from './instantLaunch/errorClassification'
 
 const DISC_SELECT = '*, moldInfo:disc_molds(*)'
 
@@ -318,8 +318,10 @@ export async function fetchCourse(courseId) {
 // Deliberately mapped to a plain Error with no status: the classifier reads that
 // as transient, which is right — the migration is coming, so a queued course
 // should wait for it rather than poison on a deploy-ordering gap.
-const MISSING_COURSE_RPC_CODES = new Set(['PGRST202', '42883'])
-
+//
+// `isMissingFunctionError` is `errorClassification.js`'s single spelling of
+// these two codes — see that module's header for why a second copy here would
+// be the drift the E2 audit's finding 9 warns about.
 export const COURSE_CREATE_UNAVAILABLE_MESSAGE =
   'Course creation is temporarily unavailable. Nothing was saved — please try again shortly.'
 
@@ -399,7 +401,7 @@ function courseRpcError(error, status) {
 export async function createCourseWithLayoutRpc(args) {
   const { data, error, status } = await supabase.rpc('create_course_with_layout', args)
   if (error) {
-    if (MISSING_COURSE_RPC_CODES.has(error.code == null ? '' : String(error.code))) {
+    if (isMissingFunctionError(error)) {
       throw new Error(COURSE_CREATE_UNAVAILABLE_MESSAGE)
     }
     throw courseRpcError(error, status)

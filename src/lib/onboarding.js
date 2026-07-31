@@ -7,6 +7,7 @@
 import { supabase } from './supabaseClient'
 import { createBag, upsertDisc, addDiscToBag, fetchBags } from './discLocker'
 import { upsertProfileFields } from './profile'
+import { isMissingFunctionError } from './instantLaunch/errorClassification'
 
 export const GOAL_OPTIONS = [
   { id: 'consistency', label: 'Dial In Consistency', description: 'Structured putting routines and streaks' },
@@ -90,17 +91,15 @@ export function buildPutterDiscFields({ moldId, manufacturer, moldName, weightGr
 
 // "`provision_practice_stack` is not deployed on this project."
 //
-// The two spellings PostgREST and Postgres use for an absent function, both
-// already in `DEPLOY_LAG_CODES` (`instantLaunch/errorClassification.js`). The
-// codes are re-stated rather than imported because the meaning differs: there
-// this set means "keep waiting for the migration", here it means "take the
-// other path now". `isMissingRelationError` is the precedent for a predicate
-// that owns one such rule in one place.
-const MISSING_PROVISION_RPC_CODES = new Set(['PGRST202', '42883'])
-
+// The two spellings PostgREST and Postgres use for an absent function.
+// `isMissingFunctionError` (`instantLaunch/errorClassification.js`) is the one
+// place that rule lives now — this predicate's own meaning is still different
+// from that module's other callers ("keep waiting for the migration" there vs.
+// "take the other path now" here), so the wrapper stays, but the code set
+// behind it is no longer a second copy.
 export function isProvisioningRpcMissing(error, status) {
   if (!error) return false
-  if (MISSING_PROVISION_RPC_CODES.has(String(error.code ?? ''))) return true
+  if (isMissingFunctionError(error)) return true
   // A bare 404 is how a missing function reaches us when the body carries no
   // recognisable code. Falling back on it is safe in a way that falling back on
   // a 4xx generally is not: the fallback is the path this screen already took,
