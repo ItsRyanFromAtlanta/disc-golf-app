@@ -103,6 +103,60 @@ describe('loadRoundPlayers', () => {
     expect((await database.roundPlayers.toArray()).map((row) => row.position)).toEqual([1])
   })
 
+  // Pre-deployment review finding #2. A companion whose write is still queued
+  // is absent from the remote read by definition — that used to read as "the
+  // server no longer has this row" and get swept, even though the outbox still
+  // held it and the write would land on the next drain. The panel visibly lost
+  // a companion for the length of that window. Same bug, same shape, as
+  // `readRoundList` (`git show 5ace5fe`).
+  it('keeps a companion whose add is still queued instead of evicting it', async () => {
+    await cacheRoundPlayer({ id: 'local-1', round_id: ROUND_ID, user_id: USER_ID, position: 2, display_name: 'Dave' })
+    await database.outbox.add({
+      table: 'round_players',
+      op: 'upsert',
+      payload: { round_id: ROUND_ID, user_id: USER_ID, position: 2, display_name: 'Dave', total_score: null },
+      createdAt: Date.now(),
+      idempotencyKey: null,
+      dependencyKey: `round-outbox:${ROUND_ID}:create`,
+      attemptCount: 0,
+      lastErrorClass: null,
+      nextRetryAt: null,
+      poison: false,
+    })
+    fetchRoundPlayers.mockResolvedValue([serverRow(1)])
+
+    const result = await loadRoundPlayers(ROUND_ID, USER_ID)
+
+    expect(result.players.map((row) => row.position)).toEqual([1, 2])
+    expect(await database.roundPlayers.get('local-1')).toBeTruthy()
+  })
+
+  // The exemption is scoped to queued seats, not every unmatched row — an
+  // over-broad exemption would leave a companion removed on another device
+  // lingering in the mirror forever. This is the same round, the same read,
+  // with no matching outbox entry for seat 3.
+  it('still evicts a companion that is genuinely gone, even with an unrelated queue entry pending', async () => {
+    await database.roundPlayers.put(serverRow(3))
+    await database.outbox.add({
+      table: 'round_players',
+      op: 'upsert',
+      payload: { round_id: ROUND_ID, user_id: USER_ID, position: 5, display_name: 'Someone Else', total_score: null },
+      createdAt: Date.now(),
+      idempotencyKey: null,
+      dependencyKey: `round-outbox:${ROUND_ID}:create`,
+      attemptCount: 0,
+      lastErrorClass: null,
+      nextRetryAt: null,
+      poison: false,
+    })
+    fetchRoundPlayers.mockResolvedValue([serverRow(1)])
+
+    const result = await loadRoundPlayers(ROUND_ID, USER_ID)
+
+    expect(result.players.map((row) => row.position)).toEqual([1])
+    expect(await database.roundPlayers.get('server-3')).toBeUndefined()
+  })
+
   // The distinction the whole read exists for. "Not deployed" is a claim about
   // the product; "unreachable" is a claim about the network. Reporting the
   // first when the second is true tells a player standing in a field that a

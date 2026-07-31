@@ -3,7 +3,7 @@ import { db } from '../db/dexieDb'
 import { isMissingRelationError } from '../instantLaunch/errorClassification'
 import { deleteRoundPlayer, fetchRoundPlayers, upsertRoundPlayer } from '../roundLog'
 import { normalizeRoster, roundPlayerFields } from '../roundPlayers'
-import { enqueueAndSend } from './outboxQueue'
+import { createOutboxQueue, enqueueAndSend } from './outboxQueue'
 import { ROUND_PLAYER_TABLE, roundCreateKey } from './roundOutboxKeys'
 
 // Reads and writes for the companions recorded on a round.
@@ -82,6 +82,23 @@ async function cachedRoster(roundId, database = db) {
   return database.roundPlayers.where('round_id').equals(roundId).toArray()
 }
 
+// Seats with a queued upsert still pending for this round.
+//
+// `saveRoundPlayer` deliberately strips `id` from the outbox payload — the
+// write resolves on `(round_id, position)`, not on the row's local id, per
+// `roundPlayers.js`: "resolving on the seat converges instead". So position,
+// not id, is the only key that ties a queued write back to the cached row it
+// belongs to.
+async function queuedRoundPlayerPositions(roundId, database = db) {
+  const rows = await createOutboxQueue({ database, tables: [ROUND_PLAYER_TABLE] }).rows()
+  return new Set(
+    rows
+      .filter((row) => row.op === 'upsert' && (row.payload?.round_id ?? row.payload?.roundId) === roundId)
+      .map((row) => Number(row.payload?.position))
+      .filter((position) => Number.isFinite(position)),
+  )
+}
+
 /**
  * The roster for one round, remote-first with a Dexie fallback.
  *
@@ -99,14 +116,30 @@ export async function loadRoundPlayers(roundId, userId) {
   try {
     const remote = await fetchRoundPlayers(roundId)
     const mine = remote.filter((row) => !userId || row.user_id === userId)
+    const queuedPositions = await queuedRoundPlayerPositions(roundId)
+    let pendingOnly = []
     await db.transaction('rw', db.roundPlayers, async () => {
       const cached = await cachedRoster(roundId)
       const remoteIds = new Set(mine.map((row) => row.id))
-      const stale = cached.filter((row) => !remoteIds.has(row.id)).map((row) => row.id)
+      const remotePositions = new Set(mine.map((row) => Number(row.position)))
+      // A companion whose add is still queued is absent from the remote read by
+      // definition — that is what "still queued" means — and it is the one the
+      // player most needs to see, since they just added them. It must survive
+      // this sweep. Everything else absent from the remote read really is gone
+      // (removed here, removed elsewhere, or never wrote) and stays evicted, or
+      // a companion deleted on another device would linger in the mirror
+      // forever. Same shape as `readRoundList`'s fix for the identical bug.
+      const stale = cached
+        .filter((row) => !remoteIds.has(row.id))
+        .filter((row) => !queuedPositions.has(Number(row.position)))
+        .map((row) => row.id)
       if (stale.length > 0) await db.roundPlayers.bulkDelete(stale)
       if (mine.length > 0) await db.roundPlayers.bulkPut(mine.map(localPlayer))
+      pendingOnly = cached.filter(
+        (row) => queuedPositions.has(Number(row.position)) && !remotePositions.has(Number(row.position)),
+      )
     })
-    return { players: normalizeRoster(mine), available: true, fromCache: false }
+    return { players: normalizeRoster([...mine, ...pendingOnly]), available: true, fromCache: false }
   } catch (error) {
     if (isMissingRelationError(error)) {
       // Not deployed yet. Deliberately does not fall back to the mirror: a
