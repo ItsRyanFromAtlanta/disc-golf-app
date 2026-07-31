@@ -27,6 +27,7 @@ import {
 } from '../lib/activityLifecycle'
 import { activityRepository } from '../lib/repository/activityRepository'
 import { createActivitySyncAdapter } from '../lib/repository/activitySync'
+import { buildPuttEventRow as buildPuttEventRowShape } from '../lib/repository/puttEventRepository'
 import { getInstallationId } from '../lib/instantLaunch/installationId'
 import {
   activityIdForCrashRecoveryBuffer,
@@ -154,29 +155,35 @@ export function useInstantLaunchSession(writeAdapter, userId) {
   // sessionType/parentIds fresh off the persisted blob rather than closing
   // over React state, since gestureMake/gestureMiss are memoized once and
   // would otherwise see a stale sessionType/parentIds after startSession.
+  //
+  // Row-shaping itself lives in the pure, tested `puttEventRepository`
+  // (exclusive-arc selection, including the 'round' arm nothing here ever
+  // sets — see that file for why). This closure's only job is translating
+  // this hook's two supported `sessionType`s into that function's `parent`
+  // shape; `startSession` is never called with a third type, so `'round'`
+  // stays unreachable through this path today.
   function buildPuttEventRow({ id, outcome, missZone, distanceFt, occurredAt, sequence, putterDiscId, isPressure }) {
     const { sessionType, parentIds } = readInstantLaunchState().crashRecoveryBuffer
-    const parentFk =
+    const parent =
       sessionType === 'regimen'
-        ? { regimen_run_id: parentIds?.regimenRunId }
-        : { freeform_session_id: parentIds?.freeformSessionId }
-    return {
+        ? { type: 'regimen', regimenRunId: parentIds?.regimenRunId }
+        : { type: 'freeform', freeformSessionId: parentIds?.freeformSessionId }
+    return buildPuttEventRowShape({
       id,
-      _op: 'insert',
-      user_id: userIdRef.current,
-      ...parentFk,
-      set_order: sessionStateRef.current?.stage.regimenSetOrder ?? null,
+      userId: userIdRef.current,
+      parent,
+      setOrder: sessionStateRef.current?.stage.regimenSetOrder ?? null,
       sequence,
       outcome,
-      miss_zone: missZone,
-      distance_ft: distanceFt,
-      occurred_at: occurredAt,
+      missZone,
+      distanceFt,
+      occurredAt,
       // Screen 8: which physical disc was active when this putt was logged —
       // lets the Session Summary's putter-performance breakdown (and an
       // ad-hoc mid-round SWAP) attribute makes/misses to the right disc.
-      putter_disc_id: putterDiscId ?? null,
-      is_pressure: isPressure === true,
-    }
+      putterDiscId: putterDiscId ?? null,
+      isPressure,
+    })
   }
 
   function setSession(next) {

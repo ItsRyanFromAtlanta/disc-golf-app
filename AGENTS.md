@@ -45,6 +45,16 @@ against the live database when it matters. Key tables:
   location/sighting/contact timelines; atomic RPCs synchronize physical-disc lost/recovered status
 - `disc_odometer_events` / `disc_cosmetic_unlocks` — immutable owner-scoped throws/chain-hits/airballs
   deltas and permanent 300/1,000/5,000 chain-hit tier unlocks; cached disc totals are RPC-maintained
+- `putt_events` (see `putt_events_schema.sql`) — per-putt real-time capture, owner-scoped
+  (`auth.uid() = user_id`), client-generated `id` for idempotent offline sync. Parent is an exclusive
+  arc across three nullable FKs — `regimen_run_id` / `freeform_session_id` / `round_hole_id` — exactly
+  one non-null via a CHECK, rather than a polymorphic type+id pair. All three, including
+  `round_hole_id` (references `round_holes(id)`, indexed), shipped together 2026-07-05 (Track 2.2c);
+  no client capture surface writes the `round_hole_id` arm yet — `RoundScorecardPage` records per-hole
+  strokes, not per-putt events — so it stays unreached in practice even though the column, FK, and
+  index have been live since the table was created. `src/lib/repository/puttEventRepository.js`'s
+  `buildPuttEventRow` is the exclusive-arc row-shaper for all three arms; only the regimen/freeform
+  arms currently have a caller (`useInstantLaunchSession.js`)
 - **Removed 2026-07-14 — do not rebuild.** The B1.7/B1.8 automated ingestion surface
   (`catalog_import_batches` / `catalog_import_artifacts` / `catalog_import_candidates` /
   `catalog_import_candidate_reviews`, the `catalog_review_candidate` / `catalog_promote_import_batch` /
