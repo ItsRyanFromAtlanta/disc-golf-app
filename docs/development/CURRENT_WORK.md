@@ -213,7 +213,54 @@ nothing is wrong with it. See `e2e/README.md`.
 | C5 | Install the OpenAI Developer Docs MCP locally | Desktop sandbox could not launch the installer |
 | C6 | **Apply the pending Phase E migrations** — see the list below | Owner decision 2026-07-30: migrations are applied by the owner via the Supabase dashboard, not from a session |
 
-### Defect register progress (2026-07-31)
+### Defect register CLOSED, and the deployment sequence (2026-07-31, final)
+
+**All 24 entries are dispositioned: 23 fixed, D-22 closed by inspection** (its residual path could not
+be constructed; its proposed fix was judged stale and ineffective — do not dispatch anyone for it).
+Audit findings **F2 and F3** are also closed. Suite: **974 unit tests / 108 files, 80 Playwright
+specs**, lint and build clean. 109 commits ahead of `main`.
+
+**An adversarial pre-deployment review of the full diff found one production-breaker, and it was
+introduced by the D-03 fix on this branch.** The client permitted `draft → completed` before its server
+migration; the deployed RPC answers `invalid_transition`, which `activitySync` classified as permanent
+and therefore **poisoned**. `flush` computes `hasPoison` across the whole table and reports permanent
+forever, and three consumers gate on it — so one poisoned lifecycle row stopped **InstantLaunch capture
+sync, history-recovery sync and the round scheduler**, while every screen kept rendering from the local
+mirror. It was also unrecoverable: the lifecycle queue was the only one of four exposing no
+`retryPoisoned`, and poisoned rows are filtered out of `listReady` permanently, so applying the
+migration afterwards would not have helped.
+
+Fixed on both axes: that one transition is now classified transient (matching what `DEPLOY_LAG_CODES`
+already does at the PostgREST layer — a client that writes ahead of its migration waits rather than
+poisons), and `retryPoisoned` is exposed so the next misclassification is recoverable without a code
+change. **Note the guard reads `stateEvent.previous_state`, not `mutation.expectedState`** — the first
+version used the latter, type-checked, and passed a hand-built test while being incapable of ever
+firing against a real outbox row.
+
+The review's second finding is also fixed: `readRoundList` swept cached rounds absent from the remote
+list, so a round queued behind a deploy-lag column **visibly disappeared** from `/rounds` while the
+network was healthy. `readCourseList` and `fatigueCheckinRepository` already re-add queued rows; the
+round list never got the convention.
+
+### Deployment sequence — do these in this order
+
+1. **Confirm the Supabase project** by reading `VITE_SUPABASE_URL` in Vercel. Everything below assumes
+   `icqzbvtjisxwycvioiup`.
+2. **Apply the 7 pending migrations in filename order.** With the poison fix in, client-first is now
+   survivable rather than catastrophic — but migrations-first is still correct, and it closes the
+   round-eviction window entirely.
+3. **Run the catalog corrections** (`disc_molds_corrections_2026_07.sql`). Independent of everything
+   else, and it repairs bad data that is live *today*.
+4. **Configure branch protection** before merging — `main` auto-deploys, so an unreviewed merge ships.
+5. **Open a PR and review 109 commits.** No human has reviewed any of this.
+6. After merge: run `verify_round_players_rls.sql` in a rollback-only transaction (15 cases, none ever
+   executed), then the course/mold seeds.
+
+**Still true and unchanged by any of the above: nothing here has run against real data.** 0 courses,
+0 rounds, 28 users. The tests prove the code does what it claims; they cannot prove the feature is
+worth using.
+
+### Defect register progress (superseded by the section above)
 
 Ten of the 24 registered defects are **fixed and merged**: D-01, D-03, D-04, D-08, D-13, D-14, D-17,
 D-18, D-21, D-23. Two more (D-06 toast, D-07 account deletion) were already closed by earlier work and
