@@ -1,4 +1,4 @@
-import { IconArrowLeft, IconBell } from '@tabler/icons-react'
+import { IconAlertTriangle, IconArrowLeft, IconBell } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
 
 // `activityResume` is `{ href, label }` or null — resolved by
@@ -7,7 +7,13 @@ import { Link } from 'react-router-dom'
 // previous inputs could disagree: an activity with no known destination left
 // the header deciding whether a live activity was advertisable, which is a
 // routing question, not a header one.
-export default function GlobalHeader({ title, showBack, onBack, onNotifications, notificationCount = 0, showActivityPill, activityResume }) {
+//
+// `notificationsUnavailable` (D-24) is a third, distinct state from "no
+// notifications" — the producer/sync chain or the local read failed, so the
+// count below is not trustworthy. It renders as a warning glyph rather than a
+// zero or a stale number, and its own accessible name, so a screen-reader
+// user hears the same distinction a sighted user sees.
+export default function GlobalHeader({ title, showBack, onBack, onNotifications, notificationCount = 0, notificationsUnavailable = false, showActivityPill, activityResume }) {
   return (
     <header className="global-header">
       <div className="global-header-leading">
@@ -29,10 +35,20 @@ export default function GlobalHeader({ title, showBack, onBack, onNotifications,
           type="button"
           className="global-header-icon-button notification-bell-button"
           onClick={onNotifications}
-          aria-label={notificationCount ? `Notifications, ${notificationCount} needs attention` : 'Notifications'}
+          aria-label={
+            notificationsUnavailable
+              ? 'Notifications unavailable — tap to retry'
+              : notificationCount
+                ? `Notifications, ${notificationCount} needs attention`
+                : 'Notifications'
+          }
         >
-          <IconBell size={23} aria-hidden="true" />
-          {notificationCount ? <span className="notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span> : null}
+          {notificationsUnavailable ? <IconAlertTriangle size={23} aria-hidden="true" /> : <IconBell size={23} aria-hidden="true" />}
+          {notificationsUnavailable ? (
+            <span className="notification-badge" aria-hidden="true">!</span>
+          ) : notificationCount ? (
+            <span className="notification-badge">{notificationCount > 99 ? '99+' : notificationCount}</span>
+          ) : null}
         </button>
       </div>
     </header>

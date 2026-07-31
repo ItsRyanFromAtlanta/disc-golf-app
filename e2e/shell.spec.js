@@ -75,6 +75,20 @@ test.describe('shared shell', () => {
     await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible()
   })
 
+  // D-09: the header bell opened a sheet, and nothing in the app ever
+  // navigated to the `/notifications` route it was paired with — reachable
+  // only by typed URL or bookmark. The sheet now offers a real link to it.
+  test('the notification sheet has a working link to the full notifications page', async ({ signedInPage: page }) => {
+    await page.getByRole('button', { name: 'Notifications' }).click()
+
+    const sheet = page.getByRole('dialog')
+    await sheet.getByRole('button', { name: 'See all notifications' }).click()
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/notifications$/)
+    await expect(headerTitle(page, 'Notifications')).toBeVisible()
+  })
+
   test('tapping the active tab scrolls its section back to the top', async ({ page, supabase }) => {
     // The Play hub is only tall enough to scroll once it has routines to list,
     // so the fixture supplies enough to overflow a phone viewport.
