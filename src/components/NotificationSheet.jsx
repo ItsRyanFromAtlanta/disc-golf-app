@@ -8,8 +8,22 @@ const CATEGORY_ICON = {
 }
 
 export default function NotificationSheet({ userId, onOpen, onResolve }) {
-  const { notifications } = useNotifications(userId)
+  const { notifications, syncFailed } = useNotifications(userId)
   const visible = notifications.filter((notification) => !notification.resolved_at)
+  // The empty state has to distinguish "nothing to show" from "we could not find
+  // out" — the last mile of D-24. The header bell already renders the failure
+  // state, but the sheet body called `useNotifications` independently and read
+  // only `.notifications`, so a first-ever sync failure (no prior successful
+  // load, so nothing cached to fall back on) still said "You're all caught up."
+  // over a list it had failed to fetch. That is the exact reassuring lie the
+  // round outbox used to tell.
+  if (!visible.length && syncFailed) {
+    return (
+      <p className="sheet-empty-state sheet-empty-state-unavailable" role="status">
+        Notifications could not be loaded. They will appear once the connection recovers.
+      </p>
+    )
+  }
   if (!visible.length) return <p className="sheet-empty-state">You’re all caught up.</p>
 
   return (

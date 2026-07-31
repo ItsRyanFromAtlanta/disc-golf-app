@@ -2203,6 +2203,13 @@
   color: var(--color-text-secondary);
 }
 
+/* A failed load reads differently from an empty inbox. Deliberately not an
+   error colour: nothing is wrong with the user's data and there is nothing for
+   them to fix — it is a statement that we do not currently know. */
+.sheet-empty-state-unavailable {
+  font-style: italic;
+}
+
 /* Anchored on both sides rather than right-only: a fixed element wider than
    the viewport is exactly the horizontal overflow the 320px reflow gate
    forbids, and the message length is not under this component's control. */
