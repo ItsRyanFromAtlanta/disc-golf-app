@@ -198,8 +198,19 @@ export default function RoundScorecardPage() {
           <h1>{round.course?.name ?? 'Round'}</h1>
           <p className="log-time">{round.layout?.name ?? 'Scorecard'}</p>
         </div>
+        {/* DEFECT_REGISTER D-16: this used to read "Finish" and finalize
+            nothing — it is a plain navigation `Link`, not a write. Every
+            write that finishing a round performs (`rounds.status`,
+            `total_score`, and, since D-03, the activity-parent transition)
+            lives behind `RoundSummaryPage`'s own confirmed `Finish round`
+            button, which is a two-step write now and a worse thing to
+            duplicate onto an unconfirmed link than it was before D-03. The
+            activity-only branch above already calls the identical link
+            "Summary" for the same reason; this makes the header consistent
+            with it instead of promising a finalization this control never
+            performed. */}
         <Link to={`/rounds/${round.id}/summary`} className="start-button">
-          Finish
+          Review
         </Link>
       </header>
 
