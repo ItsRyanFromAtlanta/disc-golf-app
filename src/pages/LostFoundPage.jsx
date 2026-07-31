@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { fetchUserDiscs } from '../lib/discLocker'
-import { fetchCourses } from '../lib/roundLog'
 import { discDisplayName, LOST_FOUND_EVENT_LABELS, LOST_FOUND_UPDATE_TYPES } from '../lib/lostFound'
 import {
   appendLostFoundUpdate,
   flushLostFoundOutbox,
-  loadLostFoundCases,
+  loadLostFoundScreen,
   openLostFoundCase,
 } from '../lib/repository/lostFoundRepository'
 
@@ -55,22 +53,27 @@ export default function LostFoundPage() {
   const [eventType, setEventType] = useState('note_added')
   const [fields, setFields] = useState(EMPTY_FIELDS)
   const [error, setError] = useState(null)
+  const [referenceError, setReferenceError] = useState(null)
   const [notice, setNotice] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  // `loadLostFoundScreen` owns the failure rules (see its comment): reference
+  // data that fails to load can no longer discard the case list, which is what
+  // made a durably queued case report as "No Lost & Found cases yet". A null
+  // discs/courses result means that read failed, so the existing state is kept
+  // rather than blanked.
   const load = useCallback(async () => {
     await flushLostFoundOutbox(user.id)
-    const [discRows, courseRows, lostFound] = await Promise.all([
-      fetchUserDiscs(user.id),
-      fetchCourses(),
-      loadLostFoundCases(user.id),
-    ])
-    setDiscs(discRows)
-    setCourses(courseRows)
-    setCases(lostFound.cases)
-    setUpdates(lostFound.updates)
-    setDiscId((current) => current || discRows.find((disc) => !['retired', 'sold'].includes(disc.status))?.id || '')
-    setSelectedCaseId((current) => current || lostFound.cases[0]?.id || '')
+    const screen = await loadLostFoundScreen(user.id)
+    if (screen.discs) {
+      setDiscs(screen.discs)
+      setDiscId((current) => current || screen.discs.find((disc) => !['retired', 'sold'].includes(disc.status))?.id || '')
+    }
+    if (screen.courses) setCourses(screen.courses)
+    setReferenceError(screen.referenceError)
+    setCases(screen.cases)
+    setUpdates(screen.updates)
+    setSelectedCaseId((current) => current || screen.cases[0]?.id || '')
   }, [user.id])
 
   useEffect(() => {
@@ -172,6 +175,7 @@ export default function LostFoundPage() {
       </header>
       <p>Keep a private, offline-ready history of where a disc was lost, sightings, contacts, and recovery.</p>
       {error && <p className="form-error">{error}</p>}
+      {referenceError && <p className="form-error" role="status">{referenceError}</p>}
       {notice && <p className="success-message">{notice}</p>}
 
       <form className="lost-found-panel" onSubmit={submitOpen}>

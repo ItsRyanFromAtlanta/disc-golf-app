@@ -1,6 +1,9 @@
 import { db } from '../db/dexieDb'
+import { fetchUserDiscs } from '../discLocker'
 import { normalizeLostFoundFields, sortLostFoundCases } from '../lostFound'
 import { supabase } from '../supabaseClient'
+import { readCourseList } from './courseRepository'
+import { readThroughCache } from './offlineFirstRepository'
 
 function rpcFields(row) {
   return {
@@ -126,6 +129,57 @@ export async function flushLostFoundOutbox(userId) {
     } catch (error) {
       await db.lostFoundOutbox.update(row.id, { status: 'retry', lastError: error.message })
     }
+  }
+}
+
+export const LOST_FOUND_REFERENCE_DATA_MESSAGE =
+  'Disc and course names could not be loaded. Your cases below are complete; the labels will fill in when you reconnect.'
+
+// Everything the Lost & Found screen reads, in one place so the failure rules
+// are testable instead of living in a page effect.
+//
+// The write path here has always been offline-first — `openLostFoundCase`
+// queues durably and reports `queued: true` — but the read path was not, so a
+// case filed in the field was durably queued and then reported as "No Lost &
+// Found cases yet". Two causes, both addressed here:
+//
+//  1. Discs and courses were read straight from Supabase, so they rejected
+//     offline. They now go through the same Dexie-backed readers the rest of
+//     the app uses (`readThroughCache` is what backs discRepository;
+//     `readCourseList` additionally adds back a course whose own creation is
+//     still queued).
+//  2. They sat in a `Promise.all` beside `loadLostFoundCases`, so either
+//     rejection discarded the merged case list even though it had resolved.
+//     `allSettled` stops reference data taking the case history down with it:
+//     the cases are the user's own captured work, the names are only labels.
+//
+// A reference-data failure is reported, not swallowed (E2 audit finding 2) —
+// it simply no longer hides anything. `discs`/`courses` come back null rather
+// than [] when their read failed, so a caller keeps whatever it already had
+// instead of blanking the pickers.
+export async function loadLostFoundScreen(userId, readers = {}) {
+  const {
+    readDiscs = (id) => readThroughCache(db.discs, () => fetchUserDiscs(id)),
+    readCourses = () => readCourseList(),
+    readCases = (id) => loadLostFoundCases(id),
+  } = readers
+  const [discResult, courseResult, caseResult] = await Promise.allSettled([
+    readDiscs(userId),
+    readCourses(),
+    readCases(userId),
+  ])
+  // Only the cases are load-bearing. If even the local mirror has nothing to
+  // show, the caller still gets the real error rather than a false empty state.
+  if (caseResult.status === 'rejected') throw caseResult.reason
+  return {
+    discs: discResult.status === 'fulfilled' ? discResult.value : null,
+    courses: courseResult.status === 'fulfilled' ? courseResult.value : null,
+    cases: caseResult.value.cases,
+    updates: caseResult.value.updates,
+    referenceError:
+      discResult.status === 'rejected' || courseResult.status === 'rejected'
+        ? LOST_FOUND_REFERENCE_DATA_MESSAGE
+        : null,
   }
 }
 
