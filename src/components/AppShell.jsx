@@ -111,15 +111,36 @@ export default function AppShell() {
                   setSheet({
                     title: 'Notifications',
                     content: (
-                      <NotificationSheet
-                        userId={user?.id}
-                        onOpen={async (notification, destination) => {
-                          await notificationRepository.setStatus(notification.id, { read_at: new Date().toISOString() })
-                          setSheet(null)
-                          navigate(destination)
-                        }}
-                        onResolve={(notification) => notificationRepository.setStatus(notification.id, { resolved_at: new Date().toISOString() })}
-                      />
+                      <>
+                        <NotificationSheet
+                          userId={user?.id}
+                          onOpen={async (notification, destination) => {
+                            await notificationRepository.setStatus(notification.id, { read_at: new Date().toISOString() })
+                            setSheet(null)
+                            navigate(destination)
+                          }}
+                          onResolve={(notification) => notificationRepository.setStatus(notification.id, { resolved_at: new Date().toISOString() })}
+                        />
+                        {/* D-09: the sheet was the only in-app way to reach
+                            notifications at all — /notifications had a route
+                            and full metadata, but nothing pointed at it. This
+                            is a real link, not a duplicate of the bell: it
+                            navigates to the standalone page rather than
+                            reopening this sheet. Suppressed on the page
+                            itself, where it would point at nothing new. */}
+                        {pathname !== '/notifications' ? (
+                          <button
+                            type="button"
+                            className="link-button"
+                            onClick={() => {
+                              setSheet(null)
+                              navigate('/notifications')
+                            }}
+                          >
+                            See all notifications
+                          </button>
+                        ) : null}
+                      </>
                     ),
                   })
                 }
