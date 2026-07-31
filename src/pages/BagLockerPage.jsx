@@ -7,6 +7,7 @@ import { useDiscList } from '../lib/repository/discRepository'
 import { filterDiscs, sortDiscs } from '../lib/discFilters'
 import { COMPARE_MAX, COMPARE_MIN } from '../lib/discCompare'
 import { getFlairMode, getViewMode, setViewMode } from '../lib/viewPreference'
+import { BAG_HARD_CAPACITY, bagCapacityMessage, isBagCapacityError } from '../lib/bagCapacity'
 import DiscCard from '../components/DiscCard'
 import ChipGroup from '../components/ChipGroup'
 
@@ -74,6 +75,14 @@ export default function BagLockerPage({ embedded = false }) {
   async function handleTogglePicked(discId) {
     setError(null)
     const isMember = pickerMemberIds.has(discId)
+    // `pickerMemberIds` already holds one id per `bag_discs` row for this bag
+    // (from `fetchBagDiscs` above) — the same count `enforce_bag_capacity()`
+    // takes, regardless of the member discs' status — so no extra fetch is
+    // needed to guard against it (see `src/lib/bagCapacity.js`, D-19).
+    if (!isMember && pickerMemberIds.size >= BAG_HARD_CAPACITY) {
+      setError(bagCapacityMessage())
+      return
+    }
     try {
       if (isMember) await removeDiscFromBag(addToBagId, discId)
       else await addDiscToBag(addToBagId, discId)
@@ -84,7 +93,7 @@ export default function BagLockerPage({ embedded = false }) {
         return next
       })
     } catch (err) {
-      setError(err.message)
+      setError(isBagCapacityError(err) ? bagCapacityMessage() : err.message)
     }
   }
 
@@ -278,6 +287,7 @@ export default function BagLockerPage({ embedded = false }) {
                   <button
                     type="button"
                     className={`chip disc-card-action ${pickerMemberIds.has(disc.id) ? 'chip-active' : ''}`}
+                    disabled={!pickerMemberIds.has(disc.id) && pickerMemberIds.size >= BAG_HARD_CAPACITY}
                     onClick={() => handleTogglePicked(disc.id)}
                   >
                     {pickerMemberIds.has(disc.id) ? 'Added' : 'Add'}

@@ -8,10 +8,13 @@ import {
   isProvisioningRpcMissing,
   provisionPracticeStack,
   provisionPracticeStackFallback,
+  isGoalColumnUnavailable,
+  persistOnboardingGoal,
   MIN_WEIGHT_GRAMS,
   MAX_WEIGHT_GRAMS,
   DEFAULT_MOLD_NAME,
   PRACTICE_STACK_BAG_NAME,
+  GOAL_OPTIONS,
 } from './onboarding'
 
 describe('pickDefaultMold', () => {
@@ -291,5 +294,75 @@ describe('provisionPracticeStackFallback', () => {
     })
 
     await expect(provisionPracticeStackFallback(USER_ID, INPUT, api)).rejects.toThrow(/capacity/)
+  })
+})
+
+// --- D-15 --------------------------------------------------------------------
+// The onboarding Step-1 goal used to be captured, gated on, and discarded: no
+// column, no write, anywhere. `persistOnboardingGoal` closes that with a plain
+// `profiles.onboarding_goal` write — not a row in the Phase D3 `goals` table,
+// whose measurable-target shape (`target_value`, `target_unit`, a
+// create/pause/complete/cancel lifecycle) `GOAL_OPTIONS` never collects.
+
+describe('isGoalColumnUnavailable', () => {
+  it.each(['PGRST204', '42703', '42501'])(
+    'recognises %s as the column or its grant not being deployed yet',
+    (code) => {
+      expect(isGoalColumnUnavailable(pgError(code))).toBe(true)
+    },
+  )
+
+  it('does not swallow a real failure', () => {
+    expect(isGoalColumnUnavailable(pgError('23505'))).toBe(false)
+    expect(isGoalColumnUnavailable(pgError('28000'))).toBe(false)
+    expect(isGoalColumnUnavailable(null)).toBe(false)
+  })
+})
+
+describe('persistOnboardingGoal', () => {
+  it('writes the chosen goal onto the profile via the existing upsert path', async () => {
+    const upsertProfileFields = vi.fn(async (userId, fields) => ({ id: userId, ...fields }))
+
+    const result = await persistOnboardingGoal(USER_ID, GOAL_OPTIONS[0].id, { upsertProfileFields })
+
+    expect(upsertProfileFields).toHaveBeenCalledWith(USER_ID, { onboarding_goal: GOAL_OPTIONS[0].id })
+    expect(result).toEqual({ id: USER_ID, onboarding_goal: GOAL_OPTIONS[0].id })
+  })
+
+  it('is a no-op that writes nothing when no goal was chosen', async () => {
+    const upsertProfileFields = vi.fn()
+
+    await expect(persistOnboardingGoal(USER_ID, null, { upsertProfileFields })).resolves.toBeNull()
+    expect(upsertProfileFields).not.toHaveBeenCalled()
+  })
+
+  it('resolves quietly instead of throwing while the migration has not landed', async () => {
+    const upsertProfileFields = vi.fn(async () => {
+      throw pgError('PGRST204', 'column "onboarding_goal" of relation "profiles" does not exist')
+    })
+
+    await expect(
+      persistOnboardingGoal(USER_ID, 'consistency', { upsertProfileFields }),
+    ).resolves.toBeNull()
+  })
+
+  it('resolves quietly when the column exists but its grant has not landed yet', async () => {
+    const upsertProfileFields = vi.fn(async () => {
+      throw pgError('42501', 'permission denied for table profiles')
+    })
+
+    await expect(
+      persistOnboardingGoal(USER_ID, 'consistency', { upsertProfileFields }),
+    ).resolves.toBeNull()
+  })
+
+  it('still surfaces a genuine failure rather than swallowing it', async () => {
+    const upsertProfileFields = vi.fn(async () => {
+      throw pgError('28000', 'JWT expired')
+    })
+
+    await expect(persistOnboardingGoal(USER_ID, 'consistency', { upsertProfileFields })).rejects.toThrow(
+      /JWT expired/,
+    )
   })
 })
