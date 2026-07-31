@@ -6,6 +6,7 @@
 
 import { supabase } from './supabaseClient'
 import { createBag, upsertDisc, addDiscToBag, fetchBags } from './discLocker'
+import { upsertProfileFields } from './profile'
 
 export const GOAL_OPTIONS = [
   { id: 'consistency', label: 'Dial In Consistency', description: 'Structured putting routines and streaks' },
@@ -172,4 +173,69 @@ export async function provisionPracticeStack(userId, input, deps = {}) {
   const viaRpc = await rpc(buildProvisionArgs(input))
   if (viaRpc) return viaRpc
   return fallback(userId, input)
+}
+
+// ---------------------------------------------------------------------------
+// Goal persistence (defect register `D-15`)
+//
+// Step 1 required a choice and threw it away — no column, no write, anywhere.
+// Two closes were on the table: stop asking, or persist it. This picks
+// persist, but not into the Phase D3 `goals` feature at `/profile/goals`
+// (`src/lib/goals.js`, `goalRepository.js`). That table's four `GOAL_TYPES`
+// are measurable targets — a number, a unit, a start date, an optional target
+// date, a create/pause/complete/cancel lifecycle with an event history. This
+// step collects none of that: `GOAL_OPTIONS` are three dashboard-focus tags
+// ("Dial In Consistency", "Bag Management", "Deep Analytics") with no target
+// value and no date. Even the one option that shares a word with a real
+// `GOAL_TYPES` entry ('consistency') is not the same fact — the goals feature's
+// `consistency` is a percentage target, this is a UI preference. Writing a
+// `goals` row here would mean fabricating a target_value and unit the user
+// never supplied, planting a synthetic goal in a feature that is otherwise
+// entirely user-authored and lifecycle-tracked. That is worse than the
+// discard this closes — it is why "connect to the real feature" is a
+// hypothesis worth writing down and then not taking, not a mandate: it does
+// not fit, and forcing it would corrupt the very feature it was meant to
+// respect.
+//
+// So the goal is what the blueprint always described it as — a profile-level
+// preference tag, alongside `units` (which CalibrationStep already writes the
+// same way) — not a goal record. It goes on `profiles.onboarding_goal`, a
+// plain nullable column with no lifecycle, via the existing
+// `upsertProfileFields` path so no new write surface is introduced.
+//
+// The migration (`supabase/migrations/<UTC>_phase_e_onboarding_goal.sql`) is
+// written and UNAPPLIED, so a live write 400s on the missing column, or —
+// once the column exists but before its compensating grant does — 403s on the
+// missing UPDATE privilege (see the migration header for why both codes ride
+// together). Neither may block Step 1: the user already made the choice the
+// gate demanded, and losing the write is strictly better than losing forward
+// progress over a preference field. Genuine failures (a real RLS denial, a
+// network error) are not swallowed here — they propagate so a caller that
+// cares can decide, but `OnboardingPage` itself fires this without awaiting
+// the result, exactly because even a genuine failure must not strand a user
+// who already answered the question.
+const MISSING_GOAL_COLUMN_CODES = new Set([
+  'PGRST204', // column not found in the schema cache (migration not yet applied)
+  '42703', // undefined_column — the Postgres-side spelling of the same lag
+  '42501', // insufficient_privilege — the column exists but its grant hasn't landed yet
+])
+
+export function isGoalColumnUnavailable(error) {
+  if (!error) return false
+  return MISSING_GOAL_COLUMN_CODES.has(String(error.code ?? ''))
+}
+
+// Best-effort: resolves to `null` (not a rejection) both when there is no
+// goal to save and when the deploy-lag window swallows the write, so callers
+// that don't care about the outcome can call this without a `.catch`. A
+// genuine failure still rejects.
+export async function persistOnboardingGoal(userId, goal, deps = {}) {
+  const { upsertProfileFields: upsert = upsertProfileFields } = deps
+  if (!goal) return null
+  try {
+    return await upsert(userId, { onboarding_goal: goal })
+  } catch (error) {
+    if (isGoalColumnUnavailable(error)) return null
+    throw error
+  }
 }
