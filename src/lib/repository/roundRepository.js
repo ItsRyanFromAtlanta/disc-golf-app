@@ -22,7 +22,7 @@ import {
   updateRound,
   upsertRoundHole,
 } from '../roundLog'
-import { captureBagVersion } from './bagHistoryRepository'
+import { captureBagVersion, isUnrecognizedBagVersionReasonError } from './bagHistoryRepository'
 import { replayRoundPlayerEntry, roundPlayerApi } from './roundPlayerRepository'
 import {
   ROUND_HOLE_TABLE,
@@ -299,11 +299,26 @@ export function useRoundList(userId) {
 // honest fact: `verifyRoundBag` (`roundBagVerification.js`) already reports
 // it as `not_snapshotted` rather than treating a missing snapshot as absence
 // of a fault, which is exactly what this is.
+//
+// The one exception is the deploy-lag window this pairs with (E2 audit F3): a
+// round started with the honest `'round_start'` reason against a deployment
+// whose `capture_bag_version` has not yet been migrated to accept it gets a
+// real, specific rejection — `isUnrecognizedBagVersionReasonError` — and
+// degrades to the reason the RPC does accept rather than losing the snapshot
+// for the whole window between a client landing on `main` and its migration
+// being applied. See
+// `supabase/migrations/20260731020000_phase_e_bag_version_round_start_reason.sql`.
 export async function captureRoundStartBagVersion(bagId, roundId) {
+  const idempotencyKey = `round-bag:${roundId}`
   try {
-    return await captureBagVersion(bagId, { idempotencyKey: `round-bag:${roundId}` })
-  } catch {
-    return null
+    return await captureBagVersion(bagId, { reason: 'round_start', idempotencyKey })
+  } catch (error) {
+    if (!isUnrecognizedBagVersionReasonError(error)) return null
+    try {
+      return await captureBagVersion(bagId, { reason: 'grouped_save', idempotencyKey })
+    } catch {
+      return null
+    }
   }
 }
 

@@ -48,23 +48,27 @@ const { db } = await import('../db/dexieDb')
 const USER_ID = 'user-1'
 const ROUND_ID = 'round-1'
 const OFFLINE_ERROR = Object.assign(new TypeError('Failed to fetch'), {})
+const UNRECOGNIZED_REASON_ERROR = new Error('Invalid snapshot reason')
 
-describe('captureRoundStartBagVersion (DEFECT_REGISTER D-05, E2 audit F2)', () => {
+describe('captureRoundStartBagVersion (DEFECT_REGISTER D-05, E2 audit F2/F3)', () => {
   beforeEach(() => {
     captureBagVersionMock.mockReset()
   })
 
-  it('returns the captured version id on success', async () => {
+  it('returns the honest round_start snapshot on the first attempt', async () => {
     captureBagVersionMock.mockResolvedValueOnce('version-1')
 
     const result = await captureRoundStartBagVersion('bag-1', ROUND_ID)
 
     expect(result).toBe('version-1')
     expect(captureBagVersionMock).toHaveBeenCalledTimes(1)
-    expect(captureBagVersionMock).toHaveBeenCalledWith('bag-1', { idempotencyKey: `round-bag:${ROUND_ID}` })
+    expect(captureBagVersionMock).toHaveBeenCalledWith('bag-1', {
+      reason: 'round_start',
+      idempotencyKey: `round-bag:${ROUND_ID}`,
+    })
   })
 
-  it('degrades to null on failure, rather than falling back to a stale cached version', async () => {
+  it('degrades to null on an ordinary (offline) failure, without a second attempt', async () => {
     captureBagVersionMock.mockRejectedValue(OFFLINE_ERROR)
 
     const result = await captureRoundStartBagVersion('bag-1', ROUND_ID)
@@ -74,11 +78,40 @@ describe('captureRoundStartBagVersion (DEFECT_REGISTER D-05, E2 audit F2)', () =
     // indistinguishably from a fresh one. `null` is the honest fact instead,
     // and `verifyRoundBag` already has a status for it (`not_snapshotted`).
     expect(result).toBeNull()
+    expect(captureBagVersionMock).toHaveBeenCalledTimes(1)
   })
 
   it('never throws — this is the D-05 fix: nothing here can escape useCreateRound\'s mutationFn before payload exists', async () => {
     captureBagVersionMock.mockRejectedValue(OFFLINE_ERROR)
     await expect(captureRoundStartBagVersion('bag-1', ROUND_ID)).resolves.toBeNull()
+  })
+
+  it('degrades to the reason still accepted when round_start is rejected as unrecognized (F3 deploy-lag)', async () => {
+    captureBagVersionMock
+      .mockRejectedValueOnce(UNRECOGNIZED_REASON_ERROR)
+      .mockResolvedValueOnce('version-2')
+
+    const result = await captureRoundStartBagVersion('bag-1', ROUND_ID)
+
+    expect(result).toBe('version-2')
+    expect(captureBagVersionMock).toHaveBeenCalledTimes(2)
+    expect(captureBagVersionMock).toHaveBeenNthCalledWith(1, 'bag-1', {
+      reason: 'round_start',
+      idempotencyKey: `round-bag:${ROUND_ID}`,
+    })
+    expect(captureBagVersionMock).toHaveBeenNthCalledWith(2, 'bag-1', {
+      reason: 'grouped_save',
+      idempotencyKey: `round-bag:${ROUND_ID}`,
+    })
+  })
+
+  it('degrades to null when the deploy-lag fallback itself fails', async () => {
+    captureBagVersionMock.mockRejectedValueOnce(UNRECOGNIZED_REASON_ERROR).mockRejectedValueOnce(OFFLINE_ERROR)
+
+    const result = await captureRoundStartBagVersion('bag-1', ROUND_ID)
+
+    expect(result).toBeNull()
+    expect(captureBagVersionMock).toHaveBeenCalledTimes(2)
   })
 })
 

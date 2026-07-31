@@ -316,8 +316,8 @@ weeks old and might not reflect what was in the bag. Nothing on the round distin
 snapshot taken at the first tee.
 
 `captureRoundStartBagVersion` (`roundRepository.js`) replaces it: every failure to capture a fresh
-snapshot — offline or otherwise — now degrades to `bagVersionId = null` rather than a stale one.
-`verifyRoundBag` already had a status built for exactly this
+snapshot — offline, an F3 deploy-lag rejection, anything else — now degrades to `bagVersionId = null`
+rather than a stale one. `verifyRoundBag` already had a status built for exactly this
 (`not_snapshotted`), so the honest answer was free to record; the code was just recording a different,
 wrong answer instead. See `roundRepository.createRound.test.js` for the regression coverage — including
 that a plain offline failure does not retry looking for a reason to report.
@@ -340,16 +340,31 @@ an analysis is worth building at all. `bagSnapshotLedger` reports how much of a 
 snapshot that holds up; a claim like "you score better with the tournament bag" built over a history
 that is mostly `not_snapshotted` is measuring the handful of rounds that happen to be verifiable.
 
-### F3. Round-start snapshots are recorded with `reason = 'grouped_save'` — OPEN
+### F3. Round-start snapshots are recorded with `reason = 'grouped_save'` — FIXED, migration UNAPPLIED (2026-07-31, DEFECT_REGISTER)
 
-**Severity: cosmetic, but it is a provenance lie.** `captureBagVersion` defaults `reason` to
-`'grouped_save'` and `roundRepository` does not override it, so a snapshot taken because a round
-started claims to have been taken because the bag was saved. The `bag_versions.reason` CHECK already
-allows four values (`initial_snapshot`, `grouped_save`, `restore`, `system_backfill`) but
-`capture_bag_version` rejects anything but two, so recording an honest `'round_start'` needs a
-migration to widen both. Left open deliberately: A7's verification does not depend on the reason —
-it reads the version timeline, not the labels — and changing an RPC's accepted vocabulary as a side
-effect of a read-only feature is the kind of thing this project keeps as its own task.
+**Severity: cosmetic, but it is a provenance lie.** `captureBagVersion` defaulted `reason` to
+`'grouped_save'` and `roundRepository` did not override it, so a snapshot taken because a round
+started claimed to have been taken because the bag was saved. The `bag_versions.reason` CHECK already
+allowed four values (`initial_snapshot`, `grouped_save`, `restore`, `system_backfill`) but
+`capture_bag_version` rejected anything but two, so recording an honest `'round_start'` needed a
+migration to widen both.
+
+Closed alongside D-05 rather than left open: fixing D-05 required deciding what
+`captureRoundStartBagVersion` does on every failure path, and "keep lying about the reason forever" was
+not a better answer than "widen the vocabulary, and degrade honestly during the deploy-lag window
+before it lands." `supabase/migrations/20260731020000_phase_e_bag_version_round_start_reason.sql` widens
+both the CHECK and `capture_bag_version`'s own guard to accept `'round_start'`, and is **written but NOT
+applied** — per the 2026-07-30 standing decision, migrations are applied by the owner from the Supabase
+dashboard.
+
+Until it is applied, the client already handles the gap: `captureRoundStartBagVersion` sends
+`'round_start'` first, and on the RPC's `'Invalid snapshot reason'` rejection (matched by
+`isUnrecognizedBagVersionReasonError` in `bagHistoryRepository.js` — this predates the
+`DEPLOY_LAG_CODES` convention and has no distinguishing Postgres code to key on instead) retries once
+with `'grouped_save'`, the reason the RPC still accepts. A round still gets a real snapshot during the
+window; it is just mislabeled until the migration lands, exactly as before this fix, rather than losing
+the snapshot outright. Verification never depended on the reason — it reads the version timeline, not
+the labels — so this is compatible with A7 either way.
 
 ### F4. `src/App.css` was silently corrupted by the branch-of-record merge — FIXED (2026-07-30, A6)
 
