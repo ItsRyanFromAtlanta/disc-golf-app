@@ -61,7 +61,9 @@ entries marked `SUPERSEDED` or `OBSOLETE` must not be revived without updating t
 
 | Feature | Status | Notes |
 |---|---|---|
-| Round logging tree (/rounds: courses, holes, scores) | SHIPPED | J1 shipped 2026-07-14: COURSES tab, quick-course, offline-first scorecard/history/finalization, activity-parent FK bridge, and live owner-scoped RLS. |
+| Round logging tree (/rounds: courses, holes, scores) | SHIPPED | J1 shipped 2026-07-14: COURSES tab, quick-course, offline-first scorecard/history/finalization, activity-parent FK bridge, and live owner-scoped RLS. Hardened 2026-08-07 (E2 checkpoint 1): round-hole upsert re-keyed onto the table's natural key, cache deduplicated, and outbox replay scoped to the queued round's owner |
+| Atomic course creation RPC + creator-scoped delete policy | NEXT UP | `createCourseWithLayout` writes course → layout → holes as three unguarded statements, and J1 grants **no delete policy** on any of the three, so a mid-sequence failure strands a course nobody can remove from every user's directory. E2 checkpoint 1 mitigated this with stable draft ids so a retry completes the first attempt; the fix is one `security definer` RPC that writes all three in a transaction, plus a `created_by`-scoped delete policy so a stranded course can be cleaned up. Both need a migration |
+| Round list N+1 read | BACKLOG | `RoundsPage` calls `loadRound` for every listed round to compute relative-to-par, and each call issues ~5 queries; a 50-round history fires ~250 requests on mount. Either return per-round hole aggregates from the list query or compute the relative score from cached holes only |
 | Live caddie chat (OpenAI Responses API, server-side) | BACKLOG | Schema exists; build after rounds/course prep and approve safety/cost/context policy |
 | Course prep views | BACKLOG | |
 | Stats tab (app-level) | REJECTED | Statistics are contextual; ME is the career-wide summary |

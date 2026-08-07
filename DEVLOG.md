@@ -1,5 +1,56 @@
 # Dev Log
 
+## 2026-08-07 — E2 checkpoint 1: harden the shipped round and course routes
+
+**What:** Audited the J1 course/layout and offline round surfaces — `roundLog.js`, `roundRepository.js`,
+and the six `Round*`/`Course*` pages — against the deployed schema, and fixed the four defects the
+audit found. No surface was rebuilt; every change is inside the shipped code path.
+
+1. **`round_holes` upserts conflicted on the wrong key.** The table carries `unique (round_id,
+   hole_id)` (`supabase_schema.sql`, never dropped by the layouts migration), but `upsertRoundHole`
+   upserted `onConflict: 'id'`. Any client row generated for a hole the server already stores under a
+   different id — a second device, or this one after a cache eviction — inserted a duplicate that the
+   unique index rejected. `saveRoundHole` turned that into "Saved on this device; it will retry when
+   you reconnect", and `flushRoundOutbox` swallowed the identical violation on every reconnect, so the
+   score never landed and the queue never drained. Now the natural key is resolved first and the
+   stored id reused.
+2. **The offline cache could hold two rows for one hole.** Once the server can re-key a row, the
+   optimistic row would survive under its old id and `roundTotal` would count that hole's strokes
+   twice. `cacheRoundHole` now collapses to one row per `(round_id, hole_id)`, which also repairs a
+   cache that already holds duplicates.
+3. **`flushRoundOutbox` could replay a queued round under the wrong account.** It passed its own
+   `userId` to `createRound` regardless of the queued payload's owner — while the `ensureRoundActivity`
+   call directly above it correctly preferred `entry.payload.user_id`. On a shared device a second
+   account absorbed the first's undrained rounds. Entries owned by another account are now left queued.
+4. **A failed course create stranded an orphan in the shared directory.** `createCourseWithLayout`
+   writes course → layout → holes as three unguarded statements, and J1 grants **no delete policy** on
+   any of the three, so a mid-sequence failure left a course nobody could remove from everyone's
+   directory. `CourseFormPage` now holds stable course/layout/hole ids for the draft, so retrying the
+   same submission upserts into the failed attempt's rows instead of starting a second course.
+
+**Why:** `DEVELOPMENT_PLAN.md` § E2 opens with "audit and harden the existing course/layout and offline
+round routes rather than rebuilding them". Defects 1–3 all corrupt or lose recorded scores, which is
+the one thing a round logger cannot get wrong, and none of them are visible without reading the client
+against the deployed constraint — the client and the schema had simply drifted apart.
+
+**Key decisions:** Defect 1 is fixed by *reading* the natural key rather than switching the upsert to
+`onConflict: 'round_id,hole_id'`. PostgREST would then write `id = excluded.id`, and
+`putt_events.round_hole_id` references that primary key with no `ON UPDATE` action, so re-keying a row
+would break existing putt rows. The extra select per hole save is the cheaper trade. Defect 4 is only
+mitigated, not fixed: the real fix is one transactional RPC plus a creator-scoped delete policy, which
+needs a migration this session cannot apply — logged in `FEATURE_BACKLOG.md` rather than half-built.
+
+**Verification:** 515 tests across 76 files pass (up from 497/74), production build succeeds, lint
+retains exactly the four documented baseline warnings and adds none. The two new suites —
+`roundLog.test.js` and `repository/roundRepository.test.js`, the first coverage either module has had —
+were run against the pre-fix code first: exactly the five tests targeting the four defects fail there
+and the other thirteen pass both ways, so the suite discriminates the fix rather than restating it.
+
+**Not verified:** none of this was exercised against the live database, a real device, or an
+authenticated browser session. Defect 1's fix in particular is reasoned from the schema's unique
+constraint, not observed against a live conflicting row. Migration `20260727120000_phase_e_account_deletion.sql`
+remains unapplied and is untouched by this work.
+
 ## 2026-07-28 — consolidate parallel sessions onto a single branch of record
 
 **What:** Audited all 16 remote branches, folded the only live unmerged work onto

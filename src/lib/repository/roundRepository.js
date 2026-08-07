@@ -59,18 +59,39 @@ async function cacheRound(round) {
   return round
 }
 
+// A hole has exactly one row remotely — `round_holes` is uniquely keyed on
+// (round_id, hole_id) — so the cache must collapse to one row too. Without
+// this, a row the server re-keys onto an id the cache has not seen leaves the
+// optimistic row behind and `roundTotal` counts that hole's strokes twice.
+function mergeRoundHoleRows(current, hole) {
+  const merged = []
+  let replaced = false
+  for (const row of current) {
+    if (row.id !== hole.id && row.hole_id !== hole.hole_id) {
+      merged.push(row)
+    } else if (!replaced) {
+      merged.push({ ...row, ...hole })
+      replaced = true
+    }
+  }
+  if (!replaced) merged.push(hole)
+  return merged
+}
+
 async function cacheRoundHole(input) {
   const hole = localHole(input)
   await db.transaction('rw', db.rounds, db.roundHoles, async () => {
+    if (hole.round_id) {
+      const superseded = (await db.roundHoles.where('round_id').equals(hole.round_id).toArray())
+        .filter((row) => row.hole_id === hole.hole_id && row.id !== hole.id)
+        .map((row) => row.id)
+      if (superseded.length > 0) await db.roundHoles.bulkDelete(superseded)
+    }
     await db.roundHoles.put(hole)
     const round = await db.rounds.get(hole.round_id)
     if (!round) return
     const current = Array.isArray(round.round_holes) ? round.round_holes : []
-    const index = current.findIndex((row) => row.id === hole.id || row.hole_id === hole.hole_id)
-    const next = [...current]
-    if (index >= 0) next[index] = { ...next[index], ...hole }
-    else next.push(hole)
-    await db.rounds.put({ ...round, round_holes: next })
+    await db.rounds.put({ ...round, round_holes: mergeRoundHoleRows(current, hole) })
   })
   return hole
 }
@@ -328,18 +349,24 @@ export async function flushRoundOutbox(userId) {
     (entry) => entry.table === ROUND_TABLE || entry.table === ROUND_HOLE_TABLE,
   )
   for (const entry of entries) {
+    // A queued round names its own owner. Replaying it under whoever happens to
+    // be signed in would re-home another account's round onto this session, so
+    // leave it queued until its owner returns to this device.
+    const owner = entry.table === ROUND_TABLE && entry.op === 'create' ? entry.payload.user_id ?? userId : userId
+    if (owner !== userId) continue
+
     try {
       if (entry.table === ROUND_TABLE && entry.op === 'create') {
         await ensureRoundActivity({
           roundId: entry.payload.id,
-          userId: entry.payload.user_id ?? userId,
+          userId: owner,
           metadata: {
             courseId: entry.payload.course_id ?? null,
             layoutId: entry.payload.layout_id ?? null,
           },
         })
         await roundActivitySync.flush()
-        await cacheRound(await createRound(userId, entry.payload))
+        await cacheRound(await createRound(owner, entry.payload))
       } else if (entry.table === ROUND_TABLE && entry.op === 'update') {
         const result = await updateRound(entry.payload.roundId, entry.payload.fields)
         await cacheRound(result)

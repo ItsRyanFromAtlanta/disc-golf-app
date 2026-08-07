@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { createCourseWithLayout } from '../lib/roundLog'
+
+function newDraft() {
+  return { courseId: crypto.randomUUID(), layoutId: crypto.randomUUID(), holeIds: new Map() }
+}
 
 export default function CourseFormPage() {
   const { user } = useAuth()
@@ -12,6 +16,16 @@ export default function CourseFormPage() {
   const [defaultPar, setDefaultPar] = useState('3')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  // Course creation is not transactional and its rows cannot be deleted, so a
+  // retry after a partial failure has to land on the same ids. Held in a ref
+  // rather than state: these identify the draft, they do not render.
+  const draftRef = useRef(newDraft())
+
+  function holeIdFor(holeNumber) {
+    const { holeIds } = draftRef.current
+    if (!holeIds.has(holeNumber)) holeIds.set(holeNumber, crypto.randomUUID())
+    return holeIds.get(holeNumber)
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -22,10 +36,17 @@ export default function CourseFormPage() {
       const par = Math.max(2, Math.min(6, Number(defaultPar) || 3))
       const course = await createCourseWithLayout({
         userId: user.id,
+        courseId: draftRef.current.courseId,
+        layoutId: draftRef.current.layoutId,
         name,
         location,
-        holes: Array.from({ length: count }, (_, index) => ({ holeNumber: index + 1, par })),
+        holes: Array.from({ length: count }, (_, index) => ({
+          id: holeIdFor(index + 1),
+          holeNumber: index + 1,
+          par,
+        })),
       })
+      draftRef.current = newDraft()
       navigate(`/courses/${course.id}`)
     } catch (err) {
       setError(err.message)

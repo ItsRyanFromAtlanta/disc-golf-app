@@ -1,19 +1,25 @@
 # Current Work
 
-Last updated: 2026-07-28
+Last updated: 2026-08-07
 
 This file is the restart/handoff checkpoint. A fresh session should be able to resume from this file,
 `AGENTS.md`, and one relevant spec without replaying previous conversations. Per-item implementation
 and verification history lives in `DEVLOG.md` (newest first) — do not duplicate it here.
 
-## Session and branch of record (2026-07-28)
+## Session and branch of record (2026-08-07)
 
 Work had fragmented across parallel Codex/Claude sessions, each on its own branch. It is now
 consolidated to a single line of development.
 
-- **Branch of record:** `claude/consolidate-chats-stage-actions-rj0lwl`, which contains `origin/main`
-  plus the seven unmerged iOS/PWA and documentation-reconciliation commits. Open new work from this
-  branch, not from a per-session branch, until it merges to `main`.
+- **Branch of record:** `claude/swiftui-app-development-2h7b5d`. PR #4 merged, so its predecessor
+  `claude/consolidate-chats-stage-actions-rj0lwl` is spent and `origin/main` now carries all seven
+  iOS/PWA and documentation-reconciliation commits. Open new work from the branch of record, not from
+  a per-session branch.
+- **The branch name is a session artifact and does not mean a native rewrite is planned.** It was
+  minted by the session that vendored the SwiftUI Pro review skill (`4828791`). The product is still
+  PWA-first React + Vite, this repository contains no Swift, and Capacitor/native remains parked with
+  a revisit trigger in `PRODUCT_ROADMAP.md`. See `docs/development/INTEGRATIONS.md` for what that
+  vendored skill is actually for.
 - **All 14 `codex/*` branches are fully merged into `main`** (verified: zero commits unique to any of
   them) and are safe to delete. They are retained only until the owner prunes them.
 - **`claude/continue-hoqtyv` is superseded and will NOT be merged.** Its single unique commit
@@ -29,31 +35,37 @@ consolidated to a single line of development.
 ## Resume point
 
 - **Active phase:** Phase E. Phases A, B, C, and D are complete; E1 shipped 2026-07-17.
-- **Blocking E2:** apply migration `20260727120000_phase_e_account_deletion.sql` (see Open
-  follow-ups). In-app account deletion is a shipped-but-broken surface until it lands, and it is an
-  App Review blocker rather than a Phase E feature.
-- **Next:** **E2 — shipped J1 round/course reconciliation.** Audit and harden the existing course/
-  layout and offline round routes rather than rebuilding them, then add weather, activity-only rounds,
-  group-scorecard groundwork, bag snapshot verification, and course preparation as separately
-  committed green checkpoints. See `DEVELOPMENT_PLAN.md` § E2 and `PRODUCT_ROADMAP.md` § Phase E.
+- **E2 checkpoint 1 shipped 2026-08-07** — the audit-and-harden pass over the shipped J1 round/course
+  routes. Four defects fixed in place, none of them rebuilds: the `round_holes` upsert now conflicts on
+  the table's real natural key, the offline cache holds one row per hole, outbox replay is scoped to
+  the queued round's owner, and course creation is retry-safe. `DEVLOG.md` 2026-08-07 has the full
+  reasoning; the two residual items went to `FEATURE_BACKLOG.md`.
+- **Next:** **E2 checkpoints 2+.** In `DEVELOPMENT_PLAN.md` § E2 order: weather, activity-only rounds,
+  group-scorecard groundwork, bag snapshot verification, and course preparation, as separately
+  committed green checkpoints. See also `PRODUCT_ROADMAP.md` § Phase E.
+- **Still unresolved and unrelated to E2:** migration `20260727120000_phase_e_account_deletion.sql`
+  (see Open follow-ups). In-app account deletion is a shipped-but-broken surface until it lands, and it
+  is an App Review blocker rather than a Phase E feature. It no longer blocks E2 — PR #4 has merged, so
+  the ordering constraint that made it a gate is spent.
 
 ## Staged next actions
 
-Ordered. The first three close currently-open work; E2 does not start until 1 is applied.
+Ordered. Actions 1–4 are owner-only; the agent track is 5 onward.
 
 | # | Action | Owner | Blocks |
 |---|---|---|---|
 | 1 | Apply `20260727120000_phase_e_account_deletion.sql`, then run the four smoke checks below | **owner** — see note | account deletion; App Review |
-| 2 | Review and merge PR #4 — **after action 1, not before** | owner review | everything downstream |
-| 3 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
-| 4 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
-| 5 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
-| 6 | Resolve the E2E contradiction: build a Playwright baseline or amend the Phase A contract | agent | honest Phase A status |
-| 7 | Begin E2 round/course reconciliation | agent | — |
+| 2 | Configure protected `main` + required review/checks in GitHub settings | owner (admin UI) | unreviewed auto-deploy risk |
+| 3 | Delete the empty `catalog-import-raw` Storage bucket | owner (Supabase dashboard) | nothing; hygiene |
+| 4 | Prune the 14 merged `codex/*` branches | **owner** — see note | nothing; hygiene |
+| 5 | Resolve the E2E contradiction: build a Playwright baseline or amend the Phase A contract | agent | honest Phase A status |
+| 6 | Continue E2 at checkpoint 2 (weather) | agent | — |
 
-**Order matters between 1 and 2.** PR #4 carries the account-deletion UI and `main` auto-deploys, so
-merging before the migration lands ships a button that errors on click. CI on #4 is green (`verify` +
-Vercel preview) as of 2026-07-28; the hold is the migration, not the checks.
+**PR #4 merged, and whether action 1 preceded it is not recorded.** The merge commit is `eb9fd2b` and
+`origin/main` carries it. The previous entry here held #4 back until the migration landed, because
+`main` auto-deploys and the branch carries the account-deletion UI. Nothing in the repository shows
+whether the migration was applied first, so treat the Settings delete button as unverified in
+production until action 1's smoke checks are run — the button may currently be live and failing.
 
 **Two of these are owner-only for environment reasons, not judgement reasons.** Both were approved on
 2026-07-28 and attempted; both were refused by the sandbox, so a future agent session should not
@@ -61,7 +73,7 @@ assume they are merely undecided:
 
 - **Action 1** — every Supabase MCP call returns `MCP tool call requires approval` and never reaches
   the project. Apply via the Supabase dashboard SQL editor or `supabase db push`.
-- **Action 5** — the git proxy returns HTTP 403 on `git push origin --delete`, and the GitHub tool
+- **Action 4** — the git proxy returns HTTP 403 on `git push origin --delete`, and the GitHub tool
   set exposes no delete-branch capability. Prune from the GitHub branches UI. All 14 were re-verified
   as having zero commits outside `main` immediately before the attempt, so deleting them loses
   nothing. `claude/continue-hoqtyv` is kept for now as a visible pointer until the `TrendChart`
@@ -89,7 +101,7 @@ assume they are merely undecided:
 - **`npm test` needs the Supabase placeholders exported, or 13 files fail at import** with a config
   error that looks like a regression and is not. CI sets them inline (`.github/workflows/ci.yml`);
   locally use `VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=ci-test-placeholder`.
-  Green on the branch of record as of 2026-07-28: 497 tests across 74 files, build clean.
+  Green on the branch of record as of 2026-08-07: 515 tests across 76 files, build clean.
 - Lint carries four pre-existing warnings: three hook-dependency findings and one Fast Refresh export
   finding. Address as touched or in a bounded cleanup review.
 - Browser verification to date has been agent-driven smoke against anonymous sessions. Authenticated

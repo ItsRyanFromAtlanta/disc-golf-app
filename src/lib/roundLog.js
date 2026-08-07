@@ -148,9 +148,26 @@ export async function updateRound(roundId, fields = {}) {
   return fetchRound(updated.id)
 }
 
+// `round_holes` carries `unique (round_id, hole_id)`, so a hole that already
+// has a row owns it under that row's primary key — which a second device, or
+// this device after its cache was evicted, cannot know. Upserting on `id`
+// alone therefore inserts a duplicate and the unique index rejects it on every
+// retry, so the scorecard reports "will retry when you reconnect" forever.
+// Resolve the natural key first and reuse the stored id instead of rewriting
+// it: `putt_events.round_hole_id` references this primary key with no
+// ON UPDATE action, so a changed id would break existing putt rows.
 export async function upsertRoundHole(input = {}) {
   const payload = normalizeHoleFields(input)
-  const { data, error } = await supabase.from('round_holes').upsert(payload, { onConflict: 'id' }).select().single()
+  const { data: existing, error: existingError } = await supabase
+    .from('round_holes')
+    .select('id')
+    .eq('round_id', payload.round_id)
+    .eq('hole_id', payload.hole_id)
+    .maybeSingle()
+  throwIfError({ data: existing, error: existingError })
+
+  const row = existing?.id ? { ...payload, id: existing.id } : payload
+  const { data, error } = await supabase.from('round_holes').upsert(row, { onConflict: 'id' }).select().single()
   return throwIfError({ data, error })
 }
 
@@ -189,7 +206,15 @@ export async function fetchCourse(courseId) {
   }
 }
 
-export async function createCourseWithLayout({ userId, name, location, holes = [] }) {
+// The course, layout, and hole writes are three separate statements, and J1
+// grants nobody a delete policy on any of the three. A failure part-way
+// through therefore strands rows that no client can clean up — an orphan
+// course shows in every user's directory permanently. Callers pass stable
+// `courseId`/`layoutId`/hole ids so that retrying the same submission upserts
+// into the rows the failed attempt already wrote instead of stranding them and
+// starting a second course. Collapsing the three writes into one transactional
+// RPC is the real fix and is tracked in `FEATURE_BACKLOG.md`.
+export async function createCourseWithLayout({ userId, courseId: requestedCourseId, layoutId: requestedLayoutId, name, location, holes = [] }) {
   let ownerId = userId
   if (!ownerId) {
     const { data, error } = await supabase.auth.getUser()
@@ -200,8 +225,8 @@ export async function createCourseWithLayout({ userId, name, location, holes = [
   if (!name?.trim()) throw new Error('Course name is required')
   if (holes.length === 0) throw new Error('A course needs at least one hole')
 
-  const courseId = crypto.randomUUID()
-  const layoutId = crypto.randomUUID()
+  const courseId = requestedCourseId ?? crypto.randomUUID()
+  const layoutId = requestedLayoutId ?? crypto.randomUUID()
   const { error: courseError } = await supabase.from('courses').upsert(
     {
       id: courseId,
